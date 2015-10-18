@@ -7,6 +7,7 @@ ABOUT
 Qron is a free software enterprise scheduler.
 See http://qron.eu/ for more information about this software and
 for online documentation.
+
 This library is only a part of qron, see qron itself for more information.
 
 LICENSE
