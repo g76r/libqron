@@ -1,8 +1,0 @@
-#!/bin/bash
-D="$(dirname $0)"
-[[ "$D" =~ ^/ ]] || D="$(pwd)/$D"
-export LD_LIBRARY_PATH="$D/lib:$LD_LIBRARY_PATH"
-export PATH="$D/bin:$PATH"
-E="$(basename $0)"
-cd "$D"
-exec "$D/bin/$E" "$@"

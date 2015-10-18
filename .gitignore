@@ -1,6 +1,6 @@
 *.pro.user*
-build-*
 *.o
 moc_*.cpp
-/web
 Makefile
+/libqron.so
+/libqron.so.*
