@@ -225,6 +225,7 @@ public:
 
 Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
                      ParamSet parentParams) {
+  Q_UNUSED(oldGridboard)
   GridboardData *d = new GridboardData;
   d->_id = node.contentAsString();
   if (d->_id.isEmpty()) {
