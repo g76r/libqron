@@ -21,7 +21,8 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
     QString url, ParamSet params, ParamsProvider *paramsEvaluationContext,
     QString logTask, quint64 logExecId)
   : QNetworkRequest(), _logTask(logTask),
-    _logExecId(logExecId ? QString::number(logExecId) : QString()) {
+    _logExecId(logExecId ? QString::number(logExecId) : QString()),
+    _params(params) {
   QUrl qurl(params.evaluate(url, paramsEvaluationContext));
   QString proto = params.value("proto", paramsEvaluationContext);
   if (!proto.isNull())
