@@ -301,7 +301,7 @@ void Executor::httpMean() {
   if (networkRequest.url().isValid()) {
     _instance.setAbortable();
     emit taskInstanceStarted(_instance);
-    _reply = networkRequest.performRequest(_nam);
+    _reply = networkRequest.performRequest(_nam, QString(), &ppp);
     if (_reply) {
       // note that the apparent critical window between QNAM::get/put/post()
       // and connection to reply signals is not actually critical since
