@@ -1,4 +1,4 @@
-/* Copyright 2012-2014 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -56,6 +56,7 @@ public:
   void detach();
 };
 
-Q_DECLARE_METATYPE(CronTrigger)
+// FIXME Q_DECLARE_METATYPE(CronTrigger)
+Q_DECLARE_TYPEINFO(CronTrigger, Q_MOVABLE_TYPE);
 
 #endif // CRONTRIGGER_H

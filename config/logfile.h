@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,6 +21,7 @@
 
 class LogFileData;
 
+// TODO convert to SUI
 /** Log file definition. */
 class LIBQRONSHARED_EXPORT LogFile {
   QSharedDataPointer<LogFileData> d;
@@ -39,5 +40,7 @@ public:
   bool buffered() const;
   PfNode toPfNode() const;
 };
+
+Q_DECLARE_TYPEINFO(LogFile, Q_MOVABLE_TYPE);
 
 #endif // LOGFILE_H

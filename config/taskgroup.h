@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -65,5 +65,7 @@ private:
   const TaskGroupData *data() const {
     return (const TaskGroupData*)SharedUiItem::data(); }
 };
+
+Q_DECLARE_TYPEINFO(TaskGroup, Q_MOVABLE_TYPE);
 
 #endif // TASKGROUP_H

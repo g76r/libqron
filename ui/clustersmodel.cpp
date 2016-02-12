@@ -52,6 +52,7 @@ private:
     return (const HostReferenceData*)SharedUiItem::data(); }
 };
 
+Q_DECLARE_TYPEINFO(HostReference, Q_MOVABLE_TYPE);
 
 ClustersModel::ClustersModel(QObject *parent)
   : SharedUiItemsTreeModel(parent) {

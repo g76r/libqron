@@ -1,4 +1,4 @@
-/* Copyright 2015 Hallowyn and others.
+/* Copyright 2015-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -70,5 +70,7 @@ private:
     return (const GridboardData*)SharedUiItem::data(); }
   GridboardData *data();
 };
+
+Q_DECLARE_TYPEINFO(Gridboard, Q_MOVABLE_TYPE);
 
 #endif // GRIDBOARD_H

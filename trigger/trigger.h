@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -54,5 +54,7 @@ protected:
    * @return false on error */
   bool loadConfig(PfNode node, QHash<QString,Calendar> namedCalendars);
 };
+
+Q_DECLARE_TYPEINFO(Trigger, Q_MOVABLE_TYPE);
 
 #endif // TRIGGER_H

@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -92,5 +92,7 @@ public:
 inline AlertPseudoParamsProvider Alert::pseudoParams() const {
   return AlertPseudoParamsProvider(*this);
 }
+
+Q_DECLARE_TYPEINFO(Alert, Q_MOVABLE_TYPE);
 
 #endif // ALERT_H

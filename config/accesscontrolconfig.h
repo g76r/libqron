@@ -1,4 +1,4 @@
-/* Copyright 2014 Hallowyn and others.
+/* Copyright 2014-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,6 +23,7 @@ class InMemoryAuthenticator;
 class InMemoryUsersDatabase;
 class QFileSystemWatcher;
 
+// TODO convert to SharedUiItem
 class LIBQRONSHARED_EXPORT AccessControlConfig {
   QSharedDataPointer<AccessControlConfigData> d;
 
@@ -38,5 +39,7 @@ public:
                           QFileSystemWatcher *accessControlFilesWatcher) const;
   bool isEmpty() const;
 };
+
+Q_DECLARE_TYPEINFO(AccessControlConfig, Q_MOVABLE_TYPE);
 
 #endif // ACCESSCONTROLCONFIG_H

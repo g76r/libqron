@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,5 +33,7 @@ public:
   RequestTaskAction(const RequestTaskAction &);
   ~RequestTaskAction();
 };
+
+Q_DECLARE_TYPEINFO(RequestTaskAction, Q_MOVABLE_TYPE);
 
 #endif // REQUESTTASKACTION_H

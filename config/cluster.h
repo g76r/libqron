@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -55,5 +55,7 @@ private:
   const ClusterData *data() const {
     return (const ClusterData*)SharedUiItem::data(); }
 };
+
+Q_DECLARE_TYPEINFO(Cluster, Q_MOVABLE_TYPE);
 
 #endif // CLUSTER_H

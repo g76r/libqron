@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,5 +26,7 @@ public:
   EmitAlertAction(const EmitAlertAction &);
   ~EmitAlertAction();
 };
+
+Q_DECLARE_TYPEINFO(EmitAlertAction, Q_MOVABLE_TYPE);
 
 #endif // EMITALERTACTION_H

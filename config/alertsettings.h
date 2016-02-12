@@ -1,4 +1,4 @@
-/* Copyright 2015 Hallowyn and others.
+/* Copyright 2015-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -53,5 +53,7 @@ private:
   const AlertSettingsData *data() const {
     return (const AlertSettingsData*)SharedUiItem::data(); }
 };
+
+Q_DECLARE_TYPEINFO(AlertSettings, Q_MOVABLE_TYPE);
 
 #endif // ALERTSETTINGS_H

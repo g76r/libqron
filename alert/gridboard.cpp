@@ -152,6 +152,8 @@ public:
 
 } // unnamed namespace
 
+Q_DECLARE_TYPEINFO(Dimension, Q_MOVABLE_TYPE);
+
 static void mergeComponents(
     TreeItem *target, TreeItem *source,
     QList<QSharedPointer<TreeItem>> *components,

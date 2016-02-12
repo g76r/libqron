@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,6 +25,8 @@ class TaskInstance;
 class Task;
 class Action;
 class Scheduler;
+
+// TODO convert to SharedUiItem
 
 /** Subscription to a given event (e.g. onsuccess) for one or several actions
  * (e.g. emitalert) with an optionnal filter and optionnal event subscription
@@ -73,5 +75,7 @@ public:
    * (StepAction and EndAction). */
   QStringList workflowTargetsLocalIds() const;
 };
+
+Q_DECLARE_TYPEINFO(EventSubscription, Q_MOVABLE_TYPE);
 
 #endif // EVENTSUBSCRIPTION_H
