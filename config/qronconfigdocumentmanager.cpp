@@ -1,4 +1,4 @@
-/* Copyright 2015 Hallowyn and others.
+/* Copyright 2015-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,25 +17,10 @@
 #include "step.h"
 
 static int staticInit() {
-  qRegisterMetaType<Host>("Host");
-  qRegisterMetaType<Host>("Cluster");
-  qRegisterMetaType<Calendar>("Calendar");
-  qRegisterMetaType<Task>("Task");
-  qRegisterMetaType<Task>("TaskGroup");
-  qRegisterMetaType<WorkflowTransition>("WorkflowTransition");
-  qRegisterMetaType<LogFile>("LogFile");
-  qRegisterMetaType<QList<EventSubscription>>("QList<EventSubscription>");
-  qRegisterMetaType<QList<LogFile>>("QList<LogFile>");
-  qRegisterMetaType<SchedulerConfig>("SchedulerConfig");
-  qRegisterMetaType<AccessControlConfig>("AccessControlConfig");
-  qRegisterMetaType<AlerterConfig>("AlerterConfig");
-  // TODO is the following really/still needed ?
-  qRegisterMetaType<QHash<QString,Task>>("QHash<QString,Task>");
-  qRegisterMetaType<QHash<QString,TaskGroup>>("QHash<QString,TaskGroup>");
-  qRegisterMetaType<QHash<QString,Cluster>>("QHash<QString,Cluster>");
-  qRegisterMetaType<QHash<QString,Host>>("QHash<QString,Host>");
-  qRegisterMetaType<QHash<QString,Calendar>>("QHash<QString,Calendar>");
-  qRegisterMetaType<QHash<QString,qint64> >("QHash<QString,qint64>");
+  qMetaTypeId<QList<EventSubscription>>();
+  qMetaTypeId<QList<LogFile>>();
+  qMetaTypeId<SchedulerConfig>();
+  qMetaTypeId<ParamSet>();
   return 0;
 }
 Q_CONSTRUCTOR_FUNCTION(staticInit)

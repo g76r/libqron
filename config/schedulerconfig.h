@@ -89,6 +89,7 @@ private:
   QString recomputeId() const;
 };
 
+Q_DECLARE_METATYPE(SchedulerConfig)
 Q_DECLARE_TYPEINFO(SchedulerConfig, Q_MOVABLE_TYPE);
 
 #endif // SCHEDULERCONFIG_H

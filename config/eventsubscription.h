@@ -76,6 +76,7 @@ public:
   QStringList workflowTargetsLocalIds() const;
 };
 
+Q_DECLARE_METATYPE(EventSubscription)
 Q_DECLARE_TYPEINFO(EventSubscription, Q_MOVABLE_TYPE);
 
 #endif // EVENTSUBSCRIPTION_H

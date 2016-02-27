@@ -35,6 +35,7 @@ private:
     return (const ConfigHistoryEntryData*)SharedUiItem::data(); }
 };
 
+Q_DECLARE_METATYPE(ConfigHistoryEntry)
 Q_DECLARE_TYPEINFO(ConfigHistoryEntry, Q_MOVABLE_TYPE);
 
 #endif // CONFIGHISTORYENTRY_H

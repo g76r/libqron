@@ -72,6 +72,7 @@ private:
     return (const WorkflowTransitionData*)SharedUiItem::data(); }
 };
 
+Q_DECLARE_METATYPE(WorkflowTransition)
 Q_DECLARE_TYPEINFO(WorkflowTransition, Q_MOVABLE_TYPE);
 
 /** Core task definition object, being it a standalone task or workflow. */

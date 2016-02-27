@@ -117,6 +117,7 @@ inline TaskInstancePseudoParamsProvider TaskInstance::pseudoParams() const {
   return TaskInstancePseudoParamsProvider(*this);
 }
 
+Q_DECLARE_METATYPE(TaskInstance)
 Q_DECLARE_TYPEINFO(TaskInstance, Q_MOVABLE_TYPE);
 
 #endif // TASKINSTANCE_H

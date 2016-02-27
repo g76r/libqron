@@ -41,6 +41,7 @@ public:
   PfNode toPfNode() const;
 };
 
+Q_DECLARE_METATYPE(LogFile)
 Q_DECLARE_TYPEINFO(LogFile, Q_MOVABLE_TYPE);
 
 #endif // LOGFILE_H

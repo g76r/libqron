@@ -62,6 +62,7 @@ private:
     return (const AlerterConfigData *)SharedUiItem::data(); }
 };
 
+Q_DECLARE_METATYPE(AlerterConfig)
 Q_DECLARE_TYPEINFO(AlerterConfig, Q_MOVABLE_TYPE);
 
 #endif // ALERTERCONFIG_H

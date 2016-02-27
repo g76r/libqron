@@ -15,10 +15,17 @@
 #include "pf/pfdomhandler.h"
 #include <QThread>
 
+static int staticInit() {
+  qMetaTypeId<ConfigHistoryEntry>();
+  qMetaTypeId<QList<ConfigHistoryEntry>>();
+  qMetaTypeId<SchedulerConfig>();
+  qMetaTypeId<PfNode>();
+  return 0;
+}
+Q_CONSTRUCTOR_FUNCTION(staticInit)
+
 ConfigRepository::ConfigRepository(QObject *parent, Scheduler *scheduler)
   : QObject(parent), _scheduler(scheduler) {
-  qRegisterMetaType<ConfigHistoryEntry>("ConfigHistoryEntry");
-  qRegisterMetaType<QList<ConfigHistoryEntry> >("QList<ConfigHistoryEntry>");
 }
 
 SchedulerConfig ConfigRepository::parseConfig(

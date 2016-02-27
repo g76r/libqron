@@ -54,6 +54,7 @@ private:
     return (const AlertSettingsData*)SharedUiItem::data(); }
 };
 
+Q_DECLARE_METATYPE(AlertSettings)
 Q_DECLARE_TYPEINFO(AlertSettings, Q_MOVABLE_TYPE);
 
 #endif // ALERTSETTINGS_H

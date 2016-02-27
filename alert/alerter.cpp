@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,6 +28,17 @@
 
 // LATER replace this 10" ugly batch with predictive timer (min(timestamps))
 #define ASYNC_PROCESSING_INTERVAL 10000
+
+static int staticInit() {
+  qMetaTypeId<QList<AlertSubscription>>();
+  qMetaTypeId<AlertSubscription>();
+  qMetaTypeId<AlertSettings>();
+  qMetaTypeId<Alert>();
+  qMetaTypeId<AlerterConfig>();
+  qMetaTypeId<ParamSet>();
+  return 0;
+}
+Q_CONSTRUCTOR_FUNCTION(staticInit)
 
 class GridboardThread : public QThread {
   friend class Alerter;
@@ -86,13 +97,6 @@ Alerter::Alerter() : QObject(0), _alerterThread(new QThread),
   connect(timer, SIGNAL(timeout()), this, SLOT(asyncProcessing()));
   timer->start(ASYNC_PROCESSING_INTERVAL);
   moveToThread(_alerterThread);
-  qRegisterMetaType<QList<AlertSubscription> >("QList<AlertSubscription>");
-  qRegisterMetaType<AlertSubscription>("AlertSubscription");
-  qRegisterMetaType<AlertSettings>("AlertSettings");
-  qRegisterMetaType<Alert>("Alert");
-  qRegisterMetaType<ParamSet>("ParamSet");
-  qRegisterMetaType<QDateTime>("QDateTime");
-  qRegisterMetaType<QStringList>("QStringList");
 }
 
 Alerter::~Alerter() {

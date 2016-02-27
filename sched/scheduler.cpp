@@ -37,6 +37,16 @@
 
 static SharedUiItem nullItem;
 
+static int staticInit() {
+  qMetaTypeId<TaskInstance>();
+  qMetaTypeId<QList<TaskInstance>>();
+  qRegisterMetaType<QHash<QString,qint64>>("QHash<QString,qint64>");
+  qMetaTypeId<ParamSet>();
+  qMetaTypeId<WorkflowTransition>();
+  return 0;
+}
+Q_CONSTRUCTOR_FUNCTION(staticInit)
+
 Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
   _alerter(new Alerter), _authenticator(new InMemoryAuthenticator(this)),
   _usersDatabase(new InMemoryUsersDatabase(this)),
@@ -49,10 +59,6 @@ Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
   connect(this, &Scheduler::destroyed, _thread, &QThread::quit);
   connect(_thread, &QThread::finished, _thread, &QThread::deleteLater);
   _thread->start();
-  qRegisterMetaType<TaskInstance>("TaskInstance");
-  qRegisterMetaType<QList<TaskInstance> >("QList<TaskInstance>");
-  // TODO not sure this is needed:
-  qRegisterMetaType<QHash<QString,QHash<QString,qint64>>>("QHash<QString,QHash<QString,qint64>>");
   QTimer *timer = new QTimer(this);
   connect(timer, &QTimer::timeout, this, &Scheduler::periodicChecks);
   timer->start(60000);

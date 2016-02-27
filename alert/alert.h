@@ -93,6 +93,7 @@ inline AlertPseudoParamsProvider Alert::pseudoParams() const {
   return AlertPseudoParamsProvider(*this);
 }
 
+Q_DECLARE_METATYPE(Alert)
 Q_DECLARE_TYPEINFO(Alert, Q_MOVABLE_TYPE);
 
 #endif // ALERT_H

@@ -74,6 +74,7 @@ private:
     return (const AlertSubscriptionData*)SharedUiItem::data(); }
 };
 
+Q_DECLARE_METATYPE(AlertSubscription)
 Q_DECLARE_TYPEINFO(AlertSubscription, Q_MOVABLE_TYPE);
 
 #endif // ALERTSUBSCRIPTION_H
