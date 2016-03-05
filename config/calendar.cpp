@@ -126,7 +126,7 @@ Calendar &Calendar::append(QDate begin, QDate end, bool include) {
 bool Calendar::isIncluded(QDate date) const {
   const CalendarData *d = data();
   if (!d)
-    return false;
+    return true;
   foreach (const CalendarData::Rule &r, d->_rules) {
     if ((!r._begin.isValid() || r._begin <= date)
         && (!r._end.isValid() || r._end <= date))
