@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,6 +35,7 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const {
     switch(index.column()) {
     case 18:
       // MAYDO move that to html delegate (which needs having access to the Task)
+      // TODO support for action columns larger than HtmlItemDelegate::maxCellContentLength
       if (!_customActions.isEmpty()) {
         Task t = _tasks.value(index.row());
         TaskPseudoParamsProvider ppp = t.pseudoParams();
