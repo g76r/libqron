@@ -147,7 +147,10 @@ void Executor::sshMean() {
       value.replace('\'', QString());
       sshCmdline << key+"='"+value+"'";
     }
-  sshCmdline << cmdline;
+  foreach (QString unquoted, cmdline) {
+    QString quoted = '\'' + unquoted.replace("'", "'\\''") + '\'';
+    sshCmdline << quoted;
+  }
   execProcess(sshCmdline, sysenv);
 }
 
