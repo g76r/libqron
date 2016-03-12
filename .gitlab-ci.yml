@@ -4,7 +4,11 @@ stages:
 build_main:
   stage: build
   script:
-    - qmake
+    - git clone https://gitlab.com/g76r/libqtpf.git
+    - cd libqtpf && qmake && make
+    - git clone https://gitlab.com/g76r/libqtssu.git
+    - cd libqtssu && qmake && make
+    - qmake INCLUDEPATH+=libqtpf INCLUDEPATH+=libqtssu
     - make
   tags:
     - qt
