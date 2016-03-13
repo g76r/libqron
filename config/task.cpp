@@ -915,8 +915,11 @@ QVariant TaskData::uiData(int section, int role) const {
       return _label.isEmpty() ? _localId : _label;
     case 3:
       return Task::meanAsString(_mean);
-    case 4:
-      return _command;
+    case 4: {
+      QString escaped = _command;
+      escaped.replace('\\', "\\\\");
+      return escaped;
+    }
     case 5:
       return _target;
     case 6:
@@ -1174,8 +1177,13 @@ PfNode TaskData::toPfNode() const {
   // or for means that do not use it (Workflow and DoNothing)
   if (!_command.isEmpty()
       && _mean != Task::DoNothing
-      && _mean != Task::Workflow)
-    node.setAttribute("command", _command);
+      && _mean != Task::Workflow) {
+    // LATER store _command as QStringList _commandArgs instead, to make model consistent rather than splitting the \ escaping policy between here, uiData() and executor.cpp
+    // moreover this is not consistent between means (luckily there are no backslashes nor spaces in http uris)
+    QString escaped = _command;
+    escaped.replace('\\', "\\\\");
+    node.setAttribute("command", escaped);
+  }
 
   // triggering and constraints attributes
   PfNode triggers("trigger");
