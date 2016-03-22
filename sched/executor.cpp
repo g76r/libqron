@@ -315,6 +315,10 @@ void Executor::httpMean() {
       connect(_reply, SIGNAL(error(QNetworkReply::NetworkError)),
               this, SLOT(replyError(QNetworkReply::NetworkError)));
       connect(_reply, SIGNAL(finished()), this, SLOT(replyFinished()));
+    } else {
+      Log::error(_instance.task().id(), _instance.idAsLong())
+          << "cannot start HTTP request";
+      taskInstanceFinishing(false, -1);
     }
   } else {
     Log::error(_instance.task().id(), _instance.idAsLong())
