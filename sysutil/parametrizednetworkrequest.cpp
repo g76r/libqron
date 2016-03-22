@@ -42,8 +42,8 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
   qurl.setUserName(QString());
   qurl.setPassword(QString());
   setUrl(qurl);
-  _method = methodFromText(params.value("method", "GET",
-                                        paramsEvaluationContext));
+  _method = HttpRequest::methodFromText(
+        params.value("method", "GET", paramsEvaluationContext));
   QString contentType = params.value("content-type", paramsEvaluationContext);
   if (contentType.isNull()
       && (_method == HttpRequest::POST || _method == HttpRequest::PUT))
@@ -119,21 +119,4 @@ QNetworkReply *ParametrizedNetworkRequest::performRequest(
     });
   }*/
   return reply;
-}
-
-// FIXME move to HttpRequest
-HttpRequest::HttpRequestMethod ParametrizedNetworkRequest::methodFromText(
-    QString name) {
-  if (name.compare("GET", Qt::CaseInsensitive) == 0)
-    return HttpRequest::GET;
-  else if (name.compare("POST", Qt::CaseInsensitive) == 0)
-    return HttpRequest::POST;
-  else if (name.compare("HEAD", Qt::CaseInsensitive) == 0)
-    return HttpRequest::HEAD;
-  else if (name.compare("PUT", Qt::CaseInsensitive) == 0)
-    return HttpRequest::PUT;
-  else if (name.compare("DELETE", Qt::CaseInsensitive) == 0)
-    return HttpRequest::DELETE;
-  else
-    return HttpRequest::NONE;
 }

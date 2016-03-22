@@ -52,7 +52,6 @@ public:
   QNetworkReply *performRequest(
       QNetworkAccessManager *nam, QString payload = QString(),
       ParamsProvider *payloadEvaluationContext = 0);
-  static HttpRequest::HttpRequestMethod methodFromText(QString name);
 };
 
 #endif // PARAMETRIZEDHTTPREQUEST_H
