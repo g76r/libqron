@@ -1,4 +1,4 @@
-/* Copyright 2014 Hallowyn and others.
+/* Copyright 2014-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,6 +28,10 @@
  * - "port" to set TCP port number (overrinding the one specified in the url)
  * - "payload" to set the reuqest payload/body
  * - "content-type" to set payload (and header) content type
+ * - "follow-redirect" if true allows following redirect (using default max)
+ *       see QNetworkRequest::FollowRedirectsAttribute
+ * - "redirect-max" if > 0 allows following redirect, using choosen max
+ *       see QNetworkRequest::setMaximumRedirectsAllowed()
  */
 class ParametrizedNetworkRequest : public QNetworkRequest {
   QString _logTask, _logExecId;

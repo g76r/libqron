@@ -51,6 +51,19 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
   if (!contentType.isNull())
     setHeader(QNetworkRequest::ContentTypeHeader, contentType);
   _payloadFromParams = params.rawValue("payload");
+#if QT_VERSION >= 0x050600
+  bool followRedirect = params.valueAsBool("follow-redirect", false,
+                                           paramsEvaluationContext);
+  int redirectMax = params.valueAsInt("redirect-max", -1,
+                                      paramsEvaluationContext);
+  if (redirectMax > 0)
+    followRedirect = true;
+  if (followRedirect) {
+    setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
+    if (redirectMax > 0)
+      setMaximumRedirectsAllowed(redirectMax);
+  }
+#endif
 }
 
 QNetworkReply *ParametrizedNetworkRequest::performRequest(
@@ -108,6 +121,7 @@ QNetworkReply *ParametrizedNetworkRequest::performRequest(
   return reply;
 }
 
+// FIXME move to HttpRequest
 HttpRequest::HttpRequestMethod ParametrizedNetworkRequest::methodFromText(
     QString name) {
   if (name.compare("GET", Qt::CaseInsensitive) == 0)
