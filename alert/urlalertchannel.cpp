@@ -40,20 +40,22 @@ void UrlAlertChannel::doNotifyAlert(Alert alert) {
   case Alert::Raised:
     if (!alert.subscription().notifyEmit())
       return;
-    if (params.contains("emitaddress"))
-      address = params.rawValue("emitaddress");
-    if (params.contains("emitmethod"))
-      params.setValue("method", params.rawValue("emitmethod"));
+    if (params.contains(QStringLiteral("emitaddress")))
+      address = params.rawValue(QStringLiteral("emitaddress"));
+    if (params.contains(QStringLiteral("emitmethod")))
+      params.setValue(QStringLiteral("method"),
+                      params.rawValue(QStringLiteral("emitmethod")));
     message = alert.subscription().emitMessage(alert);
 
     break;
   case Alert::Canceled:
     if (!alert.subscription().notifyCancel())
       return;
-    if (params.contains("canceladdress"))
-      address = params.rawValue("canceladdress");
-    if (params.contains("cancelmethod"))
-      params.setValue("method", params.rawValue("cancelmethod"));
+    if (params.contains(QStringLiteral("canceladdress")))
+      address = params.rawValue(QStringLiteral("canceladdress"));
+    if (params.contains(QStringLiteral("cancelmethod")))
+      params.setValue(QStringLiteral("method"),
+                      params.rawValue(QStringLiteral("cancelmethod")));
     message = alert.subscription().cancelMessage(alert);
     break;
   case Alert::Rising:

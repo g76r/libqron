@@ -31,7 +31,7 @@ void ConfigUtils::loadParamSet(PfNode parentnode, ParamSet *params,
       Log::warning() << "invalid empty param in " << parentnode.toPf();
     else {
       QString value = p.second;
-      params->setValue(p.first, value.isNull() ? QString("") : value);
+      params->setValue(p.first, value.isNull() ? QStringLiteral("") : value);
     }
   }
 }

@@ -477,7 +477,7 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
     }
   }
   emit noticePosted(notice, params);
-  params.setValue("!notice", notice);
+  params.setValue(QStringLiteral("!notice"), notice);
   foreach (EventSubscription sub, config().onnotice())
     sub.triggerActions(params);
 }

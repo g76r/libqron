@@ -481,7 +481,7 @@ void Executor::doActivateWorkflowTransition(WorkflowTransition transition,
 }
 
 void Executor::noticePosted(QString notice, ParamSet params) {
-  params.setValue("!notice", notice);
+  params.setValue(QStringLiteral("!notice"), notice);
   Step step = _instance.task().steps().value("$noticetrigger_"+notice);
   foreach (EventSubscription es, step.onreadyEventSubscriptions()) {
     Log::debug(_instance.task().id(), _instance.idAsLong())
@@ -515,7 +515,7 @@ static QRegularExpression notIdentifier("[^a-zA-Z_0-9]+");
 
 void Executor::prepareEnv(QProcessEnvironment *sysenv,
                           QHash<QString,QString> *setenv) {
-  if (_instance.task().params().valueAsBool("clearsysenv"))
+  if (_instance.task().params().valueAsBool(QStringLiteral("clearsysenv")))
     *sysenv = QProcessEnvironment();
   else
     *sysenv = _baseenv;

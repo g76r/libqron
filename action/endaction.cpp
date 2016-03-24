@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,10 +22,10 @@ public:
     : ActionData(scheduler), _success(success), _returnCode(returnCode) {
   }
   QString toString() const {
-    return "->$end";
+    return QStringLiteral("->$end");
   }
   QString actionType() const {
-    return "end";
+    return QStringLiteral("end");
   }
   void trigger(EventSubscription subscription,
                                  ParamSet eventContext,
@@ -55,8 +55,8 @@ public:
           << subscription.eventName();
       return;
     }
-    eventContext.setValue("!success", (_success ? "true" : "false"));
-    eventContext.setValue("!returncode", QString::number(_returnCode));
+    eventContext.setValue(QStringLiteral("!success"), _success);
+    eventContext.setValue(QStringLiteral("!returncode"), _returnCode);
     if (_scheduler)
       _scheduler->activateWorkflowTransition(workflow, transition,
                                              eventContext);
@@ -64,18 +64,20 @@ public:
   PfNode toPfNode() const{
     PfNode node(actionType());
     if (!_success)
-      node.appendChild(PfNode("failure"));
+      node.appendChild(PfNode(QStringLiteral("failure")));
     if (_returnCode)
-      node.appendChild(PfNode("returncode", QString::number(_returnCode)));
+      node.appendChild(PfNode(QStringLiteral("returncode"),
+                              QString::number(_returnCode)));
     return node;
   }
   QString targetName() const {
-    return "$end";
+    return QStringLiteral("$end");
   }
 };
 
 EndAction::EndAction(Scheduler *scheduler, PfNode node)
-  : Action(new EndActionData(scheduler, !node.hasChild("failure"),
+  : Action(new EndActionData(scheduler,
+                             !node.hasChild(QStringLiteral("failure")),
                              node.longAttribute("returncode", 0))) {
   // LATER success and returncode should be evaluatable strings
 }
