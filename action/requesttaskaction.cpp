@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,6 +14,7 @@
 #include "requesttaskaction.h"
 #include "action_p.h"
 #include "config/configutils.h"
+#include "util/paramsprovidermerger.h"
 
 class RequestTaskActionData : public ActionData {
 public:
@@ -28,11 +29,11 @@ public:
                                              TaskInstance instance) const {
     ParamSet overridingParams;
     TaskInstancePseudoParamsProvider ppp = instance.pseudoParams();
+    ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp);
     foreach (QString key, _overridingParams.keys())
-      overridingParams
-          .setValue(key, eventContext
-                    .value(_overridingParams.rawValue(key), &ppp));
-    //Log::fatal() << "******************* " << requestParams;
+      overridingParams.setValue(key, _overridingParams.value(key, &ppm));
+    //Log::fatal() << "******************* " << eventContext << overridingParams
+    //             << _overridingParams;
     return overridingParams;
   }
   void trigger(EventSubscription subscription, ParamSet eventContext,
@@ -69,7 +70,7 @@ public:
     return "*" + _id;
   }
   QString actionType() const {
-    return "requesttask";
+    return QStringLiteral("requesttask");
   }
   QString targetName() const {
     return _id;

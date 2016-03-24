@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,6 +14,7 @@
 #include "postnoticeaction.h"
 #include "action_p.h"
 #include "config/configutils.h"
+#include "util/paramsprovidermerger.h"
 
 class PostNoticeActionData : public ActionData {
 public:
@@ -26,7 +27,7 @@ public:
     return "^"+_notice;
   }
   QString actionType() const {
-    return "postnotice";
+    return QStringLiteral("postnotice");
   }
   void trigger(EventSubscription subscription, ParamSet eventContext,
                TaskInstance taskContext) const {
@@ -38,10 +39,10 @@ public:
     if (_scheduler) {
       ParamSet noticeParams;
       TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
+      ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp);
       foreach (QString key, _noticeParams.keys())
-        noticeParams.setValue(
-              key, eventContext.evaluate(_noticeParams.value(key), &ppp));
-      _scheduler->postNotice(eventContext.evaluate(_notice, &ppp),
+        noticeParams.setValue(key, _noticeParams.value(key, &ppm));
+      _scheduler->postNotice(_noticeParams.evaluate(_notice, &ppm),
                              noticeParams);
     }
   }

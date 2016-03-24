@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -40,13 +40,14 @@ public:
                TaskInstance taskContext) const {
     Q_UNUSED(subscription)
     // LATER support binary payloads
-    ParamsProviderMerger evaluationContext(&eventContext);
     TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
-    evaluationContext.append(&ppp);
+    ParamsProviderMerger evaluationContext =
+        ParamsProviderMerger(_params)(eventContext)(&ppp);
     if (_address.startsWith("udp:", Qt::CaseInsensitive)) {
       // LATER run UDP in a separate thread to avoid network/dns/etc. hangups
       ParametrizedUdpSender sender(_address, _params, &evaluationContext,
-                                   taskContext.task().id(), taskContext.idAsLong());
+                                   taskContext.task().id(),
+                                   taskContext.idAsLong());
       sender.performRequest(_message, &evaluationContext);
     } else {
       ParametrizedNetworkRequest request(
@@ -65,12 +66,12 @@ public:
     return "requesturl{ "+_address+" }";
   }
   QString actionType() const {
-    return "requesturl";
+    return QStringLiteral("requesturl");
   }
   PfNode toPfNode() const{
     PfNode node(actionType(), _message);
-    node.appendChild(PfNode("address", _address));
-    ConfigUtils::writeParamSet(&node, _params, "param");
+    node.appendChild(PfNode(QStringLiteral("address"), _address));
+    ConfigUtils::writeParamSet(&node, _params, QStringLiteral("param"));
     return node;
   }
 };

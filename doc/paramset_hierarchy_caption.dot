@@ -14,6 +14,7 @@ ru2
 // actors
 node [shape=hexagon,style=dashed,color="",label="actor"]
 a1
+a2
 
 // ParamSet inheritage (mostly in configuration)
 edge [dir=back,arrowtail=onormal,label="paramset inheritage\n(mostly in config)",color=navy,fontcolor=navy]
@@ -24,8 +25,11 @@ edge [dir=forward,arrowhead=vee,label="paramset injection\n(at runtime)",color=b
 a1 -- ru2
 ru1 -- ru2
 
+// triggering w/o params injection
+a2 -- ru2 [style=dashed,label="triggering w/o\nparams injection"]
+
 // context for parameters evaluation
-edge [dir=forward,arrowhead=dot,label="evaluation\ncontext",color=orange4,fontcolor=orange4]
+edge [dir=forward,arrowhead=dot,label="evaluation\ncontext",color=orange4,fontcolor=orange4,headlabel="priority (highest = 1)"]
 co3 -- ru1
 
 }
