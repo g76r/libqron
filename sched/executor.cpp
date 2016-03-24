@@ -463,9 +463,9 @@ void Executor::activateWorkflowTransition(WorkflowTransition transition,
 void Executor::doActivateWorkflowTransition(WorkflowTransition transition,
                                             ParamSet eventContext) {
   // if target is "$end", finish workflow
-  if (transition.targetLocalId() == "$end") {
-    finishWorkflow(eventContext.valueAsBool("!success", true),
-                   eventContext.valueAsInt("!returncode", 0));
+  if (transition.targetLocalId() == QStringLiteral("$end")) {
+    finishWorkflow(eventContext.valueAsBool(QStringLiteral("!success"), true),
+                   eventContext.valueAsInt(QStringLiteral("!returncode"), 0));
     return;
   }
   // otherwise this is a regular step to step transition
