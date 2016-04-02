@@ -183,6 +183,9 @@ SchedulerConfigData::SchedulerConfigData(PfNode root, Scheduler *scheduler,
       _hosts.insert(host.id(), host);
     }
   }
+  // create default "localhost" host if it is not declared
+  if (!_hosts.contains("localhost"))
+    _hosts.insert("localhost", Host(PfNode("host", "localhost")));
   _clusters.clear();
   foreach (PfNode node, root.childrenByName("cluster")) {
     Cluster cluster(node);
