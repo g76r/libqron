@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -34,6 +34,7 @@
 #include "trigger/noticetrigger.h"
 
 #define REEVALUATE_QUEUED_REQUEST_EVENT (QEvent::Type(QEvent::User+1))
+#define PERIODIC_CHECKS_INTERVAL_MS 60000
 
 static SharedUiItem nullItem;
 
@@ -61,7 +62,7 @@ Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
   _thread->start();
   QTimer *timer = new QTimer(this);
   connect(timer, &QTimer::timeout, this, &Scheduler::periodicChecks);
-  timer->start(60000);
+  timer->start(PERIODIC_CHECKS_INTERVAL_MS);
   connect(_accessControlFilesWatcher, &QFileSystemWatcher::fileChanged,
           this, &Scheduler::reloadAccessControlConfig);
   moveToThread(_thread);

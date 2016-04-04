@@ -118,7 +118,7 @@ void Executor::sshMean() {
                                                     "true");
   QString identity = _instance.params().value("ssh.identity");
   QStringList options = _instance.params().valueAsStrings("ssh.options");
-  bool disablepty = _instance.params().value("ssh.disablepty") == "true";
+  bool disablepty = _instance.params().valueAsBool("ssh.disablepty", false);
   sshCmdline << "ssh" << "-oLogLevel=ERROR" << "-oEscapeChar=none"
              << "-oServerAliveInterval=10" << "-oServerAliveCountMax=3"
              << "-oIdentitiesOnly=yes" << "-oKbdInteractiveAuthentication=no"
