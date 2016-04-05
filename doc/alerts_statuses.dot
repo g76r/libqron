@@ -1,4 +1,5 @@
 graph g {
+  newrank=true;
   graph [compound=true,style=rounded,ranksep=1.5]
   edge [arrowhead=vee,dir=forward]
   node [shape=box,style="rounded,filled",fillcolor=grey80]
@@ -9,7 +10,7 @@ graph g {
     subgraph cluster_rising { rising; mayrise }
   }
   subgraph cluster_raised { raised; dropping }
-  rising -- raised [ltail=cluster_rising,label="after rise delay\n(even if mayrise\ndelay is reached)"]
+  mayrise -- raised [ltail=cluster_rising,label="after rise delay\n(even if mayrise\ndelay is reached)",constraintx=false]
   mayrise -- nonexistent [label="after mayrise delay"]
   dropping -- canceled [label="after drop delay"]
   canceled -- nonexistent [weight=0,label="immediate transition"]
@@ -21,9 +22,11 @@ graph g {
   rising -- mayrise
   raised -- dropping
   edge [color=orangered,fontcolor=orangered,label="raiseAlertImmediately()"]
-  nonexistent -- raised [ltail=cluster_nonexistent]
+  nonexistent -- raised [ltail=cluster_nonexistent,constraintx=false]
   dropping -- raised
   edge [color=navy,fontcolor=navy,label="cancelAlertImmediately()"]
-  raised -- canceled [ltail=cluster_raised]
-  mayrise -- nonexistent [ltail=cluster_rising]
+  raised -- canceled [ltail=cluster_raised,constraintx=false]
+  mayrise -- nonexistent [ltail=cluster_rising,constraintx=false]
+  { rank=same; rising; raised }
+  { rank=same; nonexistent; canceled }
 }

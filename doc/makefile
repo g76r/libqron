@@ -1,4 +1,4 @@
-TARGETS=taskrequests_statuses.png paramset_hierarchy.png paramset_hierarchy_caption.png alerts_statuses.svg
+TARGETS=taskrequests_statuses.png paramset_hierarchy.png paramset_hierarchy_caption.png alerts_statuses.svg paramset_hierarchy.svg paramset_hierarchy_caption.svg taskrequests_statuses.svg 
 
 .PHONY: default all clean re
 
