@@ -403,7 +403,7 @@ QString Gridboard::toHtml() const {
   QString tdClassError = d->_params.value(
         QStringLiteral("gridboard.tdclass.error"), QStringLiteral("danger"));
   QString tdClassUnknown = d->_params.value(
-        QStringLiteral("gridboard.tdclass.warning"));
+        QStringLiteral("gridboard.tdclass.unknown"));
   QString s;
   QList<QSharedPointer<TreeItem>> componentRoots = d->_dataComponents;
   // sort components in the order of their first child
