@@ -45,15 +45,15 @@ alerts -- gridboard
 
 // parameter injection at runtime
 edge [dir=forward,arrowhead=vee,color=black,fontcolor=black]
-workflowtaskinstance -- taskinstance [label="(if workflow subtask)"]
-crontrigger -- taskinstance
-noticetrigger -- taskinstance
+workflowtaskinstance -- taskinstance [label="(if workflow subtask)",headlabel=2]
+crontrigger -- taskinstance [headlabel=1]
+noticetrigger -- taskinstance [headlabel=1]
 notice -- event [label="onnotice\nevent"]
 restapi [label="rest api"]
 restapi -- notice [label="postnotice\ncall"]
-requesttaskaction -- taskinstance
+requesttaskaction -- taskinstance [headlabel=1]
 postnoticeaction -- notice
-restapi -- taskinstance [label="requesttask\ncall"]
+restapi -- taskinstance [label="requesttask\ncall",headlabel=1]
 crontrigger -- event [label="ontrigger\nevent\n(in workflow)"]
 noticetrigger -- event [label="ontrigger\nevent\n(in workflow)"]
 

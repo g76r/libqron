@@ -15,6 +15,7 @@ ru2
 node [shape=hexagon,style=dashed,color="",label="actor"]
 a1
 a2
+{ rank=min; a1; a2; }
 
 // ParamSet inheritage (mostly in configuration)
 edge [dir=back,arrowtail=onormal,label="paramset inheritage\n(mostly in config)",color=navy,fontcolor=navy]
@@ -23,7 +24,7 @@ co1 -- co2 -- ru1
 // parameter injection at runtime
 edge [dir=forward,arrowhead=vee,label="paramset injection\n(at runtime)",color=black,fontcolor=black]
 a1 -- ru2
-ru1 -- ru2
+ru1 -- ru2 [headlabel="priority (highest = 1)"]
 
 // triggering w/o params injection
 a2 -- ru2 [style=dashed,label="triggering w/o\nparams injection"]
