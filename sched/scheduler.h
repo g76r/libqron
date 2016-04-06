@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -56,6 +56,8 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   QFileSystemWatcher *_accessControlFilesWatcher;
   PfNode _accessControlNode;
   QHash<QString, QHash<QString,qint64>> _consumedResources; // <host,<resource,quantity>>
+  std::random_device _randomDevice;
+  std::mt19937 _uniformRandomNumberGenerator;
 
 public:
   Scheduler();

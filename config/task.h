@@ -125,6 +125,10 @@ public:
   int instancesCount() const;
   /** Atomic fetch-and-add of the current instances count. */
   int fetchAndAddInstancesCount(int valueToAdd) const;
+  /** Executions count. */
+  int executionsCount() const;
+  /** Atomic fetch-and-add of the executions count. */
+  int fetchAndAddExecutionsCount(int valueToAdd) const;
   QList<QRegExp> stderrFilters() const;
   void appendStderrFilter(QRegExp filter);
   void triggerStartEvents(TaskInstance instance) const;

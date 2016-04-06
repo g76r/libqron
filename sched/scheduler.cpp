@@ -55,7 +55,8 @@ Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
   _startdate(QDateTime::currentDateTime().toMSecsSinceEpoch()),
   _configdate(LLONG_MIN), _execCount(0), _runningTasksHwm(0),
   _queuedTasksHwm(0),
-  _accessControlFilesWatcher(new QFileSystemWatcher(this)) {
+  _accessControlFilesWatcher(new QFileSystemWatcher(this)),
+  _uniformRandomNumberGenerator(_randomDevice()) {
   _thread->setObjectName("SchedulerThread");
   connect(this, &Scheduler::destroyed, _thread, &QThread::quit);
   connect(_thread, &QThread::finished, _thread, &QThread::deleteLater);
@@ -577,12 +578,32 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
       }
     }
   }
-  QList<Host> hosts;
+  SharedUiItemList<Host> hosts;
   Host host = config().hosts().value(target);
-  if (host.isNull())
-    hosts.append(config().clusters().value(target).hosts());
-  else
+  if (host.isNull()) {
+    Cluster cluster = config().clusters().value(target);
+    hosts = cluster.hosts();
+    switch (cluster.balancing()) {
+    case Cluster::First:
+    case Cluster::Each:
+    case Cluster::UnknownBalancing:
+      // nothing to do
+      break;
+    case Cluster::Random:
+      std::shuffle(hosts.begin(), hosts.end(), _uniformRandomNumberGenerator);
+      break;
+    case Cluster::RoundRobin:
+      // perform circular permutation of hosts depending on tasks exec count
+      if (!hosts.isEmpty())
+        for (int shift = task.executionsCount() % hosts.size(); shift; --shift)
+          hosts.append(hosts.takeFirst());
+      break;
+    }
+    //qDebug() << "*** balancing:" << cluster.balancingAsString() << "hosts:"
+    //         << hosts.join(' ') << "exec:" << task.executionsCount();
+  } else {
     hosts.append(host);
+  }
   if (hosts.isEmpty()) {
     Log::error(taskId, instance.idAsLong()) << "cannot execute task '" << taskId
         << "' because its target '" << target << "' is invalid";
@@ -600,10 +621,10 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
     emit itemChanged(task, task, QStringLiteral("task"));
     return true;
   }
-  // LATER implement other cluster balancing methods than "first"
   // LATER implement best effort resource check for forced requests
   QHash<QString,qint64> taskResources = task.resources();
   foreach (Host h, hosts) {
+    // LATER skip hosts currently down or disabled
     if (!taskResources.isEmpty()) {
       QHash<QString,qint64> hostConsumedResources
           = _consumedResources.value(h.id());
@@ -651,6 +672,7 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
               executor, &Executor::noticePosted);
     }
     executor->execute(instance);
+    task.fetchAndAddExecutionsCount(1);
     ++_execCount;
     reevaluateQueuedRequests();
     _runningTasks.insert(instance, executor);

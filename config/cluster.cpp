@@ -20,6 +20,7 @@
 #include "log/log.h"
 #include "configutils.h"
 #include "modelview/shareduiitemdocumentmanager.h"
+#include "util/containerutils.h"
 
 static QString _uiHeaderNames[] = {
   "Id", // 0
@@ -55,8 +56,8 @@ Cluster::Cluster(PfNode node) {
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
                                      ConfigUtils::FullyQualifiedId);
   d->_label = node.attribute("label");
-  d->_balancing = balancingFromString(node.attribute("balancing", "first")
-                                        .trimmed().toLower());
+  d->_balancing = balancingFromString(node.attribute("balancing", "roundrobin")
+                                      .trimmed().toLower());
   if (d->_balancing == UnknownBalancing) {
     Log::error() << "invalid cluster balancing method: " << node.toString();
     delete d;
@@ -203,23 +204,21 @@ void Cluster::setHosts(QList<Host> hosts) {
     d->_hosts = hosts;
 }
 
-Cluster::Balancing Cluster::balancingFromString(QString method) {
-  if (method == "first")
-    return First;
-  if (method == "each")
-    return Each;
-  return UnknownBalancing;
+static QHash<Cluster::Balancing,QString> _balancingtoText {
+  { Cluster::First, "first" },
+  { Cluster::Each, "each" },
+  { Cluster::RoundRobin, "roundrobin" },
+  { Cluster::Random, "random" },
+};
+
+static QHash<QString,Cluster::Balancing> _balancingFromText {
+  ContainerUtils::reversed(_balancingtoText)
+};
+
+QString Cluster::balancingAsString(Cluster::Balancing balancing) {
+  return _balancingtoText.value(balancing);
 }
 
-QString Cluster::balancingAsString(Cluster::Balancing method) {
-  // LATER optimize with const QString
-  switch (method) {
-  case First:
-    return "first";
-  case Each:
-    return "each";
-  case UnknownBalancing:
-    ;
-  }
-  return QString();
+Cluster::Balancing Cluster::balancingFromString(QString balancing) {
+  return _balancingFromText.value(balancing, UnknownBalancing);
 }

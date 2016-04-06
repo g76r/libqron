@@ -1,4 +1,4 @@
-/* Copyright 2014 Hallowyn and others.
+/* Copyright 2014-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -48,7 +48,8 @@ static QString _uiHeaderNames[] = {
   "Has triggers with calendars", // 30
   "Workflow task",
   "Last task instance id",
-  "Additional info"
+  "Additional info",
+  "Executions count",
 };
 
 #endif // TASK_P_H

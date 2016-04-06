@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -148,7 +148,8 @@ public:
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
   mutable qint64 _lastExecution, _nextScheduledExecution;
-  mutable QAtomicInt _instancesCount;
+  // LATER QAtomicInt is not needed since only one thread changes these values (Executor's)
+  mutable QAtomicInt _instancesCount, _executionsCount;
   mutable bool _enabled, _lastSuccessful;
   mutable int _lastReturnCode, _lastTotalMillis;
   mutable quint64 _lastTaskInstanceId;
@@ -268,7 +269,7 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
                          << " on task " << d->_localId;
           } else {
             Log::error() << "task with invalid cron trigger: "
-                         << node.toString();
+                         << grandchild.toString();
             delete d;
             return;
           }
@@ -387,7 +388,7 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
           d->_workflowCronTriggersByLocalId.insert(triggerId, trigger);
         } else
           Log::warning() << "ignoring invalid cron trigger in ontrigger: "
-                         << node.toString();
+                         << grandchild.toString();
       }
       foreach (PfNode grandchild, child.childrenByName("notice")) {
         NoticeTrigger trigger(grandchild, namedCalendars);
@@ -469,6 +470,7 @@ void Task::copyLiveAttributesFromOldTask(Task oldTask) {
   d->_lastExecution = oldTask.lastExecution().isValid()
       ? oldTask.lastExecution().toMSecsSinceEpoch() : LLONG_MIN;
   d->_instancesCount = oldTask.instancesCount();
+  d->_executionsCount = oldTask.executionsCount();
   d->_lastSuccessful = oldTask.lastSuccessful();
   d->_lastReturnCode = oldTask.lastReturnCode();
   d->_lastTotalMillis = oldTask.lastTotalMillis();
@@ -644,6 +646,15 @@ int Task::instancesCount() const {
 
 int Task::fetchAndAddInstancesCount(int valueToAdd) const {
   return !isNull() ? data()->_instancesCount.fetchAndAddOrdered(valueToAdd) : 0;
+}
+
+int Task::executionsCount() const {
+  return !isNull() ? data()->_executionsCount.load() : 0;
+}
+
+int Task::fetchAndAddExecutionsCount(int valueToAdd) const {
+  return !isNull() ? data()->_executionsCount.fetchAndAddOrdered(valueToAdd)
+                   : 0;
 }
 
 QList<QRegExp> Task::stderrFilters() const {
@@ -1001,6 +1012,8 @@ QVariant TaskData::uiData(int section, int role) const {
       return _lastTaskInstanceId > 0 ? _lastTaskInstanceId : QVariant();
     case 33:
       return _info;
+    case 34:
+      return _executionsCount.load();
     }
     break;
   default:
