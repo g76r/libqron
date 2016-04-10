@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -56,9 +56,9 @@ QString HtmlAlertItemDelegate::text(const QModelIndex &index) const {
             "<a target=\"_blank\" href=\"../rest/txt/log/all/v1?regexp=^[^ ]* "
             +match.captured(1)+"[/:]\"><i class=\"icon-file-text\"></i></a>"
             "</span>"
-            /* related task taskdoc */
+            /* detail page */
             " <span class=\"label label-info\" title=\"Detailed task info\">"
-            "<a href=\"taskdoc.html?taskid="+match.captured(1)+"\">"
+            "<a href=\"task/"+match.captured(1)+"\">"
             "<i class=\"icon-cog\"></i></a></span>");
     }
   }

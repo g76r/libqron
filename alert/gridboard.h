@@ -51,7 +51,7 @@ class GridboardData;
  *   (dimension taskid)
  *   (dimension status)
  *   (warningdelay 2000000000)
- *   (param gridboard.rowformat '<a href="taskdoc.html?taskid=%1">%1</a>')
+ *   (param gridboard.rowformat '<a href="task/%1">%1</a>')
  * )
  */
 class LIBQRONSHARED_EXPORT Gridboard : public SharedUiItem {

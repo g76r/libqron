@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@ HtmlTaskInstanceItemDelegate::HtmlTaskInstanceItemDelegate(QObject *parent)
   instancesStatusIcons.insert("failure", "<i class=\"icon-minus-circled\"></i>&nbsp;");
   instancesStatusIcons.insert("canceled", "<i class=\"icon-cancel\"></i>&nbsp;");
   setPrefixForColumn(1, "<i class=\"icon-cog\"></i>&nbsp;"
-                     "<a href=\"taskdoc.html?taskid=%1\">", 1);
+                     "<a href=\"task/%1\">", 1);
   setSuffixForColumn(1, "</a>");
   setPrefixForColumn(2, "%1", 2, instancesStatusIcons);
 }
@@ -44,9 +44,9 @@ QString HtmlTaskInstanceItemDelegate::text(const QModelIndex &index) const {
                  "<a target=\"_blank\" href=\"../rest/txt/log/all/v1?"
                  "filter=/"+taskInstanceId+" \">"
                  "<i class=\"icon-file-text\"></i></a></span> "
-                 /* taskdoc */
+                 /* detail page */
                  "<span class=\"label label-info\" title=\""
-                 "Detailed task info\"><a href=\"taskdoc.html?taskid="
+                 "Detailed task info\"><a href=\"task/"
                  +taskId+"\"><i class=\"icon-cog\"></i></a></span> ");
     if (status == "queued")
       text.prepend(/* cancel */

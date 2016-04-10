@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -31,7 +31,7 @@ QString HtmlTaskItemDelegate::text(const QModelIndex &index) const {
   case 11: {
     QString mean = index.model()->index(index.row(), 3, index.parent()).data()
         .toString();
-    text.prepend("<a href=\"taskdoc.html?taskid="
+    text.prepend("<a href=\"task/"
                  +index.model()->index(index.row(), 11, index.parent()).data()
                  .toString()+
                  "\">");
@@ -93,9 +93,9 @@ QString HtmlTaskItemDelegate::text(const QModelIndex &index) const {
                  "<a target=\"_blank\" href=\"../rest/txt/log/all/v1?"
                  "regexp=^[^ ]* "+taskId+"[/:]\"><i class=\"icon-file-text\">"
                  "</i></a></span> "
-                 /* taskdoc */
+                 /* detail page */
                  "<span class=\"label label-info\" "
-                 "title=\"Detailed task info\"><a href=\"taskdoc.html?taskid="
+                 "title=\"Detailed task info\"><a href=\"task/"
                  +taskId+"\"><i class=\"icon-cog\"></i></a></span> ");
     break;
   }

@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,7 @@ QString HtmlLogEntryItemDelegate::text(const QModelIndex &index) const {
   switch (index.column()) {
   case 1:
     if (text.contains('.')) {
-      text.prepend("<a href=\"taskdoc.html?taskid="+text+"\">");
+      text.prepend("<a href=\"task/"+text+"\">");
       text.append("</a>");
     }
     break;

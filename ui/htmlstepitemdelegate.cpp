@@ -1,4 +1,4 @@
-/* Copyright 2014 Hallowyn and others.
+/* Copyright 2014-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -40,12 +40,12 @@ QString HtmlStepItemDelegate::text(const QModelIndex &index) const {
     break;
   }
   case 3:
-    text.prepend("<a href=\"taskdoc.html?taskid="+text+"\">");
+    text.prepend("<a href=\"task/"+text+"\">");
     text.append("</a>");
     break;
   case 4:
     if (!text.isEmpty()) {
-      text.prepend("<a href=\"taskdoc.html?taskid="+text+"\">");
+      text.prepend("<a href=\"task/"+text+"\">");
       text.append("</a>");
     }
     break;
