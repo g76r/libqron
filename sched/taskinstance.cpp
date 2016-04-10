@@ -16,6 +16,8 @@
 #include <QDateTime>
 #include <QAtomicInt>
 #include "util/timeformats.h"
+#include <functional>
+#include "util/radixtree.h"
 
 static QString _uiHeaderNames[] = {
   "Instance Id", // 0
@@ -270,61 +272,77 @@ void TaskInstance::setTarget(Host target) const {
   }
 }
 
+static RadixTree<std::function<QVariant(const TaskInstance&, const QString&)>> _pseudoParams {
+{ "!taskinstanceid" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.id();
+} },
+{ "!workflowtaskinstanceid" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.workflowTaskInstance().id();
+} },
+{ "!taskinstancegroupid" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.groupId();
+} },
+{ "!runningms" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.runningMillis();
+} },
+{ "!runnings" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.runningMillis()/1000;
+} },
+{ "!queuedms" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.queuedMillis();
+} },
+{ "!queueds" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.queuedMillis()/1000;
+} },
+{ "!totalms" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.runningMillis()+taskInstance.queuedMillis();
+} },
+{ "!totals" , [](const TaskInstance &taskInstance, const QString&) {
+  return (taskInstance.runningMillis()+taskInstance.queuedMillis())/1000;
+} },
+{ "!returncode" , [](const TaskInstance &taskInstance, const QString&) {
+  return QString::number(taskInstance.returnCode());
+} },
+{ "!status" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.statusAsString();
+} },
+{ "!target" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.target().id();
+} },
+{ "!targethostname" , [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.target().hostname();
+} },
+{ "!submissiondate" , [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.submissionDatetime(), key.mid(15));
+} },
+{ "!startdate" , [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.startDatetime(), key.mid(10));
+} },
+{ "!enddate" , [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.endDatetime(), key.mid(8));
+} },
+{ "!workflowsubmissiondate" , [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.workflowTaskInstance().submissionDatetime(), key.mid(23));
+} },
+{ "!workflowstartdate" , [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.workflowTaskInstance().startDatetime(), key.mid(18));
+} },
+{ "!workflowenddate" , [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.workflowTaskInstance().endDatetime(), key.mid(16));
+} },
+};
+
 QVariant TaskInstancePseudoParamsProvider::paramValue(
     QString key, QVariant defaultValue, QSet<QString> alreadyEvaluated) const {
-  if (key.startsWith('!')) {
-    // LATER optimize
-    if (key == "!taskinstanceid") {
-      return _taskInstance.id();
-    } else if (key == "!workflowtaskinstanceid") {
-      return _taskInstance.workflowTaskInstance().id();
-    } else if (key == "!taskinstancegroupid") {
-      return QString::number(_taskInstance.groupId());
-    } else if (key == "!runningms") {
-      return QString::number(_taskInstance.runningMillis());
-    } else if (key == "!runnings") {
-      return QString::number(_taskInstance.runningMillis()/1000);
-    } else if (key == "!queuedms") {
-      return QString::number(_taskInstance.queuedMillis());
-    } else if (key == "!queueds") {
-      return QString::number(_taskInstance.queuedMillis()/1000);
-    } else if (key == "!totalms") {
-      return QString::number(_taskInstance.queuedMillis()
-                             +_taskInstance.runningMillis());
-    } else if (key == "!totals") {
-      return QString::number((_taskInstance.queuedMillis()
-                              +_taskInstance.runningMillis())/1000);
-    } else if (key == "!returncode") {
-      return QString::number(_taskInstance.returnCode());
-    } else if (key == "!status") {
-      return _taskInstance.statusAsString();
-    } else if (key.startsWith("!submissiondate")) {
-      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-            _taskInstance.submissionDatetime(), key.mid(15));
-    } else if (key.startsWith("!startdate")) {
-      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-            _taskInstance.startDatetime(), key.mid(10));
-    } else if (key.startsWith("!enddate")) {
-      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-            _taskInstance.endDatetime(), key.mid(8));
-    } else if (key.startsWith("!workflowsubmissiondate")) {
-      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-            _taskInstance.workflowTaskInstance().submissionDatetime(),
-            key.mid(23));
-    } else if (key.startsWith("!workflowstartdate")) {
-      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-            _taskInstance.workflowTaskInstance().startDatetime(),
-            key.mid(18));
-    } else if (key.startsWith("!workflowenddate")) {
-      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-            _taskInstance.workflowTaskInstance().endDatetime(),
-            key.mid(16));
-    } else if (key == "!target") {
-      return _taskInstance.target().id();
-    } else if (key == "!targethostname") {
-      return _taskInstance.target().hostname();
-    }
-  }
+  auto pseudoParam = _pseudoParams.value(key);
+  if (pseudoParam)
+    return pseudoParam(_taskInstance, key);
   return _taskPseudoParams.paramValue(key, defaultValue, alreadyEvaluated);
 }
 
@@ -339,21 +357,16 @@ bool TaskInstance::force() const {
   return d ? d->_force : false;
 }
 
-QString TaskInstance::statusAsString(
-    TaskInstance::TaskInstanceStatus status) {
-  switch(status) {
-  case Queued:
-    return "queued";
-  case Running:
-    return "running";
-  case Success:
-    return "success";
-  case Failure:
-    return "failure";
-  case Canceled:
-    return "canceled";
-  }
-  return "unknown";
+static QHash<TaskInstance::TaskInstanceStatus,QString> _statuses {
+  { TaskInstance::Queued, "queue" },
+  { TaskInstance::Running, "running" },
+  { TaskInstance::Success, "success" },
+  { TaskInstance::Failure, "failure" },
+  { TaskInstance::Canceled, "canceled" },
+};
+
+QString TaskInstance::statusAsString(TaskInstance::TaskInstanceStatus status) {
+  return _statuses.value(status, QStringLiteral("unknown"));
 }
 
 bool TaskInstance::abortable() const {

@@ -33,6 +33,9 @@
 #include "ui/qronuiutils.h"
 #include "task_p.h"
 #include "modelview/shareduiitemdocumentmanager.h"
+#include "util/radixtree.h"
+#include <functional>
+#include "util/containerutils.h"
 
 static QSet<QString> excludedDescendantsForComments {
   "subtask", "trigger", "onsuccess", "onfailure", "onfinish", "onstart",
@@ -746,6 +749,7 @@ void Task::setLastTotalMillis(int lastTotalMillis) const {
 quint64 Task::lastTaskInstanceId() const {
   return !isNull() ? data()->_lastTaskInstanceId : 0;
 }
+
 void Task::setLastTaskInstanceId(quint64 lastTaskInstanceId) const {
   if (!isNull())
     data()->_lastTaskInstanceId = lastTaskInstanceId;
@@ -754,6 +758,7 @@ void Task::setLastTaskInstanceId(quint64 lastTaskInstanceId) const {
 long long Task::maxExpectedDuration() const {
   return !isNull() ? data()->_maxExpectedDuration : LLONG_MAX;
 }
+
 long long Task::minExpectedDuration() const {
   return !isNull() ? data()->_minExpectedDuration : 0;
 }
@@ -808,50 +813,66 @@ QString Task::requestFormFieldsAsHtmlDescription() const {
   return v;
 }
 
-QVariant TaskPseudoParamsProvider::paramValue(
-    QString key, QVariant defaultValue, QSet<QString> alreadyEvaluated) const {
-  Q_UNUSED(alreadyEvaluated)
-  //Log::fatal() << "TaskPseudoParamsProvider::paramValue " << key;
-  if (key.startsWith('!')) {
-    if (key == "!tasklocalid") {
-      return _task.localId();
-    } else if (key == "!taskid") {
-      return _task.id();
-    } else if (key == "!taskgroupid") {
-      return _task.taskGroup().id();
-    } else if (key == "!target") {
-      return _task.target();
-    } else if (key == "!minexpectedms") {
-      return _task.minExpectedDuration();
-    } else if (key == "!minexpecteds") {
-      return _task.minExpectedDuration()/1000.0;
-    } else if (key == "!maxexpectedms") {
-      long long ms = _task.maxExpectedDuration();
-      return (ms == LLONG_MAX) ? defaultValue : ms;
-    } else if (key == "!maxexpecteds") {
-      long long ms = _task.maxExpectedDuration();
-      return (ms == LLONG_MAX) ? defaultValue : ms/1000.0;
-    } else if (key == "!maxbeforeabortms") {
-      long long ms = _task.maxDurationBeforeAbort();
-      return (ms == LLONG_MAX) ? defaultValue : ms;
-    } else if (key == "!maxbeforeaborts") {
-      long long ms = _task.maxDurationBeforeAbort();
-      return (ms == LLONG_MAX) ? defaultValue : ms/1000.0;
-    } else if (key == "!maxexpectedms0") {
-      long long ms = _task.maxExpectedDuration();
-      return (ms == LLONG_MAX) ? 0 : ms;
-    } else if (key == "!maxexpecteds0") {
-      long long ms = _task.maxExpectedDuration();
-      return (ms == LLONG_MAX) ? 0.0 : ms/1000.0;
-    } else if (key == "!maxbeforeabortms0") {
-      long long ms = _task.maxDurationBeforeAbort();
-      return (ms == LLONG_MAX) ? 0 : ms;
-    } else if (key == "!maxbeforeaborts0") {
-      long long ms = _task.maxDurationBeforeAbort();
-      return (ms == LLONG_MAX) ? 0.0 : ms/1000.0;
-    }
-  }
+static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudoParams {
+{ "!tasklocalid" , [](const Task &task, const QVariant &) {
+  return task.localId();
+} },
+{ "!taskid" , [](const Task &task, const QVariant &) {
+  return task.id();
+} },
+{ "!taskgroupid" , [](const Task &task, const QVariant &) {
+  return task.taskGroup().id();
+} },
+{ "!target" , [](const Task &task, const QVariant &) {
+  return task.target();
+} },
+{ "!minexpectedms" , [](const Task &task, const QVariant &) {
+  return task.minExpectedDuration();
+} },
+{ "!minexpecteds" , [](const Task &task, const QVariant &) {
+  return task.minExpectedDuration()/1000.0;
+} },
+{ "!maxexpectedms" , [](const Task &task, const QVariant &defaultValue) {
+  long long ms = task.maxExpectedDuration();
+  return (ms == LLONG_MAX) ? defaultValue : ms;
+} },
+{ "!maxexpecteds" , [](const Task &task, const QVariant &defaultValue) {
+  long long ms = task.maxExpectedDuration();
+  return (ms == LLONG_MAX) ? defaultValue : ms/1000.0;
+} },
+{ "!maxbeforeabortms" , [](const Task &task, const QVariant &defaultValue) {
+  long long ms = task.maxDurationBeforeAbort();
+  return (ms == LLONG_MAX) ? defaultValue : ms;
+} },
+{ "!maxbeforeaborts", [](const Task &task, const QVariant &defaultValue) {
+  long long ms = task.maxDurationBeforeAbort();
+  return (ms == LLONG_MAX) ? defaultValue : ms/1000.0;
+} },
+{ "!maxexpectedms0", [](const Task &task, const QVariant &) {
+  long long ms = task.maxExpectedDuration();
+  return (ms == LLONG_MAX) ? 0 : ms;
+} },
+{ "!maxexpecteds0", [](const Task &task, const QVariant &) {
+  long long ms = task.maxExpectedDuration();
+  return (ms == LLONG_MAX) ? 0.0 : ms/1000.0;
+} },
+{ "!maxbeforeabortms0", [](const Task &task, const QVariant &) {
+  long long ms = task.maxDurationBeforeAbort();
+  return (ms == LLONG_MAX) ? 0 : ms;
+} },
+{ "!maxbeforeaborts0", [](const Task &task, const QVariant &) {
+  long long ms = task.maxDurationBeforeAbort();
+  return (ms == LLONG_MAX) ? 0.0 : ms/1000.0;
+} },
+{ "", [](const Task &, const QVariant &defaultValue) {
   return defaultValue;
+}, true },
+};
+
+QVariant TaskPseudoParamsProvider::paramValue(
+    QString key, QVariant defaultValue, QSet<QString>) const {
+  // the following is fail-safe thanks to the catch-all prefix in the radix tree
+  return _pseudoParams.value(key)(_task, defaultValue);
 }
 
 QList<CronTrigger> Task::cronTriggers() const {
@@ -1280,43 +1301,32 @@ PfNode TaskData::toPfNode() const {
   return node;
 }
 
+static QHash<Task::Mean,QString> _meansAsString {
+  { Task::DoNothing, "donothing" },
+  { Task::Local, "local" },
+  { Task::Ssh, "ssh" },
+  { Task::Http, "http" },
+  { Task::Workflow, "workflow" },
+};
+
+static QHash<QString,Task::Mean> _meansFromString {
+  ContainerUtils::reversed(_meansAsString)
+};
+
+static QStringList _validMeans {
+  _meansFromString.keys()
+};
+
 Task::Mean Task::meanFromString(QString mean) {
-  if (mean == "donothing")
-    return DoNothing;
-  if (mean == "local")
-    return Local;
-  if (mean == "workflow")
-    return Workflow;
-  if (mean == "ssh")
-    return Ssh;
-  if (mean == "http")
-    return Http;
-  return UnknownMean;
+  return _meansFromString.value(mean, UnknownMean);
 }
 
 QString Task::meanAsString(Task::Mean mean) {
-  // LATER optimize with const QStrings
-  switch(mean) {
-  case DoNothing:
-    return "donothing";
-  case Local:
-    return "local";
-  case Workflow:
-    return "workflow";
-  case Ssh:
-    return "ssh";
-  case Http:
-    return "http";
-  case UnknownMean:
-    ;
-  }
-  return QString();
+  return _meansAsString.value(mean, QString());
 }
 
 QStringList Task::validMeanStrings() {
-  QStringList means;
-  means << "donothing" << "local" << "workflow" << "ssh" << "http";
-  return means;
+  return _validMeans;
 }
 
 void Task::changeWorkflowTransition(WorkflowTransition newItem,
