@@ -88,9 +88,6 @@ SOURCES += \
     config/logfile.cpp \
     ui/logfilesmodel.cpp \
     config/calendar.cpp \
-    ui/htmltaskitemdelegate.cpp \
-    ui/htmltaskinstanceitemdelegate.cpp \
-    ui/htmlalertitemdelegate.cpp \
     config/step.cpp \
     sched/stepinstance.cpp \
     config/eventsubscription.cpp \
@@ -98,7 +95,6 @@ SOURCES += \
     action/endaction.cpp \
     trigger/trigger.cpp \
     trigger/noticetrigger.cpp \
-    ui/htmlstepitemdelegate.cpp \
     config/schedulerconfig.cpp \
     config/alerterconfig.cpp \
     config/accesscontrolconfig.cpp \
@@ -111,9 +107,7 @@ SOURCES += \
     action/requesturlaction.cpp \
     sysutil/parametrizednetworkrequest.cpp \
     alert/urlalertchannel.cpp \
-    ui/htmllogentryitemdelegate.cpp \
     ui/configsmodel.cpp \
-    ui/htmlschedulerconfigitemdelegate.cpp \
     ui/confighistorymodel.cpp \
     sched/noticepseudoparamsprovider.cpp \
     config/alertsettings.cpp \
@@ -157,9 +151,6 @@ HEADERS += \
     config/logfile.h \
     ui/logfilesmodel.h \
     config/calendar.h \
-    ui/htmltaskitemdelegate.h \
-    ui/htmltaskinstanceitemdelegate.h \
-    ui/htmlalertitemdelegate.h \
     config/step.h \
     sched/stepinstance.h \
     config/eventsubscription.h \
@@ -169,7 +160,6 @@ HEADERS += \
     trigger/trigger_p.h \
     trigger/noticetrigger.h \
     ui/graphviz_styles.h \
-    ui/htmlstepitemdelegate.h \
     config/schedulerconfig.h \
     config/alerterconfig.h \
     config/accesscontrolconfig.h \
@@ -184,9 +174,7 @@ HEADERS += \
     action/requesturlaction.h \
     sysutil/parametrizednetworkrequest.h \
     alert/urlalertchannel.h \
-    ui/htmllogentryitemdelegate.h \
     ui/configsmodel.h \
-    ui/htmlschedulerconfigitemdelegate.h \
     ui/confighistorymodel.h \
     sched/noticepseudoparamsprovider.h \
     config/alertsettings.h \
