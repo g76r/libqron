@@ -383,12 +383,12 @@ void Executor::replyHasFinished(QNetworkReply *reply,
       << _instance.target().hostname() << "' in " << _instance.runningMillis()
       << " ms, with network error '" << networkErrorAsString(error)
       << "' (QNetworkReply::NetworkError code " << error << ")";
-  // LATER translate network error codes into human readable strings
-  if (status < 200 || status > 299) {
+  if (!success
+      || _instance.task().params().valueAsBool("log.reply.onsuccess", false)) {
     int maxsize = _instance.task().params()
-        .valueAsInt("log.error.reply.maxsize", 4096);
+        .valueAsInt("log.reply.maxsize", 4096);
     int maxwait = _instance.task().params()
-        .valueAsDouble("log.error.reply.maxwait", 5.0)*1000;
+        .valueAsDouble("log.reply.maxwait", 5.0)*1000;
     long now = QDateTime::currentMSecsSinceEpoch();
     long deadline = now+maxwait;
     while (reply->bytesAvailable() < maxsize && now < deadline) {
