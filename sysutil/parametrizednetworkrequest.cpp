@@ -43,7 +43,7 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
   qurl.setPassword(QString());
   setUrl(qurl);
   _method = HttpRequest::methodFromText(
-        params.value("method", "GET", paramsEvaluationContext));
+        params.value("method", "GET", paramsEvaluationContext).toUpper());
   QString contentType = params.value("content-type", paramsEvaluationContext);
   if (contentType.isNull()
       && (_method == HttpRequest::POST || _method == HttpRequest::PUT))
