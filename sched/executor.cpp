@@ -340,6 +340,24 @@ void Executor::replyFinished() {
                   QNetworkReply::NoError);
 }
 
+void Executor::getReplyContent(QNetworkReply *reply, QString *replyContent,
+                               QString maxsizeKey, QString maxwaitKey) const {
+  Q_ASSERT(replyContent);
+  if (!replyContent->isNull())
+    return;
+  int maxsize = _instance.task().params().valueAsInt(maxsizeKey, 4096);
+  int maxwait = _instance.task().params().valueAsDouble(maxwaitKey, 5.0)*1000;
+  long now = QDateTime::currentMSecsSinceEpoch();
+  long deadline = now+maxwait;
+  while (reply->bytesAvailable() < maxsize && now < deadline) {
+    if (!reply->waitForReadyRead(deadline-now))
+      break;
+    now = QDateTime::currentMSecsSinceEpoch();
+  }
+  QByteArray ba = reply->read(maxsize);
+  *replyContent = ba.isEmpty() ? QStringLiteral("") : QString::fromUtf8(ba);
+}
+
 // executed by the first emitted signal among QNetworkReply::error() and
 // QNetworkReply::finished(), therefore it can be called twice when an error
 // occurs (in fact most of the time where an error occurs, but in cases where
@@ -368,12 +386,47 @@ void Executor::replyHasFinished(QNetworkReply *reply,
   QString reason = reply
       ->attribute(QNetworkRequest::HttpReasonPhraseAttribute).toString();
   bool success = false;
+  QString replyContent;
   if (status > 0) {
     success =  status >= 200 && status <= 299;
     success = _instance.task().params()
-        .valueAsBool("return.code.default.success", success);
+        .valueAsBool(QStringLiteral("return.code.default.success"), success);
     success = _instance.task().params()
         .valueAsBool("return.code."+QString::number(status)+".success",success);
+    if (success) {
+      QString replyValidationPattern = _instance.task().params().value(
+            QStringLiteral("reply.validation.pattern"));
+      if (!replyValidationPattern.isEmpty()) {
+        QRegularExpression re(replyValidationPattern); // LATER cache
+        if (!re.isValid()) {
+          Log::warning(taskId, _instance.idAsLong())
+              << "invalid reply validation pattern: " << replyValidationPattern;
+          success = false;
+        } else {
+          getReplyContent(reply, &replyContent,
+                          QStringLiteral("reply.validation.maxsize"),
+                          QStringLiteral("reply.validation.maxwait"));
+          if (re.match(replyContent).hasMatch()) {
+            Log::info(taskId, _instance.idAsLong())
+                << "reply validation pattern matched reply: "
+                << replyValidationPattern;
+          } else {
+            success = false;
+            Log::info(taskId, _instance.idAsLong())
+                << "reply validation pattern did not match reply: "
+                << replyValidationPattern;
+          }
+        }
+      }
+    }
+  }
+  if (!success || _instance.task().params()
+      .valueAsBool(QStringLiteral("log.reply.onsuccess"), false)) {
+    getReplyContent(reply, &replyContent, QStringLiteral("log.reply.maxsize"),
+                    QStringLiteral("log.reply.maxwait"));
+    Log::info(taskId, _instance.idAsLong())
+        << "HTTP reply began with: "
+        << replyContent; // FIXME .replace(asciiControlCharsRE, QStringLiteral(" "));
   }
   _instance.setEndDatetime();
   Log::log(success ? Log::Info : Log::Warning, taskId, _instance.idAsLong())
@@ -383,24 +436,6 @@ void Executor::replyHasFinished(QNetworkReply *reply,
       << _instance.target().hostname() << "' in " << _instance.runningMillis()
       << " ms, with network error '" << networkErrorAsString(error)
       << "' (QNetworkReply::NetworkError code " << error << ")";
-  if (!success
-      || _instance.task().params().valueAsBool("log.reply.onsuccess", false)) {
-    int maxsize = _instance.task().params()
-        .valueAsInt("log.reply.maxsize", 4096);
-    int maxwait = _instance.task().params()
-        .valueAsDouble("log.reply.maxwait", 5.0)*1000;
-    long now = QDateTime::currentMSecsSinceEpoch();
-    long deadline = now+maxwait;
-    while (reply->bytesAvailable() < maxsize && now < deadline) {
-      if (!reply->waitForReadyRead(deadline-now))
-        break;
-      now = QDateTime::currentMSecsSinceEpoch();
-    }
-    Log::info(taskId, _instance.idAsLong())
-        << "HTTP reply began with: "
-        << QString::fromUtf8(reply->read(maxsize))
-           .replace(asciiControlCharsRE, QStringLiteral(" "));
-  }
   reply->deleteLater();
   _reply = 0;
   taskInstanceFinishing(success, status);

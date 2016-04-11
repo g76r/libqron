@@ -95,6 +95,8 @@ private:
   void finishWorkflow(bool success, int returnCode);
   Q_INVOKABLE void doActivateWorkflowTransition(
       WorkflowTransition transition, ParamSet eventContext);
+  void getReplyContent(QNetworkReply *reply, QString *replyContent,
+                       QString maxsizeKey, QString maxwaitKey) const;
 };
 
 #endif // EXECUTOR_H
