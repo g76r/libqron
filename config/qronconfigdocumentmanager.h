@@ -40,7 +40,7 @@ public:
   QHash<QString,Calendar> namedCalendars() const {
     return _config.namedCalendars(); }
   int tasksCount() const { return _config.tasks().count(); }
-  int tasksGroupsCount() const { return _config.tasksGroups().count(); }
+  int taskGroupsCount() const { return _config.tasksGroups().count(); }
   int maxtotaltaskinstances() const { return _config.maxtotaltaskinstances(); }
   int maxqueuedrequests() const { return _config.maxqueuedrequests(); }
   Calendar calendarByName(QString name) const {
