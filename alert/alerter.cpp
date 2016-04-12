@@ -128,7 +128,7 @@ void Alerter::doSetConfig(AlerterConfig config) {
   _alertSettingsCache.clear();
   _config = config;
   _gridboards = config.gridboards(); // LATER merge with current data
-  // LATER recompute visibilityDate and cancellationDate in raisableAlerts and emittedAlerts
+  // LATER recompute visibilityDate and cancellationDate in statefulAlerts and emittedAlerts
   emit paramsChanged(_config.params(), oldConfig.params(), "alertparams");
   emit configChanged(_config);
 }
@@ -158,7 +158,7 @@ void Alerter::cancelAlertImmediately(QString alertId) {
 }
 
 void Alerter::doRaiseAlert(QString alertId, bool immediately) {
-  Alert oldAlert = _raisableAlerts.value(alertId);
+  Alert oldAlert = _statefulAlerts.value(alertId);
   Alert newAlert = oldAlert.isNull() ? Alert(alertId) : oldAlert;
   ++_raiseRequestsCounter;
 //  if (alertId.startsWith("task.maxinstancesreached")
@@ -210,7 +210,7 @@ nothing_changed:
 }
 
 void Alerter::doCancelAlert(QString alertId, bool immediately) {
-  Alert oldAlert = _raisableAlerts.value(alertId), newAlert = oldAlert;
+  Alert oldAlert = _statefulAlerts.value(alertId), newAlert = oldAlert;
   ++_cancelRequestsCounter;
 //  if (alertId.startsWith("task.maxinstancesreached")
 //      || alertId.startsWith("task.maxinstancesreached")) {
@@ -289,7 +289,7 @@ void Alerter::doEmitAlert(QString alertId) {
 
 void Alerter::asyncProcessing() {
   QDateTime now = QDateTime::currentDateTime();
-  foreach (Alert oldAlert, _raisableAlerts) {
+  foreach (Alert oldAlert, _statefulAlerts) {
     switch(oldAlert.status()) {
     case Alert::Nonexistent: // should never happen
     case Alert::Canceled: // should never happen
@@ -395,17 +395,17 @@ void Alerter::commitChange(Alert *newAlert, Alert *oldAlert) {
   switch (newAlert->status()) {
   case Alert::Nonexistent: // should not happen
   case Alert::Canceled:
-    _raisableAlerts.remove(oldAlert->id());
+    _statefulAlerts.remove(oldAlert->id());
     *newAlert = Alert();
     break;
   default:
-    _raisableAlerts.insert(newAlert->id(), *newAlert);
+    _statefulAlerts.insert(newAlert->id(), *newAlert);
   }
 //  if (newAlert->id().startsWith("task.maxinstancesreached")
 //      || oldAlert->id().startsWith("task.maxinstancesreached")) {
 //    qDebug() << "commitChange:" << newAlert->id() << newAlert->statusToString() << oldAlert->statusToString();
 //  }
-  emit raisableAlertChanged(*newAlert, *oldAlert, QStringLiteral("alert"));
+  emit statefulAlertChanged(*newAlert, *oldAlert, QStringLiteral("alert"));
 }
 
 QList<AlertSubscription> Alerter::alertSubscriptions(QString alertId) {

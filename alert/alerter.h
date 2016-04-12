@@ -31,10 +31,10 @@ class GridboardThread;
 
 /** Main class for the alert system.
  *
- * Expose alert API, for two kind of alerts: raisable alerts and one-shot
+ * Expose alert API, for two kind of alerts: stateful alerts and one-shot
  * alerts.
  *
- * The raisable alerts API consists of the following methods:
+ * The stateful alerts API consists of the following methods:
  * - raiseAlert: schedule the rise of an alert as soon as the rise delay is
  *   over, or do nothing is the same alert is already raised, the alert will be
  *   emited when actually raised
@@ -50,7 +50,7 @@ class GridboardThread;
  *  after a while, and only once for all same alerts for which emission will be
  *  requested until then.
  *
- * One-shot alerts have no state, but raisable alerts can have the following
+ * One-shot alerts have no state, but stateful alerts can have the following
  * states:
  * - nonexistent
  * - rising
@@ -125,7 +125,7 @@ class LIBQRONSHARED_EXPORT Alerter : public QObject {
   GridboardThread *_gridboardThread;
   AlerterConfig _config;
   QHash<QString,AlertChannel*> _channels;
-  QHash<QString,Alert> _raisableAlerts;
+  QHash<QString,Alert> _statefulAlerts;
   QHash<QString,Alert> _emittedAlerts;
   QHash<QString, QList<AlertSubscription> > _alertSubscriptionsCache;
   QHash<QString, AlertSettings> _alertSettingsCache;
@@ -243,13 +243,13 @@ public:
   void clearGridboard(QString gridboardId);
 
 signals:
-  /** A raisable alert (i.e. an alert handled through raiseAlert()/cancelAlert()
+  /** A stateful alert (i.e. an alert handled through raiseAlert()/cancelAlert()
    * calls, not through emitAlert()) has been created or destroyed or modified.
    * Can be connected to a SharedUiItemsModel. */
-  void raisableAlertChanged(Alert newAlert, Alert oldAlert,
+  void statefulAlertChanged(Alert newAlert, Alert oldAlert,
                             QString idQualifier);
   /** An alert is emited through alert channels.
-   * This occurs for raisable alerts when raising an alert that is not
+   * This occurs for stateful alerts when raising an alert that is not
    * already raised (through raiseAlert()) or when canceling a raised alert
    * (through cancelAlert()).
    * And this occurs too for one-shots alerts when they are emitted (through
