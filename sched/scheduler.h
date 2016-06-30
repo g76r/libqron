@@ -34,6 +34,7 @@
 #include <QFileSystemWatcher>
 #include "config/logfile.h"
 #include "config/qronconfigdocumentmanager.h"
+#include <random>
 
 class QThread;
 class CronTrigger;
