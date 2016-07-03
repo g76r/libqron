@@ -41,6 +41,8 @@ public:
   bool isNull() const;
   QString id() const;
   QString format() const;
+  QSet<QString> allowedValues() const;
+  bool mandatory() const;
   PfNode toPfNode() const;
 };
 

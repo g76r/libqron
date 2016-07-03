@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -38,14 +38,25 @@ void ConfigUtils::loadParamSet(PfNode parentnode, ParamSet *params,
 
 static QRegularExpression whitespace("\\s");
 
-void ConfigUtils::loadFlagSet(PfNode parentnode, ParamSet *unsetenv,
+void ConfigUtils::loadFlagSet(PfNode parentnode, ParamSet *params,
                               QString attrname) {
-  if (!unsetenv)
+  if (!params)
     return;
   foreach (QString content, parentnode.stringChildrenByName(attrname)) {
     QStringList names = content.split(whitespace);
     foreach (const QString name, names)
-      unsetenv->setValue(name, QString());
+      params->setValue(name, QString());
+  }
+}
+
+void ConfigUtils::loadFlagSet(PfNode parentnode, QSet<QString> *set,
+                              QString attrname) {
+  if (!set)
+    return;
+  foreach (QString content, parentnode.stringChildrenByName(attrname)) {
+    QStringList names = content.split(whitespace);
+    foreach (const QString name, names)
+      set->insert(name);
   }
 }
 

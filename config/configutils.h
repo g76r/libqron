@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -38,7 +38,9 @@ public:
     ParamSet params;
     loadParamSet(parentnode, &params, attrname);
     return params; }
-  static void loadFlagSet(PfNode parentnode, ParamSet *unsetenv,
+  static void loadFlagSet(PfNode parentnode, ParamSet *params,
+                          QString attrname);
+  static void loadFlagSet(PfNode parentnode, QSet<QString> *set,
                           QString attrname);
   static void loadResourcesSet(
       PfNode parentnode, QHash<QString,qint64> *resources, QString attrname);
