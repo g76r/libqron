@@ -295,18 +295,30 @@ void Alerter::asyncProcessing() {
     case Alert::Canceled: // should never happen
     case Alert::Raised:
       continue; // nothing to do
-    case Alert::Rising:
     case Alert::MayRise:
+      // following triple-if is needed to determine which one among visibility
+      // and cancellation dates was reached first (if one has even been reached)
+      // because asyncProcessing is not called often enough to avoid conflicts
+      // between these two events
+      if (oldAlert.cancellationDate() <= now
+          && oldAlert.cancellationDate() < oldAlert.visibilityDate()) {
+        Alert newAlert;
+        commitChange(&newAlert, &oldAlert);
+      } else if (oldAlert.visibilityDate() <= now) {
+        Alert newAlert = oldAlert;
+        actionRaise(&newAlert);
+        commitChange(&newAlert, &oldAlert);
+      } else if (oldAlert.cancellationDate() <= now) {
+        Alert newAlert;
+        commitChange(&newAlert, &oldAlert);
+      }
+      break;
+    case Alert::Rising:
       if (oldAlert.visibilityDate() <= now) {
         Alert newAlert = oldAlert;
         actionRaise(&newAlert);
         commitChange(&newAlert, &oldAlert);
         break;
-      }
-      if (oldAlert.status() == Alert::MayRise
-          && oldAlert.cancellationDate() <= now) {
-        Alert newAlert;
-        commitChange(&newAlert, &oldAlert);
       }
       break;
     case Alert::Dropping:
