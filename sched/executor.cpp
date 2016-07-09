@@ -28,6 +28,16 @@
 #include "util/timerwitharguments.h"
 #include "sysutil/parametrizednetworkrequest.h"
 
+
+static QString _localDefaultShell;
+
+static int staticInit() {
+  char *value = getenv("SHELL");
+  _localDefaultShell = value && *value ? value : "/bin/sh";
+  return 0;
+}
+Q_CONSTRUCTOR_FUNCTION(staticInit)
+
 Executor::Executor(Alerter *alerter) : QObject(0), _isTemporary(false),
   _stderrWasUsed(false), _thread(new QThread),
   _process(0), _nam(new QNetworkAccessManager(this)), _reply(0),
@@ -89,12 +99,15 @@ void Executor::doExecute(TaskInstance instance) {
 }
 
 void Executor::localMean() {
-  QStringList cmdline;
   TaskInstancePseudoParamsProvider ppp = _instance.pseudoParams();
-  cmdline = _instance.params()
-      .splitAndEvaluate(_instance.task().command(), &ppp);
+  QString shell = _instance.params()
+      .value(QStringLiteral("command.shell"), _localDefaultShell);
+  QStringList cmdline;
+  cmdline << shell << "-c"
+          << _instance.params().evaluate(_instance.task().command(), &ppp);
   Log::info(_instance.task().id(), _instance.idAsLong())
-      << "exact command line to be executed (locally): " << cmdline.join(" ");
+      << "exact command line to be executed (using shell " << shell << "): "
+      << cmdline.value(2);
   QProcessEnvironment sysenv;
   prepareEnv(&sysenv);
   _instance.setAbortable();
@@ -104,11 +117,6 @@ void Executor::localMean() {
 void Executor::sshMean() {
   QStringList cmdline, sshCmdline;
   TaskInstancePseudoParamsProvider ppp = _instance.pseudoParams();
-  cmdline = _instance.params()
-      .splitAndEvaluate(_instance.task().command(), &ppp);
-  Log::info(_instance.task().id(), _instance.idAsLong())
-      << "exact command line to be executed (through ssh on host "
-      << _instance.target().hostname() <<  "): " << cmdline.join(" ");
   QHash<QString,QString> setenv;
   QProcessEnvironment sysenv;
   prepareEnv(&sysenv, &setenv);
@@ -119,6 +127,7 @@ void Executor::sshMean() {
   QString identity = _instance.params().value("ssh.identity");
   QStringList options = _instance.params().valueAsStrings("ssh.options");
   bool disablepty = _instance.params().valueAsBool("ssh.disablepty", false);
+  QString shell = _instance.params().value(QStringLiteral("command.shell"));
   sshCmdline << "ssh" << "-oLogLevel=ERROR" << "-oEscapeChar=none"
              << "-oServerAliveInterval=10" << "-oServerAliveCountMax=3"
              << "-oIdentitiesOnly=yes" << "-oKbdInteractiveAuthentication=no"
@@ -140,17 +149,30 @@ void Executor::sshMean() {
     sshCmdline << "-o" + option;
   if (!username.isEmpty())
     sshCmdline << "-oUser=" + username;
+  sshCmdline << "--";
   sshCmdline << _instance.target().hostname();
   foreach (QString key, setenv.keys())
     if (!_instance.task().unsetenv().contains(key)) {
       QString value = setenv.value(key);
       value.replace('\'', QString());
-      sshCmdline << key+"='"+value+"'";
+      cmdline << key+"='"+value+"'";
     }
-  foreach (QString unquoted, cmdline) {
-    QString quoted = '\'' + unquoted.replace("'", "'\\''") + '\'';
-    sshCmdline << quoted;
+  if (!shell.isEmpty()) {
+    cmdline << shell << "-c";
+    // must quote command line because remote user default shell will parse and
+    // interpretate it and we want to keep it as is in -c argument to choosen
+    // shell
+    cmdline << '\'' + _instance.params().evaluate(_instance.task().command(),
+                                                  &ppp).replace("'", "'\\''")
+               + '\'';
+  } else {
+    // let remote user default shell interpretate command line
+    cmdline << _instance.params().evaluate(_instance.task().command(), &ppp);
   }
+  Log::info(_instance.task().id(), _instance.idAsLong())
+      << "exact command line to be executed (through ssh on host "
+      << _instance.target().hostname() <<  "): " << cmdline;
+  sshCmdline << cmdline;
   execProcess(sshCmdline, sysenv);
 }
 
