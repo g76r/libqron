@@ -25,7 +25,7 @@ class RequestFormFieldData : public QSharedData {
 public:
   QString _id, _label, _placeholder, _suggestion;
   QRegularExpression _format;
-  QSet<QString> _allowedValues;
+  QStringList _allowedValues;
   bool _mandatory;
   RequestFormFieldData() : _mandatory(false) { }
 };
@@ -49,7 +49,8 @@ RequestFormField::RequestFormField(PfNode node) {
   d->_placeholder = node.attribute("placeholder", d->_label);
   d->_suggestion = node.attribute("suggestion");
   d->_mandatory = node.hasChild("mandatory");
-  ConfigUtils::loadFlagSet(node, &d->_allowedValues, "allowedvalues");
+  d->_allowedValues = node.stringListAttribute("allowedvalues");
+  // LATER remove duplicates in allowedvalues ?
   QString format = node.attribute("format");
   if (!d->_allowedValues.isEmpty()) {
     // allowedvalues is set, therefore format must be generated from allowed
@@ -59,11 +60,9 @@ RequestFormField::RequestFormField(PfNode node) {
                         "format, ignoring format"
                      << node.toString();
     }
-    QStringList list = d->_allowedValues.toList();
-    qSort(list);
     format = "(?:";
     bool first = true;
-    foreach (const QString &value, list) {
+    foreach (const QString &value, d->_allowedValues) {
       if (first)
         first = false;
       else
@@ -111,16 +110,20 @@ QString RequestFormField::toHtmlFormFragment() const {
   if (!d->_allowedValues.isEmpty()) {
     // combobox field
     QString options;
-    QList<QString> list = d->_allowedValues.toList();
-    qSort(list);
-    foreach (const QString &value, list) {
+    foreach (const QString &value, d->_allowedValues) {
+      // LATER also provide values label
       options.append(value == d->_suggestion ? "<option selected>"
                                              : "<option>");
       options.append(HtmlUtils::htmlEncode(value, false, false))
           .append("</option>");
     }
-    if (!d->_mandatory)
-      options.append("<option></option>");
+    if (!d->_mandatory) {
+      // add an empty string option to allow empty == null value
+      if (d->_suggestion.isEmpty())
+        options.append("<option selected></option>");
+      else
+        options.append("<option></option>");
+    }
     html.append(
           "  <div>\n"
           "    <select id=\""+d->_id+"\" name=\""+d->_id+"\" value=\""
@@ -157,10 +160,9 @@ QString RequestFormField::toHtmlHumanReadableDescription() const {
       v.append("<dt>placeholder</dt><dd>")
           .append(HtmlUtils::htmlEncode(d->_placeholder)).append("</dd>");
     if (!d->_allowedValues.isEmpty()) {
-      QStringList list = d->_allowedValues.toList();
-      qSort(list);
       v.append("<dt>allowed values</dt><dd>")
-          .append(HtmlUtils::htmlEncode(list.join(' '))).append("</dd>");
+          .append(HtmlUtils::htmlEncode(d->_allowedValues.join(' ')))
+          .append("</dd>");
     }
     if (d->_format.isValid())
       v.append("<dt>format</dt><dd>")
@@ -192,10 +194,6 @@ QString RequestFormField::format() const {
   return d ? d->_format.pattern() : QString();
 }
 
-QSet<QString> RequestFormField::allowedValues() const {
-  return d ? d->_allowedValues : QSet<QString>();
-}
-
 PfNode RequestFormField::toPfNode() const {
   if (!d)
     return PfNode();
@@ -209,7 +207,7 @@ PfNode RequestFormField::toPfNode() const {
   if (d->_mandatory)
     node.appendChild(PfNode("mandatory"));
   if (!d->_allowedValues.isEmpty())
-    ConfigUtils::writeFlagSet(&node, d->_allowedValues, "allowedvalues");
+    node.setAttribute("allowedvalues", d->_allowedValues);
   else if (d->_format.isValid() && !d->_format.pattern().isEmpty())
     node.appendChild(PfNode("format", d->_format.pattern()));
   return node;
