@@ -24,6 +24,8 @@
 #include "pf/pfarray.h"
 #include "util/stringutils.h"
 
+static QStringList _allowedValuesCsvHeaders { "value", "label", "flags" };
+
 class RequestFormFieldData : public QSharedData {
 public:
   QString _id, _label, _placeholder, _suggestion;
@@ -266,7 +268,9 @@ PfNode RequestFormField::toPfNode() const {
   if (d->_mandatory)
     node.appendChild(PfNode("mandatory"));
   if (!d->_allowedValues.isEmpty())
-    node.appendChild(PfNode("allowedvalues", PfArray(d->_allowedValues)));
+    node.appendChild(PfNode("allowedvalues",
+                            PfArray(_allowedValuesCsvHeaders,
+                                    d->_allowedValues)));
   else if (!d->_allowedValuesSource.isEmpty())
     node.setAttribute("allowedvalues", d->_allowedValuesSource);
   else if (d->_format.isValid() && !d->_format.pattern().isEmpty())
