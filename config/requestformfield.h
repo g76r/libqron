@@ -17,11 +17,13 @@
 #include "libqron_global.h"
 #include <QSharedDataPointer>
 #include <QStringList>
+#include "net/readonlyresourcescache.h"
 
 class RequestFormFieldData;
 class PfNode;
 class TaskInstance;
 class ParamSet;
+class Scheduler;
 
 /** Request-time user-overridable task parameter.
  * Define an overridable task parameter along with user interface hints. */
@@ -34,7 +36,7 @@ public:
   RequestFormField(PfNode node);
   RequestFormField &operator=(const RequestFormField &);
   ~RequestFormField();
-  QString toHtmlFormFragment() const;
+  QString toHtmlFormFragment(ReadOnlyResourcesCache *resourcesCache) const;
   QString toHtmlHumanReadableDescription() const;
   bool validate(QString value) const;
   void apply(QString value, TaskInstance *request) const;

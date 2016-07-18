@@ -20,12 +20,16 @@
 #include "sched/taskinstance.h"
 #include "configutils.h"
 #include "util/htmlutils.h"
+#include "csv/csvfile.h"
+#include "pf/pfarray.h"
+#include "util/stringutils.h"
 
 class RequestFormFieldData : public QSharedData {
 public:
   QString _id, _label, _placeholder, _suggestion;
   QRegularExpression _format;
-  QStringList _allowedValues;
+  QList<QStringList> _allowedValues;
+  QString _allowedValuesSource;
   bool _mandatory;
   RequestFormFieldData() : _mandatory(false) { }
 };
@@ -49,10 +53,19 @@ RequestFormField::RequestFormField(PfNode node) {
   d->_placeholder = node.attribute("placeholder", d->_label);
   d->_suggestion = node.attribute("suggestion");
   d->_mandatory = node.hasChild("mandatory");
-  d->_allowedValues = node.stringListAttribute("allowedvalues");
+  QList<PfNode> nodes = node.childrenByName("allowedvalues");
+  if (!nodes.isEmpty()) {
+    // LATER warn if several
+    PfNode av = nodes.last();
+    if (av.isArray()) {
+      d->_allowedValues = av.contentAsArray().rows();
+    } else {
+      d->_allowedValuesSource = av.contentAsString();
+    }
+  }
   // LATER remove duplicates in allowedvalues ?
   QString format = node.attribute("format");
-  if (!d->_allowedValues.isEmpty()) {
+  if (!d->_allowedValues.isEmpty() || !d->_allowedValuesSource.isEmpty()) {
     // allowedvalues is set, therefore format must be generated from allowed
     // values, and ignored if found in config
     if (!format.isEmpty()) {
@@ -60,16 +73,23 @@ RequestFormField::RequestFormField(PfNode node) {
                         "format, ignoring format"
                      << node.toString();
     }
-    format = "(?:";
-    bool first = true;
-    foreach (const QString &value, d->_allowedValues) {
-      if (first)
-        first = false;
-      else
-        format.append('|');
-      format.append(QRegularExpression::escape(value));
+    if (!d->_allowedValues.isEmpty()) {
+      format = "(?:";
+      bool first = true;
+      foreach (const QStringList &row, d->_allowedValues) {
+        if (row.isEmpty())
+          continue; // should never happen
+        if (first)
+          first = false;
+        else
+          format.append('|');
+        format.append(QRegularExpression::escape(row[0]));
+      }
+      format.append(')');
+    } else {
+      // LATER check allowed values when dynamic
+      format = QString();
     }
-    format.append(')');
   }
   if (!format.isEmpty()) {
     if (!format.startsWith('^'))
@@ -96,7 +116,8 @@ RequestFormField &RequestFormField::operator=(const RequestFormField &rhs) {
   return *this;
 }
 
-QString RequestFormField::toHtmlFormFragment() const {
+QString RequestFormField::toHtmlFormFragment(
+    ReadOnlyResourcesCache *resourcesCache) const {
   QString html;
   if (!d)
     return QString();
@@ -107,19 +128,50 @@ QString RequestFormField::toHtmlFormFragment() const {
   if (d->_mandatory)
     html.append(" <small>(mandatory)</small>");
   html.append("\n");
-  if (!d->_allowedValues.isEmpty()) {
+  if (!d->_allowedValues.isEmpty() || !d->_allowedValuesSource.isEmpty()) {
     // combobox field
+    bool hasDefault = false;
     QString options;
-    foreach (const QString &value, d->_allowedValues) {
-      // LATER also provide values label
-      options.append(value == d->_suggestion ? "<option selected>"
-                                             : "<option>");
-      options.append(HtmlUtils::htmlEncode(value, false, false))
+    QList<QStringList> rows = d->_allowedValues;
+    if (!d->_allowedValuesSource.isEmpty()) {
+      QString errorString;
+      QByteArray data = resourcesCache->fetchResource(d->_allowedValuesSource,
+                                                      &errorString);
+      if (!data.isEmpty()) {
+        CsvFile csvfile;
+        csvfile.setFieldSeparator(';'); // consistent with pf data
+        csvfile.openReadonly(data);
+        rows = csvfile.rows();
+      } else {
+        Log::warning() << "cannot fetch request form field allowed values list "
+                          "from " << d->_allowedValuesSource << " : "
+                       << errorString;
+        options = "<option value=\"\" selected>error: could not fetch allowed "
+                  "values list</option>";
+        hasDefault = true;
+        rows.clear();
+      }
+    }
+    foreach (const QStringList &row, rows) {
+      options.append("<option");
+      QString value = row.value(0);
+      QString label = row.value(1);
+      options.append(" value=\"")
+          .append(HtmlUtils::htmlEncode(value, false, false))
+          .append("\"");
+      QString s;
+      if (value == d->_suggestion || row.value(2).contains('d')) {
+        options.append(" selected");
+        hasDefault = true;
+      }
+      options.append(">");
+      options.append(HtmlUtils::htmlEncode(label.isEmpty() ? value : label,
+                                           false, false))
           .append("</option>");
     }
     if (!d->_mandatory) {
       // add an empty string option to allow empty == null value
-      if (d->_suggestion.isEmpty())
+      if (!hasDefault)
         options.append("<option selected></option>");
       else
         options.append("<option></option>");
@@ -161,7 +213,14 @@ QString RequestFormField::toHtmlHumanReadableDescription() const {
           .append(HtmlUtils::htmlEncode(d->_placeholder)).append("</dd>");
     if (!d->_allowedValues.isEmpty()) {
       v.append("<dt>allowed values</dt><dd>")
-          .append(HtmlUtils::htmlEncode(d->_allowedValues.join(' ')))
+          .append(HtmlUtils::htmlEncode(
+                    StringUtils::columnFromRows(d->_allowedValues, 0)
+                    .join(' ')))
+          .append("</dd>");
+    }
+    if (!d->_allowedValuesSource.isEmpty()) {
+      v.append("<dt>allowed values source</dt><dd>")
+          .append(HtmlUtils::htmlEncode(d->_allowedValuesSource))
           .append("</dd>");
     }
     if (d->_format.isValid())
@@ -207,7 +266,9 @@ PfNode RequestFormField::toPfNode() const {
   if (d->_mandatory)
     node.appendChild(PfNode("mandatory"));
   if (!d->_allowedValues.isEmpty())
-    node.setAttribute("allowedvalues", d->_allowedValues);
+    node.appendChild(PfNode("allowedvalues", PfArray(d->_allowedValues)));
+  else if (!d->_allowedValuesSource.isEmpty())
+    node.setAttribute("allowedvalues", d->_allowedValuesSource);
   else if (d->_format.isValid() && !d->_format.pattern().isEmpty())
     node.appendChild(PfNode("format", d->_format.pattern()));
   return node;
