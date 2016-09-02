@@ -119,10 +119,10 @@ RequestFormField &RequestFormField::operator=(const RequestFormField &rhs) {
 }
 
 QString RequestFormField::toHtmlFormFragment(
-    ReadOnlyResourcesCache *resourcesCache) const {
+    ReadOnlyResourcesCache *resourcesCache, bool *errorOccured) const {
   QString html;
   if (!d)
-    return QString();
+    return html;
   // header and label
   html = "<div class=\"from-group\">\n"
          "  <label class=\"control-label\" for=\""+d->_id+"\">"+d->_label
@@ -148,9 +148,13 @@ QString RequestFormField::toHtmlFormFragment(
         Log::warning() << "cannot fetch request form field allowed values list "
                           "from " << d->_allowedValuesSource << " : "
                        << errorString;
+        html.append("<p class=\"bg-warning\"><i class=\"icon-warning\"></i> "
+                    "error: could not fetch allowed values list");
         options = "<option value=\"\" selected>error: could not fetch allowed "
                   "values list</option>";
         hasDefault = true;
+        if (errorOccured)
+          *errorOccured = true;
         rows.clear();
       }
     }
