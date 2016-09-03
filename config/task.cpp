@@ -138,7 +138,7 @@ public:
   QList<EventSubscription> _onstart, _onsuccess, _onfailure;
   QPointer<Scheduler> _scheduler;
   long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
-  Task::DiscardAliasesOnStart _discardAliasesOnStart;
+  Task::EnqueuePolicy _enqueuePolicy;
   QList<RequestFormField> _requestFormFields;
   QStringList _otherTriggers; // guessed indirect triggers resulting from events
   QString _workflowTaskId;
@@ -159,7 +159,7 @@ public:
 
   TaskData() : _maxExpectedDuration(LLONG_MAX), _minExpectedDuration(0),
     _maxDurationBeforeAbort(LLONG_MAX),
-    _discardAliasesOnStart(Task::DiscardAll),
+    _enqueuePolicy(Task::EnqueueAll),
     _lastExecution(LLONG_MIN), _nextScheduledExecution(LLONG_MIN),
     _enabled(true), _lastSuccessful(true), _lastReturnCode(-1),
     _lastTotalMillis(-1), _lastTaskInstanceId(0)  { }
@@ -289,11 +289,12 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
                      << node.toString();
   }
   ConfigUtils::loadResourcesSet(node, &d->_resources, "resource");
-  QString daos = node.attribute("discardaliasesonstart", "all");
-  d->_discardAliasesOnStart = discardAliasesOnStartFromString(daos);
-  if (d->_discardAliasesOnStart == Task::DiscardUnknown) {
-    Log::error() << "invalid discardaliasesonstart on task " << d->_localId
-                 << ": '" << daos << "'";
+  QString enqueuepolicy = node.attribute("enqueuepolicy",
+                                         "enqueueanddiscardqueued");
+  d->_enqueuePolicy = enqueuePolicyFromString(enqueuepolicy);
+  if (d->_enqueuePolicy == Task::EnqueuePolicyUnknown) {
+    Log::error() << "invalid enqueuepolicy on task " << d->_localId
+                 << ": '" << enqueuepolicy << "'";
     delete d;
     return;
   }
@@ -775,28 +776,29 @@ ParamSet Task::unsetenv() const {
   return !isNull() ? data()->_unsetenv : ParamSet();
 }
 
-Task::DiscardAliasesOnStart Task::discardAliasesOnStart() const {
-  return !isNull() ? data()->_discardAliasesOnStart : Task::DiscardNone;
+Task::EnqueuePolicy Task::enqueuePolicy() const {
+  return !isNull() ? data()->_enqueuePolicy : Task::EnqueuePolicyUnknown;
 }
 
-QString Task::discardAliasesOnStartAsString(Task::DiscardAliasesOnStart v) {
-  switch (v) {
-  case Task::DiscardNone:
-    return "none";
-  case Task::DiscardAll:
-    return "all";
-  case Task::DiscardUnknown:
-    ;
-  }
-  return "unknown"; // should never happen
+static QHash<Task::EnqueuePolicy,QString> _enqueuePolicyAsString {
+  { Task::EnqueueAll, "enqueueall" },
+  { Task::EnqueueAndDiscardQueued, "enqueueanddiscardqueued" },
+  { Task::EnqueueUntilMaxInstances, "enqueueuntilmaxinstances" }
+};
+
+static QHash<QString,Task::EnqueuePolicy> _enqueuePolicyFromString {
+  { "enqueueall", Task::EnqueueAll  },
+  { "enqueueanddiscardqueued", Task::EnqueueAndDiscardQueued },
+  { "enqueueuntilmaxinstances", Task::EnqueueUntilMaxInstances }
+};
+
+
+QString Task::enqueuePolicyAsString(Task::EnqueuePolicy v) {
+  return _enqueuePolicyAsString.value(v, QStringLiteral("unknown"));
 }
 
-Task::DiscardAliasesOnStart Task::discardAliasesOnStartFromString(QString v) {
-  if (v == "none")
-    return Task::DiscardNone;
-  if (v == "all")
-    return Task::DiscardAll;
-  return Task::DiscardUnknown;
+Task::EnqueuePolicy Task::enqueuePolicyFromString(QString v) {
+  return _enqueuePolicyFromString.value(v, Task::EnqueuePolicyUnknown);
 }
 
 QList<RequestFormField> Task::requestFormFields() const {
@@ -1226,10 +1228,10 @@ PfNode TaskData::toPfNode() const {
   foreach (const Trigger &nt, _noticeTriggers)
     triggers.appendChild(nt.toPfNode());
   node.appendChild(triggers);
-  if (_discardAliasesOnStart != Task::DiscardAll)
+  if (_enqueuePolicy != Task::EnqueueAndDiscardQueued)
     node.appendChild(
-          PfNode("discardaliasesonstart",
-                 Task::discardAliasesOnStartAsString(_discardAliasesOnStart)));
+          PfNode("enqueuepolicy",
+                 Task::enqueuePolicyAsString(_enqueuePolicy)));
   if (_maxInstances != 1)
     node.appendChild(PfNode("maxinstances",
                             QString::number(_maxInstances)));

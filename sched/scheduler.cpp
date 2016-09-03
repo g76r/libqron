@@ -265,22 +265,40 @@ TaskInstance Scheduler::enqueueRequest(
       field.apply(value, &request);
     }
   }
-  if (!request.force() && (!task.enabled()
-      || task.discardAliasesOnStart() != Task::DiscardNone)) {
-    // avoid stacking disabled task requests by canceling older ones
-    for (int i = 0; i < _queuedRequests.size(); ++i) {
-      const TaskInstance &r2 = _queuedRequests[i];
-      if (taskId == r2.task().id() && request.groupId() != r2.groupId()) {
-        Log::info(taskId, r2.idAsLong())
-            << "canceling task because another instance of the same task "
-               "is queued"
-            << (!task.enabled() ? " and the task is disabled" : "") << ": "
-            << taskId << "/" << request.id();
-        r2.setReturnCode(-1);
-        r2.setSuccess(false);
-        r2.setEndDatetime();
-        emit itemChanged(r2, r2, QStringLiteral("taskinstance"));
-        _queuedRequests.removeAt(i--);
+  if (!request.force()) {
+    if (task.enqueuePolicy() & Task::EnqueueUntilMaxInstances) {
+      // reject task request if running count + queued count >= max instance
+      int count = task.instancesCount();
+      int max = task.maxInstances();
+      if (count < max) {
+        for (const TaskInstance &request : _queuedRequests) {
+          if (request.task().id() == taskId)
+            ++count;
+        }
+      }
+      if (count >= max) {
+        Log::info(taskId, request.idAsLong())
+            << "rejecting task request because of enqueueuntilmaxinstances "
+               "queuing policy: " << taskId;
+        return TaskInstance();
+      }
+    }
+    if (!task.enabled() || task.enqueuePolicy() & Task::EnqueueAll) {
+      // avoid stacking disabled task requests by canceling older ones
+      for (int i = 0; i < _queuedRequests.size(); ++i) {
+        const TaskInstance &r2 = _queuedRequests[i];
+        if (taskId == r2.task().id() && request.groupId() != r2.groupId()) {
+          Log::info(taskId, r2.idAsLong())
+              << "canceling task because another instance of the same task "
+                 "is queued"
+              << (!task.enabled() ? " and the task is disabled" : "") << ": "
+              << taskId << "/" << request.id();
+          r2.setReturnCode(-1);
+          r2.setSuccess(false);
+          r2.setEndDatetime();
+          emit itemChanged(r2, r2, QStringLiteral("taskinstance"));
+          _queuedRequests.removeAt(i--);
+        }
       }
     }
   }
@@ -503,7 +521,8 @@ void Scheduler::startQueuedTasks() {
     TaskInstance r = _queuedRequests[i];
     if (startQueuedTask(r)) {
       _queuedRequests.removeAt(i);
-      if (r.task().discardAliasesOnStart() != Task::DiscardNone) {
+      // LATER not sure this is usefull since it's already done at enqueue time
+      if (r.task().enqueuePolicy() & Task::EnqueueAll) {
         // remove other requests of same task
         QString taskId= r.task().id();
         for (int j = 0; j < _queuedRequests.size(); ++j ) {

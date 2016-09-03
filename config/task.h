@@ -78,8 +78,11 @@ Q_DECLARE_TYPEINFO(WorkflowTransition, Q_MOVABLE_TYPE);
 /** Core task definition object, being it a standalone task or workflow. */
 class LIBQRONSHARED_EXPORT Task : public SharedUiItem {
 public:
-  enum DiscardAliasesOnStart {
-    DiscardNone, DiscardAll, DiscardUnknown
+  enum EnqueuePolicy { // was DiscardAliasesOnStart
+    EnqueueAndDiscardQueued = 1, // default, was: DiscardAll
+    EnqueueAll = 2, // was: DiscardNone
+    EnqueueUntilMaxInstances = 4,
+    EnqueuePolicyUnknown = 0
   };
   enum Mean {
     UnknownMean = 0, DoNothing, Local, Workflow, Ssh, Http
@@ -158,11 +161,11 @@ public:
   long long maxDurationBeforeAbort() const;
   ParamSet setenv() const;
   ParamSet unsetenv() const;
-  DiscardAliasesOnStart discardAliasesOnStart() const;
-  inline QString discardAliasesOnStartAsString() const {
-    return discardAliasesOnStartAsString(discardAliasesOnStart()); }
-  static QString discardAliasesOnStartAsString(DiscardAliasesOnStart v);
-  static DiscardAliasesOnStart discardAliasesOnStartFromString(QString v);
+  EnqueuePolicy enqueuePolicy() const;
+  inline QString enqueuePolicyAsString() const {
+    return enqueuePolicyAsString(enqueuePolicy()); }
+  static QString enqueuePolicyAsString(EnqueuePolicy v);
+  static EnqueuePolicy enqueuePolicyFromString(QString v);
   QList<RequestFormField> requestFormFields() const;
   QString requestFormFieldsAsHtmlDescription() const;
   /** Create a ParamsProvider wrapper object to give access to ! pseudo params,
