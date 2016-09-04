@@ -20,8 +20,6 @@
 #include <QMetaType>
 #include "trigger.h"
 
-class CronTriggerData;
-
 /** Time trigger defined with a cron-like expression */
 class LIBQRONSHARED_EXPORT CronTrigger : public Trigger{
 public:
@@ -50,6 +48,9 @@ public:
     // LATER handle case were lastTrigger is far away in the past
     QDateTime next = nextTriggering(QDateTime::currentDateTime().addYears(10));
     return next.isValid() ? QDateTime::currentDateTime().msecsTo(next) : -1; }
+  /** Return true if timestamp is a triggering date (i.e. matches the cron
+   * expression */
+  bool isTriggering(QDateTime timestamp) const;
   QDateTime lastTriggered() const;
   void setLastTriggered(QDateTime lastTriggered) const;
   void clearLastTriggered() const { setLastTriggered(QDateTime()); }

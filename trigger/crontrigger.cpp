@@ -1,4 +1,4 @@
-/* Copyright 2012-2013 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,6 +27,8 @@
 #define RE_STEP_INTERNAL RE_STEP "\\s*,\\s*"
 #define RE_FIELD "\\s*(" RE_STEP "(\\s*,\\s*" RE_STEP ")*)\\s+"
 #define RE_EXPR "^(" RE_FIELD "){6}$"
+
+namespace {
 
 class CronField {
   int _min, _max;
@@ -129,12 +131,15 @@ public:
   QString expression() const { return _cronExpression; }
   QString humanReadableExpression() const { return "("+_cronExpression+")"; }
   QDateTime nextTriggering(QDateTime max) const;
+  bool isTriggering(QDateTime timestamp) const;
   bool isValid() const { return _isValid; }
   QString triggerType() const { return "cron"; }
 
 private:
   void parseCronExpression(QString cronExpression);
 };
+
+} // unnamed namespace
 
 CronTrigger::CronTrigger(const QString cronExpression)
   : Trigger(new CronTriggerData(cronExpression)) {
@@ -159,6 +164,10 @@ CronTrigger &CronTrigger::operator=(const CronTrigger &other) {
 
 QDateTime CronTrigger::nextTriggering(QDateTime max) const {
   return d ? ((CronTriggerData*)d.data())->nextTriggering(max) : QDateTime();
+}
+
+bool CronTrigger::isTriggering(QDateTime timestamp) const {
+  return d ? ((CronTriggerData*)d.data())->isTriggering(timestamp) : false;
 }
 
 QDateTime CronTrigger::lastTriggered() const {
@@ -210,6 +219,22 @@ QDateTime CronTriggerData::nextTriggering(QDateTime max) const {
     }
   }
   return QDateTime();
+}
+
+bool CronTriggerData::isTriggering(QDateTime timestamp) const {
+  if (!_months.isSet(timestamp.date().month()))
+    return false;
+  if (!_days.isSet(timestamp.date().day())
+      ||!_daysofweek.isSet(timestamp.date().dayOfWeek()%7)
+      ||!_calendar.isIncluded(timestamp.date()))
+    return false;
+  if (!_hours.isSet(timestamp.time().hour()))
+    return false;
+  if (!_minutes.isSet(timestamp.time().minute()))
+    return false;
+  if (!_seconds.isSet(timestamp.time().second()))
+    return false;
+  return true;
 }
 
 void CronTriggerData::parseCronExpression(QString cronExpression) {
