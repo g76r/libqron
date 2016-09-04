@@ -27,6 +27,7 @@
 #include "thread/circularbuffer.h"
 
 // LATER replace this 10" ugly batch with predictive timer (min(timestamps))
+// taking into account that it must be at less as precise as visibilitywindow
 #define ASYNC_PROCESSING_INTERVAL 10000
 
 static int staticInit() {
@@ -89,12 +90,12 @@ Alerter::Alerter() : QObject(0), _alerterThread(new QThread),
   _channels.insert("log", new LogAlertChannel(this));
   _channels.insert("url", new UrlAlertChannel(this));
   _channels.insert("mail", new MailAlertChannel(this));
-  foreach (AlertChannel *channel, _channels)
-    connect(this, SIGNAL(configChanged(AlerterConfig)),
-            channel, SLOT(setConfig(AlerterConfig)),
+  for (AlertChannel *channel : _channels)
+    connect(this, &Alerter::configChanged,
+            channel, &AlertChannel::setConfig,
             Qt::BlockingQueuedConnection);
   QTimer *timer = new QTimer(this);
-  connect(timer, SIGNAL(timeout()), this, SLOT(asyncProcessing()));
+  connect(timer, &QTimer::timeout, this, &Alerter::asyncProcessing);
   timer->start(ASYNC_PROCESSING_INTERVAL);
   moveToThread(_alerterThread);
 }
@@ -193,8 +194,9 @@ void Alerter::doRaiseAlert(QString alertId, bool immediately) {
       // else fall through next case
     case Alert::Nonexistent:
     case Alert::Canceled: // should not happen
-      newAlert.setVisibilityDate(newAlert.riseDate().addMSecs(
-                                   riseDelay(alertId)));
+      newAlert.setVisibilityDate(
+            windowCorrectedVisibilityDate(
+              alertId, newAlert.riseDate().addMSecs(riseDelay(alertId))));
       newAlert.setStatus(Alert::Rising);
       break;
     case Alert::Dropping:
@@ -267,7 +269,9 @@ void Alerter::doEmitAlert(QString alertId) {
     alert = Alert(alertId);
     notifyChannels(alert);
     alert.resetCount();
-    alert.setVisibilityDate(now.addMSecs(duplicateEmitDelay(alertId)));
+    alert.setVisibilityDate(
+          windowCorrectedVisibilityDate(
+            alertId, now.addMSecs(duplicateEmitDelay(alertId))));
     _emittedAlerts.insert(alertId, alert);
     ++_deduplicatingAlertsCount;
     _deduplicatingAlertsHwm = qMax(_deduplicatingAlertsCount,
@@ -282,7 +286,9 @@ void Alerter::doEmitAlert(QString alertId) {
     alert.setRiseDate(now);
     notifyChannels(alert);
     alert.resetCount();
-    alert.setVisibilityDate(now.addMSecs(duplicateEmitDelay(alertId)));
+    alert.setVisibilityDate(
+          windowCorrectedVisibilityDate(
+            alertId, now.addMSecs(duplicateEmitDelay(alertId))));
     _emittedAlerts.insert(alertId, alert);
   }
 }
@@ -294,7 +300,7 @@ void Alerter::asyncProcessing() {
     case Alert::Nonexistent: // should never happen
     case Alert::Canceled: // should never happen
     case Alert::Raised:
-      continue; // nothing to do
+      break; // nothing to do
     case Alert::MayRise:
       // following triple-if is needed to determine which one among visibility
       // and cancellation dates was reached first (if one has even been reached)
@@ -388,7 +394,7 @@ void Alerter::notifyChannels(Alert newAlert) {
     ;
   }
   Alert newAlertWithoutSubscription = newAlert;
-  foreach (AlertSubscription sub, alertSubscriptions(newAlert.id())) {
+  foreach (const AlertSubscription &sub, alertSubscriptions(newAlert.id())) {
     AlertChannel *channel = _channels.value(sub.channelName());
     if (channel) { // should never be false
       ++_totalChannelsNotificationsCounter;
@@ -497,4 +503,15 @@ qint64 Alerter::gridboardsEvaluationsCounter() const {
 
 qint64 Alerter::gridboardsUpdatesCounter() const {
   return _gridboardThread->_gridboardsUpdatesCounter;
+}
+
+QDateTime Alerter::windowCorrectedVisibilityDate(
+    QString alertId, QDateTime uncorrectedVisibilityDate) {
+  QDateTime visibilityDate = uncorrectedVisibilityDate;
+  CronTrigger window = alertSettings(alertId).visibilityWindow();
+  if (window.isValid()) {
+    window.setLastTriggered(visibilityDate.addSecs(-1));
+    visibilityDate = window.nextTriggering();
+  }
+  return visibilityDate;
 }

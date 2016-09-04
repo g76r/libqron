@@ -17,6 +17,7 @@
 #include "libqron_global.h"
 #include "modelview/shareduiitem.h"
 #include "pf/pfnode.h"
+#include "trigger/crontrigger.h"
 
 class AlertSettingsData;
 
@@ -48,6 +49,7 @@ public:
   qint64 dropDelay() const;
   /** milliseconds, 0 when not set */
   qint64 duplicateEmitDelay() const;
+  CronTrigger visibilityWindow() const;
 
 private:
   const AlertSettingsData *data() const {

@@ -23,7 +23,8 @@ static QString _uiHeaderNames[] = {
   "Rise Delay",
   "Mayrise Delay",
   "Drop Delay", // 5
-  "Duplicate Emit Delay"
+  "Duplicate Emit Delay",
+  "Visibility Window"
 };
 
 static QAtomicInt _sequence;
@@ -34,6 +35,7 @@ public:
   QRegularExpression _patternRegexp;
   qint64 _riseDelay, _mayriseDelay, _dropDelay, _duplicateEmitDelay;
   QStringList _commentsList;
+  CronTrigger _visibilityWindow;
   // MAYDO add params
 
   AlertSettingsData()
@@ -71,6 +73,7 @@ AlertSettings::AlertSettings(PfNode node) {
   d->_duplicateEmitDelay = node.doubleAttribute(
         QStringLiteral("duplicateemitdelay"), 0)*1e3;
   ConfigUtils::loadComments(node, &d->_commentsList);
+  d->_visibilityWindow = CronTrigger(node.attribute("visibilitywindow"));
   setData(d);
 }
 
@@ -90,6 +93,9 @@ PfNode AlertSettings::toPfNode() const {
   if (d->_duplicateEmitDelay > 0)
     node.setAttribute(QStringLiteral("duplicateemitdelay"),
                       d->_duplicateEmitDelay/1e3);
+  if (d->_visibilityWindow.isValid())
+    node.setAttribute(QStringLiteral("visibilitywindow"),
+                      d->_visibilityWindow.expression());
   return node;
 }
 
@@ -123,6 +129,11 @@ qint64 AlertSettings::duplicateEmitDelay() const {
   return d ? d->_duplicateEmitDelay : 0;
 }
 
+CronTrigger AlertSettings::visibilityWindow() const {
+  const AlertSettingsData *d = data();
+  return d ? d->_visibilityWindow : CronTrigger();
+}
+
 QVariant AlertSettingsData::uiData(int section, int role) const {
   switch(role) {
   case Qt::DisplayRole:
@@ -143,6 +154,8 @@ QVariant AlertSettingsData::uiData(int section, int role) const {
       if (_duplicateEmitDelay > 0)
         s.append(" duplicateemitdelay=")
             .append(QString::number(_duplicateEmitDelay/1e3));
+      if (_visibilityWindow.isValid())
+        s.append(" visibilitywindow=").append(_visibilityWindow.expression());
       return s.trimmed();
     }
     case 3:
@@ -153,6 +166,9 @@ QVariant AlertSettingsData::uiData(int section, int role) const {
       return _dropDelay > 0 ? _dropDelay/1e3 : QVariant();
     case 6:
       return _duplicateEmitDelay > 0 ? _duplicateEmitDelay/1e3 : QVariant();
+    case 7:
+      return _visibilityWindow.isValid() ? _visibilityWindow.expression()
+                                         : QVariant();
     }
     break;
   default:

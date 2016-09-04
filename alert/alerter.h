@@ -291,6 +291,8 @@ private:
   /** Delay according to (settings) or by default AlertConfig-level delay,
    * in ms. */
   inline qint64 duplicateEmitDelay(QString alertId);
+  inline QDateTime windowCorrectedVisibilityDate(
+      QString alertId, QDateTime uncorrectedVisibilityDate);
 };
 
 #endif // ALERTER_H
