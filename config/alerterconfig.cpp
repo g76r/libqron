@@ -99,7 +99,8 @@ AlerterConfigData::AlerterConfigData(PfNode root)
     //Log::debug() << "found alert subscription section " << pattern << " " << stop;
     foreach (PfNode channelnode, subscriptionnode.children()) {
       if (channelnode.name() == "pattern"
-          || channelnode.name() == "param") {
+          || channelnode.name() == "param"
+          || channelnode.isComment()) {
         // ignore
       } else {
         if (_channelNames.contains(channelnode.name())) {
