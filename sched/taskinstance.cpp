@@ -312,30 +312,30 @@ static RadixTree<std::function<QVariant(const TaskInstance&, const QString&)>> _
 { "!targethostname" , [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.target().hostname();
 } },
-{ "!submissiondate" , [](const TaskInstance &taskInstance, const QString &key) {
+{ "!submissiondate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.submissionDatetime(), key.mid(15));
-} },
-{ "!startdate" , [](const TaskInstance &taskInstance, const QString &key) {
+}, true },
+{ "!startdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.startDatetime(), key.mid(10));
-} },
-{ "!enddate" , [](const TaskInstance &taskInstance, const QString &key) {
+}, true },
+{ "!enddate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.endDatetime(), key.mid(8));
-} },
-{ "!workflowsubmissiondate" , [](const TaskInstance &taskInstance, const QString &key) {
+}, true },
+{ "!workflowsubmissiondate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.workflowTaskInstance().submissionDatetime(), key.mid(23));
-} },
-{ "!workflowstartdate" , [](const TaskInstance &taskInstance, const QString &key) {
+}, true },
+{ "!workflowstartdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.workflowTaskInstance().startDatetime(), key.mid(18));
-} },
-{ "!workflowenddate" , [](const TaskInstance &taskInstance, const QString &key) {
+}, true },
+{ "!workflowenddate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.workflowTaskInstance().endDatetime(), key.mid(16));
-} },
+}, true },
 };
 
 QVariant TaskInstancePseudoParamsProvider::paramValue(
