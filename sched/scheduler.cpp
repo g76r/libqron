@@ -283,7 +283,8 @@ TaskInstance Scheduler::enqueueRequest(
         return TaskInstance();
       }
     }
-    if (!task.enabled() || task.enqueuePolicy() & Task::EnqueueAll) {
+    if (!task.enabled()
+        || task.enqueuePolicy() & Task::EnqueueAndDiscardQueued) {
       // avoid stacking disabled task requests by canceling older ones
       for (int i = 0; i < _queuedRequests.size(); ++i) {
         const TaskInstance &r2 = _queuedRequests[i];
@@ -522,7 +523,7 @@ void Scheduler::startQueuedTasks() {
     if (startQueuedTask(r)) {
       _queuedRequests.removeAt(i);
       // LATER not sure this is usefull since it's already done at enqueue time
-      if (r.task().enqueuePolicy() & Task::EnqueueAll) {
+      if (r.task().enqueuePolicy() & Task::EnqueueAndDiscardQueued) {
         // remove other requests of same task
         QString taskId= r.task().id();
         for (int j = 0; j < _queuedRequests.size(); ++j ) {
