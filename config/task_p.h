@@ -50,6 +50,7 @@ static QString _uiHeaderNames[] = {
   "Last task instance id",
   "Additional info",
   "Executions count",
+  "Enqueue policy" // 35
 };
 
 #endif // TASK_P_H

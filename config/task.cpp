@@ -159,7 +159,7 @@ public:
 
   TaskData() : _maxExpectedDuration(LLONG_MAX), _minExpectedDuration(0),
     _maxDurationBeforeAbort(LLONG_MAX),
-    _enqueuePolicy(Task::EnqueueAll),
+    _enqueuePolicy(Task::EnqueueAndDiscardQueued),
     _lastExecution(LLONG_MIN), _nextScheduledExecution(LLONG_MIN),
     _enabled(true), _lastSuccessful(true), _lastReturnCode(-1),
     _lastTotalMillis(-1), _lastTaskInstanceId(0)  { }
@@ -1037,6 +1037,8 @@ QVariant TaskData::uiData(int section, int role) const {
       return _info;
     case 34:
       return _executionsCount.load();
+    case 35:
+      return Task::enqueuePolicyAsString(_enqueuePolicy);
     }
     break;
   default:
