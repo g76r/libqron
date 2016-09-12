@@ -358,7 +358,7 @@ bool TaskInstance::force() const {
 }
 
 static QHash<TaskInstance::TaskInstanceStatus,QString> _statuses {
-  { TaskInstance::Queued, "queue" },
+  { TaskInstance::Queued, "queued" },
   { TaskInstance::Running, "running" },
   { TaskInstance::Success, "success" },
   { TaskInstance::Failure, "failure" },
