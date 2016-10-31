@@ -1337,6 +1337,8 @@ void Task::changeWorkflowTransition(WorkflowTransition newItem,
                                     WorkflowTransition oldItem) {
   // TODO implement
   // probably strongly related to changeStep
+  Q_UNUSED(newItem)
+  Q_UNUSED(oldItem)
 }
 
 void Task::changeStep(Step newItem, Step oldItem) {
