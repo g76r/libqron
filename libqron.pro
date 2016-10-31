@@ -27,9 +27,9 @@ contains(QT_VERSION, ^4\\..*) {
 }
 
 INCLUDEPATH += ../libqtpf ../libqtssu
-win32:debug:LIBS += -L../build-libqtpf-windows/debug \
+win32:CONFIG(debug,debug|release):LIBS += -L../build-libqtpf-windows/debug \
   -L../build-libqtssu-windows/debug
-win32:release:LIBS += -L../build-libqtpf-windows/release \
+win32:CONFIG(release,debug|release):LIBS += -L../build-libqtpf-windows/release \
   -L../build-libqtssu-windows/release
 unix:LIBS += -L../libqtpf -L../libqtssu
 LIBS += -lqtpf -lqtssu
@@ -39,7 +39,7 @@ exists(/usr/bin/ccache):QMAKE_CXXFLAGS += -fdiagnostics-color=always
 QMAKE_CXXFLAGS += -Wextra
 #QMAKE_CXXFLAGS += -std=gnu++11
 #QMAKE_CXXFLAGS += -fno-elide-constructors
-unix:debug:QMAKE_CXXFLAGS += -ggdb
+unix:CONFIG(debug,debug|release):QMAKE_CXXFLAGS += -ggdb
 
 unix {
   OBJECTS_DIR = ../build-libqron-unix/obj
