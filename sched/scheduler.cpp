@@ -40,7 +40,8 @@ static SharedUiItem nullItem;
 
 static int staticInit() {
   qMetaTypeId<TaskInstance>();
-  qMetaTypeId<QList<TaskInstance>>();
+  qMetaTypeId<TaskInstanceList>();
+  qMetaTypeId<QList<TaskInstance>>(); // TODO remove, it is probably no longer used
   qRegisterMetaType<QHash<QString,qint64>>("QHash<QString,qint64>");
   qMetaTypeId<ParamSet>();
   qMetaTypeId<WorkflowTransition>();
@@ -170,15 +171,15 @@ void Scheduler::reloadAccessControlConfig() {
         _authenticator, _usersDatabase, _accessControlFilesWatcher);
 }
 
-QList<TaskInstance> Scheduler::syncRequestTask(
+TaskInstanceList Scheduler::syncRequestTask(
     QString taskId, ParamSet paramsOverriding, bool force,
     TaskInstance callerTask) {
   if (this->thread() == QThread::currentThread())
     return doRequestTask(taskId, paramsOverriding, force, callerTask);
-  QList<TaskInstance> requests;
+  TaskInstanceList requests;
   QMetaObject::invokeMethod(this, "doRequestTask",
                             Qt::BlockingQueuedConnection,
-                            Q_RETURN_ARG(QList<TaskInstance>, requests),
+                            Q_RETURN_ARG(TaskInstanceList, requests),
                             Q_ARG(QString, taskId),
                             Q_ARG(ParamSet, paramsOverriding),
                             Q_ARG(bool, force),
@@ -196,19 +197,20 @@ void Scheduler::asyncRequestTask(const QString taskId,
                             Q_ARG(TaskInstance, callerTask));
 }
 
-QList<TaskInstance> Scheduler::doRequestTask(
+TaskInstanceList Scheduler::doRequestTask(
     QString taskId, ParamSet overridingParams, bool force,
     TaskInstance callerTask) {
   Task task = config().tasks().value(taskId);
   Cluster cluster = config().clusters().value(task.target());
+  TaskInstanceList requests;
   if (task.isNull()) {
     Log::error() << "requested task not found: " << taskId << overridingParams
                  << force;
-    return QList<TaskInstance>();
+    return requests;
   }
   if (!task.enabled()) {
     Log::info(taskId) << "ignoring request since task is disabled: " << taskId;
-    return QList<TaskInstance>();
+    return requests;
   }
   bool fieldsValidated(true);
   foreach (RequestFormField field, task.requestFormFields()) {
@@ -225,8 +227,7 @@ QList<TaskInstance> Scheduler::doRequestTask(
     }
   }
   if (!fieldsValidated)
-    return QList<TaskInstance>();
-  QList<TaskInstance> requests;
+    return requests;
   TaskInstance workflowTaskInstance
       = callerTask.task().mean() == Task::Workflow ? callerTask
                                                    : TaskInstance();
@@ -367,7 +368,7 @@ TaskInstance Scheduler::abortTask(quint64 id) {
 }
 
 TaskInstance Scheduler::doAbortTask(quint64 id) {
-  QList<TaskInstance> tasks = _runningTasks.keys();
+  TaskInstanceList tasks = _runningTasks.keys();
   for (int i = 0; i < tasks.size(); ++i) {
     TaskInstance r2 = tasks[i];
     if (id == r2.idAsLong()) {
@@ -422,7 +423,7 @@ bool Scheduler::checkTrigger(CronTrigger trigger, Task task, QString taskId) {
       overridingParams
           .setValue(key, config().globalParams()
                     .value(trigger.overridingParams().rawValue(key)));
-    QList<TaskInstance> requests = syncRequestTask(taskId, overridingParams);
+    TaskInstanceList requests = syncRequestTask(taskId, overridingParams);
     if (!requests.isEmpty())
       foreach (TaskInstance request, requests)
         Log::info(taskId, request.idAsLong())
@@ -483,7 +484,7 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
           overridingParams
               .setValue(key, params
                         .value(trigger.overridingParams().rawValue(key)));
-        QList<TaskInstance> requests
+        TaskInstanceList requests
             = syncRequestTask(task.id(), overridingParams);
         if (!requests.isEmpty())
           foreach (TaskInstance request, requests)
@@ -804,7 +805,7 @@ void Scheduler::enableAllTasks(bool enable) {
 
 void Scheduler::periodicChecks() {
   // detect queued or running tasks that exceeded their max expected duration
-  QList<TaskInstance> currentInstances;
+  TaskInstanceList currentInstances;
   currentInstances.append(_queuedRequests);
   currentInstances.append(_runningTasks.keys());
   foreach (const TaskInstance r, currentInstances) {

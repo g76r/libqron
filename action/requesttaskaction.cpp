@@ -50,7 +50,7 @@ public:
         if (_scheduler->taskExists(idIfLocalToGroup))
           id = idIfLocalToGroup;
       }
-      QList<TaskInstance> instances = _scheduler->syncRequestTask(
+      TaskInstanceList instances = _scheduler->syncRequestTask(
           id, evaluatedOverrindingParams(eventContext, parentInstance), _force,
           parentInstance);
       if (instances.isEmpty())

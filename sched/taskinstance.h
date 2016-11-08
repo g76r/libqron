@@ -21,6 +21,7 @@
 #include "config/host.h"
 #include "util/paramset.h"
 #include "modelview/shareduiitem.h"
+#include "modelview/shareduiitemlist.h"
 
 class TaskInstanceData;
 class TaskInstancePseudoParamsProvider;
@@ -99,6 +100,9 @@ private:
     return (const TaskInstanceData*)SharedUiItem::data(); }
 };
 
+Q_DECLARE_METATYPE(TaskInstance)
+Q_DECLARE_TYPEINFO(TaskInstance, Q_MOVABLE_TYPE);
+
 /** ParamsProvider wrapper for pseudo params. */
 class LIBQRONSHARED_EXPORT TaskInstancePseudoParamsProvider
     : public ParamsProvider {
@@ -117,7 +121,31 @@ inline TaskInstancePseudoParamsProvider TaskInstance::pseudoParams() const {
   return TaskInstancePseudoParamsProvider(*this);
 }
 
-Q_DECLARE_METATYPE(TaskInstance)
-Q_DECLARE_TYPEINFO(TaskInstance, Q_MOVABLE_TYPE);
+class LIBQRONSHARED_EXPORT TaskInstanceList
+    : public SharedUiItemList<TaskInstance> {
+public:
+  TaskInstanceList() { }
+  TaskInstanceList(const TaskInstanceList &other)
+    : SharedUiItemList<TaskInstance>(other) { }
+  TaskInstanceList(const SharedUiItemList<TaskInstance> &other)
+    : SharedUiItemList<TaskInstance>(other) { }
+  TaskInstanceList(const QList<TaskInstance> &other)
+    : SharedUiItemList<TaskInstance>(other) { }
+  operator QList<quint64>() const {
+    QList<quint64> list;
+    for (const TaskInstance &taskInstance : *this)
+      list.append(taskInstance.idAsLong());
+    return list;
+  }
+  operator QStringList() const {
+    QStringList list;
+    for (const TaskInstance &taskInstance : *this)
+      list.append(taskInstance.id());
+    return list;
+  }
+};
+
+Q_DECLARE_METATYPE(TaskInstanceList)
+Q_DECLARE_TYPEINFO(TaskInstanceList, Q_MOVABLE_TYPE);
 
 #endif // TASKINSTANCE_H

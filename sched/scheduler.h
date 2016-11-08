@@ -45,7 +45,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   Q_OBJECT
   Q_DISABLE_COPY(Scheduler)
   QThread *_thread;
-  QList<TaskInstance> _queuedRequests;
+  TaskInstanceList _queuedRequests;
   QHash<TaskInstance,Executor*> _runningTasks;
   QList<Executor*> _availableExecutors;
   Alerter *_alerter;
@@ -91,7 +91,7 @@ public slots:
    * @return isEmpty() if task cannot be queued
    * @see asyncRequestTask
    * @see RequestFormField */
-  QList<TaskInstance> syncRequestTask(
+  TaskInstanceList syncRequestTask(
       QString taskId, ParamSet paramsOverriding = ParamSet(),
       bool force = false, TaskInstance callerTask = TaskInstance());
   /** Explicitely request task execution now, but do not wait for validity
@@ -172,7 +172,7 @@ private:
   bool checkTrigger(CronTrigger trigger, Task task, QString taskId);
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
                               = QDateTime::currentDateTime());
-  Q_INVOKABLE QList<TaskInstance> doRequestTask(
+  Q_INVOKABLE TaskInstanceList doRequestTask(
       QString taskId, ParamSet paramsOverriding, bool force,
       TaskInstance callerTask);
   TaskInstance enqueueRequest(TaskInstance request, ParamSet paramsOverriding);
