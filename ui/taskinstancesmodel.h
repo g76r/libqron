@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,6 @@
 class LIBQRONSHARED_EXPORT TaskInstancesModel : public SharedUiItemsTableModel {
   Q_OBJECT
   Q_DISABLE_COPY(TaskInstancesModel)
-  QList<TaskInstance> _instances;
   bool _keepFinished;
   QString _customActions;
 
