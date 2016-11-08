@@ -112,6 +112,11 @@ public slots:
   TaskInstance cancelRequest(quint64 id);
   TaskInstance cancelRequest(TaskInstance instance) {
     return cancelRequest(instance.idAsLong()); }
+  /** Cancel all queued requests of a given task. */
+  TaskInstanceList cancelRequestsByTaskId(QString taskId);
+  /** @see cancelRequestsByTaskId(QString) */
+  TaskInstanceList cancelRequestsByTaskId(Task task) {
+    return cancelRequestsByTaskId(task.id()); }
   /** Abort a running task instance.
    * For local tasks aborting means killing, for ssh tasks aborting means
    * killing ssh client hence most of time killing actual task, for http tasks
@@ -126,6 +131,14 @@ public slots:
   /** @see abortTask(quint64) */
   TaskInstance abortTask(TaskInstance instance) {
     return abortTask(instance.idAsLong()); }
+  /** Abort all running instance of a given task.
+   * Same limitations than abortTask().
+   * @see abortTask(quint64)
+   */
+  TaskInstanceList abortTaskInstancesByTaskId(QString taskId);
+  /** @see abortTaskInstancesByTaskId(QString) */
+  TaskInstanceList abortTaskInstancesByTaskId(Task task) {
+    return abortTaskInstancesByTaskId(task.id()); }
   /** Post a notice.
    * This method is thread-safe.
    * If params has no parent it will be set global params as parent */
@@ -177,6 +190,8 @@ private:
       TaskInstance callerTask);
   TaskInstance enqueueRequest(TaskInstance request, ParamSet paramsOverriding);
   Q_INVOKABLE TaskInstance doCancelRequest(quint64 id);
+  Q_INVOKABLE TaskInstanceList doCancelRequestsByTaskId(QString taskId);
+  Q_INVOKABLE TaskInstanceList doAbortTaskInstancesByTaskId(QString taskId);
   Q_INVOKABLE TaskInstance doAbortTask(quint64 id);
   Q_INVOKABLE void doActivateWorkflowTransition(
       TaskInstance workflowTaskInstance, WorkflowTransition transition,

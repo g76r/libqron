@@ -356,6 +356,30 @@ TaskInstance Scheduler::doCancelRequest(quint64 id) {
   return TaskInstance();
 }
 
+TaskInstanceList Scheduler::cancelRequestsByTaskId(QString taskId) {
+  if (this->thread() == QThread::currentThread())
+    return doCancelRequestsByTaskId(taskId);
+  TaskInstanceList requests;
+  QMetaObject::invokeMethod(this, "doCancelRequestsByTaskId",
+                            Qt::BlockingQueuedConnection,
+                            Q_RETURN_ARG(TaskInstanceList, requests),
+                            Q_ARG(QString, taskId));
+  return requests;
+}
+
+TaskInstanceList Scheduler::doCancelRequestsByTaskId(QString taskId) {
+  TaskInstanceList requests;
+  for (int i = 0; i < _queuedRequests.size(); ++i) {
+    TaskInstance r = _queuedRequests[i];
+    if (taskId == r.task().id())
+      requests.append(r);
+  }
+  for (const TaskInstance &r : requests)
+    if (doCancelRequest(r.idAsLong()).isNull())
+      requests.removeOne(r);
+  return requests;
+}
+
 TaskInstance Scheduler::abortTask(quint64 id) {
   if (this->thread() == QThread::currentThread())
     return doAbortTask(id);
@@ -384,6 +408,31 @@ TaskInstance Scheduler::doAbortTask(quint64 id) {
   }
   Log::warning() << "cannot abort task because it is not in running tasks list";
   return TaskInstance();
+}
+
+TaskInstanceList Scheduler::abortTaskInstancesByTaskId(QString taskId) {
+  if (this->thread() == QThread::currentThread())
+    return doAbortTaskInstancesByTaskId(taskId);
+  TaskInstanceList requests;
+  QMetaObject::invokeMethod(this, "doAbortTaskInstancesByTaskId",
+                            Qt::BlockingQueuedConnection,
+                            Q_RETURN_ARG(TaskInstanceList, requests),
+                            Q_ARG(QString, taskId));
+  return requests;
+}
+
+TaskInstanceList Scheduler::doAbortTaskInstancesByTaskId(QString taskId) {
+  TaskInstanceList requests;
+  TaskInstanceList tasks = _runningTasks.keys();
+  for (int i = 0; i < tasks.size(); ++i) {
+    TaskInstance r = tasks[i];
+    if (taskId == r.task().id())
+      requests.append(r);
+  }
+  for (const TaskInstance &r : requests)
+    if (doAbortTask(r.idAsLong()).isNull())
+      requests.removeOne(r);
+  return requests;
 }
 
 void Scheduler::checkTriggersForTask(QVariant taskId) {
