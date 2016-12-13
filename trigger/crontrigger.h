@@ -21,7 +21,7 @@
 #include "trigger.h"
 
 /** Time trigger defined with a cron-like expression */
-class LIBQRONSHARED_EXPORT CronTrigger : public Trigger{
+class LIBQRONSHARED_EXPORT CronTrigger : public Trigger {
 public:
   explicit CronTrigger(const QString expression = QString());
   CronTrigger(PfNode node, QHash<QString,Calendar> namedCalendars);

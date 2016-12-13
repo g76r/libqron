@@ -22,6 +22,7 @@
 // MAYDO support 5 fields expressions (without seconds)
 // MAYDO support 7 fields expressions (with year)
 // MAYDO support text dayofweek (MON, FRI...)
+// MAYDO support never-expression, currently * * * 30 2 * works but it shouldn't
 
 #define RE_STEP "(((([0-9]*)(-([0-9]+))?)|\\*)(/([0-9]+))?)"
 #define RE_STEP_INTERNAL RE_STEP "\\s*,\\s*"
@@ -316,13 +317,16 @@ void CronTriggerData::parseCronExpression(QString cronExpression) {
       i += c[0].length();
       ++k;
     }
-    //qDebug() << "  cron expression parsed" << toString();
     _isValid = !(_seconds.isNull() || _minutes.isNull() || _hours.isNull()
                  || _days.isNull() || _months.isNull()
                  || _daysofweek.isNull());
-  } else
+    //qDebug() << "  cron expression parsed:" << expression()
+    //         << canonicalExpression() << _isValid;
+  } else {
+    //qDebug() << "  unsupported cron trigger expression:" << cronExpression;
     Log::warning() << "unsupported cron trigger expression: '"
                    << cronExpression << "'";
+  }
 }
 
 void CronTrigger::detach() {
