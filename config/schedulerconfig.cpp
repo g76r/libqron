@@ -681,8 +681,7 @@ PfNode SchedulerConfig::toPfNode() const {
 }
 
 SchedulerConfigData *SchedulerConfig::data() {
-  detach<SchedulerConfigData>();
-  return (SchedulerConfigData*)SharedUiItem::data();
+  return detachedData<SchedulerConfigData>();
 }
 
 QVariant SchedulerConfigData::uiHeaderData(int section, int role) const {

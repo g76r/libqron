@@ -162,8 +162,7 @@ bool Cluster::setUiData(
     SharedUiItemDocumentTransaction *transaction, int role) {
   if (isNull())
     return false;
-  detach<ClusterData>();
-  return ((ClusterData*)data())
+  return detachedData<ClusterData>()
       ->setUiData(section, value, errorString, transaction, role);
 }
 
@@ -178,8 +177,7 @@ int ClusterData::uiSectionCount() const {
 }
 
 ClusterData *Cluster::data() {
-  detach<ClusterData>();
-  return (ClusterData*)SharedUiItem::data();
+  return detachedData<ClusterData>();
 }
 
 PfNode Cluster::toPfNode() const {

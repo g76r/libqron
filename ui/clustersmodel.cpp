@@ -49,7 +49,7 @@ public:
 
 private:
   const HostReferenceData *data() const {
-    return (const HostReferenceData*)SharedUiItem::data(); }
+    return reinterpret_cast<const HostReferenceData*>(SharedUiItem::data()); }
 };
 
 Q_DECLARE_TYPEINFO(HostReference, Q_MOVABLE_TYPE);

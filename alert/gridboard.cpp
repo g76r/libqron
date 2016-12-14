@@ -137,9 +137,7 @@ public:
       node.setAttribute(QStringLiteral("label"), d->_label);
     return node;
   }
-  const DimensionData *data() const {
-    return (const DimensionData *)SharedUiItem::data();
-  }
+  const DimensionData *data() const { return specializedData<DimensionData>(); }
   QString rawValue() const {
     const DimensionData *d = data();
     return d ? d->_rawValue : QString();
@@ -303,8 +301,7 @@ PfNode Gridboard::toPfNode() const {
 }
 
 GridboardData *Gridboard::data() {
-  detach<GridboardData>();
-  return (GridboardData*)SharedUiItem::data();
+  return detachedData<GridboardData>();
 }
 
 QRegularExpression Gridboard::patternRegexp() const {

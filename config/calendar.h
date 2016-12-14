@@ -47,8 +47,7 @@ public:
   QString name() const;
 
 private:
-  const CalendarData *data() const {
-    return (const CalendarData*)SharedUiItem::data(); }
+  const CalendarData *data() const { return specializedData<CalendarData>(); }
   CalendarData *data();
 };
 

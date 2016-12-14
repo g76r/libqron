@@ -76,7 +76,7 @@ public:
 private:
   AlertData *data();
   const AlertData *data() const {
-    return (const AlertData*)SharedUiItem::data(); }
+    return reinterpret_cast<const AlertData*>(SharedUiItem::data()); }
 };
 
 /** ParamsProvider wrapper for pseudo params. */

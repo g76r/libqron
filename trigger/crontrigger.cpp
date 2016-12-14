@@ -112,6 +112,8 @@ notstar:
     return index >= _min && index <= _max && _setValues[index-_min]; }
 };
 
+} // unnamed namespace
+
 class CronTriggerData : public TriggerData {
 public:
   QString _cronExpression;
@@ -140,8 +142,6 @@ private:
   void parseCronExpression(QString cronExpression);
 };
 
-} // unnamed namespace
-
 CronTrigger::CronTrigger(const QString cronExpression)
   : Trigger(new CronTriggerData(cronExpression)) {
 }
@@ -164,25 +164,28 @@ CronTrigger &CronTrigger::operator=(const CronTrigger &other) {
 }
 
 QDateTime CronTrigger::nextTriggering(QDateTime max) const {
-  return d ? ((CronTriggerData*)d.data())->nextTriggering(max) : QDateTime();
+  const CronTriggerData *d = data();
+  return d ? d->nextTriggering(max) : QDateTime();
 }
 
 bool CronTrigger::isTriggering(QDateTime timestamp) const {
-  return d ? ((CronTriggerData*)d.data())->isTriggering(timestamp) : false;
+  const CronTriggerData *d = data();
+  return d ? d->isTriggering(timestamp) : false;
 }
 
 QDateTime CronTrigger::lastTriggered() const {
-  return d && ((CronTriggerData*)d.data())->_lastTriggered >= 0
-      ? QDateTime::fromMSecsSinceEpoch(
-          ((CronTriggerData*)d.data())->_lastTriggered)
+  const CronTriggerData *d = data();
+  return d && d->_lastTriggered >= 0
+      ? QDateTime::fromMSecsSinceEpoch(d->_lastTriggered)
       : QDateTime();
 }
 
 void CronTrigger::setLastTriggered(QDateTime lastTriggered) const {
+  const CronTriggerData *d = data();
   if (d) {
-    ((CronTriggerData*)d.data())->_lastTriggered = lastTriggered.isValid()
-        ? lastTriggered.toMSecsSinceEpoch() : -1;
-    ((CronTriggerData*)d.data())->_nextTriggering = -1;
+    d->_lastTriggered =
+        lastTriggered.isValid() ? lastTriggered.toMSecsSinceEpoch() : -1;
+    d->_nextTriggering = -1;
   }
 }
 
@@ -331,6 +334,14 @@ void CronTriggerData::parseCronExpression(QString cronExpression) {
 
 void CronTrigger::detach() {
   // nothing to do, calling a non const method is enough
+}
+
+const CronTriggerData *CronTrigger::data() const {
+  return reinterpret_cast<const CronTriggerData*>(d.data());
+}
+
+CronTriggerData *CronTrigger::data() {
+  return reinterpret_cast<CronTriggerData*>(d.data());
 }
 
 #if 0

@@ -188,8 +188,7 @@ QString Calendar::name() const {
 }
 
 CalendarData *Calendar::data() {
-  detach<CalendarData>();
-  return (CalendarData*)SharedUiItem::data();
+  return detachedData<CalendarData>();
 }
 
 QVariant CalendarData::uiData(int section, int role) const {

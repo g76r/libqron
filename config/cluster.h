@@ -52,8 +52,7 @@ public:
 
 private:
   ClusterData *data();
-  const ClusterData *data() const {
-    return (const ClusterData*)SharedUiItem::data(); }
+  const ClusterData *data() const { return specializedData<ClusterData>(); }
 };
 
 Q_DECLARE_TYPEINFO(Cluster, Q_MOVABLE_TYPE);

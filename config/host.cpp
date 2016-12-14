@@ -105,8 +105,7 @@ bool Host::setUiData(int section, const QVariant &value, QString *errorString,
                      SharedUiItemDocumentTransaction *transaction, int role) {
   if (isNull())
     return false;
-  detach();
-  return ((HostData*)data())
+  return detachedData<HostData>()
       ->setUiData(section, value, errorString, transaction, role);
 }
 
@@ -164,12 +163,11 @@ int HostData::uiSectionCount() const {
 }
 
 HostData *Host::data() {
-  SharedUiItem::detach<HostData>();
-  return (HostData*)SharedUiItem::data();
+  return SharedUiItem::detachedData<HostData>();
 }
 
 void Host::detach() {
-  SharedUiItem::detach<HostData>();
+  SharedUiItem::detachedData<HostData>();
 }
 
 PfNode Host::toPfNode() const {

@@ -85,7 +85,7 @@ public:
 private:
   SchedulerConfigData *data();
   const SchedulerConfigData *data() const {
-    return (const SchedulerConfigData*)SharedUiItem::data(); }
+    return specializedData<SchedulerConfigData>(); }
   QString recomputeId() const;
 };
 

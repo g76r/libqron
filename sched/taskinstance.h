@@ -97,7 +97,7 @@ public:
 private:
   TaskInstanceData *data();
   const TaskInstanceData *data() const {
-    return (const TaskInstanceData*)SharedUiItem::data(); }
+    return specializedData<TaskInstanceData>(); }
 };
 
 Q_DECLARE_METATYPE(TaskInstance)

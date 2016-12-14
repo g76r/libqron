@@ -82,6 +82,5 @@ int ConfigHistoryEntryData::uiSectionCount() const {
 }
 
 ConfigHistoryEntryData *ConfigHistoryEntry::data() {
-  detach<ConfigHistoryEntryData>();
-  return (ConfigHistoryEntryData*)SharedUiItem::data();
+  return detachedData<ConfigHistoryEntryData>();
 }

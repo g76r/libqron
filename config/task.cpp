@@ -81,13 +81,8 @@ WorkflowTransition::WorkflowTransition(
 WorkflowTransition::~WorkflowTransition() {
 }
 
-void WorkflowTransition::detach() {
-  SharedUiItem::detach<WorkflowTransitionData>();
-}
-
 WorkflowTransitionData *WorkflowTransition::data() {
-  SharedUiItem::detach<WorkflowTransitionData>();
-  return (WorkflowTransitionData*)SharedUiItem::data();
+  return SharedUiItem::detachedData<WorkflowTransitionData>();
 }
 
 QString WorkflowTransition::workflowId() const {
@@ -157,8 +152,8 @@ public:
   mutable int _lastReturnCode, _lastTotalMillis;
   mutable quint64 _lastTaskInstanceId;
 
-  TaskData() : _maxExpectedDuration(LLONG_MAX), _minExpectedDuration(0),
-    _maxDurationBeforeAbort(LLONG_MAX),
+  TaskData() : _maxInstances(1), _maxExpectedDuration(LLONG_MAX),
+    _minExpectedDuration(0), _maxDurationBeforeAbort(LLONG_MAX),
     _enqueuePolicy(Task::EnqueueAndDiscardQueued),
     _lastExecution(LLONG_MIN), _nextScheduledExecution(LLONG_MIN),
     _enabled(true), _lastSuccessful(true), _lastReturnCode(-1),
@@ -1184,8 +1179,7 @@ void Task::setParentParams(ParamSet parentParams) {
 }
 
 TaskData *Task::data() {
-  detach<TaskData>();
-  return (TaskData*)SharedUiItem::data();
+  return detachedData<TaskData>();
 }
 
 PfNode Task::toPfNode() const {

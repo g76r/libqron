@@ -66,8 +66,7 @@ public:
   QString toHtml() const;
 
 private:
-  const GridboardData *data() const {
-    return (const GridboardData*)SharedUiItem::data(); }
+  const GridboardData *data() const { return specializedData<GridboardData>(); }
   GridboardData *data();
 };
 

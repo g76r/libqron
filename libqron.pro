@@ -14,7 +14,7 @@
 QT       += core network
 QT       -= gui
 
-CONFIG += console largefile c++11
+CONFIG += largefile c++11
 CONFIG -= app_bundle
 
 TEMPLATE = lib
@@ -36,7 +36,7 @@ LIBS += -lqtpf -lqtssu
 
 exists(/usr/bin/ccache):QMAKE_CXX = ccache g++
 exists(/usr/bin/ccache):QMAKE_CXXFLAGS += -fdiagnostics-color=always
-QMAKE_CXXFLAGS += -Wextra
+QMAKE_CXXFLAGS += -Wextra -Woverloaded-virtual
 #QMAKE_CXXFLAGS += -std=gnu++11
 #QMAKE_CXXFLAGS += -fno-elide-constructors
 unix:CONFIG(debug,debug|release):QMAKE_CXXFLAGS += -ggdb

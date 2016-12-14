@@ -53,7 +53,7 @@ public:
 
 private:
   const AlertSettingsData *data() const {
-    return (const AlertSettingsData*)SharedUiItem::data(); }
+    return specializedData<AlertSettingsData>(); }
 };
 
 Q_DECLARE_METATYPE(AlertSettings)

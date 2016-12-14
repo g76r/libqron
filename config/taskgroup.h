@@ -62,8 +62,7 @@ public:
 
 private:
   TaskGroupData *data();
-  const TaskGroupData *data() const {
-    return (const TaskGroupData*)SharedUiItem::data(); }
+  const TaskGroupData *data() const { return specializedData<TaskGroupData>(); }
 };
 
 Q_DECLARE_TYPEINFO(TaskGroup, Q_MOVABLE_TYPE);

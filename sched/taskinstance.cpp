@@ -438,6 +438,5 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
 }
 
 TaskInstanceData *TaskInstance::data() {
-  detach<TaskInstanceData>();
-  return (TaskInstanceData*)SharedUiItem::data();
+  return detachedData<TaskInstanceData>();
 }

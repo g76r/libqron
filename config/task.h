@@ -55,7 +55,6 @@ public:
   ~WorkflowTransition();
   WorkflowTransition &operator=(const WorkflowTransition &other) {
     SharedUiItem::operator=(other); return *this; }
-  void detach();
   QString workflowId() const;
   void setWorkflowId(QString workflowId);
   QString sourceLocalId() const;
@@ -69,7 +68,7 @@ public:
 private:
   WorkflowTransitionData *data();
   const WorkflowTransitionData *data() const {
-    return (const WorkflowTransitionData*)SharedUiItem::data(); }
+    return specializedData<WorkflowTransitionData>(); }
 };
 
 Q_DECLARE_METATYPE(WorkflowTransition)
@@ -215,7 +214,7 @@ public:
 
 private:
   TaskData *data();
-  const TaskData *data() const { return (const TaskData*)SharedUiItem::data(); }
+  const TaskData *data() const { return specializedData<TaskData>(); }
 };
 
 /** ParamsProvider wrapper for pseudo params. */

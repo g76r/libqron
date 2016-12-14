@@ -71,7 +71,7 @@ public:
 
 private:
   const AlertSubscriptionData *data() const {
-    return (const AlertSubscriptionData*)SharedUiItem::data(); }
+    return specializedData<AlertSubscriptionData>(); }
 };
 
 Q_DECLARE_METATYPE(AlertSubscription)

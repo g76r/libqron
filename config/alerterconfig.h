@@ -59,7 +59,7 @@ public:
 
 private:
   const AlerterConfigData *data() const {
-    return (const AlerterConfigData *)SharedUiItem::data(); }
+    return specializedData<AlerterConfigData>(); }
 };
 
 Q_DECLARE_METATYPE(AlerterConfig)

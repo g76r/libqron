@@ -69,7 +69,7 @@ public:
 
 private:
   StepData *data();
-  const StepData *data() const { return (const StepData*)SharedUiItem::data(); }
+  const StepData *data() const { return specializedData<StepData>(); }
 };
 
 Q_DECLARE_TYPEINFO(Step, Q_MOVABLE_TYPE);

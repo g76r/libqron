@@ -246,8 +246,7 @@ PfNode Step::toPfNode() const {
 }
 
 StepData *Step::data() {
-  detach<StepData>();
-  return (StepData*)SharedUiItem::data();
+  return detachedData<StepData>();
 }
 
 QVariant StepData::uiData(int section, int role) const {

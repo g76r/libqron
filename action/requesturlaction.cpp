@@ -23,6 +23,7 @@ class RequestUrlGlobalNetworkActionHub {
 public:
   QNetworkAccessManager *_nam;
   RequestUrlGlobalNetworkActionHub() : _nam(new QNetworkAccessManager) { }
+  RequestUrlGlobalNetworkActionHub(const RequestUrlGlobalNetworkActionHub&) = delete;
 };
 
 Q_GLOBAL_STATIC(RequestUrlGlobalNetworkActionHub, globalNetworkActionHub)

@@ -20,6 +20,8 @@
 #include <QMetaType>
 #include "trigger.h"
 
+class CronTriggerData;
+
 /** Time trigger defined with a cron-like expression */
 class LIBQRONSHARED_EXPORT CronTrigger : public Trigger {
 public:
@@ -55,6 +57,10 @@ public:
   void setLastTriggered(QDateTime lastTriggered) const;
   void clearLastTriggered() const { setLastTriggered(QDateTime()); }
   void detach();
+
+private:
+  inline const CronTriggerData *data() const;
+  inline CronTriggerData *data();
 };
 
 // FIXME Q_DECLARE_METATYPE(CronTrigger)

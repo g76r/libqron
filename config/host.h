@@ -42,7 +42,7 @@ public:
 
 private:
   HostData *data();
-  const HostData *data() const { return (const HostData*)SharedUiItem::data(); }
+  const HostData *data() const { return specializedData<HostData>(); }
 };
 
 Q_DECLARE_TYPEINFO(Host, Q_MOVABLE_TYPE);

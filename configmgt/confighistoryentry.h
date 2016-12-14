@@ -32,7 +32,7 @@ public:
 private:
   ConfigHistoryEntryData *data();
   const ConfigHistoryEntryData *data() const {
-    return (const ConfigHistoryEntryData*)SharedUiItem::data(); }
+    return specializedData<ConfigHistoryEntryData>(); }
 };
 
 Q_DECLARE_METATYPE(ConfigHistoryEntry)

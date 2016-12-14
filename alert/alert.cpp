@@ -167,8 +167,7 @@ void Alert::setSubscription(AlertSubscription subscription) {
 }
 
 AlertData *Alert::data() {
-  detach<AlertData>();
-  return (AlertData*)SharedUiItem::data();
+  return detachedData<AlertData>();
 }
 
 static QString nonexistentStatus("nonexistent");

@@ -195,8 +195,7 @@ int TaskGroupData::uiSectionCount() const {
 }
 
 TaskGroupData *TaskGroup::data() {
-  detach<TaskGroupData>();
-  return (TaskGroupData*)SharedUiItem::data();
+  return detachedData<TaskGroupData>();
 }
 
 PfNode TaskGroup::toPfNode() const {
