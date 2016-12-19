@@ -50,6 +50,7 @@ public:
   /** milliseconds, 0 when not set */
   qint64 duplicateEmitDelay() const;
   CronTrigger visibilityWindow() const;
+  CronTrigger acceptabilityWindow() const;
 
 private:
   const AlertSettingsData *data() const {

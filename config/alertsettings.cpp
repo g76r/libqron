@@ -1,4 +1,4 @@
-/* Copyright 2015 Hallowyn and others.
+/* Copyright 2015-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,8 @@ static QString _uiHeaderNames[] = {
   "Mayrise Delay",
   "Drop Delay", // 5
   "Duplicate Emit Delay",
-  "Visibility Window"
+  "Visibility Window",
+  "Acceptability Window"
 };
 
 static QAtomicInt _sequence;
@@ -35,7 +36,7 @@ public:
   QRegularExpression _patternRegexp;
   qint64 _riseDelay, _mayriseDelay, _dropDelay, _duplicateEmitDelay;
   QStringList _commentsList;
-  CronTrigger _visibilityWindow;
+  CronTrigger _visibilityWindow, _acceptabilityWindow;
   // MAYDO add params
 
   AlertSettingsData()
@@ -74,6 +75,7 @@ AlertSettings::AlertSettings(PfNode node) {
         QStringLiteral("duplicateemitdelay"), 0)*1e3;
   ConfigUtils::loadComments(node, &d->_commentsList);
   d->_visibilityWindow = CronTrigger(node.attribute("visibilitywindow"));
+  d->_acceptabilityWindow = CronTrigger(node.attribute("acceptabilitywindow"));
   setData(d);
 }
 
@@ -96,6 +98,9 @@ PfNode AlertSettings::toPfNode() const {
   if (d->_visibilityWindow.isValid())
     node.setAttribute(QStringLiteral("visibilitywindow"),
                       d->_visibilityWindow.expression());
+  if (d->_acceptabilityWindow.isValid())
+    node.setAttribute(QStringLiteral("acceptabilitywindow"),
+                      d->_acceptabilityWindow.expression());
   return node;
 }
 
@@ -134,6 +139,11 @@ CronTrigger AlertSettings::visibilityWindow() const {
   return d ? d->_visibilityWindow : CronTrigger();
 }
 
+CronTrigger AlertSettings::acceptabilityWindow() const {
+  const AlertSettingsData *d = data();
+  return d ? d->_acceptabilityWindow : CronTrigger();
+}
+
 QVariant AlertSettingsData::uiData(int section, int role) const {
   switch(role) {
   case Qt::DisplayRole:
@@ -156,6 +166,9 @@ QVariant AlertSettingsData::uiData(int section, int role) const {
             .append(QString::number(_duplicateEmitDelay/1e3));
       if (_visibilityWindow.isValid())
         s.append(" visibilitywindow=").append(_visibilityWindow.expression());
+      if (_acceptabilityWindow.isValid())
+        s.append(" acceptabilitywindow=")
+            .append(_acceptabilityWindow.expression());
       return s.trimmed();
     }
     case 3:
@@ -169,6 +182,9 @@ QVariant AlertSettingsData::uiData(int section, int role) const {
     case 7:
       return _visibilityWindow.isValid() ? _visibilityWindow.expression()
                                          : QVariant();
+    case 8:
+      return _acceptabilityWindow.isValid() ? _acceptabilityWindow.expression()
+                                            : QVariant();
     }
     break;
   default:

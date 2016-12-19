@@ -161,6 +161,13 @@ void Alerter::cancelAlertImmediately(QString alertId) {
 void Alerter::doRaiseAlert(QString alertId, bool immediately) {
   Alert oldAlert = _statefulAlerts.value(alertId);
   Alert newAlert = oldAlert.isNull() ? Alert(alertId) : oldAlert;
+  QDateTime now = QDateTime::currentDateTime();
+  CronTrigger acceptabilityWindow =
+      alertSettings(alertId).acceptabilityWindow();
+  if (acceptabilityWindow.isValid() && !acceptabilityWindow.isTriggering(now)) {
+    Log::debug() << "ignoring alert out of acceptability window: " << alertId;
+    return;
+  }
   ++_raiseRequestsCounter;
 //  if (alertId.startsWith("task.maxinstancesreached")
 //      || alertId.startsWith("task.maxinstancesreached")) {
@@ -187,7 +194,7 @@ void Alerter::doRaiseAlert(QString alertId, bool immediately) {
     case Alert::Raised:
       goto nothing_changed;
     case Alert::MayRise:
-      if (newAlert.visibilityDate() <= QDateTime::currentDateTime()) {
+      if (newAlert.visibilityDate() <= now) {
         actionRaise(&newAlert);
         break;
       }
@@ -260,15 +267,21 @@ nothing_changed:
 }
 
 void Alerter::doEmitAlert(QString alertId) {
-  Log::debug() << "emit alert: " << alertId;
   ++_emitRequestsCounter;
   Alert alert = _oneshotAlerts.value(alertId);
   QDateTime now = QDateTime::currentDateTime();
+  CronTrigger acceptabilityWindow =
+      alertSettings(alertId).acceptabilityWindow();
+  if (acceptabilityWindow.isValid() && !acceptabilityWindow.isTriggering(now)) {
+    Log::debug() << "ignoring alert out of acceptability window: " << alertId;
+    return;
+  }
+  Log::debug() << "emit one-shot alert: " << alertId;
   if (alert.isNull()) {
     // alert not emitted recently
-    CronTrigger window = alertSettings(alertId).visibilityWindow();
+    CronTrigger visibilityWindow = alertSettings(alertId).visibilityWindow();
     alert = Alert(alertId);
-    if (!window.isValid() || window.isTriggering(now)) {
+    if (!visibilityWindow.isValid() || visibilityWindow.isTriggering(now)) {
       // inside visibility window: notify channels and record in emittedAlerts
       notifyChannels(alert);
       alert.resetCount(); // record with count = 0
