@@ -262,26 +262,32 @@ nothing_changed:
 void Alerter::doEmitAlert(QString alertId) {
   Log::debug() << "emit alert: " << alertId;
   ++_emitRequestsCounter;
-  Alert alert = _emittedAlerts.value(alertId);
+  Alert alert = _oneshotAlerts.value(alertId);
   QDateTime now = QDateTime::currentDateTime();
   if (alert.isNull()) {
-    // never seen: record in emittedAlerts and notify channels
+    // alert not emitted recently
+    CronTrigger window = alertSettings(alertId).visibilityWindow();
     alert = Alert(alertId);
-    notifyChannels(alert);
-    alert.resetCount();
+    if (!window.isValid() || window.isTriggering(now)) {
+      // inside visibility window: notify channels and record in emittedAlerts
+      notifyChannels(alert);
+      alert.resetCount(); // record with count = 0
+    } else {
+      // outside visibility window: record in emittedAlerts without notifying
+    }
     alert.setVisibilityDate(
           windowCorrectedVisibilityDate(
             alertId, now.addMSecs(duplicateEmitDelay(alertId))));
-    _emittedAlerts.insert(alertId, alert);
+    _oneshotAlerts.insert(alertId, alert);
     ++_deduplicatingAlertsCount;
     _deduplicatingAlertsHwm = qMax(_deduplicatingAlertsCount,
                                    _deduplicatingAlertsHwm);
   } else if (alert.visibilityDate() >= now) {
     // alert already emitted recently : increment counter and don't notify
     alert.incrementCount();
-    _emittedAlerts.insert(alertId, alert);
+    _oneshotAlerts.insert(alertId, alert);
   } else {
-    // alert emitted long enough to be notified again
+    // alert emitted long ago enough to be notified again or window reached
     alert.incrementCount();
     alert.setRiseDate(now);
     notifyChannels(alert);
@@ -289,7 +295,7 @@ void Alerter::doEmitAlert(QString alertId) {
     alert.setVisibilityDate(
           windowCorrectedVisibilityDate(
             alertId, now.addMSecs(duplicateEmitDelay(alertId))));
-    _emittedAlerts.insert(alertId, alert);
+    _oneshotAlerts.insert(alertId, alert);
   }
 }
 
@@ -336,12 +342,12 @@ void Alerter::asyncProcessing() {
       break;
     }
   }
-  foreach (Alert alert, _emittedAlerts) {
+  foreach (Alert alert, _oneshotAlerts) {
     if (alert.visibilityDate() <= now) {
       if (alert.count() > 0) {
         notifyChannels(alert);
       }
-      _emittedAlerts.remove(alert.id());
+      _oneshotAlerts.remove(alert.id());
       --_deduplicatingAlertsCount;
     }
   }

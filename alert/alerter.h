@@ -126,7 +126,7 @@ class LIBQRONSHARED_EXPORT Alerter : public QObject {
   AlerterConfig _config;
   QHash<QString,AlertChannel*> _channels;
   QHash<QString,Alert> _statefulAlerts;
-  QHash<QString,Alert> _emittedAlerts;
+  QHash<QString,Alert> _oneshotAlerts;
   QHash<QString, QList<AlertSubscription> > _alertSubscriptionsCache;
   QHash<QString, AlertSettings> _alertSettingsCache;
   qint64 _emitRequestsCounter, _raiseRequestsCounter, _cancelRequestsCounter,
