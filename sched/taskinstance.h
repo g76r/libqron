@@ -46,7 +46,7 @@ public:
   ParamSet overridingParams() const;
   quint64 idAsLong() const;
   quint64 groupId() const;
-  QDateTime submissionDatetime() const;
+  QDateTime requestDatetime() const;
   QDateTime startDatetime() const;
   void setStartDatetime(QDateTime datetime
                         = QDateTime::currentDateTime()) const;

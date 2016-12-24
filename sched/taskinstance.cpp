@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2016 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,9 +23,9 @@ static QString _uiHeaderNames[] = {
   "Instance Id", // 0
   "Task Id",
   "Status",
-  "Submission",
-  "Start Time",
-  "End Time", // 5
+  "Request Date",
+  "Start Date",
+  "End Date", // 5
   "Seconds Queued",
   "Seconds Running",
   "Actions",
@@ -40,7 +40,7 @@ public:
   QString _idAsString;
   Task _task;
   ParamSet _overridingParams;
-  QDateTime _submission;
+  QDateTime _requestDateTime;
   bool _force;
   TaskInstance _workflowTaskInstance;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
@@ -66,7 +66,7 @@ public:
     : _id(newId()), _groupId(groupId ? groupId : _id),
       _idAsString(QString::number(_id)),
       _task(task), _overridingParams(overridingParams),
-      _submission(QDateTime::currentDateTime()), _force(force),
+      _requestDateTime(QDateTime::currentDateTime()), _force(force),
       _workflowTaskInstance(workflowTaskInstance),
       _start(LLONG_MIN), _end(LLONG_MIN),
       _success(false), _returnCode(0), _abortable(false) {
@@ -103,7 +103,7 @@ public:
   int uiSectionCount() const;
   QVariant uiData(int section, int role) const;
   QVariant uiHeaderData(int section, int role) const;
-  QDateTime inline submissionDatetime() const { return _submission; }
+  QDateTime inline requestDatetime() const { return _requestDateTime; }
   QDateTime inline startDatetime() const { return _start != LLONG_MIN
         ? QDateTime::fromMSecsSinceEpoch(_start) : QDateTime(); }
   void inline setStartDatetime(QDateTime datetime) const {
@@ -112,15 +112,15 @@ public:
         ? QDateTime::fromMSecsSinceEpoch(_end) : QDateTime(); }
   void inline setEndDatetime(QDateTime datetime) const {
     _end = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
-  qint64 inline queuedMillis() const { return _submission.msecsTo(startDatetime()); }
+  qint64 inline queuedMillis() const { return _requestDateTime.msecsTo(startDatetime()); }
   qint64 inline runningMillis() const {
     return _start != LLONG_MIN && _end != LLONG_MIN ? _end - _start : 0; }
   qint64 inline totalMillis() const {
-    return _submission.isValid() && _end != LLONG_MIN
-        ? _end - _submission.toMSecsSinceEpoch() : 0; }
+    return _requestDateTime.isValid() && _end != LLONG_MIN
+        ? _end - _requestDateTime.toMSecsSinceEpoch() : 0; }
   qint64 inline liveTotalMillis() const {
     return (_end != LLONG_MIN ? _end : QDateTime::currentMSecsSinceEpoch())
-        - _submission.toMSecsSinceEpoch(); }
+        - _requestDateTime.toMSecsSinceEpoch(); }
   TaskInstance::TaskInstanceStatus inline status() const {
     if (_end != LLONG_MIN) {
       if (_start == LLONG_MIN)
@@ -185,14 +185,14 @@ quint64 TaskInstance::groupId() const {
   return d ? d->_groupId : 0;
 }
 
-QDateTime TaskInstance::submissionDatetime() const {
+QDateTime TaskInstance::requestDatetime() const {
   const TaskInstanceData *d = data();
-  return d ? d->submissionDatetime() : QDateTime();
+  return d ? d->requestDatetime() : QDateTime();
 }
 
 QDateTime TaskInstance::startDatetime() const {
   const TaskInstanceData *d = data();
-  return d ? d->submissionDatetime() : QDateTime();
+  return d ? d->requestDatetime() : QDateTime();
 }
 
 void TaskInstance::setStartDatetime(QDateTime datetime) const {
@@ -312,9 +312,9 @@ static RadixTree<std::function<QVariant(const TaskInstance&, const QString&)>> _
 { "!targethostname" , [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.target().hostname();
 } },
-{ "!submissiondate", [](const TaskInstance &taskInstance, const QString &key) {
+{ "!requestdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.submissionDatetime(), key.mid(15));
+        taskInstance.requestDatetime(), key.mid(15));
 }, true },
 { "!startdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
@@ -324,9 +324,9 @@ static RadixTree<std::function<QVariant(const TaskInstance&, const QString&)>> _
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.endDatetime(), key.mid(8));
 }, true },
-{ "!workflowsubmissiondate", [](const TaskInstance &taskInstance, const QString &key) {
+{ "!workflowrequestdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.workflowTaskInstance().submissionDatetime(), key.mid(23));
+        taskInstance.workflowTaskInstance().requestDatetime(), key.mid(23));
 }, true },
 { "!workflowstartdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
@@ -411,7 +411,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
     case 2:
       return TaskInstance::statusAsString(status());
     case 3:
-      return submissionDatetime().toString(
+      return requestDatetime().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
     case 4:
       return startDatetime().toString(
@@ -420,7 +420,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
       return endDatetime().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
     case 6:
-      return startDatetime().isNull() || submissionDatetime().isNull()
+      return startDatetime().isNull() || requestDatetime().isNull()
           ? QVariant() : QString::number(queuedMillis()/1000.0);
     case 7:
       return endDatetime().isNull() || startDatetime().isNull()
