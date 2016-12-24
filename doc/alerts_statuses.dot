@@ -4,9 +4,8 @@ graph g {
   edge [arrowhead=vee,dir=forward]
   node [shape=box,style="rounded,filled",fillcolor=grey80]
   subgraph cluster_nonexistent {
-    /*start [shape=circle,style=filled,width=.2,label="",fillcolor=black]
-    start -- nonexistent*/
-    nonexistent
+    start [shape=circle,style=filled,width=.2,label="",fillcolor=black]
+    start -- nonexistent
     subgraph cluster_rising { rising; mayrise }
   }
   subgraph cluster_raised { raised; dropping }
