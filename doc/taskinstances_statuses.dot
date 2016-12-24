@@ -1,0 +1,21 @@
+graph g {
+  newrank=true;
+  graph [compound=true,style=rounded,ranksep=1.5]
+  edge [arrowhead=vee,dir=forward]
+  node [shape=box,style="rounded,filled",fillcolor=grey80]
+
+  start [shape=circle,style=filled,width=.2,label="",fillcolor=black]
+
+  edge [color=orangered,fontcolor=orangered]
+  Queued -- Canceled [label="cancelRequest()"]
+  Queued -- Canceled [label="duplicated requests, depending\non enqueuepolicy"]
+  Running -- Failure [label="abortTask()"]
+  Queued -- Failure [label="when some config errors\ndisable starting"]
+
+  edge [color=navy,fontcolor=navy]
+  start -- Queued [label="requestTask()"]
+  start -- Queued [label="trigger, action,\nworkflow transition, etc."]
+  Queued -- Running [label="when all prerequesites\nare met (resources, etc.)"]
+  Running -- Success [label="depending on return code\nand mean (ssh: 0,\nhttp: 200..299, etc.)"]
+  Running -- Failure [label="depending on return code\nand mean (ssh: !0,\nhttp: >= 300, etc.)"]
+}
