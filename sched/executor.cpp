@@ -232,8 +232,10 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
            _instance.idAsLong())
       << "task '" << _instance.task().id() << "' finished "
       << (success ? "successfully" : "in failure") << " with return code "
-      << exitCode << " on host '" << _instance.target().hostname() << "' in "
-      << _instance.runningMillis() << " ms";
+      << exitCode << " on host '" << _instance.target().hostname()
+      << "' after running " << _instance.runningMillis()
+      << " ms (total time including queue: " << _instance.totalMillis()
+      << " ms)";
   if (!_stderrWasUsed  && _alerter)
     _alerter->cancelAlert("task.stderr."+_instance.task().id());
   /* Qt doc is not explicit if delete should only be done when
