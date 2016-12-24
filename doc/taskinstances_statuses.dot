@@ -6,16 +6,19 @@ graph g {
 
   start [shape=circle,style=filled,width=.2,label="",fillcolor=black]
 
-  edge [color=orangered,fontcolor=orangered]
-  Queued -- Canceled [label="cancelRequest()"]
+  start -- Queued [label="trigger, action,\nworkflow transition,\netc."]
   Queued -- Canceled [label="duplicated requests, depending\non enqueuepolicy"]
-  Running -- Failure [label="abortTask()"]
+  Queued -- Running [label="when all prerequesites\nare met (resources, etc.)"]
+  Running -- Success [label="depending on return code\nand mean (ssh: 0,\nhttp: 200..299, etc.)"]
+  Running -- Failure [label="depending on return code\nand mean (ssh: !0,\nhttp: >= 300, etc.)"]
   Queued -- Failure [label="when some config errors\ndisable starting"]
 
   edge [color=navy,fontcolor=navy]
   start -- Queued [label="requestTask()"]
-  start -- Queued [label="trigger, action,\nworkflow transition, etc."]
-  Queued -- Running [label="when all prerequesites\nare met (resources, etc.)"]
-  Running -- Success [label="depending on return code\nand mean (ssh: 0,\nhttp: 200..299, etc.)"]
-  Running -- Failure [label="depending on return code\nand mean (ssh: !0,\nhttp: >= 300, etc.)"]
+
+  edge [color=orangered,fontcolor=orange]
+  Queued -- Canceled [label="cancelRequest()"]
+
+  edge [color=orangered,fontcolor=orangered]
+  Running -- Failure [label="abortTask()"]
 }
