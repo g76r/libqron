@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -894,4 +894,58 @@ void Scheduler::doActivateWorkflowTransition(TaskInstance workflowTaskInstance,
 
 void Scheduler::propagateTaskInstanceChange(TaskInstance instance) {
   emit itemChanged(instance, nullItem, QStringLiteral("taskinstance"));
+}
+
+TaskInstanceList Scheduler::queuedTaskInstances() {
+  TaskInstanceList instances;
+  if (this->thread() == QThread::currentThread())
+    instances = detachedQueuedTaskInstances();
+  else
+    QMetaObject::invokeMethod(
+          this, "detachedQueuedTaskInstances", Qt::BlockingQueuedConnection,
+          Q_RETURN_ARG(TaskInstanceList, instances));
+  return instances;
+}
+
+TaskInstanceList Scheduler::runningTaskInstances() {
+  TaskInstanceList instances;
+  if (this->thread() == QThread::currentThread())
+    instances = detachedRunningTaskInstances();
+  else
+    QMetaObject::invokeMethod(
+          this, "detachedRunningTaskInstances", Qt::BlockingQueuedConnection,
+          Q_RETURN_ARG(TaskInstanceList, instances));
+  return instances;
+}
+
+TaskInstanceList Scheduler::queuedOrRunningTaskInstances() {
+  TaskInstanceList instances;
+  if (this->thread() == QThread::currentThread())
+    instances = detachedQueuedOrRunningTaskInstances();
+  else
+    QMetaObject::invokeMethod(
+          this, "detachedQueuedOrRunningTaskInstances",
+          Qt::BlockingQueuedConnection,
+          Q_RETURN_ARG(TaskInstanceList, instances));
+  return instances;
+}
+
+TaskInstanceList Scheduler::detachedQueuedTaskInstances() {
+  TaskInstanceList queued = _queuedRequests;
+  queued.detach();
+  return queued;
+}
+
+TaskInstanceList Scheduler::detachedRunningTaskInstances() {
+  TaskInstanceList running = _runningTasks.keys();
+  running.detach(); // keys() may or may not return a detached container
+  return running;
+}
+
+TaskInstanceList Scheduler::detachedQueuedOrRunningTaskInstances() {
+  TaskInstanceList instances = _queuedRequests;
+  instances.detach();
+  TaskInstanceList running = _runningTasks.keys();
+  instances.append(running);
+  return instances;
 }

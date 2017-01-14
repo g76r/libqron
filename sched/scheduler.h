@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -59,7 +59,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   QHash<QString, QHash<QString,qint64>> _consumedResources; // <host,<resource,quantity>>
   std::random_device _randomDevice;
   std::mt19937 _uniformRandomNumberGenerator;
-  mutable QMutex _configGuard;
+  QMutex _configGuard;
 
 public:
   Scheduler();
@@ -162,9 +162,15 @@ public slots:
   void activateConfig(SchedulerConfig newConfig);
   // override config() to make it thread-safe
   /** Thread-safe (whereas QronConfigDocumentManager::config() is not) */
-  SchedulerConfig config() const {
+  SchedulerConfig config() {
     QMutexLocker ml(&_configGuard);
     return QronConfigDocumentManager::config(); }
+  /** Thread-safe. Sorted in queue order. */
+  TaskInstanceList queuedTaskInstances();
+  /** Thread-safe. No order guarantee. */
+  TaskInstanceList runningTaskInstances();
+  /** Thread-safe. No order guarantee. */
+  TaskInstanceList queuedOrRunningTaskInstances();
 
 signals:
   void hostsResourcesAvailabilityChanged(
@@ -203,6 +209,9 @@ private:
       TaskInstance workflowTaskInstance, WorkflowTransition transition,
       ParamSet eventContext);
   void propagateTaskInstanceChange(TaskInstance instance);
+  Q_INVOKABLE TaskInstanceList detachedQueuedTaskInstances();
+  Q_INVOKABLE TaskInstanceList detachedRunningTaskInstances();
+  Q_INVOKABLE TaskInstanceList detachedQueuedOrRunningTaskInstances();
 };
 
 #endif // SCHEDULER_H
