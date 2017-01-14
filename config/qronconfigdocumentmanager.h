@@ -17,6 +17,7 @@
 #include "modelview/shareduiitemdocumentmanager.h"
 #include "config/schedulerconfig.h"
 #include "eventsubscription.h"
+#include <QMutexLocker>
 
 /** Document manager for scheduler config
  * @see SharedUiItemDocumentManager
@@ -31,7 +32,9 @@ class LIBQRONSHARED_EXPORT QronConfigDocumentManager
 public:
   explicit QronConfigDocumentManager(QObject *parent = 0);
   SchedulerConfig config() const { return _config; }
-  void setConfig(SchedulerConfig newConfig);
+  /** If locker != 0, unlock it as soon as _config is set (i.e. as soon as
+   * config() is thread-safe again */
+  void setConfig(SchedulerConfig newConfig, QMutexLocker *locker = 0);
   using SharedUiItemDocumentManager::itemById;
   SharedUiItem itemById(QString idQualifier, QString id) const override;
   using SharedUiItemDocumentManager::itemsByIdQualifier;

@@ -117,7 +117,8 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
                  << newConfig.maxtotaltaskinstances();
   }
   newConfig.copyLiveAttributesFromOldTasks(oldConfig.tasks());
-  setConfig(newConfig);
+  QMutexLocker ml(&_configGuard);
+  setConfig(newConfig, &ml);
   _alerter->setConfig(newConfig.alerterConfig());
   reloadAccessControlConfig();
   QMetaObject::invokeMethod(this, "checkTriggersForAllTasks",

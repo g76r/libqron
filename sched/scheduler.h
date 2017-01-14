@@ -59,6 +59,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   QHash<QString, QHash<QString,qint64>> _consumedResources; // <host,<resource,quantity>>
   std::random_device _randomDevice;
   std::mt19937 _uniformRandomNumberGenerator;
+  mutable QMutex _configGuard;
 
 public:
   Scheduler();
@@ -159,6 +160,11 @@ public slots:
   //LATER enableAllTasksWithinGroup
   /** Activate a new configuration. */
   void activateConfig(SchedulerConfig newConfig);
+  // override config() to make it thread-safe
+  /** Thread-safe (whereas QronConfigDocumentManager::config() is not) */
+  SchedulerConfig config() const {
+    QMutexLocker ml(&_configGuard);
+    return QronConfigDocumentManager::config(); }
 
 signals:
   void hostsResourcesAvailabilityChanged(

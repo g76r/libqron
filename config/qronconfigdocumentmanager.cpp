@@ -275,9 +275,12 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<Task>(
   }
 }
 
-void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig) {
+void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
+                                          QMutexLocker *locker) {
   SchedulerConfig oldConfig = _config;
   _config = newConfig;
+  if (locker)
+    locker->unlock();
   emit paramsChanged(newConfig.globalParams(), oldConfig.globalParams(),
                      QStringLiteral("globalparams"));
   emit paramsChanged(newConfig.setenv(), oldConfig.setenv(),
