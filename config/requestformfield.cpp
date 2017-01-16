@@ -1,4 +1,4 @@
-/* Copyright 2013-2016 Hallowyn and others.
+/* Copyright 2013-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,10 +19,9 @@
 #include "log/log.h"
 #include "sched/taskinstance.h"
 #include "configutils.h"
-#include "util/htmlutils.h"
+#include "format/stringutils.h"
 #include "csv/csvfile.h"
 #include "pf/pfarray.h"
-#include "util/stringutils.h"
 
 static QStringList _allowedValuesCsvHeaders { "value", "label", "flags" };
 
@@ -163,7 +162,7 @@ QString RequestFormField::toHtmlFormFragment(
       QString value = row.value(0);
       QString label = row.value(1);
       options.append(" value=\"")
-          .append(HtmlUtils::htmlEncode(value, false, false))
+          .append(StringUtils::htmlEncode(value, false, false))
           .append("\"");
       QString s;
       if (value == d->_suggestion || row.value(2).contains('d')) {
@@ -171,8 +170,8 @@ QString RequestFormField::toHtmlFormFragment(
         hasDefault = true;
       }
       options.append(">");
-      options.append(HtmlUtils::htmlEncode(label.isEmpty() ? value : label,
-                                           false, false))
+      options.append(StringUtils::htmlEncode(label.isEmpty() ? value : label,
+                                             false, false))
           .append("</option>");
     }
     if (!d->_mandatory) {
@@ -205,33 +204,34 @@ QString RequestFormField::toHtmlFormFragment(
 QString RequestFormField::toHtmlHumanReadableDescription() const {
   QString v;
   if (d) {
-    v = "<p>"+HtmlUtils::htmlEncode(d->_id)+":<dl class=\"dl-horizontal\">";
+    v = "<p>"+StringUtils::htmlEncode(d->_id)+":<dl class=\"dl-horizontal\">";
     if (!d->_label.isEmpty())
-      v.append("<dt>label</dt><dd>").append(HtmlUtils::htmlEncode(d->_label))
+      v.append("<dt>label</dt><dd>").append(StringUtils::htmlEncode(d->_label))
           .append("</dd>");
     if (!d->_suggestion.isEmpty())
       v.append("<dt>suggestion</dt><dd>")
-          .append(HtmlUtils::htmlEncode(d->_suggestion)).append("</dd>");
+          .append(StringUtils::htmlEncode(d->_suggestion)).append("</dd>");
     if (!d->_mandatory)
       v.append("<dt>mandatory</dt><dd>true</dd>");
     if (!d->_placeholder.isEmpty())
       v.append("<dt>placeholder</dt><dd>")
-          .append(HtmlUtils::htmlEncode(d->_placeholder)).append("</dd>");
+          .append(StringUtils::htmlEncode(d->_placeholder)).append("</dd>");
     if (!d->_allowedValues.isEmpty()) {
       v.append("<dt>allowed values</dt><dd>")
-          .append(HtmlUtils::htmlEncode(
+          .append(StringUtils::htmlEncode(
                     StringUtils::columnFromRows(d->_allowedValues, 0)
                     .join(' ')))
           .append("</dd>");
     }
     if (!d->_allowedValuesSource.isEmpty()) {
       v.append("<dt>allowed values source</dt><dd>")
-          .append(HtmlUtils::htmlEncode(d->_allowedValuesSource))
+          .append(StringUtils::htmlEncode(d->_allowedValuesSource))
           .append("</dd>");
     }
     if (d->_format.isValid())
       v.append("<dt>format</dt><dd>")
-          .append(HtmlUtils::htmlEncode(d->_format.pattern())).append("</dd>");
+          .append(StringUtils::htmlEncode(d->_format.pattern()))
+          .append("</dd>");
     v.append("</dl>");
   }
   return v;

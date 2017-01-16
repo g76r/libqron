@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
 #include <QSharedData>
 #include <QDateTime>
 #include <QAtomicInt>
-#include "util/timeformats.h"
+#include "format/timeformats.h"
 #include <functional>
 #include "util/radixtree.h"
 

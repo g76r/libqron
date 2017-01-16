@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,7 +23,7 @@
 #include "sched/scheduler.h"
 #include "config/configutils.h"
 #include "requestformfield.h"
-#include "util/htmlutils.h"
+#include "format/stringutils.h"
 #include "step.h"
 #include "action/action.h"
 #include "trigger/noticetrigger.h"
