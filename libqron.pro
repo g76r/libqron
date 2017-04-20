@@ -19,44 +19,46 @@ CONFIG -= app_bundle
 
 TEMPLATE = lib
 TARGET = qron
-DEFINES += LIBQRON_LIBRARY
+
+TARGET_OS=default
+unix: TARGET_OS=unix
+linux: TARGET_OS=linux
+android: TARGET_OS=android
+macx: TARGET_OS=macx
+win32: TARGET_OS=win32
+BUILD_TYPE=unknown
+CONFIG(debug,debug|release): BUILD_TYPE=debug
+CONFIG(release,debug|release): BUILD_TYPE=release
 
 contains(QT_VERSION, ^4\\..*) {
   message("Cannot build with Qt version $${QT_VERSION}.")
   error("Use Qt 5.")
 }
 
-INCLUDEPATH += ../libqtpf ../libqtssu
-win32:CONFIG(debug,debug|release):LIBS += -L../build-libqtpf-windows/debug \
-  -L../build-libqtssu-windows/debug
-win32:CONFIG(release,debug|release):LIBS += -L../build-libqtpf-windows/release \
-  -L../build-libqtssu-windows/release
-unix:LIBS += -L../libqtpf -L../libqtssu
-LIBS += -lqtpf -lqtssu
+DEFINES += LIBQRON_LIBRARY
 
 exists(/usr/bin/ccache):QMAKE_CXX = ccache g++
 exists(/usr/bin/ccache):QMAKE_CXXFLAGS += -fdiagnostics-color=always
 QMAKE_CXXFLAGS += -Wextra -Woverloaded-virtual
-#QMAKE_CXXFLAGS += -std=gnu++11
 #QMAKE_CXXFLAGS += -fno-elide-constructors
-unix:CONFIG(debug,debug|release):QMAKE_CXXFLAGS += -ggdb
+CONFIG(debug,debug|release):QMAKE_CXXFLAGS += -ggdb
 
-unix {
-  OBJECTS_DIR = ../build-libqron-unix/obj
-  RCC_DIR = ../build-libqron-unix/rcc
-  MOC_DIR = ../build-libqron-unix/moc
+OBJECTS_DIR = ../build-$$TARGET-$$TARGET_OS/$$BUILD_TYPE/obj
+RCC_DIR = ../build-$$TARGET-$$TARGET_OS/$$BUILD_TYPE/rcc
+MOC_DIR = ../build-$$TARGET-$$TARGET_OS/$$BUILD_TYPE/moc
+DESTDIR = ../build-$$TARGET-$$TARGET_OS/$$BUILD_TYPE
+#autodoc.commands = (grep -v ^INPUT.= ../autodoc/Doxyfile; echo "INPUT = $(SOURCES) $(HEADERS)") | doxygen -
+#autodoc.target = ../autodoc/html/index.html
+#autodoc.depends = $(SOURCES) $(HEADERS)
+#QMAKE_EXTRA_TARGETS += autodoc
+#PRE_TARGETDEPS += $$autodoc.target
 
-  #autodoc.commands = (grep -v ^INPUT.= ../autodoc/Doxyfile; echo "INPUT = $(SOURCES) $(HEADERS)") | doxygen -
-  #autodoc.target = ../autodoc/html/index.html
-  #autodoc.depends = $(SOURCES) $(HEADERS)
-  #QMAKE_EXTRA_TARGETS += autodoc
-  #PRE_TARGETDEPS += $$autodoc.target
-}
-
-contains(QT_VERSION, ^4\\..*) {
-  message("Cannot build with Qt version $${QT_VERSION}.")
-  error("Use Qt 5.")
-}
+# dependency libs
+INCLUDEPATH += ../libqtpf ../libp6core
+LIBS += \
+  -L../build-qtpf-$$TARGET_OS/$$BUILD_TYPE \
+  -L../build-p6core-$$TARGET_OS/$$BUILD_TYPE
+LIBS += -lqtpf -lp6core
 
 SOURCES += \
     config/task.cpp \
