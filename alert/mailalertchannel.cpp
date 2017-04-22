@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -58,10 +58,11 @@ MailAlertChannel::MailAlertChannel(Alerter *alerter)
   : AlertChannel(alerter), _mailSender(0),
     _asyncProcessingTimer(new QTimer) {
   _thread->setObjectName("MailAlertChannelThread");
-  connect(_asyncProcessingTimer, SIGNAL(timeout()),
-          this, SLOT(asyncProcessing()));
-  connect(this, SIGNAL(destroyed()),
-          _asyncProcessingTimer, SLOT(deleteLater()));
+  connect(_asyncProcessingTimer, &QTimer::timeout,
+          this, &MailAlertChannel::asyncProcessing);
+  // TODO have QTimer be a child of this
+  connect(this, &MailAlertChannel::destroyed,
+          _asyncProcessingTimer, &QTimer::deleteLater);
   _asyncProcessingTimer->start(ASYNC_PROCESSING_INTERVAL);
 }
 

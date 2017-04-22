@@ -1,4 +1,4 @@
-/* Copyright 2014-2016 Hallowyn and others.
+/* Copyright 2014-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,9 +57,10 @@ public:
       QNetworkReply *reply = request.performRequest(
             globalNetworkActionHub->_nam, _message, &evaluationContext);
       if (reply) {
-        QObject::connect(reply, SIGNAL(error(QNetworkReply::NetworkError)),
-                         reply, SLOT(deleteLater()));
-        QObject::connect(reply, SIGNAL(finished()), reply, SLOT(deleteLater()));
+        QObject::connect(reply, static_cast<void(QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
+                         reply, &QNetworkReply::deleteLater);
+        QObject::connect(reply, &QNetworkReply::finished,
+                         reply, &QNetworkReply::deleteLater);
       }
     }
   }

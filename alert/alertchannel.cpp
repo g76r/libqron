@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,8 +19,8 @@
 
 AlertChannel::AlertChannel(Alerter *alerter)
   : _thread(new QThread), _alerter(alerter) {
-  connect(this, SIGNAL(destroyed(QObject*)), _thread, SLOT(quit()));
-  connect(_thread, SIGNAL(finished()), _thread, SLOT(deleteLater()));
+  connect(this, &AlertChannel::destroyed, _thread, &QThread::quit);
+  connect(_thread, &QThread::finished, _thread, &QThread::deleteLater);
   _thread->start();
   moveToThread(_thread);
 }

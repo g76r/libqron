@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -45,13 +45,13 @@ Executor::Executor(Alerter *alerter) : QObject(0), _isTemporary(false),
   _thread->setObjectName(QString("Executor-%1")
                          .arg((long)_thread, sizeof(long)*2, 16,
                               QLatin1Char('0')));
-  connect(this, SIGNAL(destroyed(QObject*)), _thread, SLOT(quit()));
-  connect(_thread, SIGNAL(finished()), _thread, SLOT(deleteLater()));
+  connect(this, &Executor::destroyed, _thread, &QThread::quit);
+  connect(_thread, &QThread::finished, _thread, &QThread::deleteLater);
   _thread->start();
   _baseenv = QProcessEnvironment::systemEnvironment();
   moveToThread(_thread);
   _abortTimeout->setSingleShot(true);
-  connect(_abortTimeout, SIGNAL(timeout()), this, SLOT(doAbort()));
+  connect(_abortTimeout, &QTimer::timeout, this, &Executor::doAbort);
   //qDebug() << "creating new task executor" << this;
 }
 
@@ -187,14 +187,19 @@ void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
   _errBuf.clear();
   _process = new QProcess(this);
   _process->setProcessChannelMode(QProcess::SeparateChannels);
-  connect(_process, SIGNAL(error(QProcess::ProcessError)),
-          this, SLOT(processError(QProcess::ProcessError)));
-  connect(_process, SIGNAL(finished(int,QProcess::ExitStatus)),
-          this, SLOT(processFinished(int,QProcess::ExitStatus)));
-  connect(_process, SIGNAL(readyReadStandardError()),
-          this, SLOT(readyReadStandardError()));
-  connect(_process, SIGNAL(readyReadStandardOutput()),
-          this, SLOT(readyReadStandardOutput()));
+#if QT_VERSION >= 0x050600
+  connect(_process, &QProcess::errorOccurred,
+          this, &Executor::processError);
+#else
+  connect(_process, static_cast<void(QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
+          this, &Executor::processError);
+#endif
+  connect(_process, static_cast<void(QProcess::*)(int,QProcess::ExitStatus)>(&QProcess::finished),
+          this, &Executor::processFinished);
+  connect(_process, &QProcess::readyReadStandardError,
+          this, &Executor::readyReadStandardError);
+  connect(_process, &QProcess::readyReadStandardOutput,
+          this, &Executor::readyReadStandardOutput);
   _process->setProcessEnvironment(sysenv);
   QString program = cmdline.takeFirst();
   Log::debug(_instance.task().id(), _instance.idAsLong())
@@ -336,9 +341,9 @@ void Executor::httpMean() {
       // therefore no QNetworkReply slot can executed meanwhile hence no
       // QNetworkReply::finished() cannot be emitted before connection
       // TODO is connection to error() usefull ? can error() be emited w/o finished() ?
-      connect(_reply, SIGNAL(error(QNetworkReply::NetworkError)),
-              this, SLOT(replyError(QNetworkReply::NetworkError)));
-      connect(_reply, SIGNAL(finished()), this, SLOT(replyFinished()));
+      connect(_reply, static_cast<void(QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
+              this, &Executor::replyError);
+      connect(_reply, &QNetworkReply::finished, this, &Executor::replyFinished);
     } else {
       Log::error(_instance.task().id(), _instance.idAsLong())
           << "cannot start HTTP request";

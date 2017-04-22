@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,8 +30,8 @@ void UrlAlertChannel::doNotifyAlert(Alert alert) {
     // must be created here since the constructor is called by another thread
     // and one cannot create an QObject which parent lies in another thread
     _nam = new QNetworkAccessManager(this);
-    connect(_nam, SIGNAL(finished(QNetworkReply*)),
-            this, SLOT(replyFinished(QNetworkReply*)));
+    connect(_nam, &QNetworkAccessManager::finished,
+            this, &UrlAlertChannel::replyFinished);
   }
   QString address = alert.subscription().address(alert), message;
   ParamSet params = alert.subscription().params();
