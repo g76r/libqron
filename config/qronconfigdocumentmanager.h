@@ -58,7 +58,7 @@ public:
   void changeParams(ParamSet newParams, ParamSet oldParams, QString setId);
 
 signals:
-  void logConfigurationChanged(QList<LogFile> logfiles);
+  void logConfigurationChanged(SharedUiItemList<> logfiles);
   void paramsChanged(ParamSet newParams, ParamSet oldParams, QString setId);
   void accessControlConfigurationChanged(bool enabled);
   void globalEventSubscriptionsChanged(

@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,49 +13,112 @@
  */
 #include "logfile.h"
 #include <QSharedData>
+#include "pf/pfnode.h"
 
-class LogFileData : public QSharedData {
-public:
-  QString _pathPattern;
-  Log::Severity _minimumSeverity;
-  bool _buffered;
-  LogFileData(QString pathPattern = QString(),
-              Log::Severity minimumSeverity = Log::Debug,
-              bool buffered = true)
-    : _pathPattern(pathPattern), _minimumSeverity(minimumSeverity),
-      _buffered(buffered) { }
+static QString _uiHeaderNames[] = {
+  "Id", // 0
+  "Path Pattern",
+  "Minimum Severity",
+  "Buffered",
 };
 
-LogFile::LogFile(QString pathPattern, Log::Severity minimumSeverity,
-                 bool buffered)
-  : d(new LogFileData(pathPattern, minimumSeverity, buffered)) {
+static QAtomicInt _sequence;
+
+class LogFileData : public SharedUiItemData {
+public:
+  QString _id, _pathPattern;
+  Log::Severity _minimumSeverity;
+  bool _buffered;
+  LogFileData() : _id(QString::number(_sequence.fetchAndAddOrdered(1))),
+    _minimumSeverity(Log::Debug), _buffered(true) { }
+  QVariant uiData(int section, int role) const override;
+  QVariant uiHeaderData(int section, int role) const override;
+  int uiSectionCount() const override;
+  QString id() const override { return _id; }
+  QString idQualifier() const override { return "logfile"; }
+  /*bool setUiData(int section, const QVariant &value, QString *errorString,
+                 SharedUiItemDocumentTransaction *transaction,
+                 int role) override;
+  Qt::ItemFlags uiFlags(int section) const override;*/
+};
+
+LogFile::LogFile() {
 }
 
-LogFile::LogFile(const LogFile &rhs) : d(rhs.d) {
+LogFile::LogFile(const LogFile &other) : SharedUiItem(other) {
 }
 
-LogFile &LogFile::operator=(const LogFile &rhs) {
-  if (this != &rhs)
-    d.operator=(rhs.d);
-  return *this;
+LogFile::LogFile(PfNode node) {
+  QString pathPattern = node.attribute(QStringLiteral("file"));
+  if (!pathPattern.isEmpty()) {
+    LogFileData *d = new LogFileData;
+    d->_pathPattern = pathPattern;
+    d->_minimumSeverity = Log::severityFromString(
+          node.attribute(QStringLiteral("level")));
+    d->_buffered = !node.hasChild(QStringLiteral("unbuffered"));
+    setData(d);
+  }
 }
 
 LogFile::~LogFile() {
 }
 
 QString LogFile::pathPattern() const {
-  return d->_pathPattern;
+  const LogFileData *d = data();
+  return d ? d->_pathPattern : QString();
 }
 
 Log::Severity LogFile::minimumSeverity() const {
-  return d->_minimumSeverity;
+  const LogFileData *d = data();
+  return d ? d->_minimumSeverity : Log::Debug;
 }
 
 bool LogFile::buffered() const {
-  return d->_buffered;
+  const LogFileData *d = data();
+  return d ? d->_buffered : false;
+}
+
+QVariant LogFileData::uiData(int section, int role) const {
+  switch(role) {
+  case Qt::DisplayRole:
+  case Qt::EditRole:
+    switch(section) {
+    case 0:
+      return _id;
+    case 1:
+      return _pathPattern;
+    case 2:
+      return Log::severityToString(_minimumSeverity);
+    case 3:
+      return _buffered;
+    }
+    break;
+  default:
+    ;
+  }
+  return QVariant();
+}
+
+QVariant LogFileData::uiHeaderData(int section, int role) const {
+  return role == Qt::DisplayRole && section >= 0
+      && (unsigned)section < sizeof _uiHeaderNames
+      ? _uiHeaderNames[section] : QVariant();
+}
+
+int LogFileData::uiSectionCount() const {
+  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
+}
+
+LogFileData *LogFile::data() {
+  return SharedUiItem::detachedData<LogFileData>();
+}
+
+void LogFile::detach() {
+  SharedUiItem::detachedData<LogFileData>();
 }
 
 PfNode LogFile::toPfNode() const {
+  const LogFileData *d = data();
   if (!d)
     return PfNode();
   PfNode node("log");

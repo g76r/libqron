@@ -66,10 +66,9 @@ Host::~Host() {
 }
 
 QString Host::hostname() const {
-  if (isNull())
-    return QString();
   const HostData *d = data();
-  return d->_hostname.isEmpty() ? d->_id : d->_hostname;
+  return d ? (d->_hostname.isEmpty() ? d->_id : d->_hostname)
+           : QString();
 }
 
 QHash<QString,qint64> Host::resources() const {

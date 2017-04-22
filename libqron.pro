@@ -93,7 +93,6 @@ SOURCES += \
     config/requestformfield.cpp \
     ui/resourcesconsumptionmodel.cpp \
     config/logfile.cpp \
-    ui/logfilesmodel.cpp \
     config/calendar.cpp \
     config/step.cpp \
     sched/stepinstance.cpp \
@@ -156,7 +155,6 @@ HEADERS += \
     config/requestformfield.h \
     ui/resourcesconsumptionmodel.h \
     config/logfile.h \
-    ui/logfilesmodel.h \
     config/calendar.h \
     config/step.h \
     sched/stepinstance.h \

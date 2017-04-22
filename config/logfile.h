@@ -1,4 +1,4 @@
-/* Copyright 2013-2016 Hallowyn and others.
+/* Copyright 2013-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,33 +15,37 @@
 #define LOGFILE_H
 
 #include "libqron_global.h"
-#include <QSharedDataPointer>
 #include "log/log.h"
-#include "pf/pfnode.h"
+#include "modelview/shareduiitem.h"
 
 class LogFileData;
+class PfNode;
 
-// TODO convert to SUI
 /** Log file definition. */
-class LIBQRONSHARED_EXPORT LogFile {
-  QSharedDataPointer<LogFileData> d;
-
+class LIBQRONSHARED_EXPORT LogFile : public SharedUiItem {
 public:
   /** @param pathPattern interpreted using Paramset::evaluate() hence can
    * contain placeholders like %!yyyy%!mm%!dd
    * @param buffered allow write buffering (both user space and system) */
-  LogFile(QString pathPattern = QString(),
-          Log::Severity minimumSeverity = Log::Debug, bool buffered = true);
-  LogFile(const LogFile &);
-  LogFile &operator=(const LogFile &);
+  LogFile();
+  LogFile(const LogFile &other);
+  LogFile(PfNode node);
   ~LogFile();
+  LogFile &operator=(const LogFile &other)  {
+    SharedUiItem::operator=(other); return *this; }
   QString pathPattern() const;
   Log::Severity minimumSeverity() const;
   bool buffered() const;
+  void detach();
+  /*bool setUiData(int section, const QVariant &value, QString *errorString,
+                 SharedUiItemDocumentTransaction *transaction, int role);*/
   PfNode toPfNode() const;
+
+private:
+  LogFileData *data();
+  const LogFileData *data() const { return specializedData<LogFileData>(); }
 };
 
-Q_DECLARE_METATYPE(LogFile)
 Q_DECLARE_TYPEINFO(LogFile, Q_MOVABLE_TYPE);
 
 #endif // LOGFILE_H

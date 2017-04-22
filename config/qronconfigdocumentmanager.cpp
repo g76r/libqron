@@ -18,7 +18,6 @@
 
 static int staticInit() {
   qMetaTypeId<QList<EventSubscription>>();
-  qMetaTypeId<QList<LogFile>>();
   qMetaTypeId<SchedulerConfig>();
   qMetaTypeId<ParamSet>();
   return 0;

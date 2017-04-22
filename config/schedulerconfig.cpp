@@ -138,20 +138,13 @@ SchedulerConfigData::SchedulerConfigData(PfNode root, Scheduler *scheduler,
   QList<RequestTaskActionLink> requestTaskActionLinks;
   QList<LogFile> logfiles;
   foreach (PfNode node, root.childrenByName("log")) {
-    // LATER move that parsing code to LogFile
-    QString level = node.attribute("level");
-    QString filename = node.attribute("file");
-    bool buffered = !node.hasChild("unbuffered");
-    if (level.isEmpty()) {
-      Log::warning() << "invalid log level in configuration: "
-                     << node.toPf();
-    } else if (filename.isEmpty()) {
-      Log::warning() << "invalid log filename in configuration: "
+    LogFile logfile(node);
+    if (logfile.isNull()) {
+      Log::warning() << "invalid log file declaration in configuration: "
                      << node.toPf();
     } else {
       Log::debug() << "adding logger " << node.toPf();
-      Log::Severity minimumSeverity = Log::severityFromString(level);
-      logfiles.append(LogFile(filename, minimumSeverity, buffered));
+      logfiles.append(logfile);
     }
   }
   _logfiles = logfiles;
