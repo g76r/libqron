@@ -119,7 +119,9 @@ SOURCES += \
     config/alertsettings.cpp \
     config/alertsubscription.cpp \
     alert/gridboard.cpp \
-    config/qronconfigdocumentmanager.cpp
+    config/qronconfigdocumentmanager.cpp \
+    sysutil/parametrizedfilewriter.cpp \
+    action/writefileaction.cpp
 
 HEADERS += \
     config/task.h \
@@ -185,4 +187,6 @@ HEADERS += \
     config/alertsettings.h \
     config/alertsubscription.h \
     alert/gridboard.h \
-    config/qronconfigdocumentmanager.h
+    config/qronconfigdocumentmanager.h \
+    sysutil/parametrizedfilewriter.h \
+    action/writefileaction.h

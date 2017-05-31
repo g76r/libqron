@@ -1,4 +1,4 @@
-/* Copyright 2013-2016 Hallowyn and others.
+/* Copyright 2013-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,11 +32,24 @@ public:
     SubTaskId, // used for workflow subtasks; local id plus :
     Hostname // used for hostnames; disallows _ but allows - : [ ] and .
   };
+  /** load as param set every child content named attrname,
+   * for instance (task foo(param a 1)(param a 2)) will load a=1 and b=2 with
+   * attrname = "param" */
   static void loadParamSet(PfNode parentnode, ParamSet *params,
                            QString attrname);
   inline static ParamSet loadParamSet(PfNode parentnode, QString attrname) {
     ParamSet params;
     loadParamSet(parentnode, &params, attrname);
+    return params; }
+  /** load as paramset every child which name matches param names in attrnames
+   * for instance (writefile(append true)) with
+   * attrnames = { "append", "truncate" } */
+  static void loadParamSet(PfNode parentnode, ParamSet *params,
+                           QSet<QString> attrnames);
+  inline static ParamSet loadParamSet(PfNode parentnode,
+                                      QSet<QString> attrnames) {
+    ParamSet params;
+    loadParamSet(parentnode, &params, attrnames);
     return params; }
   static void loadFlagSet(PfNode parentnode, ParamSet *params,
                           QString attrname);

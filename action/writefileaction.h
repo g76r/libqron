@@ -1,4 +1,4 @@
-/* Copyright 2014-2017 Hallowyn and others.
+/* Copyright 2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -11,21 +11,18 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef REQUESTURLACTION_H
-#define REQUESTURLACTION_H
+#ifndef WRITEFILEACTION_H
+#define WRITEFILEACTION_H
 
 #include "action.h"
 
-/** Action requesting an arbitrary URL.
- * e.g. (requesturl(address udp://127.0.0.1:8125)"task.%!taskid.time:%!totalms|ms")
- * @see ParametrizedNetworkRequest
- * @see ParametrizedUdpSender */
-class RequestUrlAction : public Action {
+/** Action writing data into a file.
+ * e.g. (writefile(path /tmp/custom_file.txt)"%!taskid started\n")
+ * @see ParametrizedFileWriter */
+class WriteFileAction : public Action {
 public:
-  explicit RequestUrlAction(Scheduler *scheduler = 0, PfNode node = PfNode());
-  RequestUrlAction(const RequestUrlAction&);
+  explicit WriteFileAction(Scheduler *scheduler = 0, PfNode node = PfNode());
+  WriteFileAction(const WriteFileAction&);
 };
 
-Q_DECLARE_TYPEINFO(RequestUrlAction, Q_MOVABLE_TYPE);
-
-#endif // REQUESTURLACTION_H
+#endif // WRITEFILEACTION_H

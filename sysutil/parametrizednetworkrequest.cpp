@@ -1,4 +1,4 @@
-/* Copyright 2014-2016 Hallowyn and others.
+/* Copyright 2014-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,6 +16,10 @@
 #include <QtDebug>
 
 #define DEFAULT_REQUEST_CONTENT_TYPE "text/plain"
+
+const QSet<QString> ParametrizedNetworkRequest::supportedParamNames {
+  "method", "user", "password", "proto", "port", "payload", "content-type",
+  "follow-redirect", "redirect-max" };
 
 ParametrizedNetworkRequest::ParametrizedNetworkRequest(
     QString url, ParamSet params, ParamsProvider *paramsEvaluationContext,
@@ -50,7 +54,7 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
     contentType = DEFAULT_REQUEST_CONTENT_TYPE;
   if (!contentType.isNull())
     setHeader(QNetworkRequest::ContentTypeHeader, contentType);
-  _payloadFromParams = params.rawValue("payload");
+  _rawPayloadFromParams = params.rawValue("payload");
 #if QT_VERSION >= 0x050600
   bool followRedirect = params.valueAsBool("follow-redirect", false,
                                            paramsEvaluationContext);
@@ -72,7 +76,7 @@ QNetworkReply *ParametrizedNetworkRequest::performRequest(
   QNetworkReply *reply = 0;
   QUrl url = this->url();
   if (payload.isNull())
-    payload = _payloadFromParams;
+    payload = _rawPayloadFromParams;
   payload = _params.evaluate(payload, payloadEvaluationContext);
   // LATER support proxy
   // LATER support ssl (https)

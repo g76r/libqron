@@ -14,6 +14,9 @@
 #include "parametrizedudpsender.h"
 #include <QUrl>
 
+const QSet<QString> ParametrizedUdpSender::supportedParamNames {
+  "connecttimeout", "disconnecttimeout", "payload" };
+
 ParametrizedUdpSender::ParametrizedUdpSender(
     QObject *parent, QString url, ParamSet params,
     ParamsProvider *paramsEvaluationContext, QString logTask, quint64 logExecId)

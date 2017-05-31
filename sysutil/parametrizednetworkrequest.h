@@ -1,4 +1,4 @@
-/* Copyright 2014-2016 Hallowyn and others.
+/* Copyright 2014-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,17 +26,19 @@
  * - "user" and "password" to set HTTP basic authentication
  * - "proto" to set network protocol (default: http)
  * - "port" to set TCP port number (overrinding the one specified in the url)
- * - "payload" to set the reuqest payload/body
+ * - "payload" to set the request payload/body (ignored if performRequest()
+ *   is called with a non-null payload)
  * - "content-type" to set payload (and header) content type
- * - "follow-redirect" if true allows following redirect (using default max)
+ * - "follow-redirect" if true allows following redirect (default: false)
  *       see QNetworkRequest::FollowRedirectsAttribute
+ *       not implemented on Qt < 5.6.0
  * - "redirect-max" if > 0 allows following redirect, using choosen max
  *       see QNetworkRequest::setMaximumRedirectsAllowed()
  */
 class ParametrizedNetworkRequest : public QNetworkRequest {
   QString _logTask, _logExecId;
   HttpRequest::HttpRequestMethod _method;
-  QString _payloadFromParams;
+  QString _rawPayloadFromParams;
   ParamSet _params;
 
 public:
@@ -52,6 +54,7 @@ public:
   QNetworkReply *performRequest(
       QNetworkAccessManager *nam, QString payload = QString(),
       ParamsProvider *payloadEvaluationContext = 0);
+  const static QSet<QString> supportedParamNames;
 };
 
 #endif // PARAMETRIZEDHTTPREQUEST_H

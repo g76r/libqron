@@ -79,9 +79,11 @@ public:
 };
 
 RequestUrlAction::RequestUrlAction(Scheduler *scheduler, PfNode node)
-  : Action(new RequestUrlActionData(node.attribute("address"),
-                                    node.contentAsString(),
-                                    ConfigUtils::loadParamSet(node, "param"))) {
+  : Action(new RequestUrlActionData(
+             node.attribute("address"), node.contentAsString(),
+             ConfigUtils::loadParamSet(
+               node, ParametrizedNetworkRequest::supportedParamNames
+               +ParametrizedUdpSender::supportedParamNames))) {
   Q_UNUSED(scheduler)
 }
 

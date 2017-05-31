@@ -47,6 +47,7 @@ public:
    * @return false if the request cannot be performed, e.g. unknown address */
   bool performRequest(QString payload = QString(),
                       ParamsProvider *payloadEvaluationContext = 0);
+  const static QSet<QString> supportedParamNames;
 
 private:
   void init(QString url, ParamSet params,
