@@ -15,7 +15,7 @@
 #include <QTemporaryFile>
 
 const QSet<QString> ParametrizedFileWriter::supportedParamNames {
-  "payload", "truncate", "append", "unique", "temporary", "payload" };
+  "truncate", "append", "unique", "temporary", "payload" };
 
 ParametrizedFileWriter::ParametrizedFileWriter(
     QString path, ParamSet params, ParamsProvider *paramsEvaluationContext,
