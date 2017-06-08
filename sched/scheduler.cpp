@@ -522,6 +522,7 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
   QHash<QString,Task> tasks = config().tasks();
   if (params.parent().isNull())
     params.setParent(config().globalParams());
+  params.setValue(QStringLiteral("!notice"), notice);
   Log::debug() << "posting notice ^" << notice << " with params " << params;
   foreach (Task task, tasks.values()) {
     foreach (NoticeTrigger trigger, task.noticeTriggers()) {
@@ -529,6 +530,7 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
       if (trigger.expression() == notice) {
         Log::info() << "notice " << trigger.humanReadableExpression()
                     << " triggered task " << task.id();
+        // FIXME check calendar
         ParamSet overridingParams;
         foreach (QString key, trigger.overridingParams().keys())
           overridingParams
@@ -549,7 +551,6 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
     }
   }
   emit noticePosted(notice, params);
-  params.setValue(QStringLiteral("!notice"), notice);
   foreach (EventSubscription sub, config().onnotice())
     sub.triggerActions(params);
 }
