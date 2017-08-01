@@ -17,7 +17,7 @@
 #include "libqron_global.h"
 #include <QSharedDataPointer>
 #include <QStringList>
-#include "net/readonlyresourcescache.h"
+#include "io/readonlyresourcescache.h"
 
 class RequestFormFieldData;
 class PfNode;
