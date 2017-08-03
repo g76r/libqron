@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2017 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@
 
 class EventSubscriptionData : public QSharedData {
 public:
-  QString _subscriberName, _eventName;
+  QString _subscriberName, _eventName, _filter;
   QList<Action> _actions;
   ParamSet _globalParams;
   QStringList _commentsList;
@@ -43,6 +43,7 @@ EventSubscription::EventSubscription(
   // LATER support for non-text/non-regexp filters e.g. "onstatus >=3"
   // LATER support for (calendar) and other structured filters
   d->_eventName = node.name();
+  d->_filter = node.contentAsString();
   if (scheduler)
     d->_globalParams = scheduler->globalParams();
   foreach (PfNode child, node.children()) {
@@ -121,8 +122,11 @@ QString EventSubscription::eventName() const {
 }
 
 QString EventSubscription::humanReadableCause() const {
-  // LATER implement filters
-  return d ? d->_eventName : QString();
+  if (!d)
+    return QString();
+  if (d->_filter.isEmpty())
+    return d->_eventName;
+  return d->_eventName+" "+d->_filter;
 }
 
 QList<Action> EventSubscription::actions() const {
@@ -138,10 +142,14 @@ void EventSubscription::setSubscriberName(QString name) {
     d->_subscriberName = name;
 }
 
+QString EventSubscription::filter() const {
+  return d ? d->_filter : QString();
+}
+
 PfNode EventSubscription::toPfNode() const {
   if (!d)
     return PfNode();
-  PfNode node(d->_eventName);
+  PfNode node(d->_eventName, d->_filter);
   ConfigUtils::writeComments(&node, d->_commentsList);
   foreach(const Action &action, d->_actions)
     node.appendChild(action.toPfNode());
