@@ -217,6 +217,9 @@ TaskInstanceList Scheduler::doRequestTask(
   foreach (RequestFormField field, task.requestFormFields()) {
     QString name(field.id());
     if (overridingParams.contains(name)) {
+      // FIXME the evaluation context is not the same than when the task will run
+      // must make it consistent e.g. by evaluating now and escaping to prevent
+      // any further (different) evaluation
       QString value(overridingParams.value(name));
       if (!field.validate(value)) {
         Log::error() << "task " << taskId << " requested with an invalid "
@@ -469,6 +472,8 @@ bool Scheduler::checkTrigger(CronTrigger trigger, Task task, QString taskId) {
   if (next <= now) {
     // requestTask if trigger reached
     ParamSet overridingParams;
+    // FIXME globalParams context evaluation is probably buggy, see what is done
+    // for notices and fix this
     foreach (QString key, trigger.overridingParams().keys())
       overridingParams
           .setValue(key, config().globalParams()
@@ -532,10 +537,12 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
                     << " triggered task " << task.id();
         // FIXME check calendar
         ParamSet overridingParams;
-        foreach (QString key, trigger.overridingParams().keys())
-          overridingParams
-              .setValue(key, params
-                        .value(trigger.overridingParams().rawValue(key)));
+        foreach (QString key, trigger.overridingParams().keys()) {
+          overridingParams.setValue(
+                key,
+                ParamSet::escape(
+                  trigger.overridingParams().value(key, &params)));
+        }
         TaskInstanceList requests
             = syncRequestTask(task.id(), overridingParams);
         if (!requests.isEmpty())
@@ -551,6 +558,7 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
     }
   }
   emit noticePosted(notice, params);
+  // TODO filter onnotice events
   foreach (EventSubscription sub, config().onnotice())
     sub.triggerActions(params);
 }
