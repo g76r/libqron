@@ -70,9 +70,11 @@ void MailAlertChannel::setConfig(AlerterConfig config) {
   _config = config;
   // LATER make server specification more user friendly, e.g. "localhost:25" or "localhost"
   QString relay = _config.params().value("mail.relay", "smtp://127.0.0.1");
+  int smtpTimeoutMs = std::max(
+        _config.params().value("mail.smtp.timeout", "5").toDouble()*1000, 1.0);
   if (_mailSender)
     delete _mailSender;
-  _mailSender = new MailSender(relay);
+  _mailSender = new MailSender(relay, smtpTimeoutMs);
   QString queuesBeforeReload;
   QStringList queuesRemoved;
   QSet<QString> configuredAddresses;
