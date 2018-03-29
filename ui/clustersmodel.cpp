@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2018 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -104,7 +104,7 @@ bool ClustersModel::canDropMimeData(
   if (!targetParent.isValid())
     return false; // cannot drop on root
   QList<QByteArray> idsArrays =
-      data->data(suiQualifiedIdsListMimeType).split(' ');
+      data->data(_suiQualifiedIdsListMimeType).split(' ');
   if (idsArrays.isEmpty())
     return false; // nothing to drop
   foreach (const QByteArray &qualifiedId, idsArrays) {
@@ -141,7 +141,7 @@ bool ClustersModel::dropMimeData(
   //qDebug() << "  dropping on:" << oldCluster.id() << targetRow;
   // build new hosts id list
   QList<QByteArray> idsArrays =
-      data->data(suiQualifiedIdsListMimeType).split(' ');
+      data->data(_suiQualifiedIdsListMimeType).split(' ');
   QStringList oldHostsIds, droppedHostsIds, newHostsIds;
   foreach (const Host &host, oldCluster.hosts())
     oldHostsIds << host.id();
