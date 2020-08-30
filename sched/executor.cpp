@@ -43,7 +43,7 @@ Executor::Executor(Alerter *alerter) : QObject(0), _isTemporary(false),
   _process(0), _nam(new QNetworkAccessManager(this)), _reply(0),
   _alerter(alerter), _abortTimeout(new QTimer(this)) {
   _thread->setObjectName(QString("Executor-%1")
-                         .arg((long)_thread, sizeof(long)*2, 16,
+                         .arg((long long)_thread, sizeof(long)*2, 16,
                               QLatin1Char('0')));
   connect(this, &Executor::destroyed, _thread, &QThread::quit);
   connect(_thread, &QThread::finished, _thread, &QThread::deleteLater);
