@@ -325,7 +325,7 @@ void Executor::httpMean() {
     if (name.endsWith(":")) // ignoring : at end of header name
       name.chop(1);
     name.replace(QRegExp("[^a-zA-Z_0-9\\-]+"), "_");
-    const QString value = _instance.params().evaluate(expr, &_instance);
+    const QString value = _instance.params().evaluate(expr);
     //Log::fatal(_instance.task().id(), _instance.id()) << "setheader: " << name << "=" << value << ".";
     networkRequest.setRawHeader(name.toLatin1(), value.toUtf8());
   }

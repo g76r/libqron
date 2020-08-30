@@ -1,4 +1,4 @@
-/* Copyright 2015 Hallowyn and others.
+/* Copyright 2015-2018 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,8 +14,9 @@
 #include "noticepseudoparamsprovider.h"
 
 QVariant NoticePseudoParamsProvider::paramValue(
-    QString key, QVariant defaultValue, QSet<QString> alreadyEvaluated) const {
+    QString key, const ParamsProvider *context, QVariant defaultValue,
+    QSet<QString> alreadyEvaluated) const {
   if (key == "!notice")
     return _notice;
-  return _params.paramValue(key, defaultValue, alreadyEvaluated);
+  return _params.paramValue(key, context, defaultValue, alreadyEvaluated);
 }

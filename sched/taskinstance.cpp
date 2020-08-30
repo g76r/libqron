@@ -1,4 +1,4 @@
-/* Copyright 2012-2017 Hallowyn and others.
+/* Copyright 2012-2018 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -339,11 +339,12 @@ static RadixTree<std::function<QVariant(const TaskInstance&, const QString&)>> _
 };
 
 QVariant TaskInstancePseudoParamsProvider::paramValue(
-    QString key, QVariant defaultValue, QSet<QString> alreadyEvaluated) const {
+    QString key, const ParamsProvider *context, QVariant defaultValue,
+    QSet<QString> alreadyEvaluated) const {
   auto pseudoParam = _pseudoParams.value(key);
   if (pseudoParam)
     return pseudoParam(_taskInstance, key);
-  return _taskPseudoParams.paramValue(key, defaultValue, alreadyEvaluated);
+  return _taskPseudoParams.paramValue(key, context, defaultValue, alreadyEvaluated);
 }
 
 void TaskInstance::setTask(Task task) {

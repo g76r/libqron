@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2018 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -210,7 +210,8 @@ QString Alert::statusToString(Alert::AlertStatus status) {
 }
 
 QVariant AlertPseudoParamsProvider::paramValue(
-    QString key, QVariant defaultValue, QSet<QString> alreadyEvaluated) const {
+    QString key, const ParamsProvider *context, QVariant defaultValue,
+    QSet<QString> alreadyEvaluated) const {
   Q_UNUSED(alreadyEvaluated)
   if (key.at(0) == '!') {
     if (key == "!alertid") {
@@ -237,7 +238,7 @@ QVariant AlertPseudoParamsProvider::paramValue(
     // MAYDO guess !taskid from "task.{failure,toolong...}.%!taskid" alerts
   }
   return _alert.subscription().params()
-      .paramValue(key, defaultValue, alreadyEvaluated);
+      .paramValue(key, context, defaultValue, alreadyEvaluated);
 }
 
 int Alert::count() const {
