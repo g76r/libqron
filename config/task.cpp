@@ -1204,7 +1204,7 @@ PfNode TaskData::toPfNode() const {
   // do not set target attribute if it is empty,
   // or in case it is implicit ("localhost" for Local mean)
   if (!_target.isEmpty()
-      && (_target != "localhost" || !_mean == Task::Local))
+      && (_target != "localhost" || _mean != Task::Local))
     node.setAttribute("target", _target);
   // do not set command attribute if it is empty
   // or for means that do not use it (Workflow and DoNothing)
