@@ -99,7 +99,7 @@ void MailAlertChannel::setConfig(AlerterConfig config) {
   Log::debug() << "mail queues before config reload: [\n" << queuesBeforeReload
                << "]";
   Log::debug() << "mail addresses with configured subscription:"
-               << configuredAddresses.toList();
+               << configuredAddresses.values();
   Log::info() << "mail queues removed on reload: [ "
               << queuesRemoved.join(' ') << " ]";
   QMetaObject::invokeMethod(this, "asyncProcessing", Qt::QueuedConnection);
@@ -138,7 +138,7 @@ void MailAlertChannel::doNotifyAlert(Alert alert) {
         alert.setLastRemindedDate(QDateTime());
         queue->_reminders.insert(alert);
       }
-      // fall into next case
+      Q_FALLTHROUGH();
     case Alert::Nonexistent:
       if (!alert.subscription().notifyEmit())
         return;
@@ -193,7 +193,7 @@ void MailAlertChannel::processQueue(QVariant address) {
       alert.setLastRemindedDate(now);
       queue->_reminders.insert(alert); // update all timestamps
     }
-    qSort(reminders);
+    std::sort(reminders.begin(), reminders.end());
     QString errorString;
     int ms = queue->_lastMail.msecsTo(QDateTime::currentDateTime());
     int minDelayBetweenSend = _config.minDelayBetweenSend();

@@ -101,6 +101,9 @@ QNetworkReply *ParametrizedNetworkRequest::performRequest(
       case HttpRequest::DELETE:
         reply = nam->deleteResource(*this);
         break;
+      case HttpRequest::OPTIONS:
+        reply = nam->sendCustomRequest(*this, "OPTIONS", payload.toUtf8());
+        break;
       case HttpRequest::NONE:
       case HttpRequest::ANY:
         ; // cannot happen

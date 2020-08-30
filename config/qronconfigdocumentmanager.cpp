@@ -57,7 +57,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   });
   registerItemType(
         "task", &Task::setUiData,
-        [this](SharedUiItemDocumentTransaction *transaction, QString id,
+        [](SharedUiItemDocumentTransaction *transaction, QString id,
         QString *errorString) -> SharedUiItem {
     Q_UNUSED(transaction)
     Q_UNUSED(id)
@@ -262,7 +262,7 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<Task>(
   }
   QList<Task> newList = newItems.values();
   // sorting tasks by id ensure that workflows are changed before their subtasks
-  qSort(newList);
+  std::sort(newList.begin(), newList.end());
   foreach (const Task &newItem, newList) {
     const Task &oldItem = oldItems.value(newItem.id());
     emit itemChanged(newItem, oldItem, idQualifier);

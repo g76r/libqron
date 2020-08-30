@@ -57,6 +57,7 @@ public:
       QNetworkReply *reply = request.performRequest(
             globalNetworkActionHub->_nam, _message, &evaluationContext);
       if (reply) {
+        // FIXME use errorOccurred() instead of (non signal!) error()
         QObject::connect(reply, static_cast<void(QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
                          reply, &QNetworkReply::deleteLater);
         QObject::connect(reply, &QNetworkReply::finished,

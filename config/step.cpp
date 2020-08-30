@@ -265,7 +265,7 @@ QVariant StepData::uiData(int section, int role) const {
     case 4:
       return _subtask.id();
     case 5:
-      return SharedUiItemList<WorkflowTransition>(_predecessors.toList())
+      return SharedUiItemList<WorkflowTransition>(_predecessors.values())
           .join(' ', false);
     case 6:
       return EventSubscription::toStringList(_onready).join('\n');
@@ -326,7 +326,7 @@ bool StepData::setUiData(
       return false;
     }
     s = s.mid(_workflowId.size()+1);
-    // falling into next case
+    Q_FALLTHROUGH();
   case 0:
     s = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId);
     s2 = _workflowId+":"+s;

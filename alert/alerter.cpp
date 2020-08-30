@@ -198,7 +198,7 @@ void Alerter::doRaiseAlert(QString alertId, bool immediately) {
         actionRaise(&newAlert);
         break;
       }
-      // else fall through next case
+      Q_FALLTHROUGH();
     case Alert::Nonexistent:
     case Alert::Canceled: // should not happen
       newAlert.setVisibilityDate(

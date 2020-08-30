@@ -330,7 +330,7 @@ void Gridboard::update(QRegularExpressionMatch match, Alert alert) {
     if (componentRoot)
       componentsRootsSet.insert(componentRoot);
   }
-  QList<TreeItem*> componentsRoots = componentsRootsSet.toList();
+  QList<TreeItem*> componentsRoots = componentsRootsSet.values();
   // merge roots when needed
   while (componentsRoots.size() > 1) {
     TreeItem *source = componentsRoots.takeFirst();
@@ -430,8 +430,8 @@ QString Gridboard::toHtml() const {
           columnsSet.insert(treeItem2->_name);
         }
       }
-      columns = columnsSet.toList();
-      qSort(columns);
+      columns = columnsSet.values();
+      std::sort(columns.begin(), columns.end());
       break;
     }
     default:
@@ -510,7 +510,7 @@ QVariant GridboardData::uiData(int section, int role) const {
     case 6:
       return _updatesCounter;
     case 7:
-      return _rendersCounter.load();
+      return _rendersCounter.loadRelaxed();
     case 8:
       return _currentComponentsCount;
     case 9:

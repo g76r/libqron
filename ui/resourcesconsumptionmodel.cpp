@@ -26,8 +26,8 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
   QHash<QString,QHash<QString,qint64> > configured;
   foreach (const Host &host, config.hosts())
     configured.insert(host.id(), host.resources());
-  qSort(tasks);
-  qSort(hosts);
+  std::sort(tasks.begin(), tasks.end());
+  std::sort(hosts.begin(), hosts.end());
   QHash<QString,QHash<QString,qint64> > min = configured;
   foreach (const Host &host, hosts)
     setCellValue(MINIMUM_CAPTION, host.id(), QString());

@@ -164,5 +164,5 @@ QStringList EventSubscription::workflowTargetsLocalIds() const {
       localIds << action.targetName();
     }
   }
-  return localIds.toList();
+  return localIds.values();
 }

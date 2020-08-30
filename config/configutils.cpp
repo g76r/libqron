@@ -91,7 +91,7 @@ void ConfigUtils::writeParamSet(PfNode *parentnode, ParamSet params,
   if (!parentnode)
     return;
   QStringList list = params.keys(inherit).values();
-  qSort(list);
+  std::sort(list.begin(), list.end());
   foreach (const QString &key, list)
     parentnode->appendChild(PfNode(attrname, key+" "+params.rawValue(key)));
 }
@@ -101,7 +101,7 @@ void ConfigUtils::writeFlagSet(PfNode *parentnode, QSet<QString> set,
   if (!parentnode || set.isEmpty())
     return;
   QStringList list = set.values();
-  qSort(list);
+  std::sort(list.begin(), list.end());
   parentnode->appendChild(PfNode(attrname, list.join(' ')));
 }
 

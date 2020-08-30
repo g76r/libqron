@@ -103,8 +103,8 @@ AccessControlConfigData::AccessControlConfigData(PfNode node) {
         = InMemoryAuthenticator::encodingFromString(
           child.attribute(QStringLiteral("cipher"),
                           QStringLiteral("plain")));
-    QSet<QString> roles =
-        child.stringListAttribute(QStringLiteral("roles")).toSet();
+    auto rolelist = child.stringListAttribute(QStringLiteral("roles"));
+    auto roles = QSet<QString>(rolelist.begin(), rolelist.end());
     if (userId.isEmpty())
       Log::error() << "access control user with no id: " << child.toString();
     else if (encodedPassword.isEmpty())
@@ -140,8 +140,8 @@ PfNode AccessControlConfig::toPfNode() const {
                              user._encodedPassword));
     child.appendChild(PfNode(QStringLiteral("cipher"), InMemoryAuthenticator
                              ::encodingToString(user._cipher)));
-    QStringList roles = user._roles.toList();
-    qSort(roles);
+    QStringList roles = user._roles.values();
+    std::sort(roles.begin(), roles.end());
     child.appendChild(PfNode(QStringLiteral("roles"), roles.join(' ')));
     node.appendChild(child);
   }
@@ -190,7 +190,7 @@ void AccessControlConfig::applyConfiguration(
       QString password = fields[1].trimmed();
       QSet<QString> roles;
       foreach (const QString role,
-               fields[2].trimmed().split(',', QString::SkipEmptyParts))
+               fields[2].trimmed().split(',', Qt::SkipEmptyParts))
         roles.insert(role.trimmed());
       if (id.isEmpty() || password.isEmpty() || roles.isEmpty()) {
         Log::error() << "access control user file '" << path

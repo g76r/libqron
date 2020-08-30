@@ -347,8 +347,9 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
     // Creating $start and $end steps and reading start transitions, which are
     // converted from (start) list in PF config to step actions in $start step
     // onready event subscription.
-    QStringList startSteps = node.stringListAttribute("start").toSet().toList();
-    qSort(startSteps);
+    QStringList startSteps = node.stringListAttribute("start");
+    std::sort(startSteps.begin(), startSteps.end());
+    startSteps.removeDuplicates();
     Step startStep(PfNode("start"), scheduler, taskGroup, d->_id,
                    namedCalendars);
     Step endStep(PfNode("end"), scheduler, taskGroup, d->_id,
@@ -640,7 +641,7 @@ int Task::maxInstances() const {
 }
 
 int Task::instancesCount() const {
-  return !isNull() ? data()->_instancesCount.load() : 0;
+  return !isNull() ? data()->_instancesCount.loadRelaxed() : 0;
 }
 
 int Task::fetchAndAddInstancesCount(int valueToAdd) const {
@@ -648,7 +649,7 @@ int Task::fetchAndAddInstancesCount(int valueToAdd) const {
 }
 
 int Task::executionsCount() const {
-  return !isNull() ? data()->_executionsCount.load() : 0;
+  return !isNull() ? data()->_executionsCount.loadRelaxed() : 0;
 }
 
 int Task::fetchAndAddExecutionsCount(int valueToAdd) const {
@@ -969,7 +970,7 @@ QVariant TaskData::uiData(int section, int role) const {
     case 12:
       return _maxInstances;
     case 13:
-      return _instancesCount.load();
+      return _instancesCount.loadRelaxed();
     case 14:
       return EventSubscription::toStringList(_onstart).join("\n");
     case 15:
@@ -977,7 +978,7 @@ QVariant TaskData::uiData(int section, int role) const {
     case 16:
       return EventSubscription::toStringList(_onfailure).join("\n");
     case 17:
-      return QString::number(_instancesCount.load())+" / "
+      return QString::number(_instancesCount.loadRelaxed())+" / "
           +QString::number(_maxInstances);
     case 18:
       return QVariant(); // custom actions, handled by the model, if needed
@@ -1032,7 +1033,7 @@ QVariant TaskData::uiData(int section, int role) const {
     case 33:
       return _info;
     case 34:
-      return _executionsCount.load();
+      return _executionsCount.loadRelaxed();
     case 35:
       return Task::enqueuePolicyAsString(_enqueuePolicy);
     }
@@ -1252,7 +1253,7 @@ PfNode TaskData::toPfNode() const {
   if (startSteps.size())
     ConfigUtils::writeFlagSet(&node, startSteps, "start");
   QList<Step> steps = _steps.values();
-  qSort(steps);
+  std::sort(steps.begin(), steps.end());
   foreach(const Step &step, steps) {
     const Trigger trigger = step.trigger();
     if (trigger.isValid()) {

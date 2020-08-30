@@ -236,7 +236,7 @@ bool TaskGroupData::setUiData(
       s = s+_id.mid(_id.lastIndexOf('.'));
     else
       s = s+"."+_id;
-    // falling into next case
+    Q_FALLTHROUGH();
   case 0:
   case 11:
     s = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId);

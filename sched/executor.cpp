@@ -341,6 +341,8 @@ void Executor::httpMean() {
       // therefore no QNetworkReply slot can executed meanwhile hence no
       // QNetworkReply::finished() cannot be emitted before connection
       // TODO is connection to error() usefull ? can error() be emited w/o finished() ?
+      // FIXME connection from error() seems irrelevant since it's not a signal !
+      // FIXME replace error with errorOccurred
       connect(_reply, static_cast<void(QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
               this, &Executor::replyError);
       connect(_reply, &QNetworkReply::finished, this, &Executor::replyFinished);

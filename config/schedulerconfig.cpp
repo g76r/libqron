@@ -634,20 +634,20 @@ PfNode SchedulerConfig::toPfNode() const {
   ConfigUtils::writeEventSubscriptions(&node, d->_onschedulerstart);
   ConfigUtils::writeEventSubscriptions(&node, d->_onconfigload);
   QList<TaskGroup> taskGroups = d->_tasksGroups.values();
-  qSort(taskGroups);
+  std::sort(taskGroups.begin(), taskGroups.end());
   foreach(const TaskGroup &taskGroup, taskGroups)
     node.appendChild(taskGroup.toPfNode());
   QList<Task> tasks = d->_tasks.values();
-  qSort(tasks);
+  std::sort(tasks.begin(), tasks.end());
   foreach(const Task &task, tasks)
     if (task.workflowTaskId().isNull())
       node.appendChild(task.toPfNode());
   QList<Host> hosts = d->_hosts.values();
-  qSort(hosts);
+  std::sort(hosts.begin(), hosts.end());
   foreach (const Host &host, hosts)
     node.appendChild(host.toPfNode());
   QList<Cluster> clusters = d->_clusters.values();
-  qSort(clusters);
+  std::sort(clusters.begin(), clusters.end());
   foreach (const Cluster &cluster, clusters)
     node.appendChild(cluster.toPfNode());
   if (d->_maxtotaltaskinstances != DEFAULT_MAXTOTALTASKINSTANCES)
@@ -662,7 +662,7 @@ PfNode SchedulerConfig::toPfNode() const {
   //foreach (const Calendar &calendar, namedCalendars)
   //  node.appendChild(calendar.toPfNode());
   QStringList calendarNames = d->_namedCalendars.keys();
-  qSort(calendarNames);
+  std::sort(calendarNames.begin(), calendarNames.end());
   foreach (const QString &calendarName, calendarNames)
     node.appendChild(d->_namedCalendars.value(calendarName).toPfNode());
   node.appendChild(d->_alerterConfig.toPfNode());
