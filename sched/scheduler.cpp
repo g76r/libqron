@@ -72,7 +72,7 @@ Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
 
 Scheduler::~Scheduler() {
   //Log::removeLoggers();
-  //_alerter->deleteLater(); // TODO delete alerter only when last executor is deleted
+  _alerter->deleteLater(); // TODO delete alerter only when last executor is deleted
 }
 
 void Scheduler::activateConfig(SchedulerConfig newConfig) {
@@ -110,6 +110,7 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
               this, &Scheduler::propagateTaskInstanceChange);
       connect(this, &Scheduler::noticePosted,
               executor, &Executor::noticePosted);
+      connect(this, &QObject::destroyed, executor, &QObject::deleteLater);
       _availableExecutors.append(executor);
     }
   } else {
@@ -750,6 +751,7 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
               this, &Scheduler::propagateTaskInstanceChange);
       connect(this, &Scheduler::noticePosted,
               executor, &Executor::noticePosted);
+      connect(this, &QObject::destroyed, executor, &QObject::deleteLater);
     }
     executor->execute(instance);
     task.fetchAndAddExecutionsCount(1);

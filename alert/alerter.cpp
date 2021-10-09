@@ -68,6 +68,9 @@ public:
         _alerter->_gridboards.unlockData();
       }
     }
+    // only connect deleteLater() to avoid dandling pointers in case of
+    // unwanted thread stop,
+    connect(this, &QThread::finished, this, &QObject::deleteLater);
   }
 };
 
@@ -80,20 +83,28 @@ Alerter::Alerter() : QObject(0), _alerterThread(new QThread),
   _rulesCacheSize(0), _rulesCacheHwm(0), _deduplicatingAlertsCount(0),
   _deduplicatingAlertsHwm(0) {
   _alerterThread->setObjectName("AlerterThread");
+  connect(this, &QObject::destroyed, _alerterThread, &QThread::quit);
   connect(_alerterThread, &QThread::finished,
-          _alerterThread, &QThread::deleteLater);
+          _alerterThread, &QObject::deleteLater);
   _alerterThread->start();
   _gridboardThread->setObjectName("GridboardThread");
-  connect(_gridboardThread, &GridboardThread::finished,
-          _gridboardThread, &GridboardThread::deleteLater);
+  connect(this, &QObject::destroyed, [_gridboardThread=_gridboardThread](){
+    // stop and delete gridboard thread
+    //qDebug() << "shuting down gridboard thread";
+    _gridboardThread->_buffer.clear();
+    _gridboardThread->requestInterruption();
+    //_gridboardThread->wait(); // only usefull for logging
+    //qDebug() << "gridboard thread down";
+  });
   _gridboardThread->start();
   _channels.insert("log", new LogAlertChannel(this));
   _channels.insert("url", new UrlAlertChannel(this));
   _channels.insert("mail", new MailAlertChannel(this));
-  for (AlertChannel *channel : _channels)
-    connect(this, &Alerter::configChanged,
-            channel, &AlertChannel::setConfig,
+  for (AlertChannel *channel : _channels) {
+    connect(this, &Alerter::configChanged, channel, &AlertChannel::setConfig,
             Qt::BlockingQueuedConnection);
+    connect(this, &QObject::destroyed, channel, &QObject::deleteLater);
+  }
   QTimer *timer = new QTimer(this);
   connect(timer, &QTimer::timeout, this, &Alerter::asyncProcessing);
   timer->start(ASYNC_PROCESSING_INTERVAL);
@@ -101,15 +112,7 @@ Alerter::Alerter() : QObject(0), _alerterThread(new QThread),
 }
 
 Alerter::~Alerter() {
-  // delete channels
-  foreach (AlertChannel *channel, _channels.values())
-    channel->deleteLater();
-  // stop and delete alerter thread
-  _alerterThread->quit();
-  // stop and delete gridboard thread
-  _gridboardThread->_buffer.clear();
-  _gridboardThread->requestInterruption();
-  _gridboardThread->wait();
+  //qDebug() << "~Alerter" << this;
 }
 
 void Alerter::setConfig(AlerterConfig config) {

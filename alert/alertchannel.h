@@ -35,8 +35,8 @@ protected:
   Alerter *_alerter;
 
 public:
-  // can't have a parent because it lives it its own thread
   AlertChannel(Alerter *alerter);
+  ~AlertChannel();
   /** Asynchronously call implementation of doNotifyAlert() within dedicated
    * thread.
    * This method is thread-safe. */

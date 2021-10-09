@@ -42,13 +42,13 @@ Executor::Executor(Alerter *alerter) : QObject(0), _isTemporary(false),
   _stderrWasUsed(false), _thread(new QThread),
   _process(0), _nam(new QNetworkAccessManager(this)), _reply(0),
   _alerter(alerter), _abortTimeout(new QTimer(this)) {
+  _baseenv = QProcessEnvironment::systemEnvironment();
   _thread->setObjectName(QString("Executor-%1")
                          .arg((long long)_thread, sizeof(long)*2, 16,
                               QLatin1Char('0')));
-  connect(this, &Executor::destroyed, _thread, &QThread::quit);
-  connect(_thread, &QThread::finished, _thread, &QThread::deleteLater);
+  connect(this, &QObject::destroyed, _thread, &QThread::quit);
+  connect(_thread, &QThread::finished, _thread, &QObject::deleteLater);
   _thread->start();
-  _baseenv = QProcessEnvironment::systemEnvironment();
   moveToThread(_thread);
   _abortTimeout->setSingleShot(true);
   connect(_abortTimeout, &QTimer::timeout, this, &Executor::doAbort);
@@ -56,6 +56,7 @@ Executor::Executor(Alerter *alerter) : QObject(0), _isTemporary(false),
 }
 
 Executor::~Executor() {
+  //qDebug() << "~Executor" << this;
 }
 
 void Executor::execute(TaskInstance instance) {

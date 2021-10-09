@@ -18,11 +18,13 @@
 #include "alerter.h"
 
 AlertChannel::AlertChannel(Alerter *alerter)
-  : _thread(new QThread), _alerter(alerter) {
-  connect(this, &AlertChannel::destroyed, _thread, &QThread::quit);
-  connect(_thread, &QThread::finished, _thread, &QThread::deleteLater);
+  : QObject(0), _thread(new QThread), _alerter(alerter) {
+  // can't have a parent because it lives it its own thread
+  connect(this, &QObject::destroyed, _thread, &QThread::quit);
+  connect(_thread, &QThread::finished, _thread, &QObject::deleteLater);
   _thread->start();
   moveToThread(_thread);
+  //qDebug() << "AlertChannel" << this;
 }
 
 void AlertChannel::notifyAlert(Alert alert) {
@@ -31,4 +33,8 @@ void AlertChannel::notifyAlert(Alert alert) {
 
 void AlertChannel::setConfig(AlerterConfig config) {
   Q_UNUSED(config)
+}
+
+AlertChannel::~AlertChannel() {
+  //qDebug() << "~AlertChannel" << this;
 }
