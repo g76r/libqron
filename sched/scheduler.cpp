@@ -1,4 +1,4 @@
-/* Copyright 2012-2017 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,6 +32,7 @@
 #include "config/step.h"
 #include "trigger/crontrigger.h"
 #include "trigger/noticetrigger.h"
+#include "thread/blockingtimer.h"
 
 #define REEVALUATE_QUEUED_REQUEST_EVENT (QEvent::Type(QEvent::User+1))
 #define PERIODIC_CHECKS_INTERVAL_MS 60000
@@ -264,6 +265,11 @@ TaskInstance Scheduler::enqueueRequest(
     TaskInstance request, ParamSet paramsOverriding) {
   Task task(request.task());
   QString taskId(task.id());
+  if (_shutingDown) {
+    Log::warning(taskId, request.idAsLong())
+        << "cannot queue task because scheduler is shuting down";
+    return TaskInstance();
+  }
   foreach (RequestFormField field, task.requestFormFields()) {
     QString name(field.id());
     if (paramsOverriding.contains(name)) {
@@ -481,13 +487,13 @@ bool Scheduler::checkTrigger(CronTrigger trigger, Task task, QString taskId) {
                     .value(trigger.overridingParams().rawValue(key)));
     TaskInstanceList requests = syncRequestTask(taskId, overridingParams);
     if (!requests.isEmpty())
-      foreach (TaskInstance request, requests)
+      for (TaskInstance request : requests)
         Log::info(taskId, request.idAsLong())
             << "cron trigger " << trigger.humanReadableExpression()
             << " triggered task " << taskId;
-    else
-      Log::debug(taskId) << "cron trigger " << trigger.humanReadableExpression()
-                       << " failed to trigger task " << taskId;
+    //else
+    //Log::debug(taskId) << "cron trigger " << trigger.humanReadableExpression()
+    //                   << " failed to trigger task " << taskId;
     trigger.setLastTriggered(now);
     next = trigger.nextTriggering();
     fired = true;
@@ -579,6 +585,8 @@ void Scheduler::customEvent(QEvent *event) {
 }
 
 void Scheduler::startQueuedTasks() {
+  if (_shutingDown)
+    return;
   for (int i = 0; i < _queuedRequests.size(); ) {
     TaskInstance r = _queuedRequests[i];
     if (startQueuedTask(r)) {
@@ -959,4 +967,43 @@ TaskInstanceList Scheduler::detachedQueuedOrRunningTaskInstances() {
   TaskInstanceList running = _runningTasks.keys();
   instances.append(running);
   return instances;
+}
+
+void Scheduler::shutdown(QDeadlineTimer deadline) {
+  if (this->thread() == QThread::currentThread())
+    doShutdown(deadline);
+  else
+    QMetaObject::invokeMethod(this, "doShutdown",
+                              Qt::BlockingQueuedConnection,
+                              Q_ARG(QDeadlineTimer, deadline));
+}
+
+void Scheduler::doShutdown(QDeadlineTimer deadline) {
+  Log::info() << "shuting down";
+  _shutingDown = true;
+  BlockingTimer timer(1000);
+  while (!deadline.hasExpired()) {
+    int remaining = _runningTasks.size();
+    if (!remaining)
+      break;
+    QStringList instanceIds, taskIds;
+    for (auto i : _runningTasks.keys()) {
+      instanceIds.append(i.id());
+      taskIds.append(i.task().id());
+    }
+    Log::info() << "shutdown : waiting for " << remaining
+                << " tasks to finish: " << taskIds << " with ids: "
+                << instanceIds;
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 1000);
+    timer.wait();
+  }
+  QStringList instanceIds, taskIds;
+  for (auto i : _queuedRequests) {
+    instanceIds.append(i.id());
+    taskIds.append(i.task().id());
+  }
+  Log::info() << "shutdown : leaving " << instanceIds.size()
+              << " requests not started on leaving : " << taskIds
+              << " with ids: " << instanceIds;
+  QThread::usleep(100000);
 }

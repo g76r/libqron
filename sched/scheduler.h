@@ -1,4 +1,4 @@
-/* Copyright 2012-2017 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,6 +35,7 @@
 #include "config/logfile.h"
 #include "config/qronconfigdocumentmanager.h"
 #include <random>
+#include <QDeadlineTimer>
 
 class QThread;
 class CronTrigger;
@@ -60,6 +61,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   std::random_device _randomDevice;
   std::mt19937 _uniformRandomNumberGenerator;
   QMutex _configGuard;
+  bool _shutingDown = false;
 
 public:
   Scheduler();
@@ -160,6 +162,11 @@ public slots:
   //LATER enableAllTasksWithinGroup
   /** Activate a new configuration. */
   void activateConfig(SchedulerConfig newConfig);
+  /** Shutdown scheduler: stop starting tasks and wait for those already running
+   * until deadline is reached). */
+  void shutdown(QDeadlineTimer deadline = QDeadlineTimer::Forever);
+
+public:
   // override config() to make it thread-safe
   /** Thread-safe (whereas QronConfigDocumentManager::config() is not) */
   SchedulerConfig config() {
@@ -212,6 +219,7 @@ private:
   Q_INVOKABLE TaskInstanceList detachedQueuedTaskInstances();
   Q_INVOKABLE TaskInstanceList detachedRunningTaskInstances();
   Q_INVOKABLE TaskInstanceList detachedQueuedOrRunningTaskInstances();
+  Q_INVOKABLE void doShutdown(QDeadlineTimer deadline);
 };
 
 #endif // SCHEDULER_H

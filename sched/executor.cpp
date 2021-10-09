@@ -1,4 +1,4 @@
-/* Copyright 2012-2017 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,10 @@
 #include "trigger/crontrigger.h"
 #include "util/timerwitharguments.h"
 #include "sysutil/parametrizednetworkrequest.h"
-
+#ifdef Q_OS_UNIX
+#include <sys/types.h>
+#include <unistd.h>
+#endif
 
 static QString _localDefaultShell;
 
@@ -208,6 +211,16 @@ void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
       << cmdline << " and environment " << sysenv.toStringList();
   emit taskInstanceStarted(_instance);
   _process->start(program, cmdline);
+  // detach from process group to avoid the child to receive e.g. SIGINT
+  // LATER when upgrading to Qt 6 use QProcess::setChildProcessModifier to
+  // setpgid in the child in addition to the parent, there is a race condition
+  // but the child is likely to be the right place statistically by far
+#ifdef Q_OS_UNIX
+  _process->waitForStarted();
+  int pid = _process->pid();
+  ::setpgid(pid, 0);
+  //qDebug() << "setpgid" << pid << r;
+#endif
 }
 
 void Executor::processError(QProcess::ProcessError error) {
