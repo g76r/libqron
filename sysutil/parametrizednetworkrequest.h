@@ -37,7 +37,7 @@
  */
 class ParametrizedNetworkRequest : public QNetworkRequest {
   QString _logTask, _logExecId;
-  HttpRequest::HttpRequestMethod _method;
+  HttpRequest::HttpMethod _method;
   QString _rawPayloadFromParams;
   ParamSet _params;
 
