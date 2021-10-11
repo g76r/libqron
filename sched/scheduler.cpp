@@ -742,7 +742,7 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
       _consumedResources.insert(h.id(), hostConsumedResources);
       emit hostsResourcesAvailabilityChanged(h.id(), hostAvailableResources);
     }
-    _alerter->cancelAlert("resource.exhausted."+taskId);
+    _alerter->cancelAlert("task.resource_exhausted."+taskId);
     instance.setTarget(h);
     instance.setStartDatetime();
     foreach (EventSubscription sub, config().onstart())
@@ -778,7 +778,7 @@ nexthost:;
       << "' now because there is not enough resources on target '"
       << target << "'";
   // LATER suffix alert with resources kind (one alert per exhausted kind)
-  _alerter->raiseAlert("resource.exhausted."+taskId);
+  _alerter->raiseAlert("task.resource_exhausted."+taskId);
   return false;
 }
 
