@@ -131,9 +131,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
   foreach (const QString &parent, displayedGroups) {
-    QString prefix = parent + ".";
     foreach (const QString &child, displayedGroups) {
-      if (child.startsWith(prefix))
+      if (child == parent+child.mid(child.lastIndexOf('.')))
         gv.append("\"").append(parent).append("\" -- \"")
             .append(child).append("\" [" TASKGROUP_EDGE "]\n");
     }
@@ -193,9 +192,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   }
   // groups edges
   foreach (const QString &parent, displayedGroups) {
-    QString prefix = parent + ".";
     foreach (const QString &child, displayedGroups) {
-      if (child.startsWith(prefix))
+      if (child == parent+child.mid(child.lastIndexOf('.')))
         gv.append("\"").append(parent).append("\" -- \"")
             .append(child).append("\" [" TASKGROUP_EDGE "]\n");
     }
