@@ -29,7 +29,7 @@
 #define NO_TRIGGER_NODE "shape=none"
 #define TASK_TRIGGER_EDGE "dir=back,arrowtail=vee"
 #define TASK_NOTRIGGER_EDGE "dir=back,arrowtail=odot,style=dashed"
-#define TASK_POSTNOTICE_EDGE "dir=forward,arrowhead=vee"
+#define TASK_POSTNOTICE_EDGE "dir=forward,arrowhead=vee,constraint=false"
 #define TASK_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE
 #define GLOBAL_EVENT_NODE "shape=none"
 //#define GLOBAL_EVENT_NODE "shape=pentagon"
