@@ -18,6 +18,7 @@
 #include <QSharedDataPointer>
 #include <QHash>
 #include "modelview/shareduiitem.h"
+#include "util/paramset.h"
 
 class HostData;
 class PfNode;
@@ -27,7 +28,7 @@ class PfNode;
 class LIBQRONSHARED_EXPORT Host : public SharedUiItem {
 public:
   Host();
-  Host(PfNode node);
+  Host(PfNode node, ParamSet globalParams);
   Host(const Host &other);
   ~Host();
   Host &operator=(const Host &other) {

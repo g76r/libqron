@@ -169,7 +169,7 @@ SchedulerConfigData::SchedulerConfigData(PfNode root, Scheduler *scheduler,
   }
   _hosts.clear();
   foreach (PfNode node, root.childrenByName("host")) {
-    Host host(node);
+    Host host(node, _globalParams);
     if (_hosts.contains(host.id())) {
       Log::error() << "ignoring duplicate host: " << host.id();
     } else {
@@ -178,7 +178,8 @@ SchedulerConfigData::SchedulerConfigData(PfNode root, Scheduler *scheduler,
   }
   // create default "localhost" host if it is not declared
   if (!_hosts.contains("localhost"))
-    _hosts.insert("localhost", Host(PfNode("host", "localhost")));
+    _hosts.insert("localhost", Host(PfNode("host", "localhost"),
+                                    _globalParams));
   _clusters.clear();
   foreach (PfNode node, root.childrenByName("cluster")) {
     Cluster cluster(node);

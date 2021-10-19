@@ -99,7 +99,9 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   });
   registerItemType(
         "host", &Host::setUiData,
-        [](QString id) -> SharedUiItem { return Host(PfNode("host", id)); });
+        [this](QString id) -> SharedUiItem {
+    return Host(PfNode("host", id), _config.globalParams());
+  });
   addChangeItemTrigger(
         "host", BeforeUpdate|BeforeCreate,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,

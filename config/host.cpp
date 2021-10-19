@@ -50,13 +50,14 @@ Host::Host() {
 Host::Host(const Host &other) : SharedUiItem(other) {
 }
 
-Host::Host(PfNode node) {
+Host::Host(PfNode node, ParamSet globalParams) {
   HostData *d = new HostData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
                                     ConfigUtils::FullyQualifiedId);
-  d->_label = node.attribute("label");
-  d->_hostname = ConfigUtils::sanitizeId(node.attribute("hostname"),
-                                          ConfigUtils::Hostname);
+  d->_label = globalParams.evaluate(node.attribute("label"));
+  d->_hostname = ConfigUtils::sanitizeId(
+        globalParams.evaluate(node.attribute("hostname")),
+        ConfigUtils::Hostname);
   ConfigUtils::loadResourcesSet(node, &d->_resources, "resource");
   ConfigUtils::loadComments(node, &d->_commentsList);
   setData(d);
