@@ -39,7 +39,8 @@ public:
     if (_scheduler) {
       ParamSet noticeParams;
       TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
-      ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp);
+      ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp)
+          (taskContext.params());
       foreach (QString key, _noticeParams.keys())
         noticeParams.setValue(key, _noticeParams.value(key, &ppm));
       _scheduler->postNotice(_noticeParams.evaluate(_notice, &ppm),

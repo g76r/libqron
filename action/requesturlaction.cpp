@@ -43,7 +43,7 @@ public:
     // LATER support binary payloads
     TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
     ParamsProviderMerger evaluationContext =
-        ParamsProviderMerger(_params)(eventContext)(&ppp);
+        ParamsProviderMerger(_params)(eventContext)(&ppp)(taskContext.params());
     if (_address.startsWith("udp:", Qt::CaseInsensitive)) {
       // LATER run UDP in a separate thread to avoid network/dns/etc. hangups
       ParametrizedUdpSender sender(_address, _params, &evaluationContext,

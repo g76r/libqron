@@ -29,7 +29,8 @@ public:
                                              TaskInstance instance) const {
     ParamSet overridingParams;
     TaskInstancePseudoParamsProvider ppp = instance.pseudoParams();
-    ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp);
+    ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp)
+        (instance.params());
     foreach (QString key, _overridingParams.keys())
       overridingParams.setValue(key, _overridingParams.value(key, &ppm));
     //Log::fatal() << "******************* " << eventContext << overridingParams

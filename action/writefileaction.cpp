@@ -33,7 +33,7 @@ public:
     // LATER support binary payloads
     TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
     ParamsProviderMerger evaluationContext =
-        ParamsProviderMerger(_params)(eventContext)(&ppp);
+        ParamsProviderMerger(_params)(eventContext)(&ppp)(taskContext.params());
     ParametrizedFileWriter writer(
           _path, _params, &evaluationContext, taskContext.task().id(),
           taskContext.idAsLong());
