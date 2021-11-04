@@ -216,9 +216,9 @@ void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
   // setpgid in the child in addition to the parent, there is a race condition
   // but the child is likely to be the right place statistically by far
 #ifdef Q_OS_UNIX
-  _process->waitForStarted();
-  int pid = _process->pid();
-  ::setpgid(pid, 0);
+  //_process->waitForStarted();
+  //int pid = _process->pid();
+  //::setpgid(pid, 0);
   //qDebug() << "setpgid" << pid << r;
 #endif
 }
