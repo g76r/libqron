@@ -280,7 +280,7 @@ TaskInstance Scheduler::enqueueRequest(
   if (!request.force()) {
     if (task.enqueuePolicy() & Task::EnqueueUntilMaxInstances) {
       // reject task request if running count + queued count >= max instance
-      int count = task.instancesCount();
+      int count = task.runningCount();
       int max = task.maxInstances();
       if (count < max) {
         for (const TaskInstance &request : _queuedRequests) {
@@ -357,7 +357,7 @@ TaskInstance Scheduler::doCancelRequest(quint64 id) {
       r2.setEndDatetime();
       emit itemChanged(r2, r2, QStringLiteral("taskinstance"));
       _queuedRequests.removeAt(i);
-      if (r2.task().instancesCount() < r2.task().maxInstances())
+      if (r2.task().runningCount() < r2.task().maxInstances())
         _alerter->cancelAlert("task.maxinstancesreached."+taskId);
       return r2;
     }
@@ -641,9 +641,9 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
   }
   _alerter->cancelAlert("scheduler.maxtotaltaskinstances.reached");
   if (instance.force())
-    task.fetchAndAddInstancesCount(1);
-  else if (task.fetchAndAddInstancesCount(1) >= task.maxInstances()) {
-    task.fetchAndAddInstancesCount(-1);
+    task.fetchAndAddRunningCount(1);
+  else if (task.fetchAndAddRunningCount(1) >= task.maxInstances()) {
+    task.fetchAndAddRunningCount(-1);
     Log::warning() << "requested task '" << taskId << "' cannot be executed "
                       "because maxinstances is already reached ("
                    << task.maxInstances() << ")";
@@ -700,7 +700,7 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
     instance.setReturnCode(-1);
     instance.setSuccess(false);
     instance.setEndDatetime();
-    task.fetchAndAddInstancesCount(-1);
+    task.fetchAndAddRunningCount(-1);
     task.setLastExecution(QDateTime::currentDateTime());
     task.setLastSuccessful(false);
     task.setLastReturnCode(-1);
@@ -772,7 +772,7 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
 nexthost:;
   }
   // no host has enough resources to execute the task
-  task.fetchAndAddInstancesCount(-1);
+  task.fetchAndAddRunningCount(-1);
   Log::warning(taskId, instance.idAsLong())
       << "cannot execute task '" << taskId
       << "' now because there is not enough resources on target '"
@@ -789,7 +789,7 @@ void Scheduler::taskInstanceFinishing(TaskInstance instance,
   // configured and requested tasks are different if config was reloaded
   // meanwhile
   Task configuredTask = config().tasks().value(taskId);
-  configuredTask.fetchAndAddInstancesCount(-1);
+  configuredTask.fetchAndAddRunningCount(-1);
   if (executor) {
     // deleteLater() because it lives in its own thread
     if (executor->isTemporary())

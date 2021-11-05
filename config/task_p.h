@@ -1,4 +1,4 @@
-/* Copyright 2014-2016 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,11 +28,11 @@ static QString _uiHeaderNames[] = {
   "Next execution", // 10
   "Id",
   "Max intances",
-  "Instances count",
+  "Running count",
   "On start",
   "On success", // 15
   "On failure",
-  "Instances / max",
+  "Running / max",
   "Actions",
   "Last execution status",
   "System environment", // 20

@@ -1,4 +1,4 @@
-/* Copyright 2012-2018 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -147,7 +147,7 @@ public:
   // QSharedData is used by several thread at a time, hence the qint64
   mutable qint64 _lastExecution, _nextScheduledExecution;
   // LATER QAtomicInt is not needed since only one thread changes these values (Executor's)
-  mutable QAtomicInt _instancesCount, _executionsCount;
+  mutable QAtomicInt _runningCount, _executionsCount;
   mutable bool _enabled, _lastSuccessful;
   mutable int _lastReturnCode, _lastTotalMillis;
   mutable quint64 _lastTaskInstanceId;
@@ -469,7 +469,7 @@ void Task::copyLiveAttributesFromOldTask(Task oldTask) {
   // copy mutable fields from old task (excepted _nextScheduledExecution)
   d->_lastExecution = oldTask.lastExecution().isValid()
       ? oldTask.lastExecution().toMSecsSinceEpoch() : LLONG_MIN;
-  d->_instancesCount = oldTask.instancesCount();
+  d->_runningCount = oldTask.runningCount();
   d->_executionsCount = oldTask.executionsCount();
   d->_lastSuccessful = oldTask.lastSuccessful();
   d->_lastReturnCode = oldTask.lastReturnCode();
@@ -640,12 +640,12 @@ int Task::maxInstances() const {
   return !isNull() ? data()->_maxInstances : 0;
 }
 
-int Task::instancesCount() const {
-  return !isNull() ? data()->_instancesCount.loadRelaxed() : 0;
+int Task::runningCount() const {
+  return !isNull() ? data()->_runningCount.loadRelaxed() : 0;
 }
 
-int Task::fetchAndAddInstancesCount(int valueToAdd) const {
-  return !isNull() ? data()->_instancesCount.fetchAndAddOrdered(valueToAdd) : 0;
+int Task::fetchAndAddRunningCount(int valueToAdd) const {
+  return !isNull() ? data()->_runningCount.fetchAndAddOrdered(valueToAdd) : 0;
 }
 
 int Task::executionsCount() const {
@@ -970,7 +970,7 @@ QVariant TaskData::uiData(int section, int role) const {
     case 12:
       return _maxInstances;
     case 13:
-      return _instancesCount.loadRelaxed();
+      return _runningCount.loadRelaxed();
     case 14:
       return EventSubscription::toStringList(_onstart).join("\n");
     case 15:
@@ -978,7 +978,7 @@ QVariant TaskData::uiData(int section, int role) const {
     case 16:
       return EventSubscription::toStringList(_onfailure).join("\n");
     case 17:
-      return QString::number(_instancesCount.loadRelaxed())+" / "
+      return QString::number(_runningCount.loadRelaxed())+" / "
           +QString::number(_maxInstances);
     case 18:
       return QVariant(); // custom actions, handled by the model, if needed

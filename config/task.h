@@ -1,4 +1,4 @@
-/* Copyright 2012-2018 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -123,10 +123,10 @@ public:
   /** Maximum allowed simultaneous instances (includes running and queued
     * instances). Default: 1. */
   int maxInstances() const;
-  /** Current intances count (includes running and queued instances). */
-  int instancesCount() const;
-  /** Atomic fetch-and-add of the current instances count. */
-  int fetchAndAddInstancesCount(int valueToAdd) const;
+  /** Current running intances count (includes running and queued instances). */
+  int runningCount() const;
+  /** Atomic fetch-and-add of the current running instances count. */
+  int fetchAndAddRunningCount(int valueToAdd) const;
   /** Executions count. */
   int executionsCount() const;
   /** Atomic fetch-and-add of the executions count. */
