@@ -1,4 +1,4 @@
-/* Copyright 2014-2017 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -55,19 +55,17 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
   if (!contentType.isNull())
     setHeader(QNetworkRequest::ContentTypeHeader, contentType);
   _rawPayloadFromParams = params.rawValue("payload");
-#if QT_VERSION >= 0x050600
   bool followRedirect = params.valueAsBool("follow-redirect", false,
                                            paramsEvaluationContext);
   int redirectMax = params.valueAsInt("redirect-max", -1,
                                       paramsEvaluationContext);
   if (redirectMax > 0)
     followRedirect = true;
-  if (followRedirect) {
-    setAttribute(QNetworkRequest::FollowRedirectsAttribute, true);
-    if (redirectMax > 0)
-      setMaximumRedirectsAllowed(redirectMax);
-  }
-#endif
+  setAttribute(QNetworkRequest::RedirectPolicyAttribute,
+               followRedirect ? QNetworkRequest::NoLessSafeRedirectPolicy
+                              : QNetworkRequest::ManualRedirectPolicy);
+  if (redirectMax > 0)
+    setMaximumRedirectsAllowed(redirectMax);
 }
 
 QNetworkReply *ParametrizedNetworkRequest::performRequest(

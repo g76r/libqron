@@ -33,6 +33,8 @@
 #endif
 
 static QString _localDefaultShell;
+static const QRegularExpression _httpHeaderForbiddenSeqRE("[^a-zA-Z0-9_\\-]+");
+static const QRegularExpression _asciiControlCharsSeqRE("[\\0-\\x1f]+");
 
 static int staticInit() {
   char *value = getenv("SHELL");
@@ -47,8 +49,8 @@ Executor::Executor(Alerter *alerter) : QObject(0), _isTemporary(false),
   _alerter(alerter), _abortTimeout(new QTimer(this)) {
   _baseenv = QProcessEnvironment::systemEnvironment();
   _thread->setObjectName(QString("Executor-%1")
-                         .arg((long long)_thread, sizeof(long)*2, 16,
-                              QLatin1Char('0')));
+                         .arg(reinterpret_cast<long long>(_thread),
+                              sizeof(long)*2, 16, QLatin1Char('0')));
   connect(this, &QObject::destroyed, _thread, &QThread::quit);
   connect(_thread, &QThread::finished, _thread, &QObject::deleteLater);
   _thread->start();
@@ -76,7 +78,7 @@ void Executor::doExecute(TaskInstance instance) {
   _stderrWasUsed = false;
   long long maxDurationBeforeAbort = _instance.task().maxDurationBeforeAbort();
   if (maxDurationBeforeAbort <= INT_MAX)
-    _abortTimeout->start(maxDurationBeforeAbort);
+    _abortTimeout->start((int)maxDurationBeforeAbort);
   switch (mean) {
   case Task::Local:
     localMean();
@@ -191,13 +193,8 @@ void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
   _errBuf.clear();
   _process = new QProcess(this);
   _process->setProcessChannelMode(QProcess::SeparateChannels);
-#if QT_VERSION >= 0x050600
   connect(_process, &QProcess::errorOccurred,
           this, &Executor::processError);
-#else
-  connect(_process, static_cast<void(QProcess::*)(QProcess::ProcessError)>(&QProcess::error),
-          this, &Executor::processError);
-#endif
   connect(_process, static_cast<void(QProcess::*)(int,QProcess::ExitStatus)>(&QProcess::finished),
           this, &Executor::processFinished);
   connect(_process, &QProcess::readyReadStandardError,
@@ -268,7 +265,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
   taskInstanceFinishing(success, exitCode);
 }
 
-static QRegExp sshConnClosed("^Connection to [^ ]* closed\\.$");
+static QRegularExpression _sshConnClosedRE("^Connection to [^ ]* closed\\.$");
 
 void Executor::readyProcessWarningOutput() {
   // LATER provide a way to define several stderr filter regexps
@@ -284,12 +281,13 @@ void Executor::readyProcessWarningOutput() {
       else
         line = QString::fromUtf8(_errBuf.mid(0, i)).trimmed();
       _errBuf.remove(0, i+1);
+      line.remove(_asciiControlCharsSeqRE);
       if (!line.isEmpty()) {
-        QList<QRegExp> filters(_instance.task().stderrFilters());
+        QList<QRegularExpression> filters(_instance.task().stderrFilters());
         if (filters.isEmpty() && _instance.task().mean() == Task::Ssh)
-          filters.append(sshConnClosed);
-        foreach (QRegExp filter, filters)
-          if (filter.indexIn(line) >= 0)
+          filters.append(_sshConnClosedRE);
+        for (auto filter: filters)
+          if (filter.match(line).hasMatch())
             goto line_filtered;
         Log::warning(_instance.task().id(), _instance.idAsLong())
             << "task stderr: " << line;
@@ -338,7 +336,7 @@ void Executor::httpMean() {
     const QString expr(_instance.task().setenv().rawValue(name));
     if (name.endsWith(":")) // ignoring : at end of header name
       name.chop(1);
-    name.replace(QRegExp("[^a-zA-Z_0-9\\-]+"), "_");
+    name.replace(_httpHeaderForbiddenSeqRE, "_");
     const QString value = _instance.params().evaluate(expr);
     //Log::fatal(_instance.task().id(), _instance.id()) << "setheader: " << name << "=" << value << ".";
     networkRequest.setRawHeader(name.toLatin1(), value.toUtf8());
@@ -357,8 +355,7 @@ void Executor::httpMean() {
       // TODO is connection to error() usefull ? can error() be emited w/o finished() ?
       // FIXME connection from error() seems irrelevant since it's not a signal !
       // FIXME replace error with errorOccurred
-      connect(_reply, static_cast<void(QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
-              this, &Executor::replyError);
+      connect(_reply, &QNetworkReply::errorOccurred, this, &Executor::replyError);
       connect(_reply, &QNetworkReply::finished, this, &Executor::replyFinished);
     } else {
       Log::error(_instance.task().id(), _instance.idAsLong())
@@ -377,9 +374,6 @@ void Executor::replyError(QNetworkReply::NetworkError error) {
   replyHasFinished(qobject_cast<QNetworkReply*>(sender()), error);
 }
 
-// LATER replace with QRegularExpression, but not without regression/unit tests
-static QRegExp asciiControlCharsRE("[\\0-\\x1f]+");
-
 void Executor::replyFinished() {
   replyHasFinished(qobject_cast<QNetworkReply*>(sender()),
                   QNetworkReply::NoError);
@@ -391,16 +385,16 @@ void Executor::getReplyContent(QNetworkReply *reply, QString *replyContent,
   if (!replyContent->isNull())
     return;
   int maxsize = _instance.task().params().valueAsInt(maxsizeKey, 4096);
-  int maxwait = _instance.task().params().valueAsDouble(maxwaitKey, 5.0)*1000;
-  long now = QDateTime::currentMSecsSinceEpoch();
-  long deadline = now+maxwait;
+  int maxwait = (int)_instance.task().params().valueAsDouble(maxwaitKey, 5.0)*1000;
+  qint64 now = QDateTime::currentMSecsSinceEpoch();
+  qint64 deadline = now+maxwait;
   while (reply->bytesAvailable() < maxsize && now < deadline) {
-    if (!reply->waitForReadyRead(deadline-now))
+    if (!reply->waitForReadyRead((int)(deadline-now)))
       break;
     now = QDateTime::currentMSecsSinceEpoch();
   }
   QByteArray ba = reply->read(maxsize);
-  *replyContent = ba.isEmpty() ? QStringLiteral("") : QString::fromUtf8(ba);
+  *replyContent = ba.isEmpty() ? QLatin1String("") : QString::fromUtf8(ba);
 }
 
 // executed by the first emitted signal among QNetworkReply::error() and
@@ -505,7 +499,7 @@ void Executor::workflowMean() {
       timer->setSingleShot(true);
       timer->connectWithArgs(this, "workflowCronTriggered", triggerId);
       timer->setTimerType(Qt::PreciseTimer); // LATER is it really needed ?
-      timer->start(ms < INT_MAX ? ms : INT_MAX);
+      timer->start(ms < INT_MAX ? (int)ms : INT_MAX);
       _workflowTimers.append(timer);
       //Log::fatal(_instance.task().id(), _instance.id())
       //    << "****** configured workflow timer " << id << " " << trigger.expression()
@@ -597,14 +591,15 @@ void Executor::prepareEnv(QProcessEnvironment *sysenv,
                           QHash<QString,QString> *setenv) {
   if (_instance.task().params().valueAsBool(QStringLiteral("clearsysenv")))
     *sysenv = QProcessEnvironment();
-  else
+  else {
     *sysenv = _baseenv;
-  // first clean system base env from any unset variables
-  foreach (const QString pattern, _instance.task().unsetenv().keys()) {
-    QRegExp re(pattern, Qt::CaseInsensitive, QRegExp::WildcardUnix);
-    foreach (const QString key, sysenv->keys())
-      if (re.exactMatch(key))
-        sysenv->remove(key);
+    // first clean system base env from any unset variables
+    for (auto pattern: _instance.task().unsetenv().keys()) {
+      QRegularExpression re("^"+pattern+"$");
+      for (auto key: sysenv->keys())
+        if (re.match(key).hasMatch())
+          sysenv->remove(key);
+    }
   }
   // then build setenv evaluated paramset that may be used apart from merging
   // into sysenv

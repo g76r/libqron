@@ -131,8 +131,8 @@ public:
   int executionsCount() const;
   /** Atomic fetch-and-add of the executions count. */
   int fetchAndAddExecutionsCount(int valueToAdd) const;
-  QList<QRegExp> stderrFilters() const;
-  void appendStderrFilter(QRegExp filter);
+  QList<QRegularExpression> stderrFilters() const;
+  void appendStderrFilter(QRegularExpression filter);
   void triggerStartEvents(TaskInstance instance) const;
   void triggerSuccessEvents(TaskInstance instance) const;
   void triggerFailureEvents(TaskInstance instance) const;

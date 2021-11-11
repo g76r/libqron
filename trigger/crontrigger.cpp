@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,7 +13,7 @@
  */
 #include "crontrigger.h"
 #include "trigger_p.h"
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QStringList>
 #include "log/log.h"
 
@@ -24,10 +24,11 @@
 // MAYDO support text dayofweek (MON, FRI...)
 // MAYDO support never-expression, currently * * * 30 2 * works but it shouldn't
 
-#define RE_STEP "(((([0-9]*)(-([0-9]+))?)|\\*)(/([0-9]+))?)"
-#define RE_STEP_INTERNAL RE_STEP "\\s*,\\s*"
-#define RE_FIELD "\\s*(" RE_STEP "(\\s*,\\s*" RE_STEP ")*)\\s+"
-#define RE_EXPR "^(" RE_FIELD "){6}$"
+#define CRON_STEP_RE "(?:(?:(?:([0-9]*)(?:-([0-9]+))?)|\\*)(?:/([0-9]+))?)"
+#define CRON_FIELD_RE "\\s*(" CRON_STEP_RE "(?:\\s*,\\s*" CRON_STEP_RE ")*)\\s+"
+
+static const QRegularExpression _cronExpressionRE("^(?:" CRON_FIELD_RE "){6}$"),
+_cronFieldRE(CRON_FIELD_RE), _cronStepRE(CRON_STEP_RE "\\s*,\\s*");
 
 namespace {
 
@@ -69,7 +70,7 @@ public:
       for (int i = start; i <= _max && i <= stop; i += modulo)
         _setValues[i-_min] = value;
   }
-  QString toString() const {
+  [[nodiscard]] QString toString() const {
     for (int i = 0; i <= _max-_min; ++i)
       if (!_setValues[i])
         goto notstar;
@@ -102,13 +103,13 @@ notstar:
     return s.isEmpty() ? "ERROR" : s;
   }
   operator QString() const { return toString(); }
-  bool isNull() const {
+  [[nodiscard]] bool isNull() const {
     for (int i = 0; i <= _max-_min; ++i)
       if (_setValues[i])
         return false;
     return true;
   }
-  bool isSet(int index) const {
+  [[nodiscard]] bool isSet(int index) const {
     return index >= _min && index <= _max && _setValues[index-_min]; }
 };
 
@@ -127,16 +128,16 @@ public:
       _nextTriggering(-1) {
     parseCronExpression(cronExpression);
   }
-  QString canonicalExpression() const {
-    return QString("%1 %2 %3 %4 %5 %6").arg(_seconds).arg(_minutes).arg(_hours)
-        .arg(_days).arg(_months).arg(_daysofweek);
+  QString canonicalExpression() const override {
+    return QString("%1 %2 %3 %4 %5 %6")
+        .arg(_seconds, _minutes, _hours, _days, _months,_daysofweek);
   }
-  QString expression() const { return _cronExpression; }
-  QString humanReadableExpression() const { return "("+_cronExpression+")"; }
+  QString expression() const override { return _cronExpression; }
+  QString humanReadableExpression() const override { return "("+_cronExpression+")"; }
   QDateTime nextTriggering(QDateTime max) const;
   bool isTriggering(QDateTime timestamp) const;
-  bool isValid() const { return _isValid; }
-  QString triggerType() const { return "cron"; }
+  bool isValid() const override { return _isValid; }
+  QString triggerType() const override { return "cron"; }
 
 private:
   void parseCronExpression(QString cronExpression);
@@ -252,17 +253,15 @@ void CronTriggerData::parseCronExpression(QString cronExpression) {
   if (cronExpression.isEmpty())
     return;
   cronExpression += " "; // regexp are simpler if every field ends with a space
-  QRegExp reExpr(RE_EXPR), reField(RE_FIELD), reStep(RE_STEP_INTERNAL);
-  if (reExpr.exactMatch(cronExpression)) {
-    int i = 0, k = 0;
-    while ((i = reField.indexIn(cronExpression, i)) >= 0) {
-      QStringList c = reField.capturedTexts();
+  if (_cronExpressionRE.match(cronExpression).hasMatch()) {
+    int fieldIndex = 0;
+    for (auto match: _cronFieldRE.globalMatch(cronExpression)) {
+      QStringList c = match.capturedTexts();
       //qDebug() << "  found cron field" << reField.captureCount() << c;
       QString step = c[1] + ","; // regexp are simpler if every step ends with a comma
-      int j = 0;
-      while ((j = reStep.indexIn(step, j)) >= 0) {
-        QStringList c = reStep.capturedTexts();
-        QString start = c[4], stop = c[6], modulo = c[8];
+      for (auto match: _cronStepRE.globalMatch(step)) {
+        QStringList c = match.capturedTexts();
+        QString start = c[1], stop = c[2], modulo = c[3];
         bool star = false;//(c[2] == "*" && !modulo.isEmpty());
         bool ok;
         int iStart = start.toInt(&ok);
@@ -272,7 +271,7 @@ void CronTriggerData::parseCronExpression(QString cronExpression) {
         if (!ok)
           iStop = modulo.isEmpty() ? iStart : -1;
         //qDebug() << "    found cron step" << c[1] << reStep.captureCount() << c << start << stop << modulo;
-        switch (k) {
+        switch (fieldIndex) {
         case 0:
           if (star)
             _seconds.setAll();
@@ -315,10 +314,8 @@ void CronTriggerData::parseCronExpression(QString cronExpression) {
           }
           break;
         }
-        j += c[0].length();
       }
-      i += c[0].length();
-      ++k;
+      ++fieldIndex;
     }
     _isValid = !(_seconds.isNull() || _minutes.isNull() || _hours.isNull()
                  || _days.isNull() || _months.isNull()

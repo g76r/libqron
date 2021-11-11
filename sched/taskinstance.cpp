@@ -1,4 +1,4 @@
-/* Copyright 2012-2018 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -98,11 +98,11 @@ private:
 
   // SharedUiItemData interface
 public:
-  QString id() const { return _idAsString; }
-  QString idQualifier() const { return "taskinstance"; }
-  int uiSectionCount() const;
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const;
+  QString id() const override { return _idAsString; }
+  QString idQualifier() const override { return "taskinstance"; }
+  int uiSectionCount() const override;
+  QVariant uiData(int section, int role) const override;
+  QVariant uiHeaderData(int section, int role) const override;
   QDateTime inline requestDatetime() const { return _requestDateTime; }
   QDateTime inline startDatetime() const { return _start != LLONG_MIN
         ? QDateTime::fromMSecsSinceEpoch(_start) : QDateTime(); }
@@ -125,8 +125,7 @@ public:
     if (_end != LLONG_MIN) {
       if (_start == LLONG_MIN)
         return TaskInstance::Canceled;
-      else
-        return _success ? TaskInstance::Success : TaskInstance::Failure;
+      return _success ? TaskInstance::Success : TaskInstance::Failure;
     }
     if (_start != LLONG_MIN)
       return TaskInstance::Running;

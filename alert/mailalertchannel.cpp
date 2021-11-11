@@ -1,4 +1,4 @@
-/* Copyright 2012-2017 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -78,9 +78,9 @@ void MailAlertChannel::setConfig(AlerterConfig config) {
   QString queuesBeforeReload;
   QStringList queuesRemoved;
   QSet<QString> configuredAddresses;
-  foreach (const AlertSubscription &subscription, _config.alertSubscriptions())
+  for (const AlertSubscription &subscription: _config.alertSubscriptions())
     if (subscription.channelName() == QStringLiteral("mail"))
-      foreach (const QString &address,
+      for (const QString &address:
                splittedAddresses(subscription.address(Alert())))
         configuredAddresses.insert(address);
   QDateTime maxLastMailDate = // date until when an empty queue can be removed
@@ -349,7 +349,8 @@ void MailAlertChannel::processQueue(QVariant address) {
                  _config.params().value("mail.senderaddress",
                                         "please-do-not-reply@localhost"));
       bool queued = _mailSender->send(senderAddress, recipients, body,
-                                      headers, QList<QVariant>(), errorString);
+                                      QMultiHash<QString,QString>(headers),
+                                      QList<QVariant>(), errorString);
       if (queued) {
         Log::info() << "successfuly sent an alert mail to " << addr
                     << " with " << queue->_alerts.size()

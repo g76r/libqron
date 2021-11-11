@@ -1,4 +1,4 @@
-/* Copyright 2014-2017 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -38,7 +38,7 @@ public:
     : _address(address), _message(message), _params(params) {
   }
   void trigger(EventSubscription subscription, ParamSet eventContext,
-               TaskInstance taskContext) const {
+               TaskInstance taskContext) const override {
     Q_UNUSED(subscription)
     // LATER support binary payloads
     TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
@@ -58,20 +58,20 @@ public:
             globalNetworkActionHub->_nam, _message, &evaluationContext);
       if (reply) {
         // FIXME use errorOccurred() instead of (non signal!) error()
-        QObject::connect(reply, static_cast<void(QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
-                         reply, &QNetworkReply::deleteLater);
+        QObject::connect(reply, &QNetworkReply::errorOccurred,
+                         reply, &QObject::deleteLater);
         QObject::connect(reply, &QNetworkReply::finished,
                          reply, &QNetworkReply::deleteLater);
       }
     }
   }
-  QString toString() const {
+  QString toString() const override {
     return "requesturl{ "+_address+" }";
   }
-  QString actionType() const {
+  QString actionType() const override {
     return QStringLiteral("requesturl");
   }
-  PfNode toPfNode() const{
+  PfNode toPfNode() const override {
     PfNode node(actionType(), _message);
     node.appendChild(PfNode(QStringLiteral("address"), _address));
     ConfigUtils::writeParamSet(&node, _params, QStringLiteral("param"));

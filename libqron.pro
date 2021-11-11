@@ -11,10 +11,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with qron.  If not, see <http://www.gnu.org/licenses/>.
 
-QT       += core network
+QT       += network
 QT       -= gui
 
-CONFIG += largefile c++11 c++14 c++17 c++20
+CONFIG += largefile c++20 c++17 c++14 c++11
 CONFIG -= app_bundle
 
 TEMPLATE = lib

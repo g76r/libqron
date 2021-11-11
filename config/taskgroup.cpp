@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,11 +25,11 @@
 #include "ui/qronuiutils.h"
 #include "modelview/shareduiitemdocumentmanager.h"
 
-static QSet<QString> excludedDescendantsForComments {
+static const QSet<QString> excludedDescendantsForComments {
   "onsuccess", "onfailure", "onfinish", "onstart", "ontrigger"
 };
 
-static QStringList excludeOnfinishSubscriptions { "onfinish" };
+static const QStringList excludeOnfinishSubscriptions { "onfinish" };
 
 class TaskGroupData : public SharedUiItemData {
 public:
@@ -105,21 +105,24 @@ ParamSet TaskGroup::params() const {
 
 void TaskGroup::triggerStartEvents(TaskInstance instance) const {
   // LATER trigger events in parent group first
-  if (!isNull())
-    foreach (EventSubscription sub, data()->_onstart)
-      sub.triggerActions(instance);
+  if (isNull())
+    return;
+  for (const auto &sub: data()->_onstart)
+    sub.triggerActions(instance);
 }
 
 void TaskGroup::triggerSuccessEvents(TaskInstance instance) const {
-  if (!isNull())
-    foreach (EventSubscription sub, data()->_onsuccess)
-      sub.triggerActions(instance);
+  if (isNull())
+    return;
+  for (auto sub: data()->_onsuccess)
+    sub.triggerActions(instance);
 }
 
 void TaskGroup::triggerFailureEvents(TaskInstance instance) const {
-  if (!isNull())
-    foreach (EventSubscription sub, data()->_onfailure)
-      sub.triggerActions(instance);
+  if (isNull())
+    return;
+  for (auto sub: data()->_onfailure)
+    sub.triggerActions(instance);
 }
 
 QList<EventSubscription> TaskGroup::onstartEventSubscriptions() const {

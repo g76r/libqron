@@ -1,4 +1,4 @@
-/* Copyright 2015 Hallowyn and others.
+/* Copyright 2015-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -34,7 +34,7 @@ public:
   SchedulerConfig config() const { return _config; }
   /** If locker != 0, unlock it as soon as _config is set (i.e. as soon as
    * config() is thread-safe again */
-  void setConfig(SchedulerConfig newConfig, QMutexLocker *locker = 0);
+  void setConfig(SchedulerConfig newConfig, QMutexLocker<QMutex> *locker = 0);
   using SharedUiItemDocumentManager::itemById;
   SharedUiItem itemById(QString idQualifier, QString id) const override;
   using SharedUiItemDocumentManager::itemsByIdQualifier;

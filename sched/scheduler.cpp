@@ -24,7 +24,7 @@
 #include "log/log.h"
 #include "log/filelogger.h"
 #include <QFile>
-#include <stdio.h>
+//#include <stdio.h>
 #include "action/requesttaskaction.h"
 #include <QThread>
 #include "config/configutils.h"
@@ -238,7 +238,7 @@ TaskInstanceList Scheduler::doRequestTask(
       = callerTask.task().mean() == Task::Workflow ? callerTask
                                                    : TaskInstance();
   if (cluster.balancing() == Cluster::Each) {
-    qint64 groupId = 0;
+    quint64 groupId = 0;
     foreach (Host host, cluster.hosts()) {
       TaskInstance request(task, groupId, force, workflowTaskInstance,
                            overridingParams);
@@ -516,7 +516,7 @@ bool Scheduler::checkTrigger(CronTrigger trigger, Task task, QString taskId) {
     //             << now.toString("yyyy-MM-dd hh:mm:ss,zzz") << " "
     //             << next.toString("yyyy-MM-dd hh:mm:ss,zzz") << " " << ms;
     // LATER one timer per trigger, not a new timer each time
-    TimerWithArguments::singleShot(ms < INT_MAX ? ms : INT_MAX,
+    TimerWithArguments::singleShot(ms < INT_MAX ? ((int)ms) : INT_MAX,
                                    this, "checkTriggersForTask", taskId);
     task.setNextScheduledExecution(now.addMSecs(ms));
   } else {
@@ -820,7 +820,7 @@ void Scheduler::taskInstanceFinishing(TaskInstance instance,
     configuredTask.setLastExecution(instance.startDatetime());
     configuredTask.setLastSuccessful(instance.success());
     configuredTask.setLastReturnCode(instance.returnCode());
-    configuredTask.setLastTotalMillis(instance.totalMillis());
+    configuredTask.setLastTotalMillis((int)instance.totalMillis());
     configuredTask.setLastTaskInstanceId(instance.idAsLong());
   }
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));

@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +20,8 @@
 #include <QAtomicInteger>
 
 static QAtomicInteger<qint32> sequence = 1;
+static const QRegularExpression
+_dateRE("(([0-9]+)-([0-9]+)-([0-9]+))?(..)?(([0-9]+)-([0-9]+)-([0-9]+))?");
 
 static QString _uiHeaderNames[] = {
   "Id", // 0
@@ -47,12 +49,12 @@ public:
   CalendarData(QString name = QString())
     : _id(QString::number(sequence.fetchAndAddOrdered(1))),
       _name(name.isEmpty() ? QString() : name) { }
-  QString id() const { return _id; }
-  QString idQualifier() const { return QStringLiteral("calendar"); }
-  int uiSectionCount() const {
+  QString id() const override { return _id; }
+  QString idQualifier() const override { return QStringLiteral("calendar"); }
+  int uiSectionCount() const override {
     return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const {
+  QVariant uiData(int section, int role) const override;
+  QVariant uiHeaderData(int section, int role) const override {
     return role == Qt::DisplayRole && section >= 0
         && (unsigned)section < sizeof _uiHeaderNames
         ? _uiHeaderNames[section] : QVariant();
@@ -68,10 +70,7 @@ CalendarData &CalendarData::append(QDate begin, QDate end, bool include) {
   return *this;
 }
 
-static QRegExp reDate("(([0-9]+)-([0-9]+)-([0-9]+))?"
-                      "(..)?(([0-9]+)-([0-9]+)-([0-9]+))?");
-
-Calendar::Calendar(PfNode node) : SharedUiItem() {
+Calendar::Calendar(PfNode node) {
   CalendarData *d = new CalendarData(node.contentAsString());
   bool atLessOneExclude = false;
   //qDebug() << "*** Calendar(PfNode): " << node.toPf();
@@ -95,13 +94,15 @@ Calendar::Calendar(PfNode node) : SharedUiItem() {
       //qDebug() << "calendar date spec empty";
       d->append(QDate(), QDate(), include);
     } else
-      foreach (QString s, dates) {
-        QRegExp re(reDate);
-        if (re.exactMatch(s)) {
-          QDate begin(re.cap(2).toInt(), re.cap(3).toInt(), re.cap(4).toInt());
-          QDate end(re.cap(7).toInt(), re.cap(8).toInt(), re.cap(9).toInt());
+      for (auto string: dates) {
+        auto match = _dateRE.match(string);
+        if (match.hasMatch()) {
+          QDate begin(match.captured(2).toInt(), match.captured(3).toInt(),
+                      match.captured(4).toInt());
+          QDate end(match.captured(7).toInt(), match.captured(8).toInt(),
+                    match.captured(9).toInt());
           //qDebug() << "calendar date spec:" << begin << ".." << end;
-          d->append(begin, re.cap(5).isEmpty() ? begin : end, include);
+          d->append(begin, match.captured(5).isEmpty() ? begin : end, include);
         } else {
           Log::error() << "incorrect calendar date specification: "
                        << node.toPf();
@@ -176,10 +177,8 @@ QString CalendarData::toCommaSeparatedRulesString() const {
   }
   if (_rules.isEmpty())
     return QStringLiteral("include");
-  else {
-    s.chop(2);
-    return s;
-  }
+  s.chop(2);
+  return s;
 }
 
 QString Calendar::name() const {

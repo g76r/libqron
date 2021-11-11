@@ -60,8 +60,8 @@ public:
     _id = _workflowId+":"+_sourceLocalId+":"+_eventName+":"+_targetLocalId;
     _localId = _sourceLocalId+":"+_eventName+":"+_targetLocalId;
   }
-  QString id() const { return _id; }
-  QString idQualifier() const { return "workflowtransition"; }
+  QString id() const override { return _id; }
+  QString idQualifier() const override { return "workflowtransition"; }
 };
 
 WorkflowTransition::WorkflowTransition() {
@@ -129,7 +129,7 @@ public:
   QHash<QString,qint64> _resources;
   int _maxInstances;
   QList<CronTrigger> _cronTriggers;
-  QList<QRegExp> _stderrFilters;
+  QList<QRegularExpression> _stderrFilters;
   QList<EventSubscription> _onstart, _onsuccess, _onfailure;
   QPointer<Scheduler> _scheduler;
   long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
@@ -164,15 +164,16 @@ public:
   QString triggersAsString() const;
   QString triggersWithCalendarsAsString() const;
   bool triggersHaveCalendar() const;
-  QVariant uiData(int section, int role) const;
+  QVariant uiData(int section, int role) const override;
   bool setUiData(int section, const QVariant &value, QString *errorString,
-                 SharedUiItemDocumentTransaction *transaction, int role);
-  Qt::ItemFlags uiFlags(int section) const;
-  QVariant uiHeaderData(int section, int role) const;
-  int uiSectionCount() const;
-  QString id() const { return _id; }
+                 SharedUiItemDocumentTransaction *transaction,
+                 int role) override;
+  Qt::ItemFlags uiFlags(int section) const override;
+  QVariant uiHeaderData(int section, int role) const override;
+  int uiSectionCount() const override;
+  QString id() const override { return _id; }
   void setId(QString id) { _id = id; }
-  QString idQualifier() const { return "task"; }
+  QString idQualifier() const override { return "task"; }
   PfNode toPfNode() const;
   void setWorkflowTask(Task workflowTask);
   void setTaskGroup(TaskGroup taskGroup);
@@ -226,7 +227,7 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
   ConfigUtils::loadParamSet(node, &d->_params, "param");
   QString filter = d->_params.value("stderrfilter");
   if (!filter.isEmpty())
-    d->_stderrFilters.append(QRegExp(filter));
+    d->_stderrFilters.append(QRegularExpression(filter));
   d->_setenv.setParent(taskGroup.setenv());
   ConfigUtils::loadParamSet(node, &d->_setenv, "setenv");
   d->_unsetenv.setParent(taskGroup.unsetenv());
@@ -335,14 +336,14 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
                      << " has at less one invalid step definition";
         delete d;
         return;
-      } if (d->_steps.contains(step.id())) {
+      }
+      if (d->_steps.contains(step.id())) {
         Log::error() << "workflow task " << d->_id
                      << " has duplicate steps with id " << step.id();
         delete d;
         return;
-      } else {
-        d->_steps.insert(step.id(), step);
       }
+      d->_steps.insert(step.id(), step);
     }
     // Creating $start and $end steps and reading start transitions, which are
     // converted from (start) list in PF config to step actions in $start step
@@ -418,8 +419,7 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
                                           targetLocalId);
             if (alreadyInsertedTransitionIds.contains(transition.id()))
               continue; // avoid processing onfinish transitions twice
-            else
-              alreadyInsertedTransitionIds.insert(transition.id());
+            alreadyInsertedTransitionIds.insert(transition.id());
             d->_transitionsBySourceLocalId.insert(sourceLocalId, transition);
             QString targetId = d->_id+":"+targetLocalId;
             if (d->_steps.contains(targetId)) {
@@ -478,10 +478,9 @@ void Task::copyLiveAttributesFromOldTask(Task oldTask) {
   d->_enabled = oldTask.enabled();
   // keep last triggered timestamp from previously defined trigger
   QHash<QString,CronTrigger> oldCronTriggers;
-  foreach (const CronTrigger trigger, oldTask.data()->_cronTriggers)
+  for (auto trigger: oldTask.data()->_cronTriggers)
     oldCronTriggers.insert(trigger.canonicalExpression(), trigger);
-  for (int i = 0; i < d->_cronTriggers.size(); ++i) {
-    CronTrigger &trigger = d->_cronTriggers[i];
+  for (auto trigger: d->_cronTriggers) {
     CronTrigger oldTrigger =
         oldCronTriggers.value(trigger.canonicalExpression());
     if (oldTrigger.isValid())
@@ -657,11 +656,11 @@ int Task::fetchAndAddExecutionsCount(int valueToAdd) const {
                    : 0;
 }
 
-QList<QRegExp> Task::stderrFilters() const {
-  return !isNull() ? data()->_stderrFilters : QList<QRegExp>();
+QList<QRegularExpression> Task::stderrFilters() const {
+  return !isNull() ? data()->_stderrFilters : QList<QRegularExpression>();
 }
 
-void Task::appendStderrFilter(QRegExp filter) {
+void Task::appendStderrFilter(QRegularExpression filter) {
   if (!isNull())
     data()->_stderrFilters.append(filter);
 }
@@ -828,7 +827,7 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
   return task.minExpectedDuration();
 } },
 { "!minexpecteds" , [](const Task &task, const QVariant &) {
-  return task.minExpectedDuration()/1000.0;
+  return (double)task.minExpectedDuration()/1000.0;
 } },
 { "!maxexpectedms" , [](const Task &task, const QVariant &defaultValue) {
   long long ms = task.maxExpectedDuration();
@@ -836,7 +835,7 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
 } },
 { "!maxexpecteds" , [](const Task &task, const QVariant &defaultValue) {
   long long ms = task.maxExpectedDuration();
-  return (ms == LLONG_MAX) ? defaultValue : ms/1000.0;
+  return (ms == LLONG_MAX) ? defaultValue : (double)ms/1000.0;
 } },
 { "!maxbeforeabortms" , [](const Task &task, const QVariant &defaultValue) {
   long long ms = task.maxDurationBeforeAbort();
@@ -844,7 +843,7 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
 } },
 { "!maxbeforeaborts", [](const Task &task, const QVariant &defaultValue) {
   long long ms = task.maxDurationBeforeAbort();
-  return (ms == LLONG_MAX) ? defaultValue : ms/1000.0;
+  return (ms == LLONG_MAX) ? defaultValue : (double)ms/1000.0;
 } },
 { "!maxexpectedms0", [](const Task &task, const QVariant &) {
   long long ms = task.maxExpectedDuration();
@@ -852,7 +851,7 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
 } },
 { "!maxexpecteds0", [](const Task &task, const QVariant &) {
   long long ms = task.maxExpectedDuration();
-  return (ms == LLONG_MAX) ? 0.0 : ms/1000.0;
+  return (ms == LLONG_MAX) ? 0.0 : (double)ms/1000.0;
 } },
 { "!maxbeforeabortms0", [](const Task &task, const QVariant &) {
   long long ms = task.maxDurationBeforeAbort();
@@ -860,7 +859,7 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
 } },
 { "!maxbeforeaborts0", [](const Task &task, const QVariant &) {
   long long ms = task.maxDurationBeforeAbort();
-  return (ms == LLONG_MAX) ? 0.0 : ms/1000.0;
+  return (ms == LLONG_MAX) ? 0.0 : (double)ms/1000.0;
 } },
 { "", [](const Task &, const QVariant &defaultValue) {
   return defaultValue;
@@ -1004,10 +1003,10 @@ QVariant TaskData::uiData(int section, int role) const {
       return QronUiUtils::paramsKeysAsString(_unsetenv);
     case 23:
       return (_minExpectedDuration > 0)
-          ? _minExpectedDuration*.001 : QVariant();
+          ? (double)_minExpectedDuration*.001 : QVariant();
     case 24:
       return (_maxExpectedDuration < LLONG_MAX)
-          ? _maxExpectedDuration*.001 : QVariant();
+          ? (double)_maxExpectedDuration*.001 : QVariant();
     case 25: {
       QString s;
       foreach (const RequestFormField rff, _requestFormFields)
@@ -1019,7 +1018,7 @@ QVariant TaskData::uiData(int section, int role) const {
       return _lastTotalMillis >= 0 ? _lastTotalMillis/1000.0 : QVariant();
     case 27:
       return (_maxDurationBeforeAbort < LLONG_MAX)
-          ? _maxDurationBeforeAbort*.001 : QVariant();
+          ? (double)_maxDurationBeforeAbort*.001 : QVariant();
     case 28:
       return triggersWithCalendarsAsString();
     case 29:
@@ -1250,7 +1249,7 @@ PfNode TaskData::toPfNode() const {
           startSteps.insert(stepLocalId);
       }
     }
-  if (startSteps.size())
+  if (!startSteps.isEmpty())
     ConfigUtils::writeFlagSet(&node, startSteps, "start");
   QList<Step> steps = _steps.values();
   std::sort(steps.begin(), steps.end());
@@ -1277,13 +1276,14 @@ PfNode TaskData::toPfNode() const {
   // monitoring and alerting attributes
   if (_maxExpectedDuration < LLONG_MAX)
     node.appendChild(PfNode("maxexpectedduration",
-                            QString::number(_maxExpectedDuration/1e3)));
+                            QString::number((double)_maxExpectedDuration/1e3)));
   if (_minExpectedDuration > 0)
     node.appendChild(PfNode("minexpectedduration",
-                            QString::number(_minExpectedDuration/1e3)));
+                            QString::number((double)_minExpectedDuration/1e3)));
   if (_maxDurationBeforeAbort < LLONG_MAX)
     node.appendChild(PfNode("maxdurationbeforeabort",
-                            QString::number(_maxDurationBeforeAbort/1e3)));
+                            QString::number((double)_maxDurationBeforeAbort
+                                            /1e3)));
 
   // events (but workflow-specific "ontrigger" events)
   ConfigUtils::writeEventSubscriptions(&node, _onstart);
