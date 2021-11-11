@@ -1,4 +1,4 @@
-# Copyright 2012-2016 Hallowyn and others.
+# Copyright 2012-2021 Hallowyn and others.
 # This file is part of qron, see <http://qron.eu/>.
 # Qron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -39,8 +39,8 @@ DEFINES += LIBQRON_LIBRARY
 
 exists(/usr/bin/ccache):QMAKE_CXX = ccache g++
 exists(/usr/bin/ccache):QMAKE_CXXFLAGS += -fdiagnostics-color=always
-QMAKE_CXXFLAGS += -Wextra -Woverloaded-virtual -Wno-padded
-#QMAKE_CXXFLAGS += -fno-elide-constructors
+QMAKE_CXXFLAGS += -Wextra -Woverloaded-virtual -Wno-padded -Wno-deprecated-copy
+#QMAKE_CXXFLAGS += -fno-elide-constructors -Wno-dangling-else
 CONFIG(debug,debug|release):QMAKE_CXXFLAGS += -ggdb
 
 OBJECTS_DIR = ../build-$$TARGET-$$TARGET_OS/$$BUILD_TYPE/obj
