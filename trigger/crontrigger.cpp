@@ -256,13 +256,12 @@ void CronTriggerData::parseCronExpression(QString cronExpression) {
   if (_cronExpressionRE.match(cronExpression).hasMatch()) {
     int fieldIndex = 0;
     for (auto match: _cronFieldRE.globalMatch(cronExpression)) {
-      QStringList c = match.capturedTexts();
-      //qDebug() << "  found cron field" << reField.captureCount() << c;
-      QString step = c[1] + ","; // regexp are simpler if every step ends with a comma
+      //qDebug() << "  found cron field" << match.lastCapturedIndex() << match.capturedTexts();
+      QString step = match.captured(1) + ","; // regexp are simpler if every step ends with a comma
       for (auto match: _cronStepRE.globalMatch(step)) {
-        QStringList c = match.capturedTexts();
-        QString start = c[1], stop = c[2], modulo = c[3];
-        bool star = false;//(c[2] == "*" && !modulo.isEmpty());
+        QString start = match.captured(1), stop = match.captured(2),
+            modulo = match.captured(3);
+        bool star = false;//(stop == "*" && !modulo.isEmpty());
         bool ok;
         int iStart = start.toInt(&ok);
         if (!ok)
@@ -270,7 +269,7 @@ void CronTriggerData::parseCronExpression(QString cronExpression) {
         int iStop = stop.toInt(&ok);
         if (!ok)
           iStop = modulo.isEmpty() ? iStart : -1;
-        //qDebug() << "    found cron step" << c[1] << reStep.captureCount() << c << start << stop << modulo;
+        //qDebug() << "    found cron step" << step << match.lastCapturedIndex() << match.capturedTexts() << start << stop << modulo;
         switch (fieldIndex) {
         case 0:
           if (star)
