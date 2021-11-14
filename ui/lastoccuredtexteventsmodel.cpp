@@ -1,4 +1,4 @@
-/* Copyright 2013 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -71,10 +71,10 @@ QVariant LastOccuredTextEventsModel::headerData(
 }
 
 void LastOccuredTextEventsModel::eventOccured(QString event) {
-  eventOccured(event, 0);
+  typedEventOccured(event, 0);
 }
 
-void LastOccuredTextEventsModel::eventOccured(QString event, int type) {
+void LastOccuredTextEventsModel::typedEventOccured(QString event, int type) {
   beginInsertRows(QModelIndex(), 0, 0);
   _occuredEvents.prepend(OccuredEvent(event, type));
   endInsertRows();

@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,10 +19,11 @@
 #include <QDateTime>
 #include <QString>
 
-// LATER move to libqtssu
+// LATER move to libp6core
 /** Model holding generic text events along with the date their occured, one
  * event per line, in reverse order of occurrence. */
-class LIBQRONSHARED_EXPORT LastOccuredTextEventsModel : public QAbstractTableModel {
+class LIBQRONSHARED_EXPORT LastOccuredTextEventsModel
+    : public QAbstractTableModel {
   Q_OBJECT
   Q_DISABLE_COPY(LastOccuredTextEventsModel)
 
@@ -63,7 +64,7 @@ public:
 
 public slots:
   void eventOccured(QString event);
-  void eventOccured(QString event, int type);
+  void typedEventOccured(QString event, int type);
 };
 
 #endif // LASTOCCUREDTEXTEVENTSMODEL_H
