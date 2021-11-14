@@ -195,7 +195,7 @@ void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
   _process->setProcessChannelMode(QProcess::SeparateChannels);
   connect(_process, &QProcess::errorOccurred,
           this, &Executor::processError);
-  connect(_process, static_cast<void(QProcess::*)(int,QProcess::ExitStatus)>(&QProcess::finished),
+  connect(_process, &QProcess::finished,
           this, &Executor::processFinished);
   connect(_process, &QProcess::readyReadStandardError,
           this, &Executor::readyReadStandardError);
