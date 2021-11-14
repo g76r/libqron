@@ -1,4 +1,4 @@
-/* Copyright 2012-2017 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,7 +28,9 @@ AlertChannel::AlertChannel(Alerter *alerter)
 }
 
 void AlertChannel::notifyAlert(Alert alert) {
-  QMetaObject::invokeMethod(this, "doNotifyAlert", Q_ARG(Alert, alert));
+  QMetaObject::invokeMethod(this, [this,alert]() {
+    doNotifyAlert(alert);
+  });
 }
 
 void AlertChannel::setConfig(AlerterConfig config) {

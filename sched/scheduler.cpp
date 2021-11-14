@@ -19,7 +19,6 @@
 #include "pf/pfdomhandler.h"
 #include "config/host.h"
 #include "config/cluster.h"
-#include "util/timerwitharguments.h"
 #include <QMetaObject>
 #include "log/log.h"
 #include "log/filelogger.h"
@@ -123,8 +122,9 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   setConfig(newConfig, &ml);
   _alerter->setConfig(newConfig.alerterConfig());
   reloadAccessControlConfig();
-  QMetaObject::invokeMethod(this, "checkTriggersForAllTasks",
-                            Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, [this](){
+    checkTriggersForAllTasks();
+  }, Qt::QueuedConnection);
   foreach (const QString &host, _consumedResources.keys()) {
     const QHash<QString,qint64> &hostConsumedResources
         = _consumedResources[host];
@@ -137,8 +137,8 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   }
   reevaluateQueuedRequests();
   // inspect queued requests to replace Task objects or remove request
-  for (int i = 0; i < _queuedRequests.size(); ++i) {
-    TaskInstance &r = _queuedRequests[i];
+  for (int i = 0; i < _queuedTasks.size(); ++i) {
+    TaskInstance &r = _queuedTasks[i];
     QString taskId = r.task().id();
     Task t = newConfig.tasks().value(taskId);
     if (t.isNull()) {
@@ -150,7 +150,7 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
       r.setEndDatetime();
       // LATER maybe these signals should be emited asynchronously
       emit itemChanged(r, r, QStringLiteral("taskinstance"));
-      _queuedRequests.removeAt(i--);
+      _queuedTasks.removeAt(i--);
     } else {
       Log::info(taskId, r.idAsLong())
           << "replacing task definition in queued request while reloading "
@@ -179,25 +179,21 @@ TaskInstanceList Scheduler::syncRequestTask(
     TaskInstance callerTask) {
   if (this->thread() == QThread::currentThread())
     return doRequestTask(taskId, paramsOverriding, force, callerTask);
-  TaskInstanceList requests;
-  QMetaObject::invokeMethod(this, "doRequestTask",
-                            Qt::BlockingQueuedConnection,
-                            Q_RETURN_ARG(TaskInstanceList, requests),
-                            Q_ARG(QString, taskId),
-                            Q_ARG(ParamSet, paramsOverriding),
-                            Q_ARG(bool, force),
-                            Q_ARG(TaskInstance, callerTask));
-  return requests;
+  TaskInstanceList instances;
+  QMetaObject::invokeMethod(this, [this,&instances,taskId,paramsOverriding,
+                            force,callerTask](){
+      instances = doRequestTask(taskId, paramsOverriding, force, callerTask);
+    }, Qt::BlockingQueuedConnection);
+  return instances;
 }
 
 void Scheduler::asyncRequestTask(const QString taskId,
                                  ParamSet paramsOverriding,
                                  bool force, TaskInstance callerTask) {
-  QMetaObject::invokeMethod(this, "doRequestTask", Qt::QueuedConnection,
-                            Q_ARG(QString, taskId),
-                            Q_ARG(ParamSet, paramsOverriding),
-                            Q_ARG(bool, force),
-                            Q_ARG(TaskInstance, callerTask));
+  QMetaObject::invokeMethod(this, [this,taskId,paramsOverriding,
+                            force,callerTask](){
+      doRequestTask(taskId, paramsOverriding, force, callerTask);
+    }, Qt::QueuedConnection);
 }
 
 TaskInstanceList Scheduler::doRequestTask(
@@ -205,15 +201,15 @@ TaskInstanceList Scheduler::doRequestTask(
     TaskInstance callerTask) {
   Task task = config().tasks().value(taskId);
   Cluster cluster = config().clusters().value(task.target());
-  TaskInstanceList requests;
+  TaskInstanceList instances;
   if (task.isNull()) {
     Log::error() << "requested task not found: " << taskId << overridingParams
                  << force;
-    return requests;
+    return instances;
   }
   if (!task.enabled()) {
     Log::info(taskId) << "ignoring request since task is disabled: " << taskId;
-    return requests;
+    return instances;
   }
   bool fieldsValidated(true);
   foreach (RequestFormField field, task.requestFormFields()) {
@@ -233,7 +229,7 @@ TaskInstanceList Scheduler::doRequestTask(
     }
   }
   if (!fieldsValidated)
-    return requests;
+    return instances;
   TaskInstance workflowTaskInstance
       = callerTask.task().mean() == Task::Workflow ? callerTask
                                                    : TaskInstance();
@@ -247,26 +243,26 @@ TaskInstanceList Scheduler::doRequestTask(
       request.setTarget(host);
       request = enqueueRequest(request, overridingParams);
       if (!request.isNull())
-        requests.append(request);
+        instances.append(request);
     }
   } else {
     TaskInstance request(task, force, workflowTaskInstance, overridingParams);
     request = enqueueRequest(request, overridingParams);
     if (!request.isNull())
-      requests.append(request);
+      instances.append(request);
   }
-  if (!requests.isEmpty()) {
+  if (!instances.isEmpty()) {
     reevaluateQueuedRequests();
   }
-  return requests;
+  return instances;
 }
 
 TaskInstance Scheduler::enqueueRequest(
-    TaskInstance request, ParamSet paramsOverriding) {
-  Task task(request.task());
+    TaskInstance instance, ParamSet paramsOverriding) {
+  Task task(instance.task());
   QString taskId(task.id());
   if (_shutingDown) {
-    Log::warning(taskId, request.idAsLong())
+    Log::warning(taskId, instance.idAsLong())
         << "cannot queue task because scheduler is shuting down";
     return TaskInstance();
   }
@@ -274,22 +270,22 @@ TaskInstance Scheduler::enqueueRequest(
     QString name(field.id());
     if (paramsOverriding.contains(name)) {
       QString value(paramsOverriding.value(name));
-      field.apply(value, &request);
+      field.apply(value, &instance);
     }
   }
-  if (!request.force()) {
+  if (!instance.force()) {
     if (task.enqueuePolicy() & Task::EnqueueUntilMaxInstances) {
       // reject task request if running count + queued count >= max instance
       int count = task.runningCount();
       int max = task.maxInstances();
       if (count < max) {
-        for (const TaskInstance &request : _queuedRequests) {
+        for (const TaskInstance &request : _queuedTasks) {
           if (request.task().id() == taskId)
             ++count;
         }
       }
       if (count >= max) {
-        Log::info(taskId, request.idAsLong())
+        Log::info(taskId, instance.idAsLong())
             << "rejecting task request because of enqueueuntilmaxinstances "
                "queuing policy: " << taskId;
         return TaskInstance();
@@ -298,57 +294,56 @@ TaskInstance Scheduler::enqueueRequest(
     if (!task.enabled()
         || task.enqueuePolicy() & Task::EnqueueAndDiscardQueued) {
       // avoid stacking disabled task requests by canceling older ones
-      for (int i = 0; i < _queuedRequests.size(); ++i) {
-        const TaskInstance &r2 = _queuedRequests[i];
-        if (taskId == r2.task().id() && request.groupId() != r2.groupId()) {
+      for (int i = 0; i < _queuedTasks.size(); ++i) {
+        const TaskInstance &r2 = _queuedTasks[i];
+        if (taskId == r2.task().id() && instance.groupId() != r2.groupId()) {
           Log::info(taskId, r2.idAsLong())
               << "canceling task because another instance of the same task "
                  "is queued"
               << (!task.enabled() ? " and the task is disabled" : "") << ": "
-              << taskId << "/" << request.id();
+              << taskId << "/" << instance.id();
           r2.setReturnCode(-1);
           r2.setSuccess(false);
           r2.setEndDatetime();
           emit itemChanged(r2, r2, QStringLiteral("taskinstance"));
-          _queuedRequests.removeAt(i--);
+          _queuedTasks.removeAt(i--);
         }
       }
     }
   }
-  if (_queuedRequests.size() >= config().maxqueuedrequests()) {
-    Log::error(taskId, request.idAsLong())
+  if (_queuedTasks.size() >= config().maxqueuedrequests()) {
+    Log::error(taskId, instance.idAsLong())
         << "cannot queue task because maxqueuedrequests is already reached ("
         << config().maxqueuedrequests() << ")";
     _alerter->raiseAlert("scheduler.maxqueuedrequests.reached");
     return TaskInstance();
   }
   _alerter->cancelAlert("scheduler.maxqueuedrequests.reached");
-  Log::debug(taskId, request.idAsLong())
-      << "queuing task " << taskId << "/" << request.id() << " "
-      << paramsOverriding << " with request group id " << request.groupId();
+  Log::debug(taskId, instance.idAsLong())
+      << "queuing task " << taskId << "/" << instance.id() << " "
+      << paramsOverriding << " with request group id " << instance.groupId();
   // note: a request must always be queued even if the task can be started
   // immediately, to avoid the new tasks being started before queued ones
-  _queuedRequests.append(request);
-  if (_queuedRequests.size() > _queuedTasksHwm)
-    _queuedTasksHwm = _queuedRequests.size();
-  emit itemChanged(request, request, QStringLiteral("taskinstance"));
-  return request;
+  _queuedTasks.append(instance);
+  if (_queuedTasks.size() > _queuedTasksHwm)
+    _queuedTasksHwm = _queuedTasks.size();
+  emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
+  return instance;
 }
 
 TaskInstance Scheduler::cancelRequest(quint64 id) {
   if (this->thread() == QThread::currentThread())
     return doCancelRequest(id);
-  TaskInstance request;
-  QMetaObject::invokeMethod(this, "doCancelRequest",
-                            Qt::BlockingQueuedConnection,
-                            Q_RETURN_ARG(TaskInstance, request),
-                            Q_ARG(quint64, id));
-  return request;
+  TaskInstance instance;
+  QMetaObject::invokeMethod(this, [this,&instance,id](){
+    instance = doCancelRequest(id);
+    }, Qt::BlockingQueuedConnection);
+  return instance;
 }
 
 TaskInstance Scheduler::doCancelRequest(quint64 id) {
-  for (int i = 0; i < _queuedRequests.size(); ++i) {
-    TaskInstance r2 = _queuedRequests[i];
+  for (int i = 0; i < _queuedTasks.size(); ++i) {
+    TaskInstance r2 = _queuedTasks[i];
     if (id == r2.idAsLong()) {
       QString taskId(r2.task().id());
       Log::info(taskId, id) << "canceling task as requested";
@@ -356,7 +351,7 @@ TaskInstance Scheduler::doCancelRequest(quint64 id) {
       r2.setSuccess(false);
       r2.setEndDatetime();
       emit itemChanged(r2, r2, QStringLiteral("taskinstance"));
-      _queuedRequests.removeAt(i);
+      _queuedTasks.removeAt(i);
       if (r2.task().runningCount() < r2.task().maxInstances())
         _alerter->cancelAlert("task.maxinstancesreached."+taskId);
       return r2;
@@ -370,42 +365,40 @@ TaskInstance Scheduler::doCancelRequest(quint64 id) {
 TaskInstanceList Scheduler::cancelRequestsByTaskId(QString taskId) {
   if (this->thread() == QThread::currentThread())
     return doCancelRequestsByTaskId(taskId);
-  TaskInstanceList requests;
-  QMetaObject::invokeMethod(this, "doCancelRequestsByTaskId",
-                            Qt::BlockingQueuedConnection,
-                            Q_RETURN_ARG(TaskInstanceList, requests),
-                            Q_ARG(QString, taskId));
-  return requests;
+  TaskInstanceList instances;
+  QMetaObject::invokeMethod(this, [this,&instances,taskId](){
+    instances = doCancelRequestsByTaskId(taskId);
+    }, Qt::BlockingQueuedConnection);
+  return instances;
 }
 
 TaskInstanceList Scheduler::doCancelRequestsByTaskId(QString taskId) {
-  TaskInstanceList requests;
-  for (int i = 0; i < _queuedRequests.size(); ++i) {
-    TaskInstance r = _queuedRequests[i];
+  TaskInstanceList instances;
+  for (int i = 0; i < _queuedTasks.size(); ++i) {
+    TaskInstance r = _queuedTasks[i];
     if (taskId == r.task().id())
-      requests.append(r);
+      instances.append(r);
   }
-  for (const TaskInstance &r : requests)
+  for (const TaskInstance &r : instances)
     if (doCancelRequest(r.idAsLong()).isNull())
-      requests.removeOne(r);
-  return requests;
+      instances.removeOne(r);
+  return instances;
 }
 
 TaskInstance Scheduler::abortTask(quint64 id) {
   if (this->thread() == QThread::currentThread())
     return doAbortTask(id);
   TaskInstance taskInstance;
-  QMetaObject::invokeMethod(this, "doAbortTask",
-                            Qt::BlockingQueuedConnection,
-                            Q_RETURN_ARG(TaskInstance, taskInstance),
-                            Q_ARG(quint64, id));
+  QMetaObject::invokeMethod(this, [this,&taskInstance,id](){
+    taskInstance = doAbortTask(id);
+    }, Qt::BlockingQueuedConnection);
   return taskInstance;
 }
 
 TaskInstance Scheduler::doAbortTask(quint64 id) {
-  TaskInstanceList tasks = _runningTasks.keys();
-  for (int i = 0; i < tasks.size(); ++i) {
-    TaskInstance r2 = tasks[i];
+  TaskInstanceList instances = _runningTasks.keys();
+  for (int i = 0; i < instances.size(); ++i) {
+    TaskInstance r2 = instances[i];
     if (id == r2.idAsLong()) {
       QString taskId(r2.task().id());
       Executor *executor = _runningTasks.value(r2);
@@ -424,26 +417,25 @@ TaskInstance Scheduler::doAbortTask(quint64 id) {
 TaskInstanceList Scheduler::abortTaskInstancesByTaskId(QString taskId) {
   if (this->thread() == QThread::currentThread())
     return doAbortTaskInstancesByTaskId(taskId);
-  TaskInstanceList requests;
-  QMetaObject::invokeMethod(this, "doAbortTaskInstancesByTaskId",
-                            Qt::BlockingQueuedConnection,
-                            Q_RETURN_ARG(TaskInstanceList, requests),
-                            Q_ARG(QString, taskId));
-  return requests;
+  TaskInstanceList instances;
+  QMetaObject::invokeMethod(this, [this,&instances,taskId](){
+    instances = doAbortTaskInstancesByTaskId(taskId);
+    }, Qt::BlockingQueuedConnection);
+  return instances;
 }
 
 TaskInstanceList Scheduler::doAbortTaskInstancesByTaskId(QString taskId) {
-  TaskInstanceList requests;
+  TaskInstanceList instances;
   TaskInstanceList tasks = _runningTasks.keys();
   for (int i = 0; i < tasks.size(); ++i) {
     TaskInstance r = tasks[i];
     if (taskId == r.task().id())
-      requests.append(r);
+      instances.append(r);
   }
-  for (const TaskInstance &r : requests)
+  for (const TaskInstance &r : instances)
     if (doAbortTask(r.idAsLong()).isNull())
-      requests.removeOne(r);
-  return requests;
+      instances.removeOne(r);
+  return instances;
 }
 
 void Scheduler::checkTriggersForTask(QVariant taskId) {
@@ -516,8 +508,9 @@ bool Scheduler::checkTrigger(CronTrigger trigger, Task task, QString taskId) {
     //             << now.toString("yyyy-MM-dd hh:mm:ss,zzz") << " "
     //             << next.toString("yyyy-MM-dd hh:mm:ss,zzz") << " " << ms;
     // LATER one timer per trigger, not a new timer each time
-    TimerWithArguments::singleShot(ms < INT_MAX ? ((int)ms) : INT_MAX,
-                                   this, "checkTriggersForTask", taskId);
+    QTimer::singleShot(ms < INT_MAX ? ((int)ms) : INT_MAX, [this,taskId](){
+      checkTriggersForTask(taskId);
+    });
     task.setNextScheduledExecution(now.addMSecs(ms));
   } else {
     task.setNextScheduledExecution(QDateTime());
@@ -587,16 +580,16 @@ void Scheduler::customEvent(QEvent *event) {
 void Scheduler::startQueuedTasks() {
   if (_shutingDown)
     return;
-  for (int i = 0; i < _queuedRequests.size(); ) {
-    TaskInstance r = _queuedRequests[i];
+  for (int i = 0; i < _queuedTasks.size(); ) {
+    TaskInstance r = _queuedTasks[i];
     if (startQueuedTask(r)) {
-      _queuedRequests.removeAt(i);
+      _queuedTasks.removeAt(i);
       // LATER not sure this is usefull since it's already done at enqueue time
       if (r.task().enqueuePolicy() & Task::EnqueueAndDiscardQueued) {
         // remove other requests of same task
         QString taskId= r.task().id();
-        for (int j = 0; j < _queuedRequests.size(); ++j ) {
-          TaskInstance r2 = _queuedRequests[j];
+        for (int j = 0; j < _queuedTasks.size(); ++j ) {
+          TaskInstance r2 = _queuedTasks[j];
           if (taskId == r2.task().id() && r.groupId() != r2.groupId()) {
             Log::info(taskId, r2.idAsLong())
                 << "canceling task because another instance of the same task "
@@ -607,7 +600,7 @@ void Scheduler::startQueuedTasks() {
             emit itemChanged(r2, r2, QStringLiteral("taskinstance"));
             if (j < i)
               --i;
-            _queuedRequests.removeAt(j--);
+            _queuedTasks.removeAt(j--);
           }
         }
         emit itemChanged(r.task(), r.task(), QStringLiteral("task"));
@@ -875,7 +868,7 @@ void Scheduler::enableAllTasks(bool enable) {
 void Scheduler::periodicChecks() {
   // detect queued or running tasks that exceeded their max expected duration
   TaskInstanceList currentInstances;
-  currentInstances.append(_queuedRequests);
+  currentInstances.append(_queuedTasks);
   currentInstances.append(_runningTasks.keys());
   foreach (const TaskInstance r, currentInstances) {
     const Task t(r.task());
@@ -891,24 +884,17 @@ void Scheduler::periodicChecks() {
 void Scheduler::activateWorkflowTransition(TaskInstance workflowTaskInstance,
                                            WorkflowTransition transition,
                                            ParamSet eventContext) {
-  QMetaObject::invokeMethod(this, "doActivateWorkflowTransition",
-                            Qt::QueuedConnection,
-                            Q_ARG(TaskInstance, workflowTaskInstance),
-                            Q_ARG(WorkflowTransition, transition),
-                            Q_ARG(ParamSet, eventContext));
-}
-
-void Scheduler::doActivateWorkflowTransition(TaskInstance workflowTaskInstance,
-                                             WorkflowTransition transition,
-                                             ParamSet eventContext) {
-  Executor *executor = _runningTasks.value(workflowTaskInstance);
-  if (executor)
-    executor->activateWorkflowTransition(transition, eventContext);
-  else
-    Log::error() << "cannot activate workflow transition on non-running "
-                    "workflow " << workflowTaskInstance.task().id()
-                 << "/" << workflowTaskInstance.id() << ": "
-                 << transition.id();
+  QMetaObject::invokeMethod(this, [this,workflowTaskInstance,transition,
+                            eventContext](){
+    Executor *executor = _runningTasks.value(workflowTaskInstance);
+    if (executor)
+      executor->activateWorkflowTransition(transition, eventContext);
+    else
+      Log::error() << "cannot activate workflow transition on non-running "
+                      "workflow " << workflowTaskInstance.task().id()
+                   << "/" << workflowTaskInstance.id() << ": "
+                   << transition.id();
+  }, Qt::QueuedConnection);
 }
 
 void Scheduler::propagateTaskInstanceChange(TaskInstance instance) {
@@ -920,9 +906,9 @@ TaskInstanceList Scheduler::queuedTaskInstances() {
   if (this->thread() == QThread::currentThread())
     instances = detachedQueuedTaskInstances();
   else
-    QMetaObject::invokeMethod(
-          this, "detachedQueuedTaskInstances", Qt::BlockingQueuedConnection,
-          Q_RETURN_ARG(TaskInstanceList, instances));
+    QMetaObject::invokeMethod(this, [this,&instances](){
+      instances = detachedQueuedTaskInstances();
+    }, Qt::BlockingQueuedConnection);
   return instances;
 }
 
@@ -931,9 +917,9 @@ TaskInstanceList Scheduler::runningTaskInstances() {
   if (this->thread() == QThread::currentThread())
     instances = detachedRunningTaskInstances();
   else
-    QMetaObject::invokeMethod(
-          this, "detachedRunningTaskInstances", Qt::BlockingQueuedConnection,
-          Q_RETURN_ARG(TaskInstanceList, instances));
+    QMetaObject::invokeMethod(this, [this,&instances](){
+      instances = detachedRunningTaskInstances();
+    }, Qt::BlockingQueuedConnection);
   return instances;
 }
 
@@ -942,15 +928,14 @@ TaskInstanceList Scheduler::queuedOrRunningTaskInstances() {
   if (this->thread() == QThread::currentThread())
     instances = detachedQueuedOrRunningTaskInstances();
   else
-    QMetaObject::invokeMethod(
-          this, "detachedQueuedOrRunningTaskInstances",
-          Qt::BlockingQueuedConnection,
-          Q_RETURN_ARG(TaskInstanceList, instances));
+    QMetaObject::invokeMethod(this, [this,&instances](){
+      instances = detachedQueuedOrRunningTaskInstances();
+    }, Qt::BlockingQueuedConnection);
   return instances;
 }
 
 TaskInstanceList Scheduler::detachedQueuedTaskInstances() {
-  TaskInstanceList queued = _queuedRequests;
+  TaskInstanceList queued = _queuedTasks;
   queued.detach();
   return queued;
 }
@@ -962,7 +947,7 @@ TaskInstanceList Scheduler::detachedRunningTaskInstances() {
 }
 
 TaskInstanceList Scheduler::detachedQueuedOrRunningTaskInstances() {
-  TaskInstanceList instances = _queuedRequests;
+  TaskInstanceList instances = _queuedTasks;
   instances.detach();
   TaskInstanceList running = _runningTasks.keys();
   instances.append(running);
@@ -973,9 +958,9 @@ void Scheduler::shutdown(QDeadlineTimer deadline) {
   if (this->thread() == QThread::currentThread())
     doShutdown(deadline);
   else
-    QMetaObject::invokeMethod(this, "doShutdown",
-                              Qt::BlockingQueuedConnection,
-                              Q_ARG(QDeadlineTimer, deadline));
+    QMetaObject::invokeMethod(this, [this,deadline](){
+      doShutdown(deadline);
+    }, Qt::BlockingQueuedConnection);
 }
 
 void Scheduler::doShutdown(QDeadlineTimer deadline) {
@@ -998,7 +983,7 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
     timer.wait();
   }
   QStringList instanceIds, taskIds;
-  for (auto i : _queuedRequests) {
+  for (auto i : _queuedTasks) {
     instanceIds.append(i.id());
     taskIds.append(i.task().id());
   }

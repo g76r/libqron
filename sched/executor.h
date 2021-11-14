@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,7 +26,6 @@ class QNetworkAccessManager;
 class QNetworkReply;
 class StepInstance;
 class Alerter;
-class TimerWithArguments;
 
 /** Class handling execution of a task after its being dequeued, from start
  * to end or cancellation. */
@@ -44,7 +43,7 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   Alerter *_alerter;
   QTimer *_abortTimeout;
   QHash<QString,StepInstance> _steps;
-  QList<TimerWithArguments*> _workflowTimers;
+  QList<QTimer*> _workflowTimers;
 
 public:
   explicit Executor(Alerter *alerter);
@@ -80,7 +79,6 @@ private slots:
   void workflowCronTriggered(QVariant sourceLocalId);
 
 private:
-  Q_INVOKABLE void doExecute(TaskInstance instance);
   void localMean();
   void sshMean();
   void httpMean();
@@ -91,10 +89,7 @@ private:
   void replyHasFinished(QNetworkReply *reply,
                         QNetworkReply::NetworkError error);
   void taskInstanceFinishing(bool success, int returnCode);
-  Q_INVOKABLE void doAbort();
   void finishWorkflow(bool success, int returnCode);
-  Q_INVOKABLE void doActivateWorkflowTransition(
-      WorkflowTransition transition, ParamSet eventContext);
   void getReplyContent(QNetworkReply *reply, QString *replyContent,
                        QString maxsizeKey, QString maxwaitKey) const;
 };

@@ -29,6 +29,7 @@ class QTimer;
 class LIBQRONSHARED_EXPORT MailAlertChannel : public AlertChannel {
   Q_OBJECT
   Q_DISABLE_COPY(MailAlertChannel)
+  friend MailAlertQueue;
   QHash<QString,MailAlertQueue*> _queues;
   AlerterConfig _config;
   MailSender *_mailSender;
@@ -44,7 +45,7 @@ private slots:
   void asyncProcessing();
 
 private:
-  Q_INVOKABLE void processQueue(QVariant address);
+  void processQueue(QVariant address);
   inline static QStringList splittedAddresses(QString commaSeparatedAddresses);
 };
 

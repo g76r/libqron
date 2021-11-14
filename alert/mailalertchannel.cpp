@@ -14,11 +14,11 @@
 #include "mailalertchannel.h"
 #include "log/log.h"
 #include <QDateTime>
-#include "util/timerwitharguments.h"
 #include "mail/mailsender.h"
 #include <QThread>
 #include "alerter.h"
 #include <QSet>
+#include <QTimer>
 
 // LATER replace this 60" ugly batch with _remindFrequency and make reminding no longer drift
 #define ASYNC_PROCESSING_INTERVAL 60000
@@ -35,7 +35,9 @@ public:
   void scheduleNext(MailAlertChannel *channel, qint64 ms) {
     QDateTime scheduling = QDateTime::currentDateTime().addMSecs(ms);
     _nextProcessing = scheduling;
-    TimerWithArguments::singleShot(ms, channel, "processQueue", _address);
+    QTimer::singleShot(ms, channel, [this,channel](){
+      channel->processQueue(_address);
+    });
   }
   QString toString() const {
     QString s = "{\n  address: "+_address+"\n  alerts: [ ";
@@ -102,7 +104,9 @@ void MailAlertChannel::setConfig(AlerterConfig config) {
                << configuredAddresses.values();
   Log::info() << "mail queues removed on reload: [ "
               << queuesRemoved.join(' ') << " ]";
-  QMetaObject::invokeMethod(this, "asyncProcessing", Qt::QueuedConnection);
+  QMetaObject::invokeMethod(this, [this](){
+    asyncProcessing();
+  }, Qt::QueuedConnection);
   Log::debug() << "MailAlertChannel configured " << relay << " "
                << config.params().toString();
 }

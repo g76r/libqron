@@ -119,8 +119,9 @@ void Alerter::setConfig(AlerterConfig config) {
   if (this->thread() == QThread::currentThread())
     doSetConfig(config);
   else
-    QMetaObject::invokeMethod(this, "doSetConfig", Qt::BlockingQueuedConnection,
-                              Q_ARG(AlerterConfig, config));
+    QMetaObject::invokeMethod(this, [this,config]() {
+      doSetConfig(config);
+    }, Qt::BlockingQueuedConnection);
 }
 
 void Alerter::doSetConfig(AlerterConfig config) {
@@ -138,27 +139,33 @@ void Alerter::doSetConfig(AlerterConfig config) {
 }
 
 void Alerter::emitAlert(QString alertId) {
-  QMetaObject::invokeMethod(this, "doEmitAlert", Q_ARG(QString, alertId));
+  QMetaObject::invokeMethod(this, [this,alertId]() {
+    doEmitAlert(alertId);
+  });
 }
 
 void Alerter::raiseAlert(QString alertId) {
-  QMetaObject::invokeMethod(this, "doRaiseAlert", Q_ARG(QString, alertId),
-                            Q_ARG(bool, false));
+  QMetaObject::invokeMethod(this, [this,alertId]() {
+    doRaiseAlert(alertId, false);
+  });
 }
 
 void Alerter::raiseAlertImmediately(QString alertId) {
-  QMetaObject::invokeMethod(this, "doRaiseAlert", Q_ARG(QString, alertId),
-                            Q_ARG(bool, true));
+  QMetaObject::invokeMethod(this, [this,alertId]() {
+    doRaiseAlert(alertId, true);
+  });
 }
 
 void Alerter::cancelAlert(QString alertId) {
-  QMetaObject::invokeMethod(this, "doCancelAlert", Q_ARG(QString, alertId),
-                            Q_ARG(bool, false));
+  QMetaObject::invokeMethod(this, [this,alertId]() {
+    doCancelAlert(alertId, false);
+  });
 }
 
 void Alerter::cancelAlertImmediately(QString alertId) {
-  QMetaObject::invokeMethod(this, "doCancelAlert", Q_ARG(QString, alertId),
-                            Q_ARG(bool, true));
+  QMetaObject::invokeMethod(this, [this,alertId]() {
+    doCancelAlert(alertId, true);
+  });
 }
 
 void Alerter::doRaiseAlert(QString alertId, bool immediately) {

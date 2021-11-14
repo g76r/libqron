@@ -1,4 +1,4 @@
-/* Copyright 2014 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -58,13 +58,11 @@ SchedulerConfig ConfigRepository::parseConfig(
     if (root.name() == "config") {
       SchedulerConfig config;
       if (QThread::currentThread() == thread())
-        config = parseConfig(root, applyLogConfig);
+        config = SchedulerConfig(root, _scheduler, applyLogConfig);
       else
-        QMetaObject::invokeMethod(this, "parseConfig",
-                                  Qt::BlockingQueuedConnection,
-                                  Q_RETURN_ARG(SchedulerConfig, config),
-                                  Q_ARG(PfNode, root),
-                                  Q_ARG(bool, applyLogConfig));
+        QMetaObject::invokeMethod(this, [this,&config,root,applyLogConfig](){
+          config = SchedulerConfig(root, _scheduler, applyLogConfig);
+        }, Qt::BlockingQueuedConnection);
       return config;
     } else {
       Log::error() << "configuration root node is not \"config\"";
@@ -73,8 +71,4 @@ SchedulerConfig ConfigRepository::parseConfig(
     Log::error() << "configuration with more than one root node";
   }
   return SchedulerConfig();
-}
-
-SchedulerConfig ConfigRepository::parseConfig(PfNode root, bool applyLogConfig) {
-  return SchedulerConfig(root, _scheduler, applyLogConfig);
 }

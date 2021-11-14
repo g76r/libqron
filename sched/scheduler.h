@@ -46,7 +46,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   Q_OBJECT
   Q_DISABLE_COPY(Scheduler)
   QThread *_thread;
-  TaskInstanceList _queuedRequests;
+  TaskInstanceList _queuedTasks;
   QHash<TaskInstance,Executor*> _runningTasks;
   QList<Executor*> _availableExecutors;
   Alerter *_alerter;
@@ -188,9 +188,9 @@ private:
   void taskInstanceFinishing(TaskInstance instance, Executor *executor);
   void periodicChecks();
   /** Fire expired triggers for a given task. */
-  Q_INVOKABLE void checkTriggersForTask(QVariant taskId);
+  void checkTriggersForTask(QVariant taskId);
   /** Fire expired triggers for all tasks. */
-  Q_INVOKABLE void checkTriggersForAllTasks();
+  void checkTriggersForAllTasks();
   void reloadAccessControlConfig();
   /** Reevaluate queued requests and start any task that can be started.
     * @see reevaluateQueuedRequests() */
@@ -204,22 +204,19 @@ private:
   bool checkTrigger(CronTrigger trigger, Task task, QString taskId);
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
                               = QDateTime::currentDateTime());
-  Q_INVOKABLE TaskInstanceList doRequestTask(
+  TaskInstanceList doRequestTask(
       QString taskId, ParamSet paramsOverriding, bool force,
       TaskInstance callerTask);
   TaskInstance enqueueRequest(TaskInstance request, ParamSet paramsOverriding);
-  Q_INVOKABLE TaskInstance doCancelRequest(quint64 id);
-  Q_INVOKABLE TaskInstanceList doCancelRequestsByTaskId(QString taskId);
-  Q_INVOKABLE TaskInstanceList doAbortTaskInstancesByTaskId(QString taskId);
-  Q_INVOKABLE TaskInstance doAbortTask(quint64 id);
-  Q_INVOKABLE void doActivateWorkflowTransition(
-      TaskInstance workflowTaskInstance, WorkflowTransition transition,
-      ParamSet eventContext);
+  TaskInstance doCancelRequest(quint64 id);
+  TaskInstanceList doCancelRequestsByTaskId(QString taskId);
+  TaskInstanceList doAbortTaskInstancesByTaskId(QString taskId);
+  TaskInstance doAbortTask(quint64 id);
   void propagateTaskInstanceChange(TaskInstance instance);
-  Q_INVOKABLE TaskInstanceList detachedQueuedTaskInstances();
-  Q_INVOKABLE TaskInstanceList detachedRunningTaskInstances();
-  Q_INVOKABLE TaskInstanceList detachedQueuedOrRunningTaskInstances();
-  Q_INVOKABLE void doShutdown(QDeadlineTimer deadline);
+  TaskInstanceList detachedQueuedTaskInstances();
+  TaskInstanceList detachedRunningTaskInstances();
+  TaskInstanceList detachedQueuedOrRunningTaskInstances();
+  void doShutdown(QDeadlineTimer deadline);
 };
 
 #endif // SCHEDULER_H

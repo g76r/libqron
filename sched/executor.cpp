@@ -25,7 +25,6 @@
 #include "alert/alerter.h"
 #include "config/eventsubscription.h"
 #include "trigger/crontrigger.h"
-#include "util/timerwitharguments.h"
 #include "sysutil/parametrizednetworkrequest.h"
 #ifdef Q_OS_UNIX
 #include <sys/types.h>
@@ -56,7 +55,7 @@ Executor::Executor(Alerter *alerter) : QObject(0), _isTemporary(false),
   _thread->start();
   moveToThread(_thread);
   _abortTimeout->setSingleShot(true);
-  connect(_abortTimeout, &QTimer::timeout, this, &Executor::doAbort);
+  connect(_abortTimeout, &QTimer::timeout, this, &Executor::abort);
   //qDebug() << "creating new task executor" << this;
 }
 
@@ -65,43 +64,41 @@ Executor::~Executor() {
 }
 
 void Executor::execute(TaskInstance instance) {
-  QMetaObject::invokeMethod(this, "doExecute", Q_ARG(TaskInstance, instance));
-}
-
-void Executor::doExecute(TaskInstance instance) {
-  _instance = instance;
-  const Task::Mean mean = _instance.task().mean();
-  Log::info(_instance.task().id(), _instance.idAsLong())
-      << "starting task '" << _instance.task().id() << "' through mean '"
-      << Task::meanAsString(mean) << "' after " << _instance.queuedMillis()
-      << " ms in queue";
-  _stderrWasUsed = false;
-  long long maxDurationBeforeAbort = _instance.task().maxDurationBeforeAbort();
-  if (maxDurationBeforeAbort <= INT_MAX)
-    _abortTimeout->start((int)maxDurationBeforeAbort);
-  switch (mean) {
-  case Task::Local:
-    localMean();
-    break;
-  case Task::Ssh:
-    sshMean();
-    break;
-  case Task::Http:
-    httpMean();
-    break;
-  case Task::Workflow:
-    workflowMean();
-    break;
-  case Task::DoNothing:
-    emit taskInstanceStarted(_instance);
-    taskInstanceFinishing(true, 0);
-    break;
-  default:
-    Log::error(_instance.task().id(), _instance.idAsLong())
-        << "cannot execute task with unknown mean '"
-        << Task::meanAsString(mean) << "'";
-    taskInstanceFinishing(false, -1);
-  }
+  QMetaObject::invokeMethod(this, [this,instance]() {
+    _instance = instance;
+    const Task::Mean mean = _instance.task().mean();
+    Log::info(_instance.task().id(), _instance.idAsLong())
+        << "starting task '" << _instance.task().id() << "' through mean '"
+        << Task::meanAsString(mean) << "' after " << _instance.queuedMillis()
+        << " ms in queue";
+    _stderrWasUsed = false;
+    long long maxDurationBeforeAbort = _instance.task().maxDurationBeforeAbort();
+    if (maxDurationBeforeAbort <= INT_MAX)
+      _abortTimeout->start((int)maxDurationBeforeAbort);
+    switch (mean) {
+    case Task::Local:
+      localMean();
+      break;
+    case Task::Ssh:
+      sshMean();
+      break;
+    case Task::Http:
+      httpMean();
+      break;
+    case Task::Workflow:
+      workflowMean();
+      break;
+    case Task::DoNothing:
+      emit taskInstanceStarted(_instance);
+      taskInstanceFinishing(true, 0);
+      break;
+    default:
+      Log::error(_instance.task().id(), _instance.idAsLong())
+          << "cannot execute task with unknown mean '"
+          << Task::meanAsString(mean) << "'";
+      taskInstanceFinishing(false, -1);
+    }
+  });
 }
 
 void Executor::localMean() {
@@ -495,9 +492,11 @@ void Executor::workflowMean() {
     QDateTime next = trigger.nextTriggering();
     if (next.isValid()) {
       qint64 ms = now.msecsTo(next);
-      TimerWithArguments *timer = new TimerWithArguments(this);
+      QTimer *timer = new QTimer(this);
       timer->setSingleShot(true);
-      timer->connectWithArgs(this, "workflowCronTriggered", triggerId);
+      connect(timer, &QTimer::timeout, this, [this,triggerId]() {
+        workflowCronTriggered(triggerId);
+      });
       timer->setTimerType(Qt::PreciseTimer); // LATER is it really needed ?
       timer->start(ms < INT_MAX ? (int)ms : INT_MAX);
       _workflowTimers.append(timer);
@@ -528,30 +527,24 @@ void Executor::workflowMean() {
 
 void Executor::activateWorkflowTransition(WorkflowTransition transition,
                                           ParamSet eventContext) {
-  QMetaObject::invokeMethod(this, "doActivateWorkflowTransition",
-                            Qt::QueuedConnection,
-                            Q_ARG(WorkflowTransition, transition),
-                            Q_ARG(ParamSet, eventContext));
-}
-
-void Executor::doActivateWorkflowTransition(WorkflowTransition transition,
-                                            ParamSet eventContext) {
-  // if target is "$end", finish workflow
-  if (transition.targetLocalId() == QStringLiteral("$end")) {
-    finishWorkflow(eventContext.valueAsBool(QStringLiteral("!success"), true),
-                   eventContext.valueAsInt(QStringLiteral("!returncode"), 0));
-    return;
-  }
-  // otherwise this is a regular step to step transition
-  QString targetStepId = _instance.task().id()+":"+transition.targetLocalId();
-  if (!_steps.contains(targetStepId)) {
-    Log::error(_instance.task().id(), _instance.idAsLong())
-        << "unknown step id in transition id: " << transition.id();
-    return;
-  }
-  Log::debug(_instance.task().id(), _instance.idAsLong())
-      << "activating workflow transition " << transition.id();
-  _steps[targetStepId].predecessorReady(transition, eventContext);
+  QMetaObject::invokeMethod(this, [this,transition,eventContext]() {
+    // if target is "$end", finish workflow
+    if (transition.targetLocalId() == QStringLiteral("$end")) {
+      finishWorkflow(eventContext.valueAsBool(QStringLiteral("!success"), true),
+                     eventContext.valueAsInt(QStringLiteral("!returncode"), 0));
+      return;
+    }
+    // otherwise this is a regular step to step transition
+    QString targetStepId = _instance.task().id()+":"+transition.targetLocalId();
+    if (!_steps.contains(targetStepId)) {
+      Log::error(_instance.task().id(), _instance.idAsLong())
+          << "unknown step id in transition id: " << transition.id();
+      return;
+    }
+    Log::debug(_instance.task().id(), _instance.idAsLong())
+        << "activating workflow transition " << transition.id();
+    _steps[targetStepId].predecessorReady(transition, eventContext);
+  }, Qt::QueuedConnection);
 }
 
 void Executor::noticePosted(QString notice, ParamSet params) {
@@ -625,37 +618,35 @@ void Executor::prepareEnv(QProcessEnvironment *sysenv,
 }
 
 void Executor::abort() {
-  QMetaObject::invokeMethod(this, "doAbort");
-}
-
-void Executor::doAbort() {
-  // TODO should return a boolean to indicate if abort was actually done or not
-  if (_instance.isNull()) {
-    Log::error() << "cannot abort task because this executor is not "
-                    "currently responsible for any task";
-  } else if (!_instance.abortable()) {
-    if (_instance.task().mean() == Task::Ssh)
+  QMetaObject::invokeMethod(this, [this]() {
+    // TODO should return a boolean to indicate if abort was actually done or not
+    if (_instance.isNull()) {
+      Log::error() << "cannot abort task because this executor is not "
+                      "currently responsible for any task";
+    } else if (!_instance.abortable()) {
+      if (_instance.task().mean() == Task::Ssh)
+        Log::warning(_instance.task().id(), _instance.idAsLong())
+            << "cannot abort task because ssh tasks are not abortable when "
+               "ssh.disablepty is set to true";
+      else
+        Log::warning(_instance.task().id(), _instance.idAsLong())
+            << "cannot abort task because it is marked as not abortable";
+    } else if (_process) {
+      Log::info(_instance.task().id(), _instance.idAsLong())
+          << "process task abort requested";
+      _process->kill();
+    } else if (_reply) {
+      Log::info(_instance.task().id(), _instance.idAsLong())
+          << "http task abort requested";
+      _reply->abort();
+    } else if (_instance.task().mean() == Task::Workflow) {
+      // TODO should abort running subtasks ? or let finishWorkflow do it ?
+      finishWorkflow(false, -1);
+    } else {
       Log::warning(_instance.task().id(), _instance.idAsLong())
-          << "cannot abort task because ssh tasks are not abortable when "
-             "ssh.disablepty is set to true";
-    else
-      Log::warning(_instance.task().id(), _instance.idAsLong())
-          << "cannot abort task because it is marked as not abortable";
-  } else if (_process) {
-    Log::info(_instance.task().id(), _instance.idAsLong())
-        << "process task abort requested";
-    _process->kill();
-  } else if (_reply) {
-    Log::info(_instance.task().id(), _instance.idAsLong())
-        << "http task abort requested";
-    _reply->abort();
-  } else if (_instance.task().mean() == Task::Workflow) {
-    // TODO should abort running subtasks ? or let finishWorkflow do it ?
-    finishWorkflow(false, -1);
-  } else {
-    Log::warning(_instance.task().id(), _instance.idAsLong())
-        << "cannot abort task because its execution mean is not abortable";
-  }
+          << "cannot abort task because its execution mean is not abortable";
+    }
+  });
 }
 
 void Executor::taskInstanceFinishing(bool success, int returnCode) {
@@ -665,7 +656,7 @@ void Executor::taskInstanceFinishing(bool success, int returnCode) {
   _instance.setEndDatetime();
   emit taskInstanceFinished(_instance, this);
   _instance = TaskInstance();
-  _steps.clear(); // LATER give to TaskInstance for history ?
-  foreach (TimerWithArguments *timer, _workflowTimers)
-    delete timer;
+  _steps.clear();
+  for (auto *timer: _workflowTimers)
+    timer->deleteLater();
   _workflowTimers.clear();}
