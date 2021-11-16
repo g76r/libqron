@@ -27,7 +27,7 @@ static QString _uiHeaderNames[] = {
   "Last execution",
   "Next execution", // 10
   "Id",
-  "Max intances",
+  "Max instances",
   "Running count",
   "On start",
   "On success", // 15
