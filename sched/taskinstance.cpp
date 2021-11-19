@@ -26,8 +26,8 @@ static QString _uiHeaderNames[] = {
   "Request Date",
   "Start Date",
   "End Date", // 5
-  "Seconds Queued",
-  "Seconds Running",
+  "Time queued",
+  "Time running",
   "Actions",
   "Abortable" // 9
 };
