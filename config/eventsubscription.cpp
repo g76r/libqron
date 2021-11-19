@@ -1,4 +1,4 @@
-/* Copyright 2013-2017 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -119,14 +119,6 @@ QStringList EventSubscription::toStringList() const {
 
 QString EventSubscription::eventName() const {
   return d ? d->_eventName : QString();
-}
-
-QString EventSubscription::humanReadableCause() const {
-  if (!d)
-    return QString();
-  if (d->_filter.isEmpty())
-    return d->_eventName;
-  return d->_eventName+" "+d->_filter;
 }
 
 QList<Action> EventSubscription::actions() const {

@@ -23,14 +23,14 @@ public:
   PostNoticeActionData(Scheduler *scheduler = 0, QString notice = QString(),
                        ParamSet params = ParamSet())
     : ActionData(scheduler), _notice(notice), _noticeParams(params) { }
-  QString toString() const {
+  QString toString() const override {
     return "^"+_notice;
   }
-  QString actionType() const {
+  QString actionType() const override {
     return QStringLiteral("postnotice");
   }
   void trigger(EventSubscription subscription, ParamSet eventContext,
-               TaskInstance taskContext) const {
+               TaskInstance taskContext) const override {
     // we must implement trigger(,,TaskInstance) rather than trigger(,) because
     // even though we do not directly use TaskInstance, we want that
     // EventSubscription::triggerActions() use task params as eventContext
@@ -50,10 +50,13 @@ public:
   void trigger(EventSubscription subscription, ParamSet eventContext) const {
     trigger(subscription, eventContext, TaskInstance());
   }
-  QString targetName() const {
+  QString targetName() const override {
     return _notice;
   }
-  PfNode toPfNode() const{
+  ParamSet params() const override {
+    return _noticeParams;
+  }
+  PfNode toPfNode() const override {
     PfNode node(actionType(), _notice);
     ConfigUtils::writeParamSet(&node, _noticeParams, "param");
     return node;

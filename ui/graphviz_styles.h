@@ -1,4 +1,4 @@
-/* Copyright 2014 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,7 +33,7 @@
 #define TASK_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE
 #define GLOBAL_EVENT_NODE "shape=none"
 //#define GLOBAL_EVENT_NODE "shape=pentagon"
-#define GLOBAL_POSTNOTICE_EDGE "dir=back,arrowtail=vee"
+#define GLOBAL_POSTNOTICE_EDGE "dir=back,arrowtail=vee,constraint=false"
 #define GLOBAL_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE
 #define WORKFLOW_GRAPH "bgcolor=transparent"
 #define ANDJOIN_NODE "shape=square,label=and"

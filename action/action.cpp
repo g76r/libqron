@@ -95,6 +95,14 @@ QString ActionData::targetName() const {
   return QString();
 }
 
+ParamSet Action::params() const {
+  return d ? d->params() : ParamSet();
+}
+
+ParamSet ActionData::params() const {
+  return ParamSet();
+}
+
 PfNode Action::toPfNode() const {
   PfNode node;
   if (d) {

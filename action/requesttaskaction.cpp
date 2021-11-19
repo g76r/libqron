@@ -38,7 +38,7 @@ public:
     return overridingParams;
   }
   void trigger(EventSubscription subscription, ParamSet eventContext,
-               TaskInstance parentInstance) const {
+               TaskInstance parentInstance) const override {
     if (_scheduler) {
       QString id;
       if (parentInstance.isNull()) {
@@ -67,16 +67,19 @@ public:
     }
 
   }
-  QString toString() const {
+  QString toString() const override {
     return "*" + _id;
   }
-  QString actionType() const {
+  QString actionType() const override {
     return QStringLiteral("requesttask");
   }
-  QString targetName() const {
+  QString targetName() const override {
     return _id;
   }
-  PfNode toPfNode() const{
+  ParamSet params() const override {
+    return _overridingParams;
+  }
+  PfNode toPfNode() const override {
     PfNode node(actionType(), _id);
     ConfigUtils::writeParamSet(&node, _overridingParams, "param");
     if (_force)

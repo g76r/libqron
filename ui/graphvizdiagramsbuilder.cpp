@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,6 +21,19 @@
 #include "sched/stepinstance.h"
 
 GraphvizDiagramsBuilder::GraphvizDiagramsBuilder() {
+}
+
+static QString humanReadableActionEdgeLabel(
+    const EventSubscription &sub, const Action &action) {
+  QString label = sub.eventName();
+  ParamSet params = action.params();
+  QStringList keys = action.params().keys().values();
+  if (!keys.isEmpty())
+    label += " ("+keys.join(',')+")";
+  QString filter = sub.filter();
+  if (!filter.isEmpty())
+    label += "\\n"+filter;
+  return label;
 }
 
 QHash<QString,QString> GraphvizDiagramsBuilder
@@ -155,7 +168,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
     if (deployed.isEmpty())
       deployed.append(task);
     foreach (const Task &subtask, deployed)
-      edges.insert("\""+task.id()+"\"--\""+subtask.target()+"\" [label=\""
+      edges.insert("\""+task.id()+"\"--\""+subtask.target()+"\" [xlabel=\""
                    +Task::meanAsString(subtask.mean())
                    +"\"," TASK_TARGET_EDGE "]\n");
     foreach (QString s, edges)
@@ -172,23 +185,27 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   foreach (const QString &cause, displayedGlobalEventsName)
     gv.append("\"$global_").append(cause).append("\" [label=\"")
         .append(cause).append("\"," GLOBAL_EVENT_NODE "]\n");
-  gv.append("}\n");
+  gv.append("}\n"
+            "subgraph{graph[rank=max]\n");
   foreach (QString notice, notices) {
     notice.remove('"');
     gv.append("\"$notice_").append(notice).append("\"")
         .append("[label=\"^").append(notice).append("\"," NOTICE_NODE "]\n");
   }
+  gv.append("}\n");
   // root groups
   gv.append("subgraph{graph[rank=min]\n");
   foreach (const QString &id, displayedGroups) {
     if (!id.contains('.')) // root groups
-      gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
+      gv.append("\"").append(id).append("\" [group=\"").append(id)
+          .append("\"" TASKGROUP_NODE "]\n");
   }
   gv.append("}\n");
   // other groups
   foreach (const QString &id, displayedGroups) {
     if (id.contains('.')) // non root groups
-      gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
+      gv.append("\"").append(id).append("\" [group=\"").append(id)
+          .append("\"" TASKGROUP_NODE "]\n");
   }
   // groups edges
   foreach (const QString &parent, displayedGroups) {
@@ -207,6 +224,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
     // task nodes and group--task edges
     gv.append("\""+task.id()+"\" [label=\""+task.localId()+"\","
               +(task.mean() == Task::Workflow ? WORKFLOW_TASK_NODE : TASK_NODE)
+              +",group=\""+task.taskGroup().id()+"\""
               +",tooltip=\""+task.id()+"\"]\n");
     gv.append("\"").append(task.taskGroup().id()).append("\"--")
         .append("\"").append(task.id())
@@ -266,16 +284,16 @@ QHash<QString,QString> GraphvizDiagramsBuilder
         QString actionType = action.actionType();
         if (actionType == "postnotice") {
           gv.append("\"").append(task.id()).append("\"--\"$notice_")
-              .append(action.targetName().remove('"')).append("\" [label=\"")
-              .append(sub.humanReadableCause())
+              .append(action.targetName().remove('"')).append("\" [xlabel=\"")
+              .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
               .append("\"," TASK_POSTNOTICE_EDGE "]\n");
         } else if (actionType == "requesttask") {
           QString target = action.targetName();
           if (!target.contains('.'))
             target = task.taskGroup().id()+"."+target;
           if (taskIds.contains(target))
-            edges.insert("\""+task.id()+"\"--\""+target+"\" [label=\""
-                         +sub.humanReadableCause()
+            edges.insert("\""+task.id()+"\"--\""+target+"\" [xlabel=\""
+                         +humanReadableActionEdgeLabel(sub, action).remove('"')
                          +"\"," TASK_REQUESTTASK_EDGE "]\n");
         }
       }
@@ -290,15 +308,17 @@ QHash<QString,QString> GraphvizDiagramsBuilder
       if (actionType == "postnotice") {
         gv.append("\"$notice_").append(action.targetName().remove('"'))
             .append("\"--\"$global_").append(sub.eventName())
-            .append("\" [" GLOBAL_POSTNOTICE_EDGE ",label=\"")
-            .append(sub.humanReadableCause().remove('"')).append("\"]\n");
+            .append("\" [" GLOBAL_POSTNOTICE_EDGE ",xlabel=\"")
+            .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
+            .append("\"]\n");
       } else if (actionType == "requesttask") {
         QString target = action.targetName();
         if (taskIds.contains(target)) {
           gv.append("\"").append(target).append("\"--\"$global_")
               .append(sub.eventName())
-              .append("\" [" GLOBAL_REQUESTTASK_EDGE ",label=\"")
-              .append(sub.humanReadableCause().remove('"')).append("\"]\n");
+              .append("\" [" GLOBAL_REQUESTTASK_EDGE ",xlabel=\"")
+              .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
+              .append("\"]\n");
         }
       }
     }
@@ -375,12 +395,12 @@ QString GraphvizDiagramsBuilder::workflowTaskDiagram(
           QString target = a.targetName();
           if (task.steps().contains(task.id()+":"+target)) {
             gvedges.insert("  \"step_"+sourceLocalId+"\" -- \"step_"+target
-                           +"\"[label=\""+es.eventName()+"\"," STEP_EDGE
+                           +"\"[xlabel=\""+es.eventName()+"\"," STEP_EDGE
                            +",color=\""+color+"\"]\n");
           }
         } else if (a.actionType() == "end") {
           gvedges.insert("  \"step_"+sourceLocalId
-                         +"\" -- \"step_$end\" [label=\""+es.eventName()+"\","
+                         +"\" -- \"step_$end\" [xlabel=\""+es.eventName()+"\","
                          STEP_EDGE ",color=\""+color+"\"]\n");
         }
       }

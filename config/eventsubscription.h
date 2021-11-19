@@ -1,4 +1,4 @@
-/* Copyright 2013-2016 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -49,9 +49,6 @@ public:
   QList<Action> actions() const;
   /** Name of the matched event. e.g. "onstart" "onnotice" "onstatus" */
   QString eventName() const;
-  /** Full description of event matched with applicable filter.
-   * e.g. "onstart" "onnotice /foo.*bar/" "onstatus >= 3" */
-  QString humanReadableCause() const;
   /** Name identifiying the subscriber.
    * e.g. taskid for a task, groupid for a group, fqsn for a step, * for global
    * subscriptions. */
