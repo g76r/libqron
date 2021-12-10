@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -74,6 +74,7 @@ public:
   QStringList _commentsList;
   mutable QMutex _mutex;
   mutable QString _id;
+  PfNode _originalPfNode;
   SchedulerConfigData() : _maxtotaltaskinstances(0), _maxqueuedrequests(0) { }
   SchedulerConfigData(PfNode root, Scheduler *scheduler, bool applyLogConfig);
   SchedulerConfigData(const SchedulerConfigData &other)
@@ -133,8 +134,9 @@ static inline void recordTaskActionLinks(
   }
 }
 
-SchedulerConfigData::SchedulerConfigData(PfNode root, Scheduler *scheduler,
-                                         bool applyLogConfig) {
+SchedulerConfigData::SchedulerConfigData(
+    PfNode root, Scheduler *scheduler, bool applyLogConfig)
+  : _originalPfNode(root) {
   QList<RequestTaskActionLink> requestTaskActionLinks;
   QList<LogFile> logfiles;
   foreach (PfNode node, root.childrenByName("log")) {
@@ -589,7 +591,10 @@ QString SchedulerConfig::recomputeId() const {
   QByteArray data;
   QBuffer buf(&data);
   buf.open(QIODevice::ReadWrite);
-  writeAsPf(&buf);
+  buf.write(toPfNode()
+            .toPf(PfOptions().setShouldIndent()
+                  .setShouldWriteContentBeforeSubnodes()
+                  .setShouldIgnoreComment(false)));
   buf.seek(0);
   hash.addData(&buf);
   d->_id = hash.result().toHex();
@@ -610,18 +615,11 @@ void SchedulerConfig::copyLiveAttributesFromOldTasks(
   }
 }
 
-qint64 SchedulerConfig::writeAsPf(QIODevice *device) const {
-  PfNode node = toPfNode();
-  if (node.isNull() || !device)
-    return -1;
-  QString s;
-  s.append("#(pf (version 1.0))\n");
-  s.append(QString::fromUtf8(
-             node.toPf(PfOptions().setShouldIndent()
-                       .setShouldWriteContentBeforeSubnodes()
-                       .setShouldIgnoreComment(false))));
-  //qDebug() << "**** SchedulerConfig::writeAsPf" << s;
-  return device->write(s.toUtf8());
+PfNode SchedulerConfig::originalPfNode() const {
+  const SchedulerConfigData *d = data();
+  if (!d)
+    return PfNode();
+  return d->_originalPfNode;
 }
 
 PfNode SchedulerConfig::toPfNode() const {

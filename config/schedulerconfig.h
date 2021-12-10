@@ -1,4 +1,4 @@
-/* Copyright 2014-2016 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -73,9 +73,12 @@ public:
   AlerterConfig alerterConfig() const;
   AccessControlConfig accessControlConfig() const;
   QList<LogFile> logfiles() const;
-  /** @return number of bytes written or -1 if an error occured */
-  qint64 writeAsPf(QIODevice *device) const;
+  /** Write current content as a PF tree, usefull in a config editor, does not
+   * provide the original parsed file */
   PfNode toPfNode() const;
+  /** Originaly parsed PF tree, if SchedulerConfig was constructed from a PF
+   * tree, usefull for a configuration repository in a running scheduler. */
+  PfNode originalPfNode() const;
   void copyLiveAttributesFromOldTasks(QHash<QString,Task> oldTasks);
   void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
                   QString idQualifier);
