@@ -1,4 +1,4 @@
-/* Copyright 2012-2018 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -70,7 +70,6 @@ public:
   /** Create a ParamsProvider wrapper object to give access to ! pseudo params,
    * not to task params. */
   inline TaskInstancePseudoParamsProvider pseudoParams() const;
-  ParamSet setenv() const;
   void setTask(Task task);
   bool force() const;
   TaskInstanceStatus status() const;

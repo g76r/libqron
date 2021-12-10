@@ -156,8 +156,7 @@ public:
   long long minExpectedDuration() const;
   /** in millis, LLONG_MAX if not set */
   long long maxDurationBeforeAbort() const;
-  ParamSet setenv() const;
-  ParamSet unsetenv() const;
+  ParamSet vars() const;
   EnqueuePolicy enqueuePolicy() const;
   inline QString enqueuePolicyAsString() const {
     return enqueuePolicyAsString(enqueuePolicy()); }

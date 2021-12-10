@@ -53,8 +53,7 @@ public:
     SharedUiItem::operator=(other); return *this; }
   bool isNull() const;
   ParamSet globalParams() const;
-  ParamSet setenv() const;
-  ParamSet unsetenv() const;
+  ParamSet vars() const;
   QHash<QString,TaskGroup> tasksGroups() const;
   QHash<QString,Task> tasks() const;
   QHash<QString,Cluster> clusters() const;

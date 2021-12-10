@@ -124,7 +124,7 @@ public:
   QString _id, _localId, _label, _command, _target, _info;
   Task::Mean _mean;
   TaskGroup _group;
-  ParamSet _params, _setenv, _unsetenv;
+  ParamSet _params, _vars;
   QList<NoticeTrigger> _noticeTriggers;
   QHash<QString,qint64> _resources;
   int _maxInstances;
@@ -228,10 +228,8 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
   QString filter = d->_params.value("stderrfilter");
   if (!filter.isEmpty())
     d->_stderrFilters.append(QRegularExpression(filter));
-  d->_setenv.setParent(taskGroup.setenv());
-  ConfigUtils::loadParamSet(node, &d->_setenv, "setenv");
-  d->_unsetenv.setParent(taskGroup.unsetenv());
-  ConfigUtils::loadFlagSet(node, &d->_unsetenv, "unsetenv");
+  d->_vars.setParent(taskGroup.vars());
+  ConfigUtils::loadParamSet(node, &d->_vars, "var");
   d->_workflowTaskId = workflowTaskId;
   // LATER load cron triggers last exec timestamp from on-disk log
   if (workflowTaskId.isEmpty()) { // subtasks do not have triggers
@@ -449,7 +447,7 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
   setData(d);
   // update subtasks with any other information about their workflow task apart
   // from its id which has already been given through their cstr
-  // e.g. reparenting _setenv
+  // e.g. reparenting _vars
   foreach (Step step, d->_steps) {
     Task subtask = step.subtask();
     // TODO should probably call changeStep() or changeSubtask()
@@ -754,12 +752,8 @@ long long Task::maxDurationBeforeAbort() const {
   return !isNull() ? data()->_maxDurationBeforeAbort : LLONG_MAX;
 }
 
-ParamSet Task::setenv() const {
-  return !isNull() ? data()->_setenv : ParamSet();
-}
-
-ParamSet Task::unsetenv() const {
-  return !isNull() ? data()->_unsetenv : ParamSet();
+ParamSet Task::vars() const {
+  return !isNull() ? data()->_vars : ParamSet();
 }
 
 Task::EnqueuePolicy Task::enqueuePolicy() const {
@@ -987,11 +981,11 @@ QVariant TaskData::uiData(int section, int role) const {
       return s.append(')');
     }
     case 20:
-      return QronUiUtils::sysenvAsString(_setenv, _unsetenv);
+      return QVariant(); // was: System environment
     case 21:
-      return QronUiUtils::paramsAsString(_setenv);
+      return QronUiUtils::paramsAsString(_vars);
     case 22:
-      return QronUiUtils::paramsKeysAsString(_unsetenv);
+      return QVariant(); // was: Unsetenv
     case 23:
       return (_minExpectedDuration > 0)
           ? (double)_minExpectedDuration*.001 : QVariant();
@@ -1043,12 +1037,10 @@ void Task::setWorkflowTask(Task workflowTask) {
 void TaskData::setWorkflowTask(Task workflowTask) {
   QString workflowTaskId = workflowTask.id();
   if (workflowTask.isNull()) {
-    _setenv.setParent(_group.setenv());
-    _unsetenv.setParent(_group.unsetenv());
+    _vars.setParent(_group.vars());
   } else {
     _group = workflowTask.taskGroup();
-    _setenv.setParent(workflowTask.setenv());
-    _unsetenv.setParent(workflowTask.unsetenv());
+    _vars.setParent(workflowTask.vars());
   }
   _workflowTaskId = workflowTaskId;
   _localId = workflowTaskId.mid(workflowTaskId.lastIndexOf('.')+1)+":"
@@ -1259,10 +1251,9 @@ PfNode TaskData::toPfNode() const {
     if (!step.id().contains('$'))
       node.appendChild(step.toPfNode());
 
-  // params and setenv attributes
+  // params and vars
   ConfigUtils::writeParamSet(&node, _params, "param");
-  ConfigUtils::writeParamSet(&node, _setenv, "setenv");
-  ConfigUtils::writeFlagSet(&node, _unsetenv, "unsetenv");
+  ConfigUtils::writeParamSet(&node, _vars, "var");
 
   // monitoring and alerting attributes
   if (_maxExpectedDuration < LLONG_MAX)

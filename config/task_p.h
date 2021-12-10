@@ -35,9 +35,9 @@ static QString _uiHeaderNames[] = {
   "Running / max",
   "Actions",
   "Last execution status",
-  "System environment", // 20
-  "Setenv",
-  "Unsetenv",
+  "", // was: System environment // 20
+  "Vars",
+  "", // was: Unsetenv
   "Min expected duration",
   "Max expected duration",
   "Request-time overridable params", // 25

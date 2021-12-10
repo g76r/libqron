@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -29,7 +29,6 @@ public:
    * @return false on error */
   static bool resourcesFromString(
       QString text, QHash<QString,qint64> *resources, QString *errorString);
-  static QString sysenvAsString(ParamSet setenv, ParamSet unsetenv);
   static QString paramsAsString(ParamSet params, bool inherit = false);
   static QString paramsKeysAsString(ParamSet params, bool inherit = false);
 };

@@ -49,8 +49,7 @@ public:
   Calendar calendarByName(QString name) const {
     return _config.namedCalendars().value(name); }
   ParamSet globalParams() const { return _config.globalParams(); }
-  ParamSet globalSetenvs() const { return _config.setenv(); }
-  ParamSet globalUnsetenvs() const { return _config.unsetenv(); }
+  ParamSet globalVars() const { return _config.vars(); }
   /** This method is threadsafe */
   bool taskExists(QString taskId) { return _config.tasks().contains(taskId); }
   /** This method is threadsafe */

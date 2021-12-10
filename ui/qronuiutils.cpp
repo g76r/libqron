@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,16 +57,6 @@ bool QronUiUtils::resourcesFromString(
     resources->insert(key, value);
   }
   return true;
-}
-
-QString QronUiUtils::sysenvAsString(ParamSet setenv, ParamSet unsetenv) {
-  QString s;
-  foreach(const QString key, setenv.keys(false))
-    s.append(key).append('=').append(setenv.rawValue(key)).append(' ');
-  foreach(const QString key, unsetenv.keys(false))
-    s.append('-').append(key).append(' ');
-  s.chop(1);
-  return s;
 }
 
 QString QronUiUtils::paramsAsString(ParamSet params, bool inherit) {

@@ -34,7 +34,7 @@ static const QStringList excludeOnfinishSubscriptions { "onfinish" };
 class TaskGroupData : public SharedUiItemData {
 public:
   QString _id, _label;
-  ParamSet _params, _setenv, _unsetenv;
+  ParamSet _params, _vars;
   QList<EventSubscription> _onstart, _onsuccess, _onfailure;
   QStringList _commentsList;
   QVariant uiData(int section, int role) const;
@@ -55,11 +55,10 @@ TaskGroup::TaskGroup() {
 TaskGroup::TaskGroup(const TaskGroup &other) : SharedUiItem(other) {
 }
 
-TaskGroup::TaskGroup(ParamSet params, ParamSet setenv, ParamSet unsetenv) {
+TaskGroup::TaskGroup(ParamSet params, ParamSet vars) {
   TaskGroupData *d = new TaskGroupData;
   d->_params = params;
-  d->_setenv = setenv;
-  d->_unsetenv = unsetenv;
+  d->_vars = vars;
   setData(d);
 }
 
@@ -70,10 +69,8 @@ TaskGroup::TaskGroup(PfNode node, TaskGroup parentGroup, Scheduler *scheduler) {
   d->_label = node.attribute("label");
   d->_params.setParent(parentGroup.params());
   ConfigUtils::loadParamSet(node, &d->_params, "param");
-  d->_setenv.setParent(parentGroup.setenv());
-  ConfigUtils::loadParamSet(node, &d->_setenv, "setenv");
-  ConfigUtils::loadFlagSet(node, &d->_unsetenv, "unsetenv");
-  d->_unsetenv.setParent(parentGroup.unsetenv());
+  d->_vars.setParent(parentGroup.vars());
+  ConfigUtils::loadParamSet(node, &d->_vars, "var");
   d->_onstart.append(parentGroup.onstartEventSubscriptions());
   ConfigUtils::loadEventSubscription(node, "onstart", d->_id,
                                      &d->_onstart, scheduler);
@@ -146,12 +143,8 @@ QList<EventSubscription> TaskGroup::onfailureEventSubscriptions() const {
   return !isNull() ? data()->_onfailure : QList<EventSubscription>();
 }
 
-ParamSet TaskGroup::setenv() const {
-  return !isNull() ? data()->_setenv : ParamSet();
-}
-
-ParamSet TaskGroup::unsetenv() const {
-  return !isNull() ? data()->_unsetenv : ParamSet();
+ParamSet TaskGroup::vars() const {
+  return !isNull() ? data()->_vars : ParamSet();
 }
 
 QList<EventSubscription> TaskGroup::allEventSubscriptions() const {
@@ -183,11 +176,11 @@ QVariant TaskGroupData::uiData(int section, int role) const {
     case 16:
       return EventSubscription::toStringList(_onfailure).join("\n");
     case 20:
-      return QronUiUtils::sysenvAsString(_setenv, _unsetenv);
+      return QVariant(); // was: System environment
     case 21:
-      return QronUiUtils::paramsAsString(_setenv);
+      return QronUiUtils::paramsAsString(_vars);
     case 22:
-      return QronUiUtils::paramsKeysAsString(_unsetenv);
+      return QVariant(); // was: Unsetenv
     }
     break;
   default:
@@ -219,8 +212,7 @@ PfNode TaskGroup::toPfNode() const {
   if (!d->_label.isNull())
     node.setAttribute(QStringLiteral("label"), d->_label);
   ConfigUtils::writeParamSet(&node, d->_params, QStringLiteral("param"));
-  ConfigUtils::writeParamSet(&node, d->_setenv, QStringLiteral("setenv"));
-  ConfigUtils::writeFlagSet(&node, d->_unsetenv, QStringLiteral("unsetenv"));
+  ConfigUtils::writeParamSet(&node, d->_vars, QStringLiteral("var"));
   ConfigUtils::writeEventSubscriptions(&node, d->_onstart);
   ConfigUtils::writeEventSubscriptions(&node, d->_onsuccess);
   ConfigUtils::writeEventSubscriptions(&node, d->_onfailure,

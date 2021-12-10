@@ -58,7 +58,7 @@ public:
 
 class SchedulerConfigData : public SharedUiItemData{
 public:
-  ParamSet _globalParams, _setenv, _unsetenv;
+  ParamSet _globalParams, _vars;
   QHash<QString,TaskGroup> _tasksGroups;
   QHash<QString,Task> _tasks;
   QHash<QString,Cluster> _clusters;
@@ -79,8 +79,8 @@ public:
   SchedulerConfigData(PfNode root, Scheduler *scheduler, bool applyLogConfig);
   SchedulerConfigData(const SchedulerConfigData &other)
     : SharedUiItemData(other),
-      _globalParams(other._globalParams), _setenv(other._setenv),
-      _unsetenv(other._unsetenv), _tasksGroups(other._tasksGroups),
+      _globalParams(other._globalParams), _vars(other._vars),
+      _tasksGroups(other._tasksGroups),
       _tasks(other._tasks), _clusters(other._clusters), _hosts(other._hosts),
       _onstart(other._onstart), _onsuccess(other._onsuccess),
       _onfailure(other._onfailure), _onlog(other._onlog),
@@ -152,12 +152,10 @@ SchedulerConfigData::SchedulerConfigData(
   _logfiles = logfiles;
   if (applyLogConfig)
     this->applyLogConfig();
-  _unsetenv.clear();
   _globalParams.clear();
-  _setenv.clear();
+  _vars.clear();
   ConfigUtils::loadParamSet(root, &_globalParams, "param");
-  ConfigUtils::loadParamSet(root, &_setenv, "setenv");
-  ConfigUtils::loadFlagSet(root, &_unsetenv, "unsetenv");
+  ConfigUtils::loadParamSet(root, &_vars, "var");
   _namedCalendars.clear();
   foreach (PfNode node, root.childrenByName("calendar")) {
     QString name = node.contentAsString();
@@ -206,7 +204,7 @@ SchedulerConfigData::SchedulerConfigData(
     else
       _clusters.insert(cluster.id(), cluster);
   }
-  TaskGroup rootPseudoGroup(_globalParams, _setenv, _unsetenv);
+  TaskGroup rootPseudoGroup(_globalParams, _vars);
   _tasksGroups.clear();
   QList<PfNode> taskGroupNodes = root.childrenByName("taskgroup");
   std::sort(taskGroupNodes.begin(), taskGroupNodes.end());
@@ -426,14 +424,9 @@ ParamSet SchedulerConfig::globalParams() const {
   return d ? d->_globalParams : ParamSet();
 }
 
-ParamSet SchedulerConfig::setenv() const {
+ParamSet SchedulerConfig::vars() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_setenv : ParamSet();
-}
-
-ParamSet SchedulerConfig::unsetenv() const {
-  const SchedulerConfigData *d = data();
-  return d ? d->_unsetenv : ParamSet();
+  return d ? d->_vars : ParamSet();
 }
 
 QHash<QString,TaskGroup> SchedulerConfig::tasksGroups() const {
@@ -571,10 +564,8 @@ void SchedulerConfig::changeParams(
     setData(d = new SchedulerConfigData());
   if (setId == QStringLiteral("globalparams")) {
     d->_globalParams = newParams;
-  } else if (setId == QStringLiteral("globalsetenvs")) {
-    d->_setenv = newParams;
-  } else if (setId == QStringLiteral("globalunsetenvs")) {
-    d->_unsetenv = newParams;
+  } else if (setId == QStringLiteral("globalvars")) {
+    d->_vars = newParams;
   } else {
     qWarning() << "SchedulerConfig::changeParams() called with "
                   "unknown paramsetid:" << setId;
@@ -628,10 +619,9 @@ PfNode SchedulerConfig::toPfNode() const {
     return PfNode();
   PfNode node("config");
   ConfigUtils::writeComments(&node, d->_commentsList);
-  ParamSet configuredSetenv = d->_setenv;
+  ParamSet configuredVars = d->_vars;
   ConfigUtils::writeParamSet(&node, d->_globalParams, QStringLiteral("param"));
-  ConfigUtils::writeParamSet(&node, configuredSetenv, QStringLiteral("setenv"));
-  ConfigUtils::writeFlagSet(&node, d->_unsetenv, QStringLiteral("unsetenv"));
+  ConfigUtils::writeParamSet(&node, configuredVars, QStringLiteral("var"));
   ConfigUtils::writeEventSubscriptions(&node, d->_onstart);
   ConfigUtils::writeEventSubscriptions(&node, d->_onsuccess);
   ConfigUtils::writeEventSubscriptions(&node, d->_onfailure,

@@ -84,8 +84,7 @@ private:
   void httpMean();
   void workflowMean();
   void execProcess(QStringList cmdline, QProcessEnvironment sysenv);
-  inline void prepareEnv(QProcessEnvironment *sysenv,
-                         QHash<QString, QString> *setenv = 0);
+  inline QProcessEnvironment prepareEnv(const ParamSet vars);
   void replyHasFinished(QNetworkReply *reply,
                         QNetworkReply::NetworkError error);
   void taskInstanceFinishing(bool success, int returnCode);

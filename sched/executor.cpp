@@ -111,18 +111,14 @@ void Executor::localMean() {
   Log::info(_instance.task().id(), _instance.idAsLong())
       << "exact command line to be executed (using shell " << shell << "): "
       << cmdline.value(2);
-  QProcessEnvironment sysenv;
-  prepareEnv(&sysenv);
   _instance.setAbortable();
-  execProcess(cmdline, sysenv);
+  execProcess(cmdline, prepareEnv(_instance.task().vars()));
 }
 
 void Executor::sshMean() {
   QStringList cmdline, sshCmdline;
   TaskInstancePseudoParamsProvider ppp = _instance.pseudoParams();
-  QHash<QString,QString> setenv;
-  QProcessEnvironment sysenv;
-  prepareEnv(&sysenv, &setenv);
+  const auto vars = _instance.params();
   QString username = _instance.params().value("ssh.username");
   qlonglong port = _instance.params().valueAsLong("ssh.port");
   QString ignoreknownhosts = _instance.params().value("ssh.ignoreknownhosts",
@@ -154,12 +150,11 @@ void Executor::sshMean() {
     sshCmdline << "-oUser=" + username;
   sshCmdline << "--";
   sshCmdline << _instance.target().hostname();
-  foreach (QString key, setenv.keys())
-    if (!_instance.task().unsetenv().contains(key)) {
-      QString value = setenv.value(key);
+  for (auto key: vars.keys()) {
+      QString value = vars.value(key);
       value.replace('\'', QString());
       cmdline << key+"='"+value+"'";
-    }
+  }
   if (!shell.isEmpty()) {
     cmdline << shell << "-c";
     // must quote command line because remote user default shell will parse and
@@ -176,7 +171,7 @@ void Executor::sshMean() {
       << "exact command line to be executed (through ssh on host "
       << _instance.target().hostname() <<  "): " << cmdline;
   sshCmdline << cmdline;
-  execProcess(sshCmdline, sysenv);
+  execProcess(sshCmdline, _baseenv);
 }
 
 void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
@@ -329,8 +324,8 @@ void Executor::httpMean() {
   TaskInstancePseudoParamsProvider ppp = _instance.pseudoParams();
   ParametrizedNetworkRequest networkRequest(
         url, _instance.params(), &ppp, _instance.task().id(), _instance.idAsLong());
-  foreach (QString name, _instance.task().setenv().keys()) {
-    const QString expr(_instance.task().setenv().rawValue(name));
+  foreach (QString name, _instance.task().vars().keys()) {
+    const QString expr(_instance.task().vars().rawValue(name));
     if (name.endsWith(":")) // ignoring : at end of header name
       name.chop(1);
     name.replace(_httpHeaderForbiddenSeqRE, "_");
@@ -580,41 +575,19 @@ void Executor::finishWorkflow(bool success, int returnCode) {
 
 static QRegularExpression notIdentifier("[^a-zA-Z_0-9]+");
 
-void Executor::prepareEnv(QProcessEnvironment *sysenv,
-                          QHash<QString,QString> *setenv) {
-  if (_instance.task().params().valueAsBool(QStringLiteral("clearsysenv")))
-    *sysenv = QProcessEnvironment();
-  else {
-    *sysenv = _baseenv;
-    // first clean system base env from any unset variables
-    for (auto pattern: _instance.task().unsetenv().keys()) {
-      QRegularExpression re("^"+pattern+"$");
-      for (auto key: sysenv->keys())
-        if (re.match(key).hasMatch())
-          sysenv->remove(key);
-    }
-  }
-  // then build setenv evaluated paramset that may be used apart from merging
-  // into sysenv
-  foreach (QString key, _instance.task().setenv().keys()) {
+QProcessEnvironment Executor::prepareEnv(const ParamSet vars) {
+  QProcessEnvironment sysenv;
+  foreach (QString key, vars.keys()) {
     if (key.isEmpty())
       continue;
-    const QString expr(_instance.task().setenv().rawValue(key));
-    /*Log::debug(_instance.task().id(), _instance.id())
-        << "setting environment variable " << key << "="
-        << expr << " " << _instance.params().keys(false).size() << " "
-        << _instance.params().keys(true).size() << " ["
-        << _instance.params().evaluate("%!yyyy %!taskid %{!taskid}", &_instance)
-        << "]";*/
     key.replace(notIdentifier, "_");
     if (key[0] >= '0' && key[0] <= '9' )
       key.insert(0, '_');
     TaskInstancePseudoParamsProvider ppp(_instance);
-    const QString value = _instance.params().evaluate(expr, &ppp);
-    if (setenv)
-      setenv->insert(key, value);
-    sysenv->insert(key, value);
+    const QString value = vars.evaluate(vars.rawValue(key), &ppp);
+    sysenv.insert(key, value);
   }
+  return sysenv;
 }
 
 void Executor::abort() {

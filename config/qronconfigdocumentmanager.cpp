@@ -28,8 +28,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   : SharedUiItemDocumentManager(parent) {
   registerItemType(
         "taskgroup", &TaskGroup::setUiData, [this](QString id) -> SharedUiItem {
-    TaskGroup rootPseudoGroup(_config.globalParams(), _config.setenv(),
-                              _config.unsetenv());
+    TaskGroup rootPseudoGroup(_config.globalParams(), _config.vars());
     return TaskGroup(PfNode("taskgroup", id), rootPseudoGroup, 0);
   });
   addChangeItemTrigger(
@@ -285,10 +284,8 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
     locker->unlock();
   emit paramsChanged(newConfig.globalParams(), oldConfig.globalParams(),
                      QStringLiteral("globalparams"));
-  emit paramsChanged(newConfig.setenv(), oldConfig.setenv(),
-                     QStringLiteral("globalsetenvs"));
-  emit paramsChanged(newConfig.unsetenv(), oldConfig.unsetenv(),
-                     QStringLiteral("globalunsetenvs"));
+  emit paramsChanged(newConfig.vars(), oldConfig.vars(),
+                     QStringLiteral("globalvars"));
   emit accessControlConfigurationChanged(
         !newConfig.accessControlConfig().isEmpty());
   emitSignalForItemTypeChanges(
