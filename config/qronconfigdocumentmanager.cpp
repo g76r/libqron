@@ -28,8 +28,9 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   : SharedUiItemDocumentManager(parent) {
   registerItemType(
         "taskgroup", &TaskGroup::setUiData, [this](QString id) -> SharedUiItem {
-    return TaskGroup(PfNode("taskgroup", id), _config.globalParams(),
-                     _config.setenv(), _config.unsetenv(), 0);
+    TaskGroup rootPseudoGroup(_config.globalParams(), _config.setenv(),
+                              _config.unsetenv());
+    return TaskGroup(PfNode("taskgroup", id), rootPseudoGroup, 0);
   });
   addChangeItemTrigger(
         "taskgroup", AfterUpdate,

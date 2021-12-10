@@ -55,25 +55,34 @@ TaskGroup::TaskGroup() {
 TaskGroup::TaskGroup(const TaskGroup &other) : SharedUiItem(other) {
 }
 
-TaskGroup::TaskGroup(PfNode node, ParamSet parentParamSet,
-                     ParamSet parentSetenv, ParamSet parentUnsetenv,
-                     Scheduler *scheduler) {
+TaskGroup::TaskGroup(ParamSet params, ParamSet setenv, ParamSet unsetenv) {
+  TaskGroupData *d = new TaskGroupData;
+  d->_params = params;
+  d->_setenv = setenv;
+  d->_unsetenv = unsetenv;
+  setData(d);
+}
+
+TaskGroup::TaskGroup(PfNode node, TaskGroup parentGroup, Scheduler *scheduler) {
   TaskGroupData *d = new TaskGroupData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
                                      ConfigUtils::FullyQualifiedId);
   d->_label = node.attribute("label");
-  d->_params.setParent(parentParamSet);
+  d->_params.setParent(parentGroup.params());
   ConfigUtils::loadParamSet(node, &d->_params, "param");
-  d->_setenv.setParent(parentSetenv);
+  d->_setenv.setParent(parentGroup.setenv());
   ConfigUtils::loadParamSet(node, &d->_setenv, "setenv");
   ConfigUtils::loadFlagSet(node, &d->_unsetenv, "unsetenv");
-  d->_unsetenv.setParent(parentUnsetenv);
+  d->_unsetenv.setParent(parentGroup.unsetenv());
+  d->_onstart.append(parentGroup.onstartEventSubscriptions());
   ConfigUtils::loadEventSubscription(node, "onstart", d->_id,
                                      &d->_onstart, scheduler);
+  d->_onsuccess.append(parentGroup.onsuccessEventSubscriptions());
   ConfigUtils::loadEventSubscription(node, "onsuccess", d->_id,
                                      &d->_onsuccess, scheduler);
   ConfigUtils::loadEventSubscription(node, "onfinish", d->_id,
                                      &d->_onsuccess, scheduler);
+  d->_onfailure.append(parentGroup.onfailureEventSubscriptions());
   ConfigUtils::loadEventSubscription(node, "onfailure", d->_id,
                                      &d->_onfailure, scheduler);
   ConfigUtils::loadEventSubscription(node, "onfinish", d->_id,

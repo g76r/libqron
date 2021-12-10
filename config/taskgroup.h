@@ -36,9 +36,11 @@ class LIBQRONSHARED_EXPORT TaskGroup : public SharedUiItem {
 public:
   TaskGroup();
   TaskGroup(const TaskGroup &other);
-  TaskGroup(PfNode node, ParamSet parentParamSet, ParamSet parentSetenv,
-            ParamSet parentUnsetenv, Scheduler *scheduler);
+  TaskGroup(PfNode node, TaskGroup parentGroup, Scheduler *scheduler);
+  /** pseudo constructor for models */
   TaskGroup(QString id);
+  /** pseudo constructor for root pseudo taskgroup used when loading config */
+  TaskGroup(ParamSet params, ParamSet setenv, ParamSet unsetenv);
   TaskGroup &operator=(const TaskGroup &other) {
     SharedUiItem::operator=(other); return *this; }
   /** return "foo.bar" for group "foo.bar.baz" and QString() for group "foo". */

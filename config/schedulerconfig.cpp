@@ -204,25 +204,33 @@ SchedulerConfigData::SchedulerConfigData(PfNode root, Scheduler *scheduler,
     else
       _clusters.insert(cluster.id(), cluster);
   }
+  TaskGroup rootPseudoGroup(_globalParams, _setenv, _unsetenv);
   _tasksGroups.clear();
-  foreach (PfNode node, root.childrenByName("taskgroup")) {
-    TaskGroup taskGroup(node, _globalParams, _setenv, _unsetenv, scheduler);
-    QString id = taskGroup.id();
-    if (taskGroup.isNull() || id.isEmpty())
-      Log::error() << "ignoring invalid taskgroup: " << node.toPf();
-    else if (_tasksGroups.contains(id))
+  QList<PfNode> taskGroupNodes = root.childrenByName("taskgroup");
+  std::sort(taskGroupNodes.begin(), taskGroupNodes.end());
+  for (auto node: taskGroupNodes) {
+    QString id = ConfigUtils::sanitizeId(
+          node.contentAsString(), ConfigUtils::FullyQualifiedId);
+    if (_tasksGroups.contains(id)) {
       Log::error() << "ignoring duplicate taskgroup: " << id;
-    else {
-      recordTaskActionLinks(node, "onstart", &requestTaskActionLinks,
-                            taskGroup.id()+".*");
-      recordTaskActionLinks(node, "onsuccess", &requestTaskActionLinks,
-                            taskGroup.id()+".*");
-      recordTaskActionLinks(node, "onfailure", &requestTaskActionLinks,
-                            taskGroup.id()+".*");
-      recordTaskActionLinks(node, "onfinish", &requestTaskActionLinks,
-                            taskGroup.id()+".*");
-      _tasksGroups.insert(taskGroup.id(), taskGroup);
+      continue;
     }
+    QString parentId = TaskGroup::parentGroupId(id);
+    TaskGroup parentGroup = _tasksGroups.value(parentId, rootPseudoGroup);
+    TaskGroup taskGroup(node, parentGroup, scheduler);
+    if (taskGroup.isNull() || id.isEmpty()) {
+      Log::error() << "ignoring invalid taskgroup: " << node.toPf();
+      continue;
+    }
+    recordTaskActionLinks(node, "onstart", &requestTaskActionLinks,
+                          taskGroup.id()+".*");
+    recordTaskActionLinks(node, "onsuccess", &requestTaskActionLinks,
+                          taskGroup.id()+".*");
+    recordTaskActionLinks(node, "onfailure", &requestTaskActionLinks,
+                          taskGroup.id()+".*");
+    recordTaskActionLinks(node, "onfinish", &requestTaskActionLinks,
+                          taskGroup.id()+".*");
+    _tasksGroups.insert(taskGroup.id(), taskGroup);
   }
   QHash<QString,Task> oldTasks = _tasks;
   _tasks.clear();
