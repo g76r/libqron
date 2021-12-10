@@ -115,7 +115,6 @@ public:
   void setTaskGroup(TaskGroup taskGroup);
   /** Resources consumed. */
   QHash<QString, qint64> resources() const;
-  QString resourcesAsString() const;
   QDateTime lastExecution() const;
   void setLastExecution(QDateTime timestamp) const;
   QDateTime nextScheduledExecution() const;
@@ -132,7 +131,6 @@ public:
   /** Atomic fetch-and-add of the executions count. */
   int fetchAndAddExecutionsCount(int valueToAdd) const;
   QList<QRegularExpression> stderrFilters() const;
-  void appendStderrFilter(QRegularExpression filter);
   void triggerStartEvents(TaskInstance instance) const;
   void triggerSuccessEvents(TaskInstance instance) const;
   void triggerFailureEvents(TaskInstance instance) const;

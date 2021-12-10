@@ -551,10 +551,6 @@ QHash<QString, qint64> Task::resources() const {
   return !isNull() ? data()->_resources : QHash<QString,qint64>();
 }
 
-QString Task::resourcesAsString() const {
-  return !isNull() ? data()->resourcesAsString() : QString();
-}
-
 QString TaskData::resourcesAsString() const {
   return QronUiUtils::resourcesAsString(_resources);
 }
@@ -658,11 +654,6 @@ int Task::fetchAndAddExecutionsCount(int valueToAdd) const {
 
 QList<QRegularExpression> Task::stderrFilters() const {
   return !isNull() ? data()->_stderrFilters : QList<QRegularExpression>();
-}
-
-void Task::appendStderrFilter(QRegularExpression filter) {
-  if (!isNull())
-    data()->_stderrFilters.append(filter);
 }
 
 void Task::triggerStartEvents(TaskInstance instance) const {
