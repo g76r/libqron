@@ -14,7 +14,7 @@
 #ifndef GRAPHVIZ_STYLES_H
 #define GRAPHVIZ_STYLES_H
 
-#define GLOBAL_GRAPH "rankdir=LR,bgcolor=transparent,splines=polyline"
+#define GLOBAL_GRAPH "rankdir=LR,bgcolor=transparent,splines=polyline,ranksep=0"
 #define CLUSTER_NODE "shape=box,peripheries=2,style=filled,fillcolor=coral"
 #define HOST_NODE "shape=box,style=filled,fillcolor=coral"
 #define TASK_NODE "shape=box,style=\"rounded,filled\",fillcolor=skyblue"
