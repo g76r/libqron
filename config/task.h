@@ -84,7 +84,7 @@ public:
     EnqueuePolicyUnknown = 0
   };
   enum Mean {
-    UnknownMean = 0, DoNothing, Local, Workflow, Ssh, Http
+    UnknownMean = 0, DoNothing, Local, Workflow, Ssh, Docker, Http
   };
 
   Task();

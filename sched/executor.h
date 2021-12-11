@@ -81,6 +81,7 @@ private slots:
 private:
   void localMean();
   void sshMean();
+  void dockerMean();
   void httpMean();
   void workflowMean();
   void execProcess(QStringList cmdline, QProcessEnvironment sysenv);
@@ -91,6 +92,12 @@ private:
   void finishWorkflow(bool success, int returnCode);
   void getReplyContent(QNetworkReply *reply, QString *replyContent,
                        QString maxsizeKey, QString maxwaitKey) const;
+  void dockerParam(
+      QString *cmdline, QString paramName, ParamsProvider *context,
+      QString defaultValue = QString()) const;
+  void dockerArrayParam(
+      QString *cmdline, QString paramName, ParamsProvider *context,
+      QString defaultValue = QString()) const;
 };
 
 #endif // EXECUTOR_H

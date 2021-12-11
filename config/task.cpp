@@ -205,8 +205,9 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
   d->_command = node.attribute("command");
   d->_target =
       ConfigUtils::sanitizeId(node.attribute("target"), ConfigUtils::FullyQualifiedId);
-  // silently use "localhost" as target for "local" mean
-  if (d->_target.isEmpty() && d->_mean == Local)
+  // silently use "localhost" as target for targetless means
+  if (d->_target.isEmpty() && (d->_mean == Local || d->_mean == DoNothing
+                               || d->_mean == Docker ))
     d->_target = "localhost";
   d->_info = node.stringChildrenByName("info").join(" ");
   d->_id = taskGroup.id()+"."+d->_localId;
@@ -1185,9 +1186,11 @@ PfNode TaskData::toPfNode() const {
     node.setAttribute("info", _info);
   node.setAttribute("mean", Task::meanAsString(_mean));
   // do not set target attribute if it is empty,
-  // or in case it is implicit ("localhost" for Local mean)
+  // or in case it is implicit ("localhost" for targetless means)
   if (!_target.isEmpty()
-      && (_target != "localhost" || _mean != Task::Local))
+      && (_target != "localhost" ||
+          (_mean != Task::Local && _mean != Task::DoNothing &&
+           _mean != Task::Docker)))
     node.setAttribute("target", _target);
   // do not set command attribute if it is empty
   // or for means that do not use it (Workflow and DoNothing)
@@ -1287,6 +1290,7 @@ static QHash<Task::Mean,QString> _meansAsString {
   { Task::DoNothing, "donothing" },
   { Task::Local, "local" },
   { Task::Ssh, "ssh" },
+  { Task::Docker, "docker" },
   { Task::Http, "http" },
   { Task::Workflow, "workflow" },
 };

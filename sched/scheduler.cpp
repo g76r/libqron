@@ -652,12 +652,6 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
       // inherit target from workflow task if any
       Task workflowTask = config().tasks().value(task.workflowTaskId());
       target = workflowTask.target();
-      // silently use "localhost" as target for means not needing a real target
-      if (target.isEmpty()) {
-        Task::Mean mean = task.mean();
-        if (mean == Task::DoNothing || mean == Task::Workflow)
-          target = "localhost";
-      }
     }
   }
   SharedUiItemList<Host> hosts;

@@ -34,6 +34,7 @@
 static QString _localDefaultShell;
 static const QRegularExpression _httpHeaderForbiddenSeqRE("[^a-zA-Z0-9_\\-]+");
 static const QRegularExpression _asciiControlCharsSeqRE("[\\0-\\x1f]+");
+static const QRegularExpression _unallowedDockerNameFirstChar{"^[^A-Za-z0-9]"};
 
 static int staticInit() {
   char *value = getenv("SHELL");
@@ -81,6 +82,9 @@ void Executor::execute(TaskInstance instance) {
       break;
     case Task::Ssh:
       sshMean();
+      break;
+    case Task::Docker:
+      dockerMean();
       break;
     case Task::Http:
       httpMean();
@@ -160,9 +164,8 @@ void Executor::sshMean() {
     // must quote command line because remote user default shell will parse and
     // interpretate it and we want to keep it as is in -c argument to choosen
     // shell
-    cmdline << '\'' + _instance.params().evaluate(_instance.task().command(),
-                                                  &ppp).replace("'", "'\\''")
-               + '\'';
+    cmdline << '\'' + _instance.params().evaluate(
+                 _instance.task().command(), &ppp).replace("'", "'\\''") + '\'';
   } else {
     // let remote user default shell interpretate command line
     cmdline << _instance.params().evaluate(_instance.task().command(), &ppp);
@@ -172,6 +175,88 @@ void Executor::sshMean() {
       << _instance.target().hostname() <<  "): " << cmdline;
   sshCmdline << cmdline;
   execProcess(sshCmdline, _baseenv);
+}
+
+void Executor::dockerParam(
+    QString *cmdline, QString paramName, ParamsProvider *context,
+    QString defaultValue) const {
+  auto value = _instance.params().value(
+        "docker."+paramName, defaultValue, true, context);
+  if (!value.isEmpty())
+    *cmdline += "--"+paramName+" '"+value.remove('\'')+"' ";
+}
+
+void Executor::dockerArrayParam(
+    QString *cmdline, QString paramName, ParamsProvider *context,
+    QString defaultValue) const {
+  auto values = _instance.params().valueAsStrings(
+        "docker."+paramName, defaultValue, true, context);
+  for (auto value: values)
+    *cmdline += "--"+paramName+" '"+value.remove('\'')+"' ";
+}
+
+void Executor::dockerMean() {
+  const auto params = _instance.params();
+  QString shell = params.value(QStringLiteral("command.shell"),
+                               _localDefaultShell);
+  QString cmdline;
+  TaskInstancePseudoParamsProvider ppp = _instance.pseudoParams();
+  const auto vars = _instance.task().vars();
+  const auto image = params.value("docker.image", &ppp).remove('\'');
+  const bool shouldPull = _instance.params().valueAsBool("docker.pull", true);
+  const bool shouldInit = _instance.params().valueAsBool("docker.init", true);
+  const bool shouldRm = _instance.params().valueAsBool("docker.rm", true);
+  if (image.isEmpty()) {
+    Log::warning(_instance.task().id(), _instance.idAsLong())
+        << "cannot execute container with empty image name '"
+        << _instance.task().id() << "'";
+    taskInstanceFinishing(false, -1);
+    return;
+  }
+  if (shouldPull)
+    cmdline += "docker pull '" + image + "' && ";
+  cmdline += "exec docker run ";
+  if (shouldInit)
+    cmdline += "--init -e TINI_KILL_PROCESS_GROUP=1 ";
+  if (shouldRm)
+    cmdline += "--rm ";
+  for (auto key: vars.keys())
+      cmdline += "-e '" + key.remove('\'') + "'='"
+          + params.evaluate(vars.rawValue(key), &ppp).remove('\'') + "' ";
+  dockerParam(&cmdline, "name", &ppp,
+              _instance.task().id().remove(_unallowedDockerNameFirstChar)
+              +"_"+_instance.id());
+  dockerArrayParam(&cmdline, "mount", &ppp);
+  dockerArrayParam(&cmdline, "tmpfs", &ppp);
+  dockerArrayParam(&cmdline, "volume", &ppp);
+  dockerArrayParam(&cmdline, "volumes-from", &ppp);
+  dockerArrayParam(&cmdline, "publish", &ppp);
+  dockerArrayParam(&cmdline, "expose", &ppp);
+  dockerArrayParam(&cmdline, "label", &ppp);
+  dockerParam(&cmdline, "ipc", &ppp);
+  dockerParam(&cmdline, "network", &ppp);
+  dockerParam(&cmdline, "pid", &ppp);
+  dockerParam(&cmdline, "memory", &ppp, "512m");
+  dockerParam(&cmdline, "cpus", &ppp, "1.0");
+  cmdline += "--ulimit core=0 --ulimit nproc=1024 --ulimit nofile=1024 ";
+  dockerArrayParam(&cmdline, "ulimit", &ppp);
+  dockerArrayParam(&cmdline, "device-read-bps", &ppp);
+  dockerArrayParam(&cmdline, "device-read-iops", &ppp);
+  dockerArrayParam(&cmdline, "device-write-bps", &ppp);
+  dockerArrayParam(&cmdline, "device-write-iops", &ppp);
+  dockerParam(&cmdline, "hostname", &ppp);
+  dockerArrayParam(&cmdline, "add-host", &ppp);
+  dockerArrayParam(&cmdline, "dns", &ppp);
+  dockerArrayParam(&cmdline, "dns-search", &ppp);
+  dockerArrayParam(&cmdline, "dns-option", &ppp);
+  dockerParam(&cmdline, "user", &ppp);
+  dockerArrayParam(&cmdline, "group-add", &ppp);
+  dockerParam(&cmdline, "workdir", &ppp);
+  dockerParam(&cmdline, "entrypoint", &ppp);
+  cmdline += "'" + image + "' "
+      + params.evaluate(_instance.task().command(), &ppp);
+  _instance.setAbortable();
+  execProcess({ shell, "-c", cmdline }, _baseenv);
 }
 
 void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
@@ -325,11 +410,11 @@ void Executor::httpMean() {
   ParametrizedNetworkRequest networkRequest(
         url, _instance.params(), &ppp, _instance.task().id(), _instance.idAsLong());
   foreach (QString name, _instance.task().vars().keys()) {
-    const QString expr(_instance.task().vars().rawValue(name));
+    const QString rawValue = _instance.task().vars().rawValue(name);
     if (name.endsWith(":")) // ignoring : at end of header name
       name.chop(1);
     name.replace(_httpHeaderForbiddenSeqRE, "_");
-    const QString value = _instance.params().evaluate(expr);
+    const QString value = _instance.params().evaluate(rawValue, &ppp);
     //Log::fatal(_instance.task().id(), _instance.id()) << "setheader: " << name << "=" << value << ".";
     networkRequest.setRawHeader(name.toLatin1(), value.toUtf8());
   }
@@ -583,8 +668,8 @@ QProcessEnvironment Executor::prepareEnv(const ParamSet vars) {
     key.replace(notIdentifier, "_");
     if (key[0] >= '0' && key[0] <= '9' )
       key.insert(0, '_');
-    TaskInstancePseudoParamsProvider ppp(_instance);
-    const QString value = vars.evaluate(vars.rawValue(key), &ppp);
+    TaskInstancePseudoParamsProvider ppp = _instance.pseudoParams();
+    const QString value = _instance.params().evaluate(vars.rawValue(key), &ppp);
     sysenv.insert(key, value);
   }
   return sysenv;
@@ -607,7 +692,13 @@ void Executor::abort() {
     } else if (_process) {
       Log::info(_instance.task().id(), _instance.idAsLong())
           << "process task abort requested";
-      _process->kill();
+      if (_instance.task().mean() == Task::Docker) {
+        // LATER use docker run --cidfile and docker kill
+        _process->terminate();
+      } else {
+        // TODO kill the whole process group
+        _process->kill();
+      }
     } else if (_reply) {
       Log::info(_instance.task().id(), _instance.idAsLong())
           << "http task abort requested";
