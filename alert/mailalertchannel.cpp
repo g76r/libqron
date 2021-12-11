@@ -250,7 +250,7 @@ void MailAlertChannel::processQueue(QVariant address) {
             .append(webConsoleUrl).append("\r\n\r\n");
         html.append("<p>Alerts can also be viewed here: <a href=\"")
             .append(webConsoleUrl).append("\">").append(webConsoleUrl)
-            .append("</a>.\n");
+            .append("</a>.</p>\n");
       }
       s = "This message contains ";
       s.append(QString::number(queue->_alerts.size()))
@@ -260,12 +260,12 @@ void MailAlertChannel::processQueue(QVariant address) {
           .append(QString::number(reminders.size()))
           .append(" reminders.");
       text.append(s).append("\r\n\r\n");
-      html.append("<p>").append(s).append("\n");
+      html.append("<p>").append(s).append("</p>\n");
       text.append("NEW EMITED ALERTS:\r\n\r\n");
-      html.append("<p>NEW EMITED ALERTS:\n<ul>\n");
+      html.append("<p>NEW EMITED ALERTS:</p>\n<ul>\n");
       if (queue->_alerts.isEmpty()) {
         text.append("(none)\r\n");
-        html.append("<li>(none)\n");
+        html.append("<li>(none)</li>\n");
       } else {
         foreach (Alert alert, queue->_alerts) {
           s = alert.riseDate().toString("yyyy-MM-dd hh:mm:ss,zzz");
@@ -279,14 +279,14 @@ void MailAlertChannel::processQueue(QVariant address) {
                      .value("mail.alertstyle",
                             "background:#ff0000;color:#ffffff;"));
           html.append("<li style=\"").append(style).append("\">")
-              .append(s);
+              .append(s).append("</li>");
         }
       }
       text.append("\r\nFormer alerts canceled:\r\n\r\n");
-      html.append("</ul>\n<p>Former alerts canceled:\n<ul>\n");
+      html.append("</ul>\n<p>Former alerts canceled:</p>\n<ul>\n");
       if (queue->_cancellations.isEmpty()) {
         text.append("(none)\r\n");
-        html.append("<li>(none)\n");
+        html.append("<li>(none)</li>\n");
       } else {
         foreach (Alert alert, queue->_cancellations) {
           s = alert.cancellationDate().toString("yyyy-MM-dd hh:mm:ss,zzz");
@@ -301,14 +301,14 @@ void MailAlertChannel::processQueue(QVariant address) {
                      _config.params().value("mail.cancelstyle",
                                             "background:#8080ff"));
           html.append("<li style=\"").append(style).append("\">")
-              .append(s);
+              .append(s).append("</li>");
         }
       }
       text.append("\r\nAlerts reminders (alerts still raised):\r\n\r\n");
-      html.append("</ul>\n<p>Alerts reminders (alerts still raised):\n<ul>\n");
+      html.append("</ul>\n<p>Alerts reminders (alerts still raised):</p>\n<ul>\n");
       if (reminders.isEmpty()) {
         text.append("(none)\r\n");
-        html.append("<li>(none)\n");
+        html.append("<li>(none)</li>\n");
       } else {
         foreach (Alert alert, reminders) {
           s = alert.riseDate().toString("yyyy-MM-dd hh:mm:ss,zzz");
@@ -321,7 +321,7 @@ void MailAlertChannel::processQueue(QVariant address) {
                      _config.params().value("mail.reminderstyle",
                                             "background:#ffff80"));
           html.append("<li style=\"").append(style).append("\">")
-              .append(s);
+              .append(s).append("</li>");
         }
       }
       // LATER clarify this message
@@ -334,7 +334,7 @@ void MailAlertChannel::processQueue(QVariant address) {
             "</ul>\n"
             "<p>Please note that there is a delay between alert rise and "
             "cancellation requests (timestamps above) and the actual time this "
-            "mail is sent (send timestamp of the mail).\n");
+            "mail is sent (send timestamp of the mail).</p>\n");
       html.append("</body></html>\n");
       // mime handling
       QString body;
