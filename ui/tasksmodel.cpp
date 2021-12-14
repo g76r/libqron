@@ -23,7 +23,7 @@
 
 TasksModel::TasksModel(QObject *parent)
   : SharedUiItemsTableModel(parent) {
-  setHeaderDataFromTemplate(Task::templateTask());
+  setHeaderDataFromTemplate(Task::dummyTask());
   QTimer *timer = new QTimer(this);
   connect(timer, &QTimer::timeout, this, &TasksModel::periodicDataRefresh);
   timer->start(PERIODIC_REFRESH_INTERVAL);

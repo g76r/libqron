@@ -1,4 +1,4 @@
-/* Copyright 2013-2017 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,7 @@
 #include "pf/pfnode.h"
 #include "util/paramset.h"
 #include <QRegularExpression>
+#include <functional>
 
 class EventSubscription;
 class Scheduler;
@@ -96,6 +97,31 @@ public:
                            int maxDepth) {
     loadComments(node, commentsList, QSet<QString>(), maxDepth); }
   static void writeComments(PfNode *node, QStringList commentsList);
+  /** @return true if valid or absent, false if present and invalid */
+  template<typename T>
+  static bool loadAttribute(
+      PfNode node, QString attributeName, T *field,
+      std::function<T(QString value)> convert
+      = [](QString value) -> T { return value; },
+      std::function<bool(T value)> isValid
+      = [](T) { return true; }) {
+    if (!node.hasChild(attributeName))
+      return true;
+    auto v = node.attribute(attributeName);
+    T t = convert(v);
+    if (!isValid(t))
+      return false;
+    *field = t;
+    return true;
+  }
+  template<typename T>
+  static bool loadAttribute(
+      PfNode node, QString attributeName, T *field,
+      std::function<bool(T value)> isValid) {
+    return loadAttribute(
+          node, attributeName, field,
+          [](QString value) -> T { return value; }, isValid );
+  }
 
 private:
   ConfigUtils();

@@ -63,6 +63,7 @@ LIBS += -lqtpf -lp6core
 SOURCES += \
     config/task.cpp \
     config/taskgroup.cpp \
+    config/tasktemplate.cpp \
     sched/scheduler.cpp \
     trigger/crontrigger.cpp \
     config/host.cpp \
@@ -126,6 +127,7 @@ SOURCES += \
 HEADERS += \
     config/task.h \
     config/taskgroup.h \
+    config/tasktemplate.h \
     sched/scheduler.h \
     trigger/crontrigger.h \
     config/host.h \

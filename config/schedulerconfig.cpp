@@ -58,8 +58,9 @@ public:
 
 class SchedulerConfigData : public SharedUiItemData{
 public:
-  ParamSet _globalParams, _vars;
-  QHash<QString,TaskGroup> _tasksGroups;
+  ParamSet _params, _vars;
+  QHash<QString,TaskGroup> _taskgroups;
+  QHash<QString,TaskTemplate> _tasktemplates;
   QHash<QString,Task> _tasks;
   QHash<QString,Cluster> _clusters;
   QHash<QString,Host> _hosts;
@@ -79,8 +80,8 @@ public:
   SchedulerConfigData(PfNode root, Scheduler *scheduler, bool applyLogConfig);
   SchedulerConfigData(const SchedulerConfigData &other)
     : SharedUiItemData(other),
-      _globalParams(other._globalParams), _vars(other._vars),
-      _tasksGroups(other._tasksGroups),
+      _params(other._params), _vars(other._vars),
+      _taskgroups(other._taskgroups), _tasktemplates(other._tasktemplates),
       _tasks(other._tasks), _clusters(other._clusters), _hosts(other._hosts),
       _onstart(other._onstart), _onsuccess(other._onsuccess),
       _onfailure(other._onfailure), _onlog(other._onlog),
@@ -152,9 +153,9 @@ SchedulerConfigData::SchedulerConfigData(
   _logfiles = logfiles;
   if (applyLogConfig)
     this->applyLogConfig();
-  _globalParams.clear();
+  _params.clear();
   _vars.clear();
-  ConfigUtils::loadParamSet(root, &_globalParams, "param");
+  ConfigUtils::loadParamSet(root, &_params, "param");
   ConfigUtils::loadParamSet(root, &_vars, "var");
   _namedCalendars.clear();
   foreach (PfNode node, root.childrenByName("calendar")) {
@@ -169,7 +170,7 @@ SchedulerConfigData::SchedulerConfigData(
   }
   _hosts.clear();
   foreach (PfNode node, root.childrenByName("host")) {
-    Host host(node, _globalParams);
+    Host host(node, _params);
     if (_hosts.contains(host.id())) {
       Log::error() << "ignoring duplicate host: " << host.id();
     } else {
@@ -179,7 +180,7 @@ SchedulerConfigData::SchedulerConfigData(
   // create default "localhost" host if it is not declared
   if (!_hosts.contains("localhost"))
     _hosts.insert("localhost", Host(PfNode("host", "localhost"),
-                                    _globalParams));
+                                    _params));
   _clusters.clear();
   foreach (PfNode node, root.childrenByName("cluster")) {
     Cluster cluster(node);
@@ -204,19 +205,19 @@ SchedulerConfigData::SchedulerConfigData(
     else
       _clusters.insert(cluster.id(), cluster);
   }
-  TaskGroup rootPseudoGroup(_globalParams, _vars);
-  _tasksGroups.clear();
+  TaskGroup rootPseudoGroup(_params, _vars);
+  _taskgroups.clear();
   QList<PfNode> taskGroupNodes = root.childrenByName("taskgroup");
   std::sort(taskGroupNodes.begin(), taskGroupNodes.end());
   for (auto node: taskGroupNodes) {
     QString id = ConfigUtils::sanitizeId(
           node.contentAsString(), ConfigUtils::FullyQualifiedId);
-    if (_tasksGroups.contains(id)) {
+    if (_taskgroups.contains(id)) {
       Log::error() << "ignoring duplicate taskgroup: " << id;
       continue;
     }
     QString parentId = TaskGroup::parentGroupId(id);
-    TaskGroup parentGroup = _tasksGroups.value(parentId, rootPseudoGroup);
+    TaskGroup parentGroup = _taskgroups.value(parentId, rootPseudoGroup);
     TaskGroup taskGroup(node, parentGroup, scheduler);
     if (taskGroup.isNull() || id.isEmpty()) {
       Log::error() << "ignoring invalid taskgroup: " << node.toPf();
@@ -230,14 +231,29 @@ SchedulerConfigData::SchedulerConfigData(
                           taskGroup.id()+".*");
     recordTaskActionLinks(node, "onfinish", &requestTaskActionLinks,
                           taskGroup.id()+".*");
-    _tasksGroups.insert(taskGroup.id(), taskGroup);
+    _taskgroups.insert(taskGroup.id(), taskGroup);
+  }
+  _tasktemplates.clear();
+  for (auto node: root.childrenByName("tasktemplate")) {
+    TaskTemplate tmpl(node, scheduler, rootPseudoGroup, _namedCalendars);
+    if (tmpl.isNull()) { // cstr detected an error
+      Log::error() << "ignoring invalid tasktemplate: " << node.toString();
+      goto ignore_tasktemplate;
+    }
+    if (_tasktemplates.contains(tmpl.id())) {
+      Log::error() << "ignoring duplicate tasktemplate " << tmpl.id();
+      goto ignore_tasktemplate;
+    }
+    _tasktemplates.insert(tmpl.id(), tmpl);
+ignore_tasktemplate:;
   }
   QHash<QString,Task> oldTasks = _tasks;
   _tasks.clear();
   foreach (PfNode node, root.childrenByName("task")) {
     QString taskGroupId = node.attribute("taskgroup");
-    TaskGroup taskGroup = _tasksGroups.value(taskGroupId);
-    Task task(node, scheduler, taskGroup, QString(), _namedCalendars);
+    TaskGroup taskGroup = _taskgroups.value(taskGroupId);
+    Task task(node, scheduler, taskGroup, QString(), _namedCalendars,
+              _tasktemplates);
     if (taskGroupId.isEmpty() || taskGroup.isNull()) {
       Log::error() << "ignoring task with invalid taskgroup: " << node.toPf();
       goto ignore_task;
@@ -421,7 +437,7 @@ bool SchedulerConfig::isNull() const {
 
 ParamSet SchedulerConfig::globalParams() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_globalParams : ParamSet();
+  return d ? d->_params : ParamSet();
 }
 
 ParamSet SchedulerConfig::vars() const {
@@ -429,9 +445,14 @@ ParamSet SchedulerConfig::vars() const {
   return d ? d->_vars : ParamSet();
 }
 
-QHash<QString,TaskGroup> SchedulerConfig::tasksGroups() const {
+QHash<QString,TaskGroup> SchedulerConfig::taskgroups() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_tasksGroups : QHash<QString,TaskGroup>();
+  return d ? d->_taskgroups : QHash<QString,TaskGroup>();
+}
+
+QHash<QString,TaskTemplate> SchedulerConfig::tasktemplates() const {
+  const SchedulerConfigData *d = data();
+  return d ? d->_tasktemplates : QHash<QString,TaskTemplate>();
 }
 
 QHash<QString,Task> SchedulerConfig::tasks() const {
@@ -534,9 +555,9 @@ void SchedulerConfig::changeItem(
     recomputeId();
   } else if (idQualifier == "taskgroup") {
       TaskGroup &actualNewItem = reinterpret_cast<TaskGroup&>(newItem);
-      d->_tasksGroups.remove(oldItem.id());
+      d->_taskgroups.remove(oldItem.id());
       if (!newItem.isNull())
-        d->_tasksGroups.insert(newItem.id(), actualNewItem);
+        d->_taskgroups.insert(newItem.id(), actualNewItem);
       recomputeId();
   } else if (idQualifier == "cluster") {
     Cluster &actualNewItem = reinterpret_cast<Cluster&>(newItem);
@@ -563,7 +584,7 @@ void SchedulerConfig::changeParams(
   if (!d)
     setData(d = new SchedulerConfigData());
   if (setId == QStringLiteral("globalparams")) {
-    d->_globalParams = newParams;
+    d->_params = newParams;
   } else if (setId == QStringLiteral("globalvars")) {
     d->_vars = newParams;
   } else {
@@ -620,7 +641,7 @@ PfNode SchedulerConfig::toPfNode() const {
   PfNode node("config");
   ConfigUtils::writeComments(&node, d->_commentsList);
   ParamSet configuredVars = d->_vars;
-  ConfigUtils::writeParamSet(&node, d->_globalParams, QStringLiteral("param"));
+  ConfigUtils::writeParamSet(&node, d->_params, QStringLiteral("param"));
   ConfigUtils::writeParamSet(&node, configuredVars, QStringLiteral("var"));
   ConfigUtils::writeEventSubscriptions(&node, d->_onstart);
   ConfigUtils::writeEventSubscriptions(&node, d->_onsuccess);
@@ -630,7 +651,7 @@ PfNode SchedulerConfig::toPfNode() const {
   ConfigUtils::writeEventSubscriptions(&node, d->_onnotice);
   ConfigUtils::writeEventSubscriptions(&node, d->_onschedulerstart);
   ConfigUtils::writeEventSubscriptions(&node, d->_onconfigload);
-  QList<TaskGroup> taskGroups = d->_tasksGroups.values();
+  QList<TaskGroup> taskGroups = d->_taskgroups.values();
   std::sort(taskGroups.begin(), taskGroups.end());
   foreach(const TaskGroup &taskGroup, taskGroups)
     node.appendChild(taskGroup.toPfNode());

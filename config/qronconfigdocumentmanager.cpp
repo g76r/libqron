@@ -192,7 +192,7 @@ SharedUiItem QronConfigDocumentManager::itemById(
   if (idQualifier == "task") {
     return _config.tasks().value(id);
   } else if (idQualifier == "taskgroup") {
-    return _config.tasksGroups().value(id);
+    return _config.taskgroups().value(id);
   } else if (idQualifier == "host") {
     return _config.hosts().value(id);
   } else if (idQualifier == "cluster") {
@@ -217,7 +217,7 @@ SharedUiItemList<SharedUiItem> QronConfigDocumentManager
   if (idQualifier == "task") {
     return SharedUiItemList<Task>(_config.tasks().values());
   } else if (idQualifier == "taskgroup") {
-    return SharedUiItemList<TaskGroup>(_config.tasksGroups().values());
+    return SharedUiItemList<TaskGroup>(_config.taskgroups().values());
   } else if (idQualifier == "host") {
     return SharedUiItemList<Host>(_config.hosts().values());
   } else if (idQualifier == "cluster") {
@@ -296,7 +296,7 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
         newConfig.namedCalendars(), oldConfig.namedCalendars(),
         QStringLiteral("calendar"));
   emitSignalForItemTypeChanges(
-        newConfig.tasksGroups(), oldConfig.tasksGroups(),
+        newConfig.taskgroups(), oldConfig.taskgroups(),
         QStringLiteral("taskgroup"));
   emitSignalForItemTypeChanges(
         newConfig.tasks(), oldConfig.tasks(), QStringLiteral("task"));

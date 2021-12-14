@@ -19,7 +19,7 @@
 #include <QHash>
 #include <QString>
 #include "pf/pfnode.h"
-#include "task.h"
+#include "tasktemplate.h"
 #include "cluster.h"
 #include "calendar.h"
 #include "alerterconfig.h"
@@ -54,7 +54,8 @@ public:
   bool isNull() const;
   ParamSet globalParams() const;
   ParamSet vars() const;
-  QHash<QString,TaskGroup> tasksGroups() const;
+  QHash<QString,TaskGroup> taskgroups() const;
+  QHash<QString,TaskTemplate> tasktemplates() const;
   QHash<QString,Task> tasks() const;
   QHash<QString,Cluster> clusters() const;
   QHash<QString,Host> hosts() const;

@@ -14,6 +14,15 @@
 #ifndef TASK_P_H
 #define TASK_P_H
 
+#include "task.h"
+#include "configutils.h"
+#include "trigger/noticetrigger.h"
+#include "trigger/crontrigger.h"
+#include "eventsubscription.h"
+#include "requestformfield.h"
+#include "pf/pfnode.h"
+#include "ui/qronuiutils.h"
+
 static QString _uiHeaderNames[] = {
   "Local Id", // 0
   "Parent Group",
@@ -35,9 +44,9 @@ static QString _uiHeaderNames[] = {
   "Running / max",
   "Actions",
   "Last execution status",
-  "", // was: System environment // 20
+  "Applied templates", // was: System environment // 20
   "Vars",
-  "", // was: Unsetenv
+  "", // was: Unsetenv willbe: instanceparam
   "Min expected duration",
   "Max expected duration",
   "Request-time overridable params", // 25
@@ -51,6 +60,72 @@ static QString _uiHeaderNames[] = {
   "Additional info",
   "Executions count",
   "Enqueue policy" // 35
+};
+
+static QSet<QString> excludedDescendantsForComments {
+  "subtask", "trigger", "onsuccess", "onfailure", "onfinish", "onstart",
+  "ontrigger"
+};
+
+static QStringList excludeOnfinishSubscriptions { "onfinish" };
+
+class TaskOrGroupData : public SharedUiItemData {
+public:
+  QString _id, _label;
+  ParamSet _params, _vars;
+  QList<EventSubscription> _onstart, _onsuccess, _onfailure;
+  QStringList _commentsList;
+  PfNode _originalPfNode;
+
+  QVariant uiData(int section, int role) const;
+  QVariant uiHeaderData(int section, int role) const;
+  int uiSectionCount() const;
+  QString id() const { return _id; }
+  bool setUiData(int section, const QVariant &value, QString *errorString,
+                 SharedUiItemDocumentTransaction *transaction, int role);
+  Qt::ItemFlags uiFlags(int section) const;
+  bool loadConfig(PfNode node, TaskGroup parentGroup, Scheduler *scheduler);
+  void fillPfNode(PfNode &node) const;
+};
+
+class TaskOrTemplateData : public TaskOrGroupData {
+public:
+  QString _command, _target, _info;
+  Task::Mean _mean;
+  QList<NoticeTrigger> _noticeTriggers;
+  QHash<QString,qint64> _resources;
+  int _maxInstances;
+  QList<CronTrigger> _cronTriggers;
+  QList<QRegularExpression> _stderrFilters;
+  long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
+  Task::EnqueuePolicy _enqueuePolicy;
+  QList<RequestFormField> _requestFormFields;
+  QStringList _otherTriggers; // guessed indirect triggers resulting from events
+  mutable bool _enabled;
+
+  TaskOrTemplateData() : _maxInstances(1), _maxExpectedDuration(LLONG_MAX),
+    _minExpectedDuration(0), _maxDurationBeforeAbort(LLONG_MAX),
+    _enqueuePolicy(Task::EnqueueAndDiscardQueued),
+    _enabled(true) { }
+  QString triggersAsString() const;
+  QString triggersWithCalendarsAsString() const;
+  bool triggersHaveCalendar() const;
+  QVariant uiData(int section, int role) const override;
+  bool setUiData(int section, const QVariant &value, QString *errorString,
+                 SharedUiItemDocumentTransaction *transaction,
+                 int role) override;
+  Qt::ItemFlags uiFlags(int section) const override;
+  void setId(QString id) { _id = id; }
+  bool loadConfig(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
+                  QHash<QString,Calendar> namedCalendars);
+  void fillPfNode(PfNode &node) const;
+};
+
+class TaskTemplateData : public TaskOrTemplateData {
+public:
+  TaskTemplateData() { }
+  QString idQualifier() const override { return "tasktemplate"; }
+  PfNode toPfNode() const;
 };
 
 #endif // TASK_P_H

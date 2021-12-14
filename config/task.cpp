@@ -11,38 +11,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "task.h"
+#include "task_p.h"
 #include "taskgroup.h"
-#include <QString>
-#include <QHash>
-#include "pf/pfnode.h"
-#include "trigger/crontrigger.h"
 #include "log/log.h"
 #include <QAtomicInt>
 #include <QPointer>
 #include "sched/scheduler.h"
-#include "config/configutils.h"
-#include "requestformfield.h"
 #include "format/stringutils.h"
 #include "step.h"
 #include "action/action.h"
-#include "trigger/noticetrigger.h"
-#include "config/eventsubscription.h"
 #include "sched/stepinstance.h"
 #include "ui/graphvizdiagramsbuilder.h"
-#include "ui/qronuiutils.h"
-#include "task_p.h"
 #include "modelview/shareduiitemdocumentmanager.h"
 #include "util/radixtree.h"
 #include <functional>
 #include "util/containerutils.h"
-
-static QSet<QString> excludedDescendantsForComments {
-  "subtask", "trigger", "onsuccess", "onfailure", "onfinish", "onstart",
-  "ontrigger"
-};
-
-static QStringList excludeOnfinishSubscriptions { "onfinish" };
 
 class WorkflowTransitionData : public SharedUiItemData {
 public:
@@ -119,60 +102,36 @@ QString WorkflowTransition::localId() const {
   return isNull() ? QString() : data()->_localId;
 }
 
-class TaskData : public SharedUiItemData {
+class TaskData : public TaskOrTemplateData {
 public:
-  QString _id, _localId, _label, _command, _target, _info;
-  Task::Mean _mean;
+  QString _localId;
   TaskGroup _group;
-  ParamSet _params, _vars;
-  QList<NoticeTrigger> _noticeTriggers;
-  QHash<QString,qint64> _resources;
-  int _maxInstances;
-  QList<CronTrigger> _cronTriggers;
-  QList<QRegularExpression> _stderrFilters;
-  QList<EventSubscription> _onstart, _onsuccess, _onfailure;
-  QPointer<Scheduler> _scheduler;
-  long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
-  Task::EnqueuePolicy _enqueuePolicy;
-  QList<RequestFormField> _requestFormFields;
-  QStringList _otherTriggers; // guessed indirect triggers resulting from events
   QString _workflowTaskId;
   QHash<QString,Step> _steps;
   QString _graphvizWorkflowDiagram;
   QMultiHash<QString,WorkflowTransition> _transitionsBySourceLocalId;
   QHash<QString,CronTrigger> _workflowCronTriggersByLocalId;
-  QStringList _commentsList;
+  SharedUiItemList<TaskTemplate> _appliedTemplates;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
   mutable qint64 _lastExecution, _nextScheduledExecution;
   // LATER QAtomicInt is not needed since only one thread changes these values (Executor's)
   mutable QAtomicInt _runningCount, _executionsCount;
-  mutable bool _enabled, _lastSuccessful;
+  mutable bool _lastSuccessful;
   mutable int _lastReturnCode, _lastTotalMillis;
   mutable quint64 _lastTaskInstanceId;
 
-  TaskData() : _maxInstances(1), _maxExpectedDuration(LLONG_MAX),
-    _minExpectedDuration(0), _maxDurationBeforeAbort(LLONG_MAX),
-    _enqueuePolicy(Task::EnqueueAndDiscardQueued),
-    _lastExecution(LLONG_MIN), _nextScheduledExecution(LLONG_MIN),
-    _enabled(true), _lastSuccessful(true), _lastReturnCode(-1),
-    _lastTotalMillis(-1), _lastTaskInstanceId(0)  { }
+  TaskData(): _lastExecution(LLONG_MIN), _nextScheduledExecution(LLONG_MIN),
+      _lastSuccessful(true), _lastReturnCode(-1),
+      _lastTotalMillis(-1), _lastTaskInstanceId(0) { }
   QDateTime lastExecution() const;
   QDateTime nextScheduledExecution() const;
-  QString resourcesAsString() const;
-  QString triggersAsString() const;
-  QString triggersWithCalendarsAsString() const;
-  bool triggersHaveCalendar() const;
   QVariant uiData(int section, int role) const override;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction,
                  int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
-  QVariant uiHeaderData(int section, int role) const override;
-  int uiSectionCount() const override;
-  QString id() const override { return _id; }
-  void setId(QString id) { _id = id; }
   QString idQualifier() const override { return "task"; }
   PfNode toPfNode() const;
   void setWorkflowTask(Task workflowTask);
@@ -185,137 +144,63 @@ Task::Task() {
 Task::Task(const Task &other) : SharedUiItem(other) {
 }
 
-Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-           QString workflowTaskId, QHash<QString,Calendar> namedCalendars) {
+Task::Task(
+    PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
+    QString workflowTaskId, QHash<QString,Calendar> namedCalendars,
+    QHash<QString, TaskTemplate> taskTemplates) {
   TaskData *d = new TaskData;
-  d->_scheduler = scheduler;
   d->_localId =
       ConfigUtils::sanitizeId(node.contentAsString(),
                               workflowTaskId.isEmpty() ? ConfigUtils::LocalId
                                                     : ConfigUtils::SubTaskId);
-  d->_label = node.attribute("label");
-  d->_mean = meanFromString(node.attribute("mean", "local").trimmed()
-                             .toLower());
-  if (d->_mean == UnknownMean) {
-    Log::error() << "task with invalid execution mean: "
-                 << node.toString();
-    delete d;
-    return;
-  }
-  d->_command = node.attribute("command");
-  d->_target =
-      ConfigUtils::sanitizeId(node.attribute("target"), ConfigUtils::FullyQualifiedId);
-  // silently use "localhost" as target for targetless means
-  if (d->_target.isEmpty() && (d->_mean == Local || d->_mean == DoNothing
-                               || d->_mean == Docker ))
-    d->_target = "localhost";
-  d->_info = node.stringChildrenByName("info").join(" ");
   d->_id = taskGroup.id()+"."+d->_localId;
   d->_group = taskGroup;
-  d->_maxInstances = node.attribute("maxinstances", "1").toInt();
-  if (d->_maxInstances <= 0) {
-    Log::error() << "invalid task maxinstances: " << node.toPf();
+  for (auto child: node.childrenByName("apply")) {
+    for (auto name: child.contentAsStringList()) {
+      auto tmpl = taskTemplates.value(name);
+      if (tmpl.isNull()) {
+        Log::warning() << "tasktemplate" << name << "not found while requested "
+                          "in task definition: " << node.toString();
+        continue;
+      }
+      if (!d->loadConfig(tmpl.data()->_originalPfNode, scheduler, taskGroup,
+                         namedCalendars)) { // should never happen
+        delete d;
+        return;
+      }
+      d->_appliedTemplates.append(tmpl);
+    }
+  }
+  if (!d->loadConfig(node, scheduler, taskGroup, namedCalendars)) {
     delete d;
     return;
   }
-  double f = node.doubleAttribute("maxexpectedduration", -1);
-  d->_maxExpectedDuration = f < 0 ? LLONG_MAX : (long long)(f*1000);
-  f = node.doubleAttribute("minexpectedduration", -1);
-  d->_minExpectedDuration = f < 0 ? 0 : (long long)(f*1000);
-  f = node.doubleAttribute("maxdurationbeforeabort", -1);
-  d->_maxDurationBeforeAbort = f < 0 ? LLONG_MAX : (long long)(f*1000);
-  d->_params.setParent(taskGroup.params());
-  ConfigUtils::loadParamSet(node, &d->_params, "param");
-  QString filter = d->_params.value("stderrfilter");
-  if (!filter.isEmpty())
-    d->_stderrFilters.append(QRegularExpression(filter));
-  d->_vars.setParent(taskGroup.vars());
-  ConfigUtils::loadParamSet(node, &d->_vars, "var");
+  // default mean: local
+  if (d->_mean == UnknownMean)
+    d->_mean = Local;
+  // silently use "localhost" as target for targetless means
+  if (d->_target.isEmpty())
+    switch(d->_mean) {
+    case Local:
+    case DoNothing:
+    case Docker:
+      d->_target = "localhost";
+      break;
+    case UnknownMean: // impossible
+    case Workflow:
+    case Ssh:
+    case Http:
+      ;
+    }
   d->_workflowTaskId = workflowTaskId;
   // LATER load cron triggers last exec timestamp from on-disk log
-  if (workflowTaskId.isEmpty()) { // subtasks do not have triggers
-    foreach (PfNode child, node.childrenByName("trigger")) {
-      foreach (PfNode grandchild, child.children()) {
-        QList<PfNode> inheritedComments;
-        foreach (PfNode commentNode, child.children())
-          if (commentNode.isComment())
-            inheritedComments.append(commentNode);
-        std::reverse(inheritedComments.begin(), inheritedComments.end());
-        foreach (PfNode commentNode, inheritedComments)
-          grandchild.prependChild(commentNode);
-        //grandchild.appendChild(commentGrandChild);
-        QString content = grandchild.contentAsString();
-        QString triggerType = grandchild.name();
-        if (triggerType == "notice") {
-          NoticeTrigger trigger(grandchild, namedCalendars);
-          if (trigger.isValid()) {
-            d->_noticeTriggers.append(trigger);
-            Log::debug() << "configured notice trigger '" << content
-                         << "' on task '" << d->_localId << "'";
-          } else {
-            Log::error() << "task with invalid notice trigger: "
-                         << node.toString();
-            delete d;
-            return;
-          }
-        } else if (triggerType == "cron") {
-          CronTrigger trigger(grandchild, namedCalendars);
-          if (trigger.isValid()) {
-            d->_cronTriggers.append(trigger);
-            Log::debug() << "configured cron trigger "
-                         << trigger.humanReadableExpression()
-                         << " on task " << d->_localId;
-          } else {
-            Log::error() << "task with invalid cron trigger: "
-                         << grandchild.toString();
-            delete d;
-            return;
-          }
-          // LATER read misfire config
-        } else {
-          Log::warning() << "ignoring unknown trigger type '" << triggerType
-                         << "' on task " << d->_localId;
-        }
-      }
-    }
-  } else {
-    if (node.hasChild("trigger"))
-      Log::warning() << "ignoring trigger in workflow subtask: "
-                     << node.toString();
+  if (!workflowTaskId.isEmpty() && node.hasChild("trigger")) {
+    // subtasks do not have triggers
+    d->_cronTriggers.clear();
+    d->_noticeTriggers.clear();
+    Log::warning() << "ignoring trigger in workflow subtask: "
+                   << node.toString();
   }
-  ConfigUtils::loadResourcesSet(node, &d->_resources, "resource");
-  QString enqueuepolicy = node.attribute("enqueuepolicy",
-                                         "enqueueanddiscardqueued");
-  d->_enqueuePolicy = enqueuePolicyFromString(enqueuepolicy);
-  if (d->_enqueuePolicy == Task::EnqueuePolicyUnknown) {
-    Log::error() << "invalid enqueuepolicy on task " << d->_localId
-                 << ": '" << enqueuepolicy << "'";
-    delete d;
-    return;
-  }
-  QList<PfNode> children = node.childrenByName("requestform");
-  if (!children.isEmpty()) {
-    if (children.size() > 1) {
-      Log::error() << "task with several requestform: " << node.toString();
-      delete d;
-      return;
-    }
-    foreach (PfNode child, children.last().childrenByName("field")) {
-      RequestFormField field(child);
-      if (!field.isNull())
-        d->_requestFormFields.append(field);
-    }
-  }
-  ConfigUtils::loadEventSubscription(node, "onstart", d->_id, &d->_onstart,
-                                     scheduler);
-  ConfigUtils::loadEventSubscription(node, "onsuccess", d->_id,
-                                     &d->_onsuccess, scheduler);
-  ConfigUtils::loadEventSubscription(node, "onfinish", d->_id,
-                                     &d->_onsuccess, scheduler);
-  ConfigUtils::loadEventSubscription(node, "onfailure", d->_id,
-                                     &d->_onfailure, scheduler);
-  ConfigUtils::loadEventSubscription(node, "onfinish", d->_id,
-                                     &d->_onfailure, scheduler);
   QList<PfNode> steps = node.childrenByName("subtask")
       +node.childrenByName("and")+node.childrenByName("or");
   if (d->_mean == Workflow) {
@@ -443,8 +328,6 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
       Log::warning() << "ignoring step definitions in non-workflow task: "
                      << node.toString();
   }
-  ConfigUtils::loadComments(node, &d->_commentsList,
-                            excludedDescendantsForComments);
   setData(d);
   // update subtasks with any other information about their workflow task apart
   // from its id which has already been given through their cstr
@@ -487,7 +370,7 @@ void Task::copyLiveAttributesFromOldTask(Task oldTask) {
   }
 }
 
-Task Task::templateTask() {
+Task Task::dummyTask() {
   Task t;
   t.setData(new TaskData);
   return t;
@@ -548,56 +431,6 @@ void TaskData::setTaskGroup(TaskGroup taskGroup) {
 
 QHash<QString, qint64> Task::resources() const {
   return !isNull() ? data()->_resources : QHash<QString,qint64>();
-}
-
-QString TaskData::resourcesAsString() const {
-  return QronUiUtils::resourcesAsString(_resources);
-}
-
-QString Task::triggersAsString() const {
-  return !isNull() ? data()->triggersAsString() : QString();
-}
-
-QString TaskData::triggersAsString() const {
-  QString s;
-  foreach (CronTrigger t, _cronTriggers)
-    s.append(t.humanReadableExpression()).append(' ');
-  foreach (NoticeTrigger t, _noticeTriggers)
-    s.append(t.humanReadableExpression()).append(' ');
-  foreach (QString t, _otherTriggers)
-    s.append(t).append(' ');
-  s.chop(1); // remove last space
-  return s;
-}
-
-QString Task::triggersWithCalendarsAsString() const {
-  return !isNull() ? data()->triggersWithCalendarsAsString() : QString();
-}
-
-QString TaskData::triggersWithCalendarsAsString() const {
-  QString s;
-  foreach (CronTrigger t, _cronTriggers)
-    s.append(t.humanReadableExpressionWithCalendar()).append(' ');
-  foreach (NoticeTrigger t, _noticeTriggers)
-    s.append(t.humanReadableExpressionWithCalendar()).append(' ');
-  foreach (QString t, _otherTriggers)
-    s.append(t).append(" ");
-  s.chop(1); // remove last space
-  return s;
-}
-
-bool Task::triggersHaveCalendar() const {
-  return !isNull() ? data()->triggersHaveCalendar() : false;
-}
-
-bool TaskData::triggersHaveCalendar() const {
-  foreach (CronTrigger t, _cronTriggers)
-    if (!t.calendar().isNull())
-      return true;
-  foreach (NoticeTrigger t, _noticeTriggers)
-    if (!t.calendar().isNull())
-      return true;
-  return false;
 }
 
 QDateTime Task::lastExecution() const {
@@ -889,6 +722,11 @@ QString Task::graphvizWorkflowDiagram() const {
   return !isNull() ? data()->_graphvizWorkflowDiagram : QString();
 }
 
+SharedUiItemList<TaskTemplate> Task::appliedTemplates() const {
+  auto d = data();
+  return d ? d->_appliedTemplates : SharedUiItemList<TaskTemplate>();
+}
+
 QMultiHash<QString, WorkflowTransition>
 Task::workflowTransitionsBySourceLocalId() const {
   return !isNull() ? data()->_transitionsBySourceLocalId
@@ -900,16 +738,6 @@ QHash<QString,CronTrigger> Task::workflowCronTriggersByLocalId() const {
                    : QHash<QString,CronTrigger>();
 }
 
-
-QVariant TaskData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
-
-int TaskData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
-}
 
 QVariant TaskData::uiData(int section, int role) const {
   switch(role) {
@@ -923,50 +751,25 @@ QVariant TaskData::uiData(int section, int role) const {
                                       : _localId.mid(_localId.indexOf(':')+1);
       }
       return _localId;
+    case 11:
+      return _id;
     case 1:
       return _group.id();
     case 2:
       if (role == Qt::EditRole)
         return _label == _localId ? QVariant() : _label;
       return _label.isEmpty() ? _localId : _label;
-    case 3:
-      return Task::meanAsString(_mean);
-    case 4: {
-      QString escaped = _command;
-      escaped.replace('\\', "\\\\");
-      return escaped;
-    }
-    case 5:
-      return _target;
-    case 6:
-      return triggersAsString();
-    case 7:
-      return _params.toString(false, false);
-    case 8:
-      return resourcesAsString();
     case 9:
       return lastExecution().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
     case 10:
       return nextScheduledExecution().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    case 11:
-      return _id;
-    case 12:
-      return _maxInstances;
     case 13:
       return _runningCount.loadRelaxed();
-    case 14:
-      return EventSubscription::toStringList(_onstart).join("\n");
-    case 15:
-      return EventSubscription::toStringList(_onsuccess).join("\n");
-    case 16:
-      return EventSubscription::toStringList(_onfailure).join("\n");
     case 17:
       return QString::number(_runningCount.loadRelaxed())+" / "
           +QString::number(_maxInstances);
-    case 18:
-      return QVariant(); // custom actions, handled by the model, if needed
     case 19: {
       QDateTime dt = lastExecution();
       if (dt.isNull())
@@ -982,51 +785,21 @@ QVariant TaskData::uiData(int section, int role) const {
       return s.append(')');
     }
     case 20:
-      return QVariant(); // was: System environment
-    case 21:
-      return QronUiUtils::paramsAsString(_vars);
-    case 22:
-      return QVariant(); // was: Unsetenv
-    case 23:
-      return (_minExpectedDuration > 0)
-          ? (double)_minExpectedDuration*.001 : QVariant();
-    case 24:
-      return (_maxExpectedDuration < LLONG_MAX)
-          ? (double)_maxExpectedDuration*.001 : QVariant();
-    case 25: {
-      QString s;
-      foreach (const RequestFormField rff, _requestFormFields)
-        s.append(rff.id()).append(' ');
-      s.chop(1);
-      return s;
-    }
+      return _appliedTemplates.join(' ');
     case 26:
       return _lastTotalMillis >= 0 ? _lastTotalMillis/1000.0 : QVariant();
-    case 27:
-      return (_maxDurationBeforeAbort < LLONG_MAX)
-          ? (double)_maxDurationBeforeAbort*.001 : QVariant();
-    case 28:
-      return triggersWithCalendarsAsString();
-    case 29:
-      return _enabled;
-    case 30:
-      return triggersHaveCalendar();
     case 31:
       return _workflowTaskId;
     case 32:
       return _lastTaskInstanceId > 0 ? _lastTaskInstanceId : QVariant();
-    case 33:
-      return _info;
     case 34:
       return _executionsCount.loadRelaxed();
-    case 35:
-      return Task::enqueuePolicyAsString(_enqueuePolicy);
     }
     break;
   default:
     ;
   }
-  return QVariant();
+  return TaskOrTemplateData::uiData(section, role);
 }
 
 void Task::setWorkflowTask(Task workflowTask) {
@@ -1109,30 +882,6 @@ bool TaskData::setUiData(
     if (_label == _localId)
       _label = QString();
     return true;
-  case 3: {
-    Task::Mean mean = Task::meanFromString(value.toString().toLower()
-                                           .trimmed());
-    if (mean == Task::UnknownMean) {
-      if (errorString)
-        *errorString = "unknown mean value: '"+value.toString()+"'";
-      return false;
-    }
-    _mean = mean;
-    return true;
-  }
-  case 5:
-    _target = ConfigUtils::sanitizeId(
-          value.toString(), ConfigUtils::FullyQualifiedId);
-    return true;
-  case 8: {
-    QHash<QString,qint64> resources;
-    if (QronUiUtils::resourcesFromString(value.toString(), &resources,
-                                            errorString)) {
-      _resources = resources;
-      return true;
-    }
-    return false;
-  }
   case 31: {
     s = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId);
     SharedUiItem workflowTask = transaction->itemById("task", s);
@@ -1140,19 +889,17 @@ bool TaskData::setUiData(
     return true;
   }
   }
-  return SharedUiItemData::setUiData(section, value, errorString, transaction,
-                                     role);
+  return TaskOrTemplateData::setUiData(
+        section, value, errorString, transaction, role);
 }
 
 Qt::ItemFlags TaskData::uiFlags(int section) const {
-  Qt::ItemFlags flags = SharedUiItemData::uiFlags(section);
+  Qt::ItemFlags flags = TaskOrTemplateData::uiFlags(section);
   switch (section) {
   case 0:
   case 1:
   case 2:
-  case 3:
-  case 5:
-  case 8:
+  case 31:
     flags |= Qt::ItemIsEditable;
   }
   return flags;
@@ -1165,6 +912,13 @@ void Task::setParentParams(ParamSet parentParams) {
 
 TaskData *Task::data() {
   return detachedData<TaskData>();
+}
+
+PfNode Task::originalPfNode() const {
+  const TaskData *d = data();
+  if (!d)
+    return PfNode();
+  return d->_originalPfNode;
 }
 
 PfNode Task::toPfNode() const {

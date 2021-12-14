@@ -19,11 +19,11 @@
 #include "util/paramset.h"
 #include <QSet>
 #include "taskgroup.h"
-#include "requestformfield.h"
 #include <QList>
-#include "modelview/shareduiitem.h"
+#include "modelview/shareduiitemlist.h"
 
 class TaskData;
+class TaskOrTemplateData;
 class TaskPseudoParamsProvider;
 class QDebug;
 class PfNode;
@@ -36,6 +36,8 @@ class Step;
 class StepInstance;
 class Calendar;
 class WorkflowTransitionData;
+class TaskTemplate;
+class RequestFormField;
 
 /** Data object for workflow transitions, i.e. links between a source step,
  * an event name and a destination step, within a given workflow task.
@@ -90,10 +92,11 @@ public:
   Task();
   Task(const Task &other);
   Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-       QString workflowTaskId, QHash<QString, Calendar> namedCalendars);
+       QString workflowTaskId, QHash<QString, Calendar> namedCalendars,
+       QHash<QString,TaskTemplate> taskTemplates);
   /** Should only be used by SharedUiItemsModels to get size and headers from
    * a non-null item. */
-  static Task templateTask();
+  static Task dummyTask();
   Task &operator=(const Task &other) {
     SharedUiItem::operator=(other); return *this; }
   ParamSet params() const;
@@ -167,10 +170,6 @@ public:
   /** Create a ParamsProvider wrapper object to give access to ! pseudo params,
    * not to task params. */
   inline TaskPseudoParamsProvider pseudoParams() const;
-  /** Human readable list of all triggers as one string, for UI purpose. */
-  QString triggersAsString() const;
-  QString triggersWithCalendarsAsString() const;
-  bool triggersHaveCalendar() const;
   /** Cron triggers */
   QList<CronTrigger> cronTriggers() const;
   /** Notice triggers */
@@ -192,6 +191,8 @@ public:
   QString workflowTaskId() const;
   void setWorkflowTask(Task workflowTask);
   QString graphvizWorkflowDiagram() const;
+  SharedUiItemList<TaskTemplate> appliedTemplates() const;
+  PfNode originalPfNode() const;
   PfNode toPfNode() const;
   /** to be called when activating a new configuration, to keep live attributes
    * such as lastReturnCode() or enabled() */

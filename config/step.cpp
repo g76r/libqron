@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -97,7 +97,7 @@ Step::Step(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
     // following line is failsafe even without . since -1+1=0
     node.setContent(d->_id.mid(d->_id.lastIndexOf('.')+1));
     d->_subtask = Task(node, scheduler, taskGroup, d->_workflowId,
-                       namedCalendars);
+                       namedCalendars, QHash<QString,TaskTemplate>());
     if (d->_subtask.isNull()) {
       Log::error() << "step with invalid subtask: " << node.toString();
       delete d;

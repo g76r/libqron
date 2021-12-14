@@ -57,6 +57,7 @@ public:
   QList<EventSubscription> onfailureEventSubscriptions() const;
   ParamSet vars() const;
   QList<EventSubscription> allEventSubscriptions() const;
+  PfNode originalPfNode() const;
   PfNode toPfNode() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
