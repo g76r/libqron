@@ -122,7 +122,7 @@ void Executor::localMean() {
 void Executor::sshMean() {
   QStringList cmdline, sshCmdline;
   TaskInstancePseudoParamsProvider ppp = _instance.pseudoParams();
-  const auto vars = _instance.params();
+  const auto vars = _instance.task().vars();
   QString username = _instance.params().value("ssh.username");
   qlonglong port = _instance.params().valueAsLong("ssh.port");
   QString ignoreknownhosts = _instance.params().value("ssh.ignoreknownhosts",
@@ -155,9 +155,8 @@ void Executor::sshMean() {
   sshCmdline << "--";
   sshCmdline << _instance.target().hostname();
   for (auto key: vars.keys()) {
-      QString value = vars.value(key);
-      value.replace('\'', QString());
-      cmdline << key+"='"+value+"'";
+      QString value = _instance.params().evaluate(vars.rawValue(key), &ppp);
+      cmdline << key.remove('\'')+"='"+value.remove('\'')+"'";
   }
   if (!shell.isEmpty()) {
     cmdline << shell << "-c";
