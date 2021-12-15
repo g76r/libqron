@@ -117,22 +117,23 @@ SchedulerConfig::SchedulerConfig(PfNode root, Scheduler *scheduler,
 }
 
 static inline void recordTaskActionLinks(
-    PfNode parentNode, QString childName,
+    PfNode parentNode, QStringList childNames,
     QList<RequestTaskActionLink> *requestTaskActionLinks,
     QString contextLabel, Task contextTask = Task()) {
   // TODO clarify "contextLabel" and "contextTask" names
   QStringList ignoredChildren;
   ignoredChildren << "cron" << "notice";
-  foreach (PfNode listnode, parentNode.childrenByName(childName)) {
-    EventSubscription sub("", listnode, 0, ignoredChildren);
-    foreach (Action a, sub.actions()) {
-      if (a.actionType() == "requesttask") {
-        requestTaskActionLinks
-            ->append(RequestTaskActionLink(a, childName, contextLabel,
-                                           contextTask));
+  for (auto childName: childNames)
+    for (auto listnode: parentNode.childrenByName(childName)) {
+      EventSubscription sub("", listnode, 0, ignoredChildren);
+      foreach (Action a, sub.actions()) {
+        if (a.actionType() == "requesttask") {
+          requestTaskActionLinks
+              ->append(RequestTaskActionLink(a, childName, contextLabel,
+                                             contextTask));
+        }
       }
     }
-  }
 }
 
 SchedulerConfigData::SchedulerConfigData(
@@ -223,14 +224,9 @@ SchedulerConfigData::SchedulerConfigData(
       Log::error() << "ignoring invalid taskgroup: " << node.toPf();
       continue;
     }
-    recordTaskActionLinks(node, "onstart", &requestTaskActionLinks,
-                          taskGroup.id()+".*");
-    recordTaskActionLinks(node, "onsuccess", &requestTaskActionLinks,
-                          taskGroup.id()+".*");
-    recordTaskActionLinks(node, "onfailure", &requestTaskActionLinks,
-                          taskGroup.id()+".*");
-    recordTaskActionLinks(node, "onfinish", &requestTaskActionLinks,
-                          taskGroup.id()+".*");
+    recordTaskActionLinks(
+          node, { "onstart", "onsuccess", "onfailure", "onfinish" },
+          &requestTaskActionLinks, taskGroup.id()+".*");
     _taskgroups.insert(taskGroup.id(), taskGroup);
   }
   _tasktemplates.clear();
@@ -283,30 +279,24 @@ ignore_tasktemplate:;
       goto ignore_task;
     }*/
     _tasks.insert(task.id(), task);
-    recordTaskActionLinks(node, "onstart", &requestTaskActionLinks, task.id(),
-                          task);
-    recordTaskActionLinks(node, "onsuccess", &requestTaskActionLinks,
-                          task.id(), task);
-    recordTaskActionLinks(node, "onfailure", &requestTaskActionLinks,
-                          task.id(), task);
-    recordTaskActionLinks(node, "onfinish", &requestTaskActionLinks,
-                          task.id(), task); // TODO rather use a QStringList than a QString for childname
+    // FIXME not only task node but also applied templates nodes
+    recordTaskActionLinks(
+          node, { "onstart", "onsuccess", "onfailure", "onfinish" },
+          &requestTaskActionLinks, task.id(), task);
+    for (auto tmpl: task.appliedTemplates()) {
+      recordTaskActionLinks(
+            tmpl.originalPfNode(),
+            { "onstart", "onsuccess", "onfailure", "onfinish" },
+            &requestTaskActionLinks, task.id(), task);
+    }
     if (task.mean() == Task::Workflow) {
-      recordTaskActionLinks(node, "ontrigger", &requestTaskActionLinks,
+      recordTaskActionLinks(node, { "ontrigger" }, &requestTaskActionLinks,
                             task.id(), task); // TODO check that this is consistent
       foreach(PfNode child, node.childrenByName("subtask")) {
-        recordTaskActionLinks(node, "onstart", &requestTaskActionLinks,
-                              task.id()+":"+child.contentAsString(),
-                              task);
-        recordTaskActionLinks(node, "onsuccess", &requestTaskActionLinks,
-                              task.id()+":"+child.contentAsString(),
-                              task);
-        recordTaskActionLinks(node, "onfailure", &requestTaskActionLinks,
-                              task.id()+":"+child.contentAsString(),
-                              task);
-        recordTaskActionLinks(node, "onfinish", &requestTaskActionLinks,
-                              task.id()+":"+child.contentAsString(),
-                              task);
+        recordTaskActionLinks(
+              node, { "onstart", "onsuccess", "onfailure", "onfinish" },
+              &requestTaskActionLinks, task.id()+":"+child.contentAsString(),
+              task);
       }
     }
     foreach (Step s, task.steps()) {
@@ -367,35 +357,31 @@ ignore_task:;
   _onstart.clear();
   ConfigUtils::loadEventSubscription(root, "onstart", "*", &_onstart,
                                      scheduler);
-  recordTaskActionLinks(root, "onstart", &requestTaskActionLinks, "*");
   _onsuccess.clear();
   ConfigUtils::loadEventSubscription(root, "onsuccess", "*", &_onsuccess,
                                      scheduler);
-  recordTaskActionLinks(root, "onsuccess", &requestTaskActionLinks, "*");
   ConfigUtils::loadEventSubscription(root, "onfinish", "*", &_onsuccess,
                                      scheduler);
   _onfailure.clear();
   ConfigUtils::loadEventSubscription(root, "onfailure", "*", &_onfailure,
                                      scheduler);
-  recordTaskActionLinks(root, "onfailure", &requestTaskActionLinks, "*");
   ConfigUtils::loadEventSubscription(root, "onfinish", "*", &_onfailure,
                                      scheduler);
-  recordTaskActionLinks(root, "onfinish", &requestTaskActionLinks, "*");
   _onlog.clear();
   ConfigUtils::loadEventSubscription(root, "onlog", "*", &_onlog, scheduler);
-  recordTaskActionLinks(root, "onlog", &requestTaskActionLinks, "*");
   _onnotice.clear();
   ConfigUtils::loadEventSubscription(root, "onnotice", "*", &_onnotice,
                                      scheduler);
-  recordTaskActionLinks(root, "onnotice", &requestTaskActionLinks, "*");
   _onschedulerstart.clear();
   ConfigUtils::loadEventSubscription(root, "onschedulerstart", "*",
                                      &_onschedulerstart, scheduler);
-  recordTaskActionLinks(root, "onschedulerstart", &requestTaskActionLinks, "*");
   _onconfigload.clear();
   ConfigUtils::loadEventSubscription(root, "onconfigload", "*",
                                      &_onconfigload, scheduler);
-  recordTaskActionLinks(root, "onconfigload", &requestTaskActionLinks, "*");
+  recordTaskActionLinks(
+        root, { "onstart", "onsuccess", "onfailure", "onfinish", "onlog",
+                "onnotice", "onschedulerstart", "onconfigload" },
+        &requestTaskActionLinks, "*");
   // LATER onschedulershutdown
   foreach (const RequestTaskActionLink &link, requestTaskActionLinks) {
     QString targetName = link._action.targetName();

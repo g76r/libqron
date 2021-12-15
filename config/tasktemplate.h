@@ -56,6 +56,7 @@ public:
   QList<NoticeTrigger> noticeTriggers() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
+  PfNode originalPfNode() const;
   PfNode toPfNode() const;
 
 private:
