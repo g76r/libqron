@@ -30,11 +30,11 @@
 #define TASK_TRIGGER_EDGE "dir=back,arrowtail=vee"
 #define TASK_NOTRIGGER_EDGE "dir=back,arrowtail=odot,style=dashed"
 #define TASK_POSTNOTICE_EDGE "dir=forward,arrowhead=vee,constraint=false"
-#define TASK_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE
+#define TASK_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE ",constraint=true"
 #define GLOBAL_EVENT_NODE "shape=none"
 //#define GLOBAL_EVENT_NODE "shape=pentagon"
 #define GLOBAL_POSTNOTICE_EDGE "dir=back,arrowtail=vee,constraint=false"
-#define GLOBAL_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE
+#define GLOBAL_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE ",constraint=true"
 #define WORKFLOW_GRAPH "bgcolor=transparent"
 #define ANDJOIN_NODE "shape=square,label=and"
 #define ORJOIN_NODE "shape=circle,label=or"
