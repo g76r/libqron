@@ -31,7 +31,7 @@ time [label="time"]
 
 // ParamSet inheritage (mostly in configuration)
 edge [dir=back,arrowtail=onormal,color=navy,fontcolor=navy]
-global -- taskgroup -- task
+global -- taskgroup -- taskgroup -- task
 task -- taskinstance
 global -- event
 global -- notice
