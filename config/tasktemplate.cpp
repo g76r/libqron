@@ -332,10 +332,9 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
            _mean != Task::Docker)))
     node.setAttribute("target", _target);
   // do not set command attribute if it is empty
-  // or for means that do not use it (Workflow and DoNothing)
+  // or for means that do not use it (DoNothing)
   if (!_command.isEmpty()
-      && _mean != Task::DoNothing
-      && _mean != Task::Workflow) {
+      && _mean != Task::DoNothing) {
     // LATER store _command as QStringList _commandArgs instead, to make model consistent rather than splitting the \ escaping policy between here, uiData() and executor.cpp
     // moreover this is not consistent between means (luckily there are no backslashes nor spaces in http uris)
     QString escaped = _command;

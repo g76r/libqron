@@ -17,8 +17,6 @@
 #include "trigger/crontrigger.h"
 #include "trigger/noticetrigger.h"
 #include "config/eventsubscription.h"
-#include "config/step.h"
-#include "sched/stepinstance.h"
 
 GraphvizDiagramsBuilder::GraphvizDiagramsBuilder() {
 }
@@ -60,7 +58,6 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   // * displayed global event names, i.e. global event names (e.g. onstartup)
   //   with at less one displayed event subscription (e.g. requesttask,
   //   postnotice, emitalert)
-  // * (workflow) subtasks tree
   foreach (const Task &task, tasks.values()) {
     QString s = task.taskGroup().id();
     displayedGroups.insert(s);
@@ -78,14 +75,6 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   foreach (const Task &task, tasks.values()) {
     foreach (const NoticeTrigger &trigger, task.noticeTriggers())
       notices.insert(trigger.expression());
-    foreach (const Step &step, task.steps().values()) {
-      Trigger trigger = step.trigger();
-      if (trigger.isValid()) {
-        // LATER do not rely on human readable expression to get notice triggers
-        if (trigger.humanReadableExpression().startsWith('^'))
-          notices.insert(trigger.expression());
-      }
-    }
     foreach (const EventSubscription &sub,
              task.allEventsSubscriptions()
              + task.taskGroup().allEventSubscriptions())
@@ -101,14 +90,6 @@ QHash<QString,QString> GraphvizDiagramsBuilder
         notices.insert(action.targetName());
       if (actionType == "postnotice" || actionType == "requesttask")
         displayedGlobalEventsName.insert(sub.eventName());
-    }
-  }
-  QMultiHash<QString,Task> subtasks;
-  foreach (const Task &task, tasks.values()) {
-    foreach (const Task &subtask, tasks.values()) {
-      if (!subtask.workflowTaskId().isNull()
-          && subtask.workflowTaskId() == task.id())
-        subtasks.insert(task.id(), subtask);
     }
   }
   /***************************************************************************/
@@ -151,28 +132,16 @@ QHash<QString,QString> GraphvizDiagramsBuilder
     }
   }
   foreach (const Task &task, tasks.values()) {
-    // ignore subtasks
-    if (!task.workflowTaskId().isNull())
-      continue;
     // draw task node and group--task edge
     gv.append("\""+task.id()+"\" [label=\""+task.localId()+"\","
-              +(task.mean() == Task::Workflow ? WORKFLOW_TASK_NODE : TASK_NODE)
-              +",tooltip=\""+task.id()+"\"]\n");
+              +TASK_NODE+",tooltip=\""+task.id()+"\"]\n");
     gv.append("\"").append(task.taskGroup().id()).append("\"--")
         .append("\"").append(task.id())
         .append("\" [" TASKGROUP_TASK_EDGE "]\n");
-    // draw task--target edges, workflow tasks showing all edge applicable to
-    // their subtasks once and only once
-    QSet<QString> edges;
-    QList<Task> deployed = subtasks.values(task.id());
-    if (deployed.isEmpty())
-      deployed.append(task);
-    foreach (const Task &subtask, deployed)
-      edges.insert("\""+task.id()+"\"--\""+subtask.target()+"\" [xlabel=\""
-                   +Task::meanAsString(subtask.mean())
-                   +"\"," TASK_TARGET_EDGE "]\n");
-    foreach (QString s, edges)
-      gv.append(s);
+    // draw task--target edges
+    gv.append("\""+task.id()+"\"--\""+task.target()+"\" [xlabel=\""
+              +Task::meanAsString(task.mean())
+              +"\"," TASK_TARGET_EDGE "]\n");
   }
   gv.append("}");
   diagrams.insert("tasksDeploymentDiagram", gv);
@@ -218,13 +187,9 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   // tasks
   int cronid = 0;
   foreach (const Task &task, tasks.values()) {
-    // ignore subtasks
-    if (!task.workflowTaskId().isNull())
-      continue;
     // task nodes and group--task edges
     gv.append("\""+task.id()+"\" [label=\""+task.localId()+"\","
-              +(task.mean() == Task::Workflow ? WORKFLOW_TASK_NODE : TASK_NODE)
-              +",group=\""+task.taskGroup().id()+"\""
+              +TASK_NODE+",group=\""+task.taskGroup().id()+"\""
               +",tooltip=\""+task.id()+"\"]\n");
     gv.append("\"").append(task.taskGroup().id()).append("\"--")
         .append("\"").append(task.id())
@@ -238,35 +203,11 @@ QHash<QString,QString> GraphvizDiagramsBuilder
           .append(QString::number(cronid))
           .append("\" [" TASK_TRIGGER_EDGE "]\n");
     }
-    // workflow internal cron triggers
-    foreach (const CronTrigger &cron,
-             task.workflowCronTriggersByLocalId().values()) {
-      gv.append("\"$cron_").append(QString::number(++cronid))
-          .append("\" [label=\"(").append(cron.expression())
-          .append(")\"," CRON_TRIGGER_NODE "]\n");
-      gv.append("\"").append(task.id()).append("\"--\"$cron_")
-          .append(QString::number(cronid))
-          .append("\" [" WORKFLOW_TASK_TRIGGER_EDGE "]\n");
-
-    }
     // notice triggers
     foreach (const NoticeTrigger &trigger, task.noticeTriggers())
       gv.append("\"").append(task.id()).append("\"--\"$notice_")
           .append(trigger.expression().remove('"'))
           .append("\" [" TASK_TRIGGER_EDGE "]\n");
-    // workflow internal notice triggers
-    foreach (const Step &step, task.steps()) {
-      Trigger trigger = step.trigger();
-      if (trigger.isValid()) {
-        // LATER do not rely on human readable expression to get notice triggers
-        if (trigger.humanReadableExpression().startsWith('^')) {
-          gv.append("\"").append(task.id()).append("\"--\"$notice_")
-              .append(trigger.expression().remove('"'))
-              .append("\" [" WORKFLOW_TASK_TRIGGER_EDGE "]\n");
-
-        }
-      }
-    }
     // no trigger pseudo-trigger
     if (task.noticeTriggers().isEmpty() && task.cronTriggers().isEmpty()
         && task.otherTriggers().isEmpty()) {
@@ -327,87 +268,4 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   diagrams.insert("tasksTriggerDiagram", gv);
   return diagrams;
   // LATER add a full events diagram with log, udp, etc. events
-}
-
-QString GraphvizDiagramsBuilder::workflowTaskDiagram(Task task) {
-  return workflowTaskDiagram(task, QHash<QString,StepInstance>());
-}
-
-QString GraphvizDiagramsBuilder::workflowTaskDiagram(
-    Task task, QHash<QString,StepInstance> stepInstances) {
-  // LATER implement instanciated workflow diagram for real
-  if (task.mean() != Task::Workflow)
-    return QString();
-  QString gv("graph \""+task.id()+" workflow\"{\n"
-             "  graph[" WORKFLOW_GRAPH " ]\n"
-             "  \"step_$start\"[" START_NODE "]\n"
-             "  \"step_$end\"[" END_NODE "]\n");
-  // build nodes from steps (apart from $start and $end)
-  foreach (Step s, task.steps().values()) {
-    StepInstance si = stepInstances.value(s.id());
-    switch (s.kind()) {
-    case Step::SubTask:
-      gv.append("  \"step_"+s.localId()+"\"[label=\""+s.localId()+"\","
-                TASK_NODE+(si.isReady() ? ",color=orange" : "")
-                +",tooltip=\""+s.subtask().id()+"\"]\n");
-      // LATER red if failure, green if ok
-      break;
-    case Step::AndJoin:
-      gv.append("  \"step_"+s.localId()+"\"[" ANDJOIN_NODE
-                +(si.isReady() ? ",color=greenforest" : "")+"]\n");
-      break;
-    case Step::OrJoin:
-      gv.append("  \"step_"+s.localId()+"\"[" ORJOIN_NODE
-                +(si.isReady() ? ",color=greenforest" : "")+"]\n");
-      break;
-    case Step::WorkflowTrigger: {
-      QString expr = s.trigger().humanReadableExpression().remove('"');
-      // LATER do not rely on human readable expr to determine trigger style
-      gv.append("  \"step_"+s.localId()+"\"[label=\""+expr+"\","
-                +(expr.startsWith('^')?NOTICE_NODE:CRON_TRIGGER_NODE)+"]\n");
-      break;
-    }
-    case Step::Start:
-    case Step::End:
-    case Step::Unknown:
-      ;
-    }
-  }
-  QSet<QString> gvedges; // use a QSet to remove duplicate onfinish edges
-  // build edges from step event subscriptions
-  foreach (Step source, task.steps()) {
-    QList<EventSubscription> subList
-        = source.onreadyEventSubscriptions()
-        + source.subtask().allEventsSubscriptions()
-        + source.subtask().taskGroup().allEventSubscriptions();
-    QString sourceLocalId = source.localId();
-    foreach (EventSubscription es, subList) {
-      foreach (Action a, es.actions()) {
-        QString color = "black";
-        // LATER use graphviz edge color gradients, when broadly available
-        /*if (es.eventName() == "onsuccess")
-          color = "green;0.25:black;0.75";
-        else if (es.eventName() == "onfailure")
-          color = "red;0.25:black;0.75";
-        else if (es.eventName() == "onfinish")
-          color = "blue;0.25:black;0.75";*/
-        if (a.actionType() == "step") {
-          QString target = a.targetName();
-          if (task.steps().contains(task.id()+":"+target)) {
-            gvedges.insert("  \"step_"+sourceLocalId+"\" -- \"step_"+target
-                           +"\"[xlabel=\""+es.eventName()+"\"," STEP_EDGE
-                           +",color=\""+color+"\"]\n");
-          }
-        } else if (a.actionType() == "end") {
-          gvedges.insert("  \"step_"+sourceLocalId
-                         +"\" -- \"step_$end\" [xlabel=\""+es.eventName()+"\","
-                         STEP_EDGE ",color=\""+color+"\"]\n");
-        }
-      }
-    }
-  }
-  foreach(QString s, gvedges)
-    gv.append(s);
-  gv.append("}");
-  return gv;
 }

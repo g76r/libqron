@@ -50,8 +50,7 @@ public:
   /** Name of the matched event. e.g. "onstart" "onnotice" "onstatus" */
   QString eventName() const;
   /** Name identifiying the subscriber.
-   * e.g. taskid for a task, groupid for a group, fqsn for a step, * for global
-   * subscriptions. */
+   * e.g. taskid for a task, groupid for a group, * for global subscriptions. */
   QString subscriberName() const;
   void setSubscriberName(QString name);
   /** Filter expression, if any.
@@ -71,9 +70,6 @@ public:
   static QStringList toStringList(QList<EventSubscription> list);
   QStringList toStringList() const;
   PfNode toPfNode() const;
-  /** Build target steps local ids for subscribed actions of relevant types
-   * (StepAction and EndAction). */
-  QStringList workflowTargetsLocalIds() const;
 };
 
 Q_DECLARE_METATYPE(EventSubscription)

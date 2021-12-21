@@ -32,51 +32,11 @@ class CronTrigger;
 class NoticeTrigger;
 class Scheduler;
 class EventSubscription;
-class Step;
-class StepInstance;
 class Calendar;
-class WorkflowTransitionData;
 class TaskTemplate;
 class RequestFormField;
 
-/** Data object for workflow transitions, i.e. links between a source step,
- * an event name and a destination step, within a given workflow task.
- *
- * Source step can be the start step ($start) or a workflow trigger
- * ($crontrigger_XXX or $noticetrigger_XXX).
- *
- * id() returns ${workflowid}:${sourcelocalid}:${eventname}:${targetlocalid}
- * localId() returns ${sourcelocalid}:${eventname}:${targetlocalid}
- */
-class LIBQRONSHARED_EXPORT WorkflowTransition : public SharedUiItem {
-public:
-  WorkflowTransition();
-  WorkflowTransition(const WorkflowTransition &other);
-  WorkflowTransition(QString workflowId, QString sourceLocalId,
-                     QString eventName, QString targetLocalId);
-  ~WorkflowTransition();
-  WorkflowTransition &operator=(const WorkflowTransition &other) {
-    SharedUiItem::operator=(other); return *this; }
-  QString workflowId() const;
-  void setWorkflowId(QString workflowId);
-  QString sourceLocalId() const;
-  QString eventName() const;
-  void setEventName(QString eventName);
-  QString targetLocalId() const;
-  /** Same as id() w/o leading workflowid,
-   * i.e. ${sourcelocalid}:${eventname}:${targetlocalid} */
-  QString localId() const;
-
-private:
-  WorkflowTransitionData *data();
-  const WorkflowTransitionData *data() const {
-    return specializedData<WorkflowTransitionData>(); }
-};
-
-Q_DECLARE_METATYPE(WorkflowTransition)
-Q_DECLARE_TYPEINFO(WorkflowTransition, Q_MOVABLE_TYPE);
-
-/** Core task definition object, being it a standalone task or workflow. */
+/** Core task definition object. */
 class LIBQRONSHARED_EXPORT Task : public SharedUiItem {
 public:
   enum EnqueuePolicy { // was DiscardAliasesOnStart
@@ -86,13 +46,13 @@ public:
     EnqueuePolicyUnknown = 0
   };
   enum Mean {
-    UnknownMean = 0, DoNothing, Local, Workflow, Ssh, Docker, Http
+    UnknownMean = 0, DoNothing, Local, Ssh = 4, Docker, Http
   };
 
   Task();
   Task(const Task &other);
   Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-       QString workflowTaskId, QHash<QString, Calendar> namedCalendars,
+       QHash<QString, Calendar> namedCalendars,
        QHash<QString,TaskTemplate> taskTemplates);
   /** Should only be used by SharedUiItemsModels to get size and headers from
    * a non-null item. */
@@ -182,15 +142,6 @@ public:
   QStringList otherTriggers() const;
   void appendOtherTriggers(QString text);
   void clearOtherTriggers();
-  /** Workflow steps. Empty for standalone tasks. */
-  QHash<QString,Step> steps() const;
-  QMultiHash<QString,WorkflowTransition>
-  workflowTransitionsBySourceLocalId() const;
-  QHash<QString,CronTrigger> workflowCronTriggersByLocalId() const;
-  /** Parent task (e.g. workflow task) to which this task belongs, if any. */
-  QString workflowTaskId() const;
-  void setWorkflowTask(Task workflowTask);
-  QString graphvizWorkflowDiagram() const;
   SharedUiItemList<TaskTemplate> appliedTemplates() const;
   PfNode originalPfNode() const;
   PfNode toPfNode() const;
@@ -199,16 +150,6 @@ public:
   void copyLiveAttributesFromOldTask(Task oldTask);
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
-  void changeWorkflowTransition(WorkflowTransition newItem,
-                                WorkflowTransition oldItem);
-  void changeStep(Step newItem, Step oldItem);
-  /** Convenience method around changeStep, replacing current subtask with
-   * another one.
-   * As an exception to regular changeXxx() pattern, this method must only be
-   * called with non-null newItem and oldItem. Moreover oldItem and newItem
-   * must share the same id and a matching Step of kind Subtask must exist
-   * with this id. */
-  void changeSubtask(Task newItem, Task oldItem);
 
 private:
   TaskData *data();

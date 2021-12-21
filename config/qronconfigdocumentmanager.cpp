@@ -14,7 +14,6 @@
 #include "qronconfigdocumentmanager.h"
 #include <QtDebug>
 #include "task.h"
-#include "step.h"
 
 static int staticInit() {
   qMetaTypeId<QList<EventSubscription>>();
@@ -44,13 +43,10 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
           transaction->foreignKeySources("task", 1, oldItem.id());
       foreach (SharedUiItem oldTaskItem, taskItems) {
         Task oldTask = static_cast<Task&>(oldTaskItem);
-        if (oldTask.workflowTaskId().isEmpty()) {
-          Task newTask = oldTask;
-          newTask.setTaskGroup(*newGroup);
-          // update standalone and workflow first, workflows task will update subtasks
-          if (!transaction->changeItem(newTask, oldTask, "task", errorString))
-            return false;
-        }
+        Task newTask = oldTask;
+        newTask.setTaskGroup(*newGroup);
+        if (!transaction->changeItem(newTask, oldTask, "task", errorString))
+          return false;
       }
     }
     return true;
@@ -65,38 +61,6 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
     return SharedUiItem();
   });
   addForeignKey("task", 1, "taskgroup", 0, NoAction, Cascade);
-  addForeignKey("task", 31, "task", 11, NoAction, Cascade); // workflowtaskid
-  addChangeItemTrigger(
-        "task", AfterUpdate|AfterDelete,
-        [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QString idQualifier, QString *errorString) {
-    Q_UNUSED(oldItem)
-    Q_UNUSED(idQualifier)
-    qDebug() << "trigger1" << newItem->id();
-    Task *newTask = static_cast<Task*>(newItem);
-    Task &oldTask = static_cast<Task&>(oldItem);
-    if (newTask->mean() != Task::Workflow && oldTask.mean() == Task::Workflow) {
-      foreach (SharedUiItem oldTask,
-               transaction->foreignKeySources("task", 31, oldItem.id())) {
-        // when a task is no longer a workflow, delete all its subtasks (tasks which have it as their workflowtaskid)
-        if (!transaction->changeItem(
-              SharedUiItem(), oldTask, "task", errorString))
-          return false;
-      }
-    }
-    if (newTask->mean() == Task::Workflow) { // implicitely: !newTask->isNull()
-      foreach (SharedUiItem oldSubTask,
-               transaction->foreignKeySources("task", 31, oldItem.id())) {
-        Task newSubTask = static_cast<Task&>(oldSubTask);
-        newSubTask.setWorkflowTask(*newTask);
-        // when a task is a workflow, update its subtasks
-        if (!transaction->changeItem(newSubTask, oldSubTask, "task",
-                                     errorString))
-          return false;
-      }
-    }
-    return true;
-  });
   registerItemType(
         "host", &Host::setUiData,
         [this](QString id) -> SharedUiItem {
@@ -197,16 +161,6 @@ SharedUiItem QronConfigDocumentManager::itemById(
     return _config.hosts().value(id);
   } else if (idQualifier == "cluster") {
     return _config.clusters().value(id);
-  } else if (idQualifier == "step") {
-    QString workflowId = id.mid(id.indexOf(':')+1);
-    return _config.tasks().value(workflowId).steps().value(id);
-  } else if (idQualifier == "workflowtransition") {
-    QString workflowId = id.mid(id.indexOf(':')+1);
-    QList<WorkflowTransition> transitions = _config.tasks().value(workflowId)
-        .workflowTransitionsBySourceLocalId().values();
-    foreach (WorkflowTransition transition, transitions)
-      if (transition.id() == id)
-        return transition;
   }
   return SharedUiItem();
 }
@@ -225,13 +179,6 @@ SharedUiItemList<SharedUiItem> QronConfigDocumentManager
   } else if (idQualifier == "calendar") {
     // LATER is it right to return only *named* calendars ?
     return SharedUiItemList<Calendar>(_config.namedCalendars().values());
-  } else if (idQualifier == "step") {
-    SharedUiItemList<Step> steps;
-    foreach (const Task &task, _config.tasks())
-      steps.append(task.steps().values());
-    return steps;
-  } else if (idQualifier == "workflowtransition") {
-    // TODO
   }
   return SharedUiItemList<SharedUiItem>();
 }
@@ -256,23 +203,12 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<Task>(
     if (!newItems.contains(oldItem.id())) {
       emit itemChanged(nullItem, oldItem, idQualifier);
     }
-    QHash<QString,Step> newSteps = newItems.value(oldItem.id()).steps();
-    foreach(const Step &oldStep, oldItem.steps()) {
-      if (!newSteps.contains(oldStep.id()))
-        emit itemChanged(nullItem, oldStep, QStringLiteral("step"));
-    }
   }
   QList<Task> newList = newItems.values();
-  // sorting tasks by id ensure that workflows are changed before their subtasks
   std::sort(newList.begin(), newList.end());
   foreach (const Task &newItem, newList) {
     const Task &oldItem = oldItems.value(newItem.id());
     emit itemChanged(newItem, oldItem, idQualifier);
-    QHash<QString,Step> oldSteps = oldItem.steps();
-    foreach(const Step &newStep, newItem.steps()) {
-      emit itemChanged(newStep, oldSteps.value(newStep.id()),
-                       QStringLiteral("step"));
-    }
   }
 }
 

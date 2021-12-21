@@ -117,7 +117,6 @@ void ConfigUtils::writeEventSubscriptions(PfNode *parentnode,
 static QRegularExpression unallowedInDimension("[^a-zA-Z0-9_]");
 static QRegularExpression unallowedInTask("[^a-zA-Z0-9_\\-]");
 static QRegularExpression unallowedInGroup("[^a-zA-Z0-9_\\-\\.]");
-static QRegularExpression unallowedInSubTask("[^a-zA-Z0-9_\\-:]");
 static QRegularExpression unallowedInHostname("[^a-zA-Z0-9\\-:\\[\\]\\.]");
 static QRegularExpression multipleDots("\\.\\.+");
 static QRegularExpression misplacedDot("(^\\.*)|(\\.*$)");
@@ -133,8 +132,6 @@ QString ConfigUtils::sanitizeId(QString string, IdType idType) {
   case FullyQualifiedId:
     return string.remove(unallowedInGroup).replace(multipleDots, singleDot)
         .remove(misplacedDot);
-  case SubTaskId:
-    return string.remove(unallowedInSubTask);
   case Hostname:
     return string.remove(unallowedInHostname).replace(multipleDots, singleDot);
   }

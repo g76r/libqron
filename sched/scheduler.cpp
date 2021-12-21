@@ -23,12 +23,10 @@
 #include "log/log.h"
 #include "log/filelogger.h"
 #include <QFile>
-//#include <stdio.h>
 #include "action/requesttaskaction.h"
 #include <QThread>
 #include "config/configutils.h"
 #include "config/requestformfield.h"
-#include "config/step.h"
 #include "trigger/crontrigger.h"
 #include "trigger/noticetrigger.h"
 #include "thread/blockingtimer.h"
@@ -44,7 +42,6 @@ static int staticInit() {
   qMetaTypeId<QList<TaskInstance>>(); // TODO remove, it is probably no longer used
   qRegisterMetaType<QHash<QString,qint64>>("QHash<QString,qint64>");
   qMetaTypeId<ParamSet>();
-  qMetaTypeId<WorkflowTransition>();
   return 0;
 }
 Q_CONSTRUCTOR_FUNCTION(staticInit)
@@ -230,14 +227,10 @@ TaskInstanceList Scheduler::doRequestTask(
   }
   if (!fieldsValidated)
     return instances;
-  TaskInstance workflowTaskInstance
-      = callerTask.task().mean() == Task::Workflow ? callerTask
-                                                   : TaskInstance();
   if (cluster.balancing() == Cluster::Each) {
     quint64 groupId = 0;
     foreach (Host host, cluster.hosts()) {
-      TaskInstance request(task, groupId, force, workflowTaskInstance,
-                           overridingParams);
+      TaskInstance request(task, groupId, force,  overridingParams);
       if (!groupId)
         groupId = request.groupId();
       request.setTarget(host);
@@ -246,7 +239,7 @@ TaskInstanceList Scheduler::doRequestTask(
         instances.append(request);
     }
   } else {
-    TaskInstance request(task, force, workflowTaskInstance, overridingParams);
+    TaskInstance request(task, force, overridingParams);
     request = enqueueRequest(request, overridingParams);
     if (!request.isNull())
       instances.append(request);
@@ -645,15 +638,8 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
   }
   _alerter->cancelAlert("task.maxinstancesreached."+taskId);
   QString target = instance.target().id();
-  if (target.isEmpty()) {
-    // use task target if not overiden at intance level
+  if (target.isEmpty()) // use task target if not overiden at intance level
     target = task.target();
-    if (target.isEmpty()) {
-      // inherit target from workflow task if any
-      Task workflowTask = config().tasks().value(task.workflowTaskId());
-      target = workflowTask.target();
-    }
-  }
   SharedUiItemList<Host> hosts;
   Host host = config().hosts().value(target);
   if (host.isNull()) {
@@ -873,22 +859,6 @@ void Scheduler::periodicChecks() {
   // if current system time goes back (which btw should never occur on well
   // managed production servers, however it with naive sysops)
   checkTriggersForAllTasks();
-}
-
-void Scheduler::activateWorkflowTransition(TaskInstance workflowTaskInstance,
-                                           WorkflowTransition transition,
-                                           ParamSet eventContext) {
-  QMetaObject::invokeMethod(this, [this,workflowTaskInstance,transition,
-                            eventContext](){
-    Executor *executor = _runningTasks.value(workflowTaskInstance);
-    if (executor)
-      executor->activateWorkflowTransition(transition, eventContext);
-    else
-      Log::error() << "cannot activate workflow transition on non-running "
-                      "workflow " << workflowTaskInstance.task().id()
-                   << "/" << workflowTaskInstance.id() << ": "
-                   << transition.id();
-  }, Qt::QueuedConnection);
 }
 
 void Scheduler::propagateTaskInstanceChange(TaskInstance instance) {

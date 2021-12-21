@@ -6,7 +6,7 @@ graph g {
 
   start [shape=circle,style=filled,width=.2,label="",fillcolor=black]
 
-  start -- queued [label="trigger, action,\nworkflow transition,\netc."]
+  start -- queued [label="trigger, action, etc."]
   queued -- canceled [label="duplicated requests, depending\non enqueuepolicy"]
   queued -- running [label="when all prerequesites\nare met (resources, etc.)"]
   running -- success [label="depending on return code\nand mean (ssh: 0,\nhttp: 200..299, etc.)"]

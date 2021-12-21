@@ -1,4 +1,4 @@
-/* Copyright 2014 Hallowyn and others.
+/* Copyright 2014-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,11 +28,6 @@ public:
    * - tasksDeploymentDiagram
    * - tasksTriggerDiagram */
   static QHash<QString,QString> configDiagrams(SchedulerConfig config);
-  /** Workflow task steps configuration diagram */
-  static QString workflowTaskDiagram(Task task);
-  /** Workflow task steps execution diagram */
-  static QString workflowTaskDiagram(
-      Task task, QHash<QString,StepInstance> stepInstances);
 };
 
 #endif // GRAPHVIZDIAGRAMSBUILDER_H

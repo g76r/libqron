@@ -55,7 +55,7 @@ static QString _uiHeaderNames[] = {
   "Triggers incl. calendars",
   "Enabled",
   "Has triggers with calendars", // 30
-  "Workflow task",
+  "", // was: Workflow task
   "Last task instance id",
   "Additional info",
   "Executions count",
@@ -63,8 +63,7 @@ static QString _uiHeaderNames[] = {
 };
 
 static QSet<QString> excludedDescendantsForComments {
-  "subtask", "trigger", "onsuccess", "onfailure", "onfinish", "onstart",
-  "ontrigger"
+  "trigger", "onsuccess", "onfailure", "onfinish", "onstart"
 };
 
 static QStringList excludeOnfinishSubscriptions { "onfinish" };

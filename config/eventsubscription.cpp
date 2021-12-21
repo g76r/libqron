@@ -147,14 +147,3 @@ PfNode EventSubscription::toPfNode() const {
     node.appendChild(action.toPfNode());
   return node;
 }
-
-QStringList EventSubscription::workflowTargetsLocalIds() const {
-  QSet<QString> localIds;
-  foreach (Action action, actions()) {
-    if (action.actionType() == "step"
-        || action.actionType() == "end") {
-      localIds << action.targetName();
-    }
-  }
-  return localIds.values();
-}

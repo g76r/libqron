@@ -18,7 +18,6 @@
 #define CLUSTER_NODE "shape=box,peripheries=2,style=filled,fillcolor=coral"
 #define HOST_NODE "shape=box,style=filled,fillcolor=coral"
 #define TASK_NODE "shape=box,style=\"rounded,filled\",fillcolor=skyblue"
-#define WORKFLOW_TASK_NODE TASK_NODE ",peripheries=2"
 #define TASKGROUP_NODE "shape=ellipse,style=dashed"
 #define CLUSTER_HOST_EDGE "dir=forward,arrowhead=vee"
 #define TASK_TARGET_EDGE "dir=forward,arrowhead=vee"
@@ -35,13 +34,9 @@
 //#define GLOBAL_EVENT_NODE "shape=pentagon"
 #define GLOBAL_POSTNOTICE_EDGE "dir=back,arrowtail=vee,constraint=false"
 #define GLOBAL_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE ",constraint=true"
-#define WORKFLOW_GRAPH "bgcolor=transparent"
 #define ANDJOIN_NODE "shape=square,label=and"
 #define ORJOIN_NODE "shape=circle,label=or"
 #define START_NODE "shape=circle,style=\"filled\",width=.2,label=\"\",fillcolor=black"
 #define END_NODE "shape=doublecircle,style=\"filled\",width=.2,label=\"\",fillcolor=black"
-#define STEP_EDGE "dir=forward,arrowhead=vee"
-#define TRIGGER_STEP_EDGE "dir=forward,arrowhead=vee,style=dotted"
-#define WORKFLOW_TASK_TRIGGER_EDGE "dir=back,arrowtail=vee,style=dotted"
 
 #endif // GRAPHVIZ_STYLES_H

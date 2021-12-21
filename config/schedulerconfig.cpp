@@ -17,7 +17,6 @@
 #include "log/log.h"
 #include "log/filelogger.h"
 #include "configutils.h"
-#include "step.h"
 #include <QCryptographicHash>
 #include <QMutex>
 
@@ -248,8 +247,7 @@ ignore_tasktemplate:;
   foreach (PfNode node, root.childrenByName("task")) {
     QString taskGroupId = node.attribute("taskgroup");
     TaskGroup taskGroup = _taskgroups.value(taskGroupId);
-    Task task(node, scheduler, taskGroup, QString(), _namedCalendars,
-              _tasktemplates);
+    Task task(node, scheduler, taskGroup, _namedCalendars, _tasktemplates);
     if (taskGroupId.isEmpty() || taskGroup.isNull()) {
       Log::error() << "ignoring task with invalid taskgroup: " << node.toPf();
       goto ignore_task;
@@ -262,22 +260,6 @@ ignore_tasktemplate:;
       Log::error() << "ignoring duplicate task " << task.id();
       goto ignore_task;
     }
-    foreach (Step s, task.steps()) { // check for uniqueness of subtasks ids
-      Task subtask = s.subtask();
-      if (!subtask.isNull()) {
-        QString subtaskId = subtask.id();
-        if (_tasks.contains(subtaskId)) {
-          Log::error() << "ignoring task " << task.id() << " since its subtask "
-                       << subtaskId << " has a duplicate id";
-          goto ignore_task;
-        }
-      }
-    }
-    /*if (!_hosts.contains(task.target()) && !_clusters.contains(task.target())) {
-      Log::error() << "ignoring task " << task.id()
-                   << " since its target is unknown: '"<< task.target() << "'";
-      goto ignore_task;
-    }*/
     _tasks.insert(task.id(), task);
     // FIXME not only task node but also applied templates nodes
     recordTaskActionLinks(
@@ -289,28 +271,7 @@ ignore_tasktemplate:;
             { "onstart", "onsuccess", "onfailure", "onfinish" },
             &requestTaskActionLinks, task.id(), task);
     }
-    if (task.mean() == Task::Workflow) {
-      recordTaskActionLinks(node, { "ontrigger" }, &requestTaskActionLinks,
-                            task.id(), task); // TODO check that this is consistent
-      foreach(PfNode child, node.childrenByName("subtask")) {
-        recordTaskActionLinks(
-              node, { "onstart", "onsuccess", "onfailure", "onfinish" },
-              &requestTaskActionLinks, task.id()+":"+child.contentAsString(),
-              task);
-      }
-    }
-    foreach (Step s, task.steps()) {
-      Task subtask = s.subtask();
-      if (!subtask.isNull())
-        _tasks.insert(subtask.id(), subtask);
-    }
 ignore_task:;
-  }
-  foreach (QString taskId, _tasks.keys()) {
-    Task &task = _tasks[taskId];
-    QString workflowTaskId = task.workflowTaskId();
-    if (_tasks.contains(workflowTaskId))
-      task.setParentParams(_tasks[workflowTaskId].params());
   }
   int maxtotaltaskinstances = 0;
   foreach (PfNode node, root.childrenByName("maxtotaltaskinstances")) {
@@ -644,8 +605,7 @@ PfNode SchedulerConfig::toPfNode() const {
   QList<Task> tasks = d->_tasks.values();
   std::sort(tasks.begin(), tasks.end());
   foreach(const Task &task, tasks)
-    if (task.workflowTaskId().isNull())
-      node.appendChild(task.toPfNode());
+    node.appendChild(task.toPfNode());
   QList<Host> hosts = d->_hosts.values();
   std::sort(hosts.begin(), hosts.end());
   foreach (const Host &host, hosts)

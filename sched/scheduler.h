@@ -78,10 +78,6 @@ public:
   qint64 execCount() const { return _execCount; }
   qint64 runningTasksHwm() const { return _runningTasksHwm; }
   qint64 queuedTasksHwm() const { return _queuedTasksHwm; }
-  /** This method is threadsafe */
-  void activateWorkflowTransition(
-      TaskInstance workflowTaskInstance, WorkflowTransition transition,
-      ParamSet eventContext);
 
 public slots:
   /** Explicitely request task execution now.

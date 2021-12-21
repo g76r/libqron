@@ -95,11 +95,7 @@ SOURCES += \
     ui/resourcesconsumptionmodel.cpp \
     config/logfile.cpp \
     config/calendar.cpp \
-    config/step.cpp \
-    sched/stepinstance.cpp \
     config/eventsubscription.cpp \
-    action/stepaction.cpp \
-    action/endaction.cpp \
     trigger/trigger.cpp \
     trigger/noticetrigger.cpp \
     config/schedulerconfig.cpp \
@@ -116,7 +112,6 @@ SOURCES += \
     alert/urlalertchannel.cpp \
     ui/configsmodel.cpp \
     ui/confighistorymodel.cpp \
-    sched/noticepseudoparamsprovider.cpp \
     config/alertsettings.cpp \
     config/alertsubscription.cpp \
     alert/gridboard.cpp \
@@ -160,11 +155,7 @@ HEADERS += \
     ui/resourcesconsumptionmodel.h \
     config/logfile.h \
     config/calendar.h \
-    config/step.h \
-    sched/stepinstance.h \
     config/eventsubscription.h \
-    action/stepaction.h \
-    action/endaction.h \
     trigger/trigger.h \
     trigger/trigger_p.h \
     trigger/noticetrigger.h \
@@ -185,7 +176,6 @@ HEADERS += \
     alert/urlalertchannel.h \
     ui/configsmodel.h \
     ui/confighistorymodel.h \
-    sched/noticepseudoparamsprovider.h \
     config/alertsettings.h \
     config/alertsubscription.h \
     alert/gridboard.h \

@@ -24,7 +24,6 @@
 class QThread;
 class QNetworkAccessManager;
 class QNetworkReply;
-class StepInstance;
 class Alerter;
 
 /** Class handling execution of a task after its being dequeued, from start
@@ -42,8 +41,6 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   QNetworkReply *_reply;
   Alerter *_alerter;
   QTimer *_abortTimeout;
-  QHash<QString,StepInstance> _steps;
-  QList<QTimer*> _workflowTimers;
 
 public:
   explicit Executor(Alerter *alerter);
@@ -54,9 +51,6 @@ public:
   void execute(TaskInstance instance);
   /** Abort current task now. This method is thread-safe. */
   void abort();
-  /** This method is thread-safe. */
-  void activateWorkflowTransition(WorkflowTransition transition,
-                                  ParamSet eventContext);
   void noticePosted(QString notice, ParamSet params);
 
 signals:
@@ -76,20 +70,17 @@ private slots:
   void readyReadStandardOutput();
   void replyError(QNetworkReply::NetworkError error);
   void replyFinished();
-  void workflowCronTriggered(QVariant sourceLocalId);
 
 private:
   void localMean();
   void sshMean();
   void dockerMean();
   void httpMean();
-  void workflowMean();
   void execProcess(QStringList cmdline, QProcessEnvironment sysenv);
   inline QProcessEnvironment prepareEnv(const ParamSet vars);
   void replyHasFinished(QNetworkReply *reply,
                         QNetworkReply::NetworkError error);
   void taskInstanceFinishing(bool success, int returnCode);
-  void finishWorkflow(bool success, int returnCode);
   void getReplyContent(QNetworkReply *reply, QString *replyContent,
                        QString maxsizeKey, QString maxwaitKey) const;
   void dockerParam(

@@ -1,4 +1,4 @@
-/* Copyright 2013-2017 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,8 +20,6 @@
 #include "emitalertaction.h"
 #include "requesttaskaction.h"
 #include "logaction.h"
-#include "stepaction.h"
-#include "endaction.h"
 #include "config/configutils.h"
 #include "requesturlaction.h"
 #include "writefileaction.h"
@@ -137,10 +135,6 @@ Action Action::createAction(PfNode node, Scheduler *scheduler,
     action = WriteFileAction(scheduler, node);
   } else if (node.name() == "log") {
     action = LogAction(scheduler, node);
-  } else if (node.name() == "step") {
-    action = StepAction(scheduler, node);
-  } else if (node.name() == "end") {
-    action = EndAction(scheduler, node);
   } else {
     if (eventName == "ontrigger"
         && (node.name() == "cron" || node.name() == "notice"))
