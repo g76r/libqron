@@ -49,7 +49,7 @@ static QString _uiHeaderNames[] = {
   "", // was: Unsetenv willbe: instanceparam
   "Min expected duration",
   "Max expected duration",
-  "Request-time overridable params", // 25
+  "Request form overridable params", // 25
   "Last execution duration",
   "Max duration before abort",
   "Triggers incl. calendars",
