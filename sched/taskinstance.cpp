@@ -18,6 +18,7 @@
 #include "format/timeformats.h"
 #include <functional>
 #include "util/radixtree.h"
+#include <QMutexLocker>
 
 static QString _uiHeaderNames[] = {
   "Instance Id", // 0
@@ -29,10 +30,13 @@ static QString _uiHeaderNames[] = {
   "Time queued",
   "Time running",
   "Actions",
-  "Abortable" // 9
+  "Abortable",
+  "Herd Id", // 10
+  "Herded Task Instances",
 };
 
 static QAtomicInt _sequence;
+static QMutex _herdingMutex;
 
 class TaskInstanceData : public SharedUiItemData {
 public:
@@ -42,6 +46,7 @@ public:
   ParamSet _overridingParams;
   QDateTime _requestDateTime;
   bool _force;
+  TaskInstance _herder;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
@@ -59,14 +64,15 @@ public:
   // be the case forever.
   mutable Host _target;
   mutable bool _abortable;
+  mutable TaskInstanceList _herdedTasks;
 
   TaskInstanceData(Task task, ParamSet overridingParams, bool force,
-                   quint64 groupId = 0)
+                   TaskInstance herder = TaskInstance(), quint64 groupId = 0)
     : _id(newId()), _groupId(groupId ? groupId : _id),
       _idAsString(QString::number(_id)),
       _task(task), _overridingParams(overridingParams),
       _requestDateTime(QDateTime::currentDateTime()), _force(force),
-      _start(LLONG_MIN), _end(LLONG_MIN),
+      _herder(herder), _start(LLONG_MIN), _end(LLONG_MIN),
       _success(false), _returnCode(0), _abortable(false) {
     _overridingParams.setParent(task.params());
   }
@@ -130,14 +136,14 @@ TaskInstance::TaskInstance(const TaskInstance &other) : SharedUiItem(other) {
 }
 
 TaskInstance::TaskInstance(
-    Task task, bool force, ParamSet overridingParams)
-  : SharedUiItem(new TaskInstanceData(task, overridingParams, force)) {
+    Task task, bool force, ParamSet params, TaskInstance herder)
+  : SharedUiItem(new TaskInstanceData(task, params, force, herder)) {
 }
 
 TaskInstance::TaskInstance(Task task, quint64 groupId,
                            bool force,
-                           ParamSet overridingParams)
-  : SharedUiItem(new TaskInstanceData(task, overridingParams, force, groupId)) {
+                           ParamSet params, TaskInstance herder)
+  : SharedUiItem(new TaskInstanceData(task, params, force, herder, groupId)) {
 }
 
 Task TaskInstance::task() const {
@@ -145,18 +151,13 @@ Task TaskInstance::task() const {
   return d ? d->_task : Task();
 }
 
-ParamSet TaskInstance::params() const {
-  const TaskInstanceData *d = data();
-  return d ? d->_overridingParams : ParamSet();
-}
-
-void TaskInstance::overrideParam(QString key, QString value) {
+void TaskInstance::setParam(QString key, QString value) {
   TaskInstanceData *d = data();
   if (d)
     d->_overridingParams.setValue(key, value);
 }
 
-ParamSet TaskInstance::overridingParams() const {
+ParamSet TaskInstance::params() const {
   const TaskInstanceData *d = data();
   return d ? d->_overridingParams : ParamSet();
 }
@@ -258,54 +259,89 @@ void TaskInstance::setTarget(Host target) const {
   }
 }
 
-static RadixTree<std::function<QVariant(const TaskInstance&, const QString&)>> _pseudoParams {
+static RadixTree<std::function<QVariant(
+    const TaskInstance&, const QString&)>> _pseudoParams {
 { "!taskinstanceid" , [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.id();
 } },
-{ "!taskinstancegroupid" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!herdid", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herdid();
+} },
+{ "!taskinstancegroupid", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.groupId();
 } },
-{ "!runningms" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!runningms", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.runningMillis();
 } },
-{ "!runnings" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!herdrunningms", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().runningMillis();
+} },
+{ "!runnings", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.runningMillis()/1000;
 } },
-{ "!queuedms" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!herdrunnings", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().runningMillis()/1000;
+} },
+{ "!queuedms", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.queuedMillis();
 } },
-{ "!queueds" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!herdqueuedms", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().queuedMillis();
+} },
+{ "!queueds", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.queuedMillis()/1000;
 } },
-{ "!totalms" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!herdqueueds", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().queuedMillis()/1000;
+} },
+{ "!totalms", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.runningMillis()+taskInstance.queuedMillis();
 } },
-{ "!totals" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!herdtotalms", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().runningMillis()+taskInstance.queuedMillis();
+} },
+{ "!totals", [](const TaskInstance &taskInstance, const QString&) {
   return (taskInstance.runningMillis()+taskInstance.queuedMillis())/1000;
 } },
-{ "!returncode" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!herdtotals", [](const TaskInstance &taskInstance, const QString&) {
+  return (taskInstance.herder().runningMillis()+taskInstance.queuedMillis())
+      /1000;
+} },
+{ "!returncode", [](const TaskInstance &taskInstance, const QString&) {
   return QString::number(taskInstance.returnCode());
 } },
-{ "!status" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!status", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.statusAsString();
 } },
-{ "!target" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!target", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.target().id();
 } },
-{ "!targethostname" , [](const TaskInstance &taskInstance, const QString&) {
+{ "!targethostname", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.target().hostname();
 } },
 { "!requestdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.requestDatetime(), key.mid(15));
 }, true },
+{ "!herdrequestdate", [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.herder().requestDatetime(), key.mid(19));
+}, true },
 { "!startdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.startDatetime(), key.mid(10));
 }, true },
+{ "!herdstartdate", [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.herder().startDatetime(), key.mid(14));
+}, true },
 { "!enddate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.endDatetime(), key.mid(8));
+}, true },
+{ "!herdenddate", [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.herder().endDatetime(), key.mid(12));
 }, true },
 };
 
@@ -327,6 +363,29 @@ void TaskInstance::setTask(Task task) {
 bool TaskInstance::force() const {
   const TaskInstanceData *d = data();
   return d ? d->_force : false;
+}
+
+TaskInstance TaskInstance::herder() const {
+  const TaskInstanceData *d = data();
+  return d && !d->_herder.isNull() ? d->_herder : *this;
+}
+
+TaskInstanceList TaskInstance::herdedTasks() const {
+  const TaskInstanceData *d = data();
+  if (!d)
+    return TaskInstanceList();
+  QMutexLocker ml(&_herdingMutex);
+  auto list = d->_herdedTasks;
+  list.detach();
+  return list;
+}
+
+void TaskInstance::appendHerdedTask(TaskInstance sheep) const {
+  const TaskInstanceData *d = data();
+  if (!d || sheep.idAsLong() == idAsLong())
+    return;
+  QMutexLocker ml(&_herdingMutex);
+  d->_herdedTasks.append(sheep);
 }
 
 static QHash<TaskInstance::TaskInstanceStatus,QString> _statuses {
@@ -391,6 +450,10 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
       return QVariant(); // custom actions, handled by the model, if needed
     case 9:
       return _abortable;
+    case 10:
+      return _herder.isNull() ? _idAsString : _herder.id();
+    case 11:
+      return _herdedTasks.operator QStringList().join(' ');
     }
     break;
   default:

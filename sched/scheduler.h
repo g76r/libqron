@@ -47,6 +47,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   Q_DISABLE_COPY(Scheduler)
   QThread *_thread;
   TaskInstanceList _queuedTasks;
+  QHash<quint64,TaskInstance> _unfinishedTasks;
   QHash<TaskInstance,Executor*> _runningTasks;
   QList<Executor*> _availableExecutors;
   Alerter *_alerter;
@@ -90,9 +91,10 @@ public slots:
    * @return isEmpty() if task cannot be queued
    * @see asyncRequestTask
    * @see RequestFormField */
+  TaskInstanceList syncRequestTask(QString taskId, ParamSet params = ParamSet(),
+      bool force = false, TaskInstance herder = TaskInstance());
   TaskInstanceList syncRequestTask(
-      QString taskId, ParamSet paramsOverriding = ParamSet(),
-      bool force = false, TaskInstance callerTask = TaskInstance());
+      QString taskId, ParamSet params, bool force, QString herdId);
   /** Explicitely request task execution now, but do not wait for validity
    * check of the request, therefore do not wait for Scheduler thread
    * processing the request.
@@ -102,9 +104,11 @@ public slots:
    * @param force if true, any constraints or ressources are ignored
    * @see syncRequestTask
    * @see RequestFormField */
-  void asyncRequestTask(const QString taskId, ParamSet params = ParamSet(),
-                        bool force = false,
-                        TaskInstance callerTask = TaskInstance());
+  void asyncRequestTask(
+      const QString taskId, ParamSet params = ParamSet(), bool force = false,
+      TaskInstance herder = TaskInstance());
+  void asyncRequestTask(
+      const QString taskId, ParamSet params, bool force, QString herdId);
   /** Cancel a queued request.
    * @return TaskInstance.isNull() iff error (e.g. request not found or no
    * longer queued) */
@@ -169,6 +173,8 @@ public:
     QMutexLocker ml(&_configGuard);
     return QronConfigDocumentManager::config(); }
   /** Thread-safe. Sorted in queue order. */
+  QHash<quint64, TaskInstance> unfinishedTaskInstances();
+  /** Thread-safe. Sorted in queue order. */
   TaskInstanceList queuedTaskInstances();
   /** Thread-safe. No order guarantee. */
   TaskInstanceList runningTaskInstances();
@@ -201,14 +207,16 @@ private:
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
                               = QDateTime::currentDateTime());
   TaskInstanceList doRequestTask(
-      QString taskId, ParamSet paramsOverriding, bool force,
-      TaskInstance callerTask);
-  TaskInstance enqueueRequest(TaskInstance request, ParamSet paramsOverriding);
+      QString taskId, ParamSet params, bool force, TaskInstance herder);
+  TaskInstanceList doRequestTask(
+      QString taskId, ParamSet params, bool force, QString herdId);
+  TaskInstance enqueueRequest(TaskInstance request, ParamSet params);
   TaskInstance doCancelRequest(quint64 id);
   TaskInstanceList doCancelRequestsByTaskId(QString taskId);
   TaskInstanceList doAbortTaskInstancesByTaskId(QString taskId);
   TaskInstance doAbortTask(quint64 id);
   void propagateTaskInstanceChange(TaskInstance instance);
+  QHash<quint64, TaskInstance> detachedUnfinishedTaskInstances();
   TaskInstanceList detachedQueuedTaskInstances();
   TaskInstanceList detachedRunningTaskInstances();
   TaskInstanceList detachedQueuedOrRunningTaskInstances();

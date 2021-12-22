@@ -172,36 +172,58 @@ void Scheduler::reloadAccessControlConfig() {
 }
 
 TaskInstanceList Scheduler::syncRequestTask(
-    QString taskId, ParamSet paramsOverriding, bool force,
-    TaskInstance callerTask) {
+    QString taskId, ParamSet params, bool force, QString herdId) {
   if (this->thread() == QThread::currentThread())
-    return doRequestTask(taskId, paramsOverriding, force, callerTask);
+    return doRequestTask(taskId, params, force, herdId);
   TaskInstanceList instances;
-  QMetaObject::invokeMethod(this, [this,&instances,taskId,paramsOverriding,
-                            force,callerTask](){
-      instances = doRequestTask(taskId, paramsOverriding, force, callerTask);
+  QMetaObject::invokeMethod(this, [this,&instances,taskId,params,
+                            force,herdId](){
+      instances = doRequestTask(taskId, params, force, herdId);
     }, Qt::BlockingQueuedConnection);
   return instances;
 }
 
-void Scheduler::asyncRequestTask(const QString taskId,
-                                 ParamSet paramsOverriding,
-                                 bool force, TaskInstance callerTask) {
-  QMetaObject::invokeMethod(this, [this,taskId,paramsOverriding,
-                            force,callerTask](){
-      doRequestTask(taskId, paramsOverriding, force, callerTask);
+TaskInstanceList Scheduler::syncRequestTask(
+    QString taskId, ParamSet params, bool force, TaskInstance herder) {
+  if (this->thread() == QThread::currentThread())
+    return doRequestTask(taskId, params, force, herder);
+  TaskInstanceList instances;
+  QMetaObject::invokeMethod(this, [this,&instances,taskId,params,
+                            force,herder](){
+      instances = doRequestTask(taskId, params, force, herder);
+    }, Qt::BlockingQueuedConnection);
+  return instances;
+}
+
+void Scheduler::asyncRequestTask(
+    const QString taskId, ParamSet params, bool force, QString herdId) {
+  QMetaObject::invokeMethod(this, [this,taskId,params,
+                            force,herdId](){
+      doRequestTask(taskId, params, force, herdId);
+    }, Qt::QueuedConnection);
+}
+
+void Scheduler::asyncRequestTask(
+    const QString taskId, ParamSet params, bool force, TaskInstance herder) {
+  QMetaObject::invokeMethod(this, [this,taskId,params,
+                            force,herder](){
+      doRequestTask(taskId, params, force, herder);
     }, Qt::QueuedConnection);
 }
 
 TaskInstanceList Scheduler::doRequestTask(
-    QString taskId, ParamSet overridingParams, bool force,
-    TaskInstance callerTask) {
+    QString taskId, ParamSet params, bool force, QString herdId) {
+  TaskInstance herder = _unfinishedTasks.value(herdId.toLongLong());
+  return doRequestTask(taskId, params, force, herder);
+}
+
+TaskInstanceList Scheduler::doRequestTask(
+    QString taskId, ParamSet params, bool force, TaskInstance herder) {
   Task task = config().tasks().value(taskId);
   Cluster cluster = config().clusters().value(task.target());
   TaskInstanceList instances;
   if (task.isNull()) {
-    Log::error() << "requested task not found: " << taskId << overridingParams
-                 << force;
+    Log::error() << "requested task not found: " << taskId << params << force;
     return instances;
   }
   if (!task.enabled()) {
@@ -211,11 +233,11 @@ TaskInstanceList Scheduler::doRequestTask(
   bool fieldsValidated(true);
   foreach (RequestFormField field, task.requestFormFields()) {
     QString name(field.id());
-    if (overridingParams.contains(name)) {
+    if (params.contains(name)) {
       // FIXME the evaluation context is not the same than when the task will run
       // must make it consistent e.g. by evaluating now and escaping to prevent
       // any further (different) evaluation
-      QString value(overridingParams.value(name));
+      QString value(params.value(name));
       if (!field.validate(value)) {
         Log::error() << "task " << taskId << " requested with an invalid "
                         "parameter override: '" << name << "'' set to '"
@@ -230,17 +252,20 @@ TaskInstanceList Scheduler::doRequestTask(
   if (cluster.balancing() == Cluster::Each) {
     quint64 groupId = 0;
     foreach (Host host, cluster.hosts()) {
-      TaskInstance request(task, groupId, force,  overridingParams);
-      if (!groupId)
+      TaskInstance request(task, groupId, force,  params, herder);
+      if (!groupId) { // first iteration
         groupId = request.groupId();
+        if (herder.isNull())
+          herder = request;
+      }
       request.setTarget(host);
-      request = enqueueRequest(request, overridingParams);
+      request = enqueueRequest(request, params);
       if (!request.isNull())
         instances.append(request);
     }
   } else {
-    TaskInstance request(task, force, overridingParams);
-    request = enqueueRequest(request, overridingParams);
+    TaskInstance request(task, force, params, herder);
+    request = enqueueRequest(request, params);
     if (!request.isNull())
       instances.append(request);
   }
@@ -250,8 +275,7 @@ TaskInstanceList Scheduler::doRequestTask(
   return instances;
 }
 
-TaskInstance Scheduler::enqueueRequest(
-    TaskInstance instance, ParamSet paramsOverriding) {
+TaskInstance Scheduler::enqueueRequest(TaskInstance instance, ParamSet params) {
   Task task(instance.task());
   QString taskId(task.id());
   if (_shutingDown) {
@@ -311,10 +335,12 @@ TaskInstance Scheduler::enqueueRequest(
     _alerter->raiseAlert("scheduler.maxqueuedrequests.reached");
     return TaskInstance();
   }
+  _unfinishedTasks.insert(instance.idAsLong(), instance);
+  instance.herder().appendHerdedTask(instance);
   _alerter->cancelAlert("scheduler.maxqueuedrequests.reached");
   Log::debug(taskId, instance.idAsLong())
       << "queuing task " << taskId << "/" << instance.id() << " "
-      << paramsOverriding << " with request group id " << instance.groupId();
+      << params << " with request group id " << instance.groupId();
   // note: a request must always be queued even if the task can be started
   // immediately, to avoid the new tasks being started before queued ones
   _queuedTasks.append(instance);
@@ -771,6 +797,7 @@ void Scheduler::taskInstanceFinishing(TaskInstance instance,
       _availableExecutors.append(executor);
   }
   _runningTasks.remove(instance);
+  _unfinishedTasks.remove(instance);
   QHash<QString,qint64> taskResources = requestedTask.resources();
   QHash<QString,qint64> hostConsumedResources =
       _consumedResources.value(instance.target().id());
@@ -865,6 +892,17 @@ void Scheduler::propagateTaskInstanceChange(TaskInstance instance) {
   emit itemChanged(instance, nullItem, QStringLiteral("taskinstance"));
 }
 
+QHash<quint64,TaskInstance> Scheduler::unfinishedTaskInstances() {
+  QHash<quint64,TaskInstance> instances;
+  if (this->thread() == QThread::currentThread())
+    instances = detachedUnfinishedTaskInstances();
+  else
+    QMetaObject::invokeMethod(this, [this,&instances](){
+      instances = detachedUnfinishedTaskInstances();
+    }, Qt::BlockingQueuedConnection);
+  return instances;
+}
+
 TaskInstanceList Scheduler::queuedTaskInstances() {
   TaskInstanceList instances;
   if (this->thread() == QThread::currentThread())
@@ -896,6 +934,12 @@ TaskInstanceList Scheduler::queuedOrRunningTaskInstances() {
       instances = detachedQueuedOrRunningTaskInstances();
     }, Qt::BlockingQueuedConnection);
   return instances;
+}
+
+QHash<quint64,TaskInstance> Scheduler::detachedUnfinishedTaskInstances() {
+  QHash<quint64,TaskInstance> unfinished = _unfinishedTasks;
+  unfinished.detach();
+  return unfinished;
 }
 
 TaskInstanceList Scheduler::detachedQueuedTaskInstances() {

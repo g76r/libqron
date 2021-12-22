@@ -1,4 +1,4 @@
-/* Copyright 2013-2016 Hallowyn and others.
+/* Copyright 2013-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,11 +20,11 @@ class RequestTaskActionData : public ActionData {
 public:
   QString _id;
   ParamSet _overridingParams;
-  bool _force;
-  RequestTaskActionData(Scheduler *scheduler = 0, QString id = QString(),
-                        ParamSet params = ParamSet(), bool force = false)
+  bool _force, _lone;
+  RequestTaskActionData(
+      Scheduler *scheduler, QString id, ParamSet params, bool force, bool lone)
     : ActionData(scheduler), _id(id), _overridingParams(params),
-      _force(force) { }
+      _force(force), _lone(lone) { }
   inline ParamSet evaluatedOverrindingParams(ParamSet eventContext,
                                              TaskInstance instance) const {
     ParamSet overridingParams;
@@ -51,9 +51,10 @@ public:
         if (_scheduler->taskExists(idIfLocalToGroup))
           id = idIfLocalToGroup;
       }
+      TaskInstance herder = _lone ? TaskInstance() : parentInstance.herder();
       TaskInstanceList instances = _scheduler->syncRequestTask(
           id, evaluatedOverrindingParams(eventContext, parentInstance), _force,
-          parentInstance);
+          herder);
       if (instances.isEmpty())
         Log::error(parentInstance.task().id(), parentInstance.idAsLong())
             << "requesttask action failed to request execution of task "
@@ -84,18 +85,22 @@ public:
     ConfigUtils::writeParamSet(&node, _overridingParams, "param");
     if (_force)
       node.appendChild(PfNode("force"));
+    if (_lone)
+      node.appendChild(PfNode("lone"));
     return node;
   }
 };
 
 RequestTaskAction::RequestTaskAction(Scheduler *scheduler, PfNode node)
-  : Action(new RequestTaskActionData(scheduler, node.contentAsString(),
-                                     ConfigUtils::loadParamSet(node, "param"),
-                                     node.hasChild("force"))) {
+  : Action(new RequestTaskActionData(
+             scheduler, node.contentAsString(),
+             ConfigUtils::loadParamSet(node, "param"), node.hasChild("force"),
+             node.hasChild("lone"))) {
 }
 
 RequestTaskAction::RequestTaskAction(Scheduler *scheduler, QString taskId)
-  : Action(new RequestTaskActionData(scheduler, taskId)) {
+  : Action(new RequestTaskActionData(
+             scheduler, taskId, ParamSet(), false, false)) {
 }
 
 RequestTaskAction::RequestTaskAction(const RequestTaskAction &rhs)

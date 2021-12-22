@@ -25,6 +25,7 @@
 
 class TaskInstanceData;
 class TaskInstancePseudoParamsProvider;
+class TaskInstanceList;
 
 /** Instance of a task created when the execution is requested and used to track
  * the execution until it is finished and even after. */
@@ -33,15 +34,14 @@ public:
   enum TaskInstanceStatus { Queued, Running, Success, Failure, Canceled };
   TaskInstance();
   TaskInstance(const TaskInstance &);
-  TaskInstance(Task task, bool force, ParamSet overridingParams);
+  TaskInstance(Task task, bool force, ParamSet params, TaskInstance herder);
   TaskInstance(Task task, quint64 groupId, bool force,
-               ParamSet overridingParams);
+               ParamSet params, TaskInstance herder);
   TaskInstance &operator=(const TaskInstance &other) {
     SharedUiItem::operator=(other); return *this; }
   Task task() const;
+  void setParam(QString key, QString value);
   ParamSet params() const;
-  void overrideParam(QString key, QString value);
-  ParamSet overridingParams() const;
   quint64 idAsLong() const;
   quint64 groupId() const;
   QDateTime requestDatetime() const;
@@ -87,6 +87,12 @@ public:
   QString command() const;
   bool abortable() const;
   void setAbortable(bool abortable = true) const;
+  /** @return herder (first task of a herd) if any, else *this */
+  TaskInstance herder() const;
+  /** syntaxic sugar for herder().idAsLong(); */
+  quint64 herdid() const { return herder().idAsLong(); }
+  TaskInstanceList herdedTasks() const;
+  void appendHerdedTask(TaskInstance sheep) const;
 
 private:
   TaskInstanceData *data();
@@ -128,14 +134,14 @@ public:
     : SharedUiItemList<TaskInstance>(other) { }
   operator QList<quint64>() const {
     QList<quint64> list;
-    for (const TaskInstance &taskInstance : *this)
-      list.append(taskInstance.idAsLong());
+    for (auto i : *this)
+      list.append(i.idAsLong());
     return list;
   }
   operator QStringList() const {
     QStringList list;
-    for (const TaskInstance &taskInstance : *this)
-      list.append(taskInstance.id());
+    for (auto i : *this)
+      list.append(i.task().id()+"/"+i.id());
     return list;
   }
 };
