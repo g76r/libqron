@@ -283,12 +283,19 @@ TaskInstance Scheduler::enqueueRequest(TaskInstance instance, ParamSet params) {
         << "cannot queue task because scheduler is shuting down";
     return TaskInstance();
   }
-  foreach (RequestFormField field, task.requestFormFields()) {
-    QString name(field.id());
-    if (paramsOverriding.contains(name)) {
-      QString value(paramsOverriding.value(name));
-      field.apply(value, &instance);
+  for (auto field: task.requestFormFields()) {
+    QString name = field.id();
+    if (!params.contains(name))
+      continue;
+    QString value = params.value(name);
+    if (!field.validate(value)) {
+      Log::warning(taskId, instance.idAsLong())
+          << "cannot queue task because overriden parameter" << name
+          << "has invalid value: format is" << field.format()
+          << "invalid value is" << value;
+      return TaskInstance();
     }
+    instance.setParam(name, value);
   }
   if (!instance.force()) {
     if (task.enqueuePolicy() & Task::EnqueueUntilMaxInstances) {
