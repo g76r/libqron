@@ -839,7 +839,7 @@ void Scheduler::taskInstanceFinishedOrCanceled(TaskInstance instance) {
   Task configuredTask = config().tasks().value(taskId);
   instance.setHerderSuccess(configuredTask.herdingPolicy());
   configuredTask.fetchAndAddRunningCount(-1);
-  _unfinishedTasks.remove(instance);
+  _unfinishedTasks.remove(instance.idAsLong());
   QHash<QString,qint64> taskResources = requestedTask.resources();
   QHash<QString,qint64> hostConsumedResources =
       _consumedResources.value(instance.target().id());
