@@ -48,6 +48,11 @@ public:
   enum Mean {
     UnknownMean = 0, DoNothing, Local, Ssh = 4, Docker, Http
   };
+  enum HerdingPolicy {
+    WaitAnd = 1, // default
+    WaitOr, WaitOwn, NoWait,
+    HerdingPolicyUnknown = 0
+  };
 
   Task();
   Task(const Task &other);
@@ -125,6 +130,11 @@ public:
     return enqueuePolicyAsString(enqueuePolicy()); }
   static QString enqueuePolicyAsString(EnqueuePolicy v);
   static EnqueuePolicy enqueuePolicyFromString(QString v);
+  HerdingPolicy herdingPolicy() const;
+  inline QString herdingPolicyAsString() const {
+    return herdingPolicyAsString(herdingPolicy()); }
+  static QString herdingPolicyAsString(HerdingPolicy v);
+  static HerdingPolicy herdingPolicyFromString(QString v);
   QList<RequestFormField> requestFormFields() const;
   QString requestFormFieldsAsHtmlDescription() const;
   /** Create a ParamsProvider wrapper object to give access to ! pseudo params,

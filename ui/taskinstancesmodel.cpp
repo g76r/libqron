@@ -49,7 +49,7 @@ void TaskInstancesModel::changeItem(
   //qDebug() << "TaskInstancesModel::changeItem" << newItem.qualifiedId() << oldItem.qualifiedId();
   if (! _keepFinished && idQualifier == QStringLiteral("taskinstance")) {
     TaskInstance &newTaskInstance = reinterpret_cast<TaskInstance&>(newItem);
-    if (newTaskInstance.finished())
+    if (newTaskInstance.isFinished())
       newItem = SharedUiItem();
   }
   SharedUiItemsTableModel::changeItem(newItem, oldItem, idQualifier);

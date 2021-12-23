@@ -130,6 +130,14 @@ bool TaskOrTemplateData::loadConfig(
                  << node.toPf();
     return false;
   }
+  if (!ConfigUtils::loadAttribute<Task::HerdingPolicy>(
+        node, "herdingpolicy", &_herdingPolicy,
+        [](QString value) { return Task::herdingPolicyFromString(value); },
+        [](Task::HerdingPolicy p) { return p != Task::HerdingPolicyUnknown;})) {
+    Log::error() << "invalid herdingpolicy on "+idQualifier()+": "
+                 << node.toPf();
+    return false;
+  }
   QList<PfNode> children = node.childrenByName("requestform");
   if (!children.isEmpty()) {
     if (children.size() > 1) {
@@ -257,6 +265,8 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
       return _enabled;
     case 30:
       return triggersHaveCalendar();
+    case 31:
+      return Task::herdingPolicyAsString(_herdingPolicy);
     case 33:
       return _info;
     case 35:
@@ -353,6 +363,10 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
     node.appendChild(
           PfNode("enqueuepolicy",
                  Task::enqueuePolicyAsString(_enqueuePolicy)));
+  if (_herdingPolicy != Task::WaitAnd)
+    node.appendChild(
+          PfNode("herdingpolicy",
+                 Task::herdingPolicyAsString(_herdingPolicy)));
   if (_maxInstances != 1)
     node.appendChild(PfNode("maxinstances",
                             QString::number(_maxInstances)));

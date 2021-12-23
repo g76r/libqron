@@ -31,7 +31,8 @@ class TaskInstanceList;
  * the execution until it is finished and even after. */
 class LIBQRONSHARED_EXPORT TaskInstance : public SharedUiItem {
 public:
-  enum TaskInstanceStatus { Queued, Running, Success, Failure, Canceled };
+  enum TaskInstanceStatus { Queued, Running, Waiting, Success, Failure,
+                            Canceled };
   TaskInstance();
   TaskInstance(const TaskInstance &);
   TaskInstance(Task task, bool force, ParamSet params, TaskInstance herder);
@@ -48,14 +49,19 @@ public:
   QDateTime startDatetime() const;
   void setStartDatetime(QDateTime datetime
                         = QDateTime::currentDateTime()) const;
-  void setEndDatetime(QDateTime datetime = QDateTime::currentDateTime()) const;
-  QDateTime endDatetime() const;
+  QDateTime stopDatetime() const;
+  void setStopDatetime(QDateTime datetime = QDateTime::currentDateTime()) const;
+  QDateTime finishDatetime() const;
+  void setFinishDatetime(QDateTime datetime
+                         = QDateTime::currentDateTime()) const;
   qint64 queuedMillis() const;
   qint64 runningMillis() const;
+  qint64 waitingMillis() const;
   qint64 totalMillis() const;
   qint64 liveTotalMillis() const;
   bool success() const;
   void setSuccess(bool success) const;
+  void setHerderSuccess(Task::HerdingPolicy herdingpolicy) const;
   int returnCode() const;
   void setReturnCode(int returnCode) const;
   /** Note that this is the exact target on which the task is running/has been
@@ -75,14 +81,18 @@ public:
   QString statusAsString() const {
     return statusAsString(status()); }
   /** @return true iff status != Queued or Running */
-  bool finished() const {
+  bool isFinished() const {
     switch(status()) {
     case Queued:
     case Running:
+    case Waiting:
       return false;
-    default:
+    case Success:
+    case Failure:
+    case Canceled:
       return true;
     }
+    return true;
   }
   QString command() const;
   bool abortable() const;

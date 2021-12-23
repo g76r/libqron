@@ -58,9 +58,9 @@ signals:
     * be emited witout previous taskStarted(). */
   void taskInstanceStarted(TaskInstance instance);
   /** Signal emited whenever a task is no longer running or queued:
-    * when finished on failure, finished on success, or cannot be started
+    * when stopped on failure, finished on success, or cannot be started
     * because of a failure on start. */
-  void taskInstanceFinished(TaskInstance instance, Executor *executor);
+  void taskInstanceStopped(TaskInstance instance, Executor *executor);
 
 private slots:
   void processError(QProcess::ProcessError error);
@@ -80,7 +80,7 @@ private:
   inline QProcessEnvironment prepareEnv(const ParamSet vars);
   void replyHasFinished(QNetworkReply *reply,
                         QNetworkReply::NetworkError error);
-  void taskInstanceFinishing(bool success, int returnCode);
+  void taskInstanceStopping(bool success, int returnCode);
   void getReplyContent(QNetworkReply *reply, QString *replyContent,
                        QString maxsizeKey, QString maxwaitKey) const;
   void dockerParam(

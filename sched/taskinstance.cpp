@@ -18,7 +18,7 @@
 #include "format/timeformats.h"
 #include <functional>
 #include "util/radixtree.h"
-#include <QMutexLocker>
+#include "thread/atomicvalue.h"
 
 static QString _uiHeaderNames[] = {
   "Instance Id", // 0
@@ -26,17 +26,18 @@ static QString _uiHeaderNames[] = {
   "Status",
   "Request Date",
   "Start Date",
-  "End Date", // 5
+  "Stop Date", // 5
   "Time queued",
   "Time running",
   "Actions",
   "Abortable",
   "Herd Id", // 10
   "Herded Task Instances",
+  "Finish Date",
+  "Time waiting", // 13
 };
 
 static QAtomicInt _sequence;
-static QMutex _herdingMutex;
 
 class TaskInstanceData : public SharedUiItemData {
 public:
@@ -50,7 +51,7 @@ public:
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
-  mutable qint64 _start, _end;
+  mutable qint64 _start, _stop, _finish;
   mutable bool _success;
   mutable int _returnCode;
   // note: Host is not thread-safe either, however setTarget() is not likely to
@@ -64,7 +65,7 @@ public:
   // be the case forever.
   mutable Host _target;
   mutable bool _abortable;
-  mutable TaskInstanceList _herdedTasks;
+  mutable AtomicValue<TaskInstanceList> _herdedTasks;
 
   TaskInstanceData(Task task, ParamSet overridingParams, bool force,
                    TaskInstance herder = TaskInstance(), quint64 groupId = 0)
@@ -72,13 +73,13 @@ public:
       _idAsString(QString::number(_id)),
       _task(task), _overridingParams(overridingParams),
       _requestDateTime(QDateTime::currentDateTime()), _force(force),
-      _herder(herder), _start(LLONG_MIN), _end(LLONG_MIN),
+      _herder(herder), _start(LLONG_MIN), _stop(LLONG_MIN), _finish(LLONG_MIN),
       _success(false), _returnCode(0), _abortable(false) {
     _overridingParams.setParent(task.params());
   }
   TaskInstanceData() : _id(0), _groupId(0), _force(false),
-      _start(LLONG_MIN), _end(LLONG_MIN), _success(false), _returnCode(0),
-    _abortable(false) { }
+      _start(LLONG_MIN), _stop(LLONG_MIN), _finish(LLONG_MIN),
+      _success(false), _returnCode(0), _abortable(false) { }
 
 private:
   static quint64 newId() {
@@ -92,7 +93,6 @@ private:
         + _sequence.fetchAndAddOrdered(1)%10000;
   }
 
-  // SharedUiItemData interface
 public:
   QString id() const override { return _idAsString; }
   QString idQualifier() const override { return "taskinstance"; }
@@ -104,24 +104,36 @@ public:
         ? QDateTime::fromMSecsSinceEpoch(_start) : QDateTime(); }
   void inline setStartDatetime(QDateTime datetime) const {
     _start = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
-  QDateTime inline endDatetime() const { return _end != LLONG_MIN
-        ? QDateTime::fromMSecsSinceEpoch(_end) : QDateTime(); }
-  void inline setEndDatetime(QDateTime datetime) const {
-    _end = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
+  QDateTime inline stopDatetime() const { return _stop != LLONG_MIN
+        ? QDateTime::fromMSecsSinceEpoch(_stop) : QDateTime(); }
+  void inline setStopDatetime(QDateTime datetime) const {
+    _stop = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
+  QDateTime inline finishDatetime() const { return _finish != LLONG_MIN
+        ? QDateTime::fromMSecsSinceEpoch(_finish) : QDateTime(); }
+  void inline setFinishDatetime(QDateTime datetime) const {
+    _finish = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
   qint64 inline queuedMillis() const { return _requestDateTime.msecsTo(startDatetime()); }
   qint64 inline runningMillis() const {
-    return _start != LLONG_MIN && _end != LLONG_MIN ? _end - _start : 0; }
+    return _start != LLONG_MIN && _stop != LLONG_MIN ? _stop - _start : 0; }
+  qint64 inline waitingMillis() const {
+    return _stop != LLONG_MIN && _finish != LLONG_MIN ? _finish - _stop : 0; }
   qint64 inline totalMillis() const {
-    return _requestDateTime.isValid() && _end != LLONG_MIN
-        ? _end - _requestDateTime.toMSecsSinceEpoch() : 0; }
+    return _requestDateTime.isValid() && _finish != LLONG_MIN
+        ? _finish - _requestDateTime.toMSecsSinceEpoch() : 0; }
   qint64 inline liveTotalMillis() const {
-    return (_end != LLONG_MIN ? _end : QDateTime::currentMSecsSinceEpoch())
+    return (_finish != LLONG_MIN ? _finish
+                                 : QDateTime::currentMSecsSinceEpoch())
         - _requestDateTime.toMSecsSinceEpoch(); }
   TaskInstance::TaskInstanceStatus inline status() const {
-    if (_end != LLONG_MIN) {
+    if (_finish != LLONG_MIN) {
       if (_start == LLONG_MIN)
         return TaskInstance::Canceled;
       return _success ? TaskInstance::Success : TaskInstance::Failure;
+    }
+    if (_stop != LLONG_MIN) {
+      if (_start == LLONG_MIN) // should never happen b/c _finish should be set
+        return TaskInstance::Canceled;
+      return TaskInstance::Waiting;
     }
     if (_start != LLONG_MIN)
       return TaskInstance::Running;
@@ -188,15 +200,26 @@ void TaskInstance::setStartDatetime(QDateTime datetime) const {
     d->setStartDatetime(datetime);
 }
 
-void TaskInstance::setEndDatetime(QDateTime datetime) const {
+QDateTime TaskInstance::stopDatetime() const {
   const TaskInstanceData *d = data();
-  if (d)
-    d->setEndDatetime(datetime);
+  return d ? d->stopDatetime() : QDateTime();
 }
 
-QDateTime TaskInstance::endDatetime() const {
+void TaskInstance::setStopDatetime(QDateTime datetime) const {
   const TaskInstanceData *d = data();
-  return d ? d->endDatetime() : QDateTime();
+  if (d)
+    d->setStopDatetime(datetime);
+}
+
+QDateTime TaskInstance::finishDatetime() const {
+  const TaskInstanceData *d = data();
+  return d ? d->finishDatetime() : QDateTime();
+}
+
+void TaskInstance::setFinishDatetime(QDateTime datetime) const {
+  const TaskInstanceData *d = data();
+  if (d)
+    d->setFinishDatetime(datetime);
 }
 
 qint64 TaskInstance::queuedMillis() const {
@@ -207,6 +230,11 @@ qint64 TaskInstance::queuedMillis() const {
 qint64 TaskInstance::runningMillis() const {
   const TaskInstanceData *d = data();
   return d ? d->runningMillis() : 0;
+}
+
+qint64 TaskInstance::waitingMillis() const {
+  const TaskInstanceData *d = data();
+  return d ? d->waitingMillis() : 0;
 }
 
 qint64 TaskInstance::totalMillis() const {
@@ -233,6 +261,39 @@ void TaskInstance::setSuccess(bool success) const {
   const TaskInstanceData *d = data();
   if (d)
     d->_success = success;
+}
+
+void TaskInstance::setHerderSuccess(Task::HerdingPolicy herdingpolicy) const {
+  const TaskInstanceData *d = data();
+  if (!d)
+    return;
+  auto sheeps = d->_herdedTasks.lockedValue();
+  if (sheeps->isEmpty())
+    return; // keep own status
+  switch(herdingpolicy) {
+  case Task::WaitAnd:
+    if (!d->_success)
+      return;
+    for (auto sheep: *sheeps)
+      if (!sheep.success()) {
+        d->_success = false;
+        return;
+      }
+    d->_success = true;
+    return;
+  case Task::WaitOr:
+    for (auto sheep: *sheeps)
+      if (sheep.success()) {
+        d->_success = true;
+        return;
+      }
+    d->_success = false;
+    return;
+  case Task::WaitOwn:
+  case Task::NoWait:
+  case Task::HerdingPolicyUnknown: // should never happen
+    return;
+  }
 }
 
 int TaskInstance::returnCode() const {
@@ -281,6 +342,18 @@ static RadixTree<std::function<QVariant(
 } },
 { "!herdrunnings", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.herder().runningMillis()/1000;
+} },
+{ "!waitingms", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.waitingMillis();
+} },
+{ "!waitings", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.waitingMillis()/1000;
+} },
+{ "!herdwaitingms", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().waitingMillis();
+} },
+{ "!herdwaitings", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().waitingMillis()/1000;
 } },
 { "!queuedms", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.queuedMillis();
@@ -335,13 +408,21 @@ static RadixTree<std::function<QVariant(
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.herder().startDatetime(), key.mid(14));
 }, true },
-{ "!enddate", [](const TaskInstance &taskInstance, const QString &key) {
+{ "!stopdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.endDatetime(), key.mid(8));
+        taskInstance.stopDatetime(), key.mid(9));
 }, true },
-{ "!herdenddate", [](const TaskInstance &taskInstance, const QString &key) {
+{ "!herdstopdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.herder().endDatetime(), key.mid(12));
+        taskInstance.herder().stopDatetime(), key.mid(13));
+}, true },
+{ "!finishdate", [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.finishDatetime(), key.mid(11));
+}, true },
+{ "!herdfinishdate", [](const TaskInstance &taskInstance, const QString &key) {
+  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+        taskInstance.herder().finishDatetime(), key.mid(15));
 }, true },
 };
 
@@ -374,23 +455,23 @@ TaskInstanceList TaskInstance::herdedTasks() const {
   const TaskInstanceData *d = data();
   if (!d)
     return TaskInstanceList();
-  QMutexLocker ml(&_herdingMutex);
-  auto list = d->_herdedTasks;
-  list.detach();
-  return list;
+  TaskInstanceList sheeps = d->_herdedTasks;
+  sheeps.detach();
+  return sheeps;
 }
 
 void TaskInstance::appendHerdedTask(TaskInstance sheep) const {
   const TaskInstanceData *d = data();
   if (!d || sheep.idAsLong() == idAsLong())
     return;
-  QMutexLocker ml(&_herdingMutex);
-  d->_herdedTasks.append(sheep);
+  auto sheeps = d->_herdedTasks.lockedValue();
+  sheeps->append(sheep);
 }
 
 static QHash<TaskInstance::TaskInstanceStatus,QString> _statuses {
   { TaskInstance::Queued, "queued" },
   { TaskInstance::Running, "running" },
+  { TaskInstance::Waiting, "waiting" },
   { TaskInstance::Success, "success" },
   { TaskInstance::Failure, "failure" },
   { TaskInstance::Canceled, "canceled" },
@@ -438,13 +519,13 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
       return startDatetime().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
     case 5:
-      return endDatetime().toString(
+      return stopDatetime().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
     case 6:
       return startDatetime().isNull() || requestDatetime().isNull()
           ? QVariant() : QString::number(queuedMillis()/1000.0);
     case 7:
-      return endDatetime().isNull() || startDatetime().isNull()
+      return stopDatetime().isNull() || startDatetime().isNull()
           ? QVariant() : QString::number(runningMillis()/1000.0);
     case 8:
       return QVariant(); // custom actions, handled by the model, if needed
@@ -453,7 +534,13 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
     case 10:
       return _herder.isNull() ? _idAsString : _herder.id();
     case 11:
-      return _herdedTasks.operator QStringList().join(' ');
+      return _herdedTasks->operator QStringList().join(' ');
+    case 12:
+      return finishDatetime().toString(
+            QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+    case 13:
+      return finishDatetime().isNull() || stopDatetime().isNull()
+          ? QVariant() : QString::number(waitingMillis()/1000.0);
     }
     break;
   default:

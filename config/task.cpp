@@ -366,11 +366,8 @@ static QHash<Task::EnqueuePolicy,QString> _enqueuePolicyAsString {
 };
 
 static QHash<QString,Task::EnqueuePolicy> _enqueuePolicyFromString {
-  { "enqueueall", Task::EnqueueAll  },
-  { "enqueueanddiscardqueued", Task::EnqueueAndDiscardQueued },
-  { "enqueueuntilmaxinstances", Task::EnqueueUntilMaxInstances }
+  ContainerUtils::reversed(_enqueuePolicyAsString)
 };
-
 
 QString Task::enqueuePolicyAsString(Task::EnqueuePolicy v) {
   return _enqueuePolicyAsString.value(v, QStringLiteral("unknown"));
@@ -378,6 +375,30 @@ QString Task::enqueuePolicyAsString(Task::EnqueuePolicy v) {
 
 Task::EnqueuePolicy Task::enqueuePolicyFromString(QString v) {
   return _enqueuePolicyFromString.value(v, Task::EnqueuePolicyUnknown);
+}
+
+static QHash<Task::HerdingPolicy,QString> _herdingPolicyAsString {
+  { Task::WaitAnd, "waitand" },
+  { Task::WaitOr, "waitor" },
+  { Task::WaitOwn, "waitown" },
+  { Task::NoWait, "nowait" },
+};
+
+static QHash<QString,Task::HerdingPolicy> _herdingPolicyFromString {
+  ContainerUtils::reversed(_herdingPolicyAsString)
+};
+
+Task::HerdingPolicy Task::herdingPolicy() const {
+  auto d = data();
+  return d ? d->_herdingPolicy : Task::HerdingPolicyUnknown;
+}
+
+QString Task::herdingPolicyAsString(Task::HerdingPolicy v) {
+  return _herdingPolicyAsString.value(v, QStringLiteral("unknown"));
+}
+
+Task::HerdingPolicy Task::herdingPolicyFromString(QString v) {
+  return _herdingPolicyFromString.value(v, Task::HerdingPolicyUnknown);
 }
 
 QList<RequestFormField> Task::requestFormFields() const {

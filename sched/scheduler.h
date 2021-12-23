@@ -48,6 +48,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   QThread *_thread;
   TaskInstanceList _queuedTasks;
   QHash<quint64,TaskInstance> _unfinishedTasks;
+  QHash<TaskInstance,TaskInstanceList> _waitingTasks;
   QHash<TaskInstance,Executor*> _runningTasks;
   QList<Executor*> _availableExecutors;
   Alerter *_alerter;
@@ -187,7 +188,8 @@ signals:
   void noticePosted(QString notice, ParamSet params);
 
 private:
-  void taskInstanceFinishing(TaskInstance instance, Executor *executor);
+  void taskInstanceStoppedOrCanceled(TaskInstance instance, Executor *executor);
+  void taskInstanceFinishedOrCanceled(TaskInstance instance);
   void periodicChecks();
   /** Fire expired triggers for a given task. */
   void checkTriggersForTask(QVariant taskId);

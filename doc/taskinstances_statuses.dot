@@ -1,24 +1,27 @@
 graph g {
   newrank=true;
-  graph [compound=true,style=rounded,ranksep=1.5]
+  graph [xcompound=true,xranksep=1,splines=true,xrankdir=LR]
   edge [arrowhead=vee,dir=forward]
-  node [shape=box,style="rounded,filled",fillcolor=grey80]
+  node [shape=box,style="rounded,filled",fillcolor=grey90]
 
   start [shape=circle,style=filled,width=.2,label="",fillcolor=black]
 
   start -- queued [label="trigger, action, etc."]
   queued -- canceled [label="duplicated requests, depending\non enqueuepolicy"]
   queued -- running [label="when all prerequesites\nare met (resources, etc.)"]
-  running -- success [label="depending on return code\nand mean (ssh: 0,\nhttp: 200..299, etc.)"]
-  running -- failure [label="depending on return code\nand mean (ssh: !0,\nhttp: >= 300, etc.)"]
-  queued -- failure [label="when some config errors\ndisable starting"]
+  running -- waiting [label="when there are\nunfinished\nherded tasks"]
+  running -- success [label="depending on return\ncode and mean (ssh:\n0, http: 200..299,\netc.)"]
+  running -- failure [label="depending on return\ncode and mean\n(ssh: !0, etc.)"]
+  waiting -- success [label="depending on herding\npolicy and herded\ntasks statuses"]
+  waiting -- failure [label="depending on herding\npolicy and herded\ntasks statuses"]
+  queued -- failure [xlabel="when some config\nerrors disable\nstarting"]
 
   edge [color=navy,fontcolor=navy]
-  start -- queued [label="requestTask()"]
+  start -- queued [xlabel="requestTask()"]
 
   edge [color=orangered,fontcolor=orange]
-  queued -- canceled [label="cancelRequest()"]
+  queued -- canceled [xlabel="cancelRequest()"]
 
   edge [color=orangered,fontcolor=orangered]
-  running -- failure [label="abortTask()"]
+  running -- failure [xlabel="abortTask()"]
 }

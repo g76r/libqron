@@ -90,13 +90,13 @@ void Executor::execute(TaskInstance instance) {
       break;
     case Task::DoNothing:
       emit taskInstanceStarted(_instance);
-      taskInstanceFinishing(true, 0);
+      taskInstanceStopping(true, 0);
       break;
     default:
       Log::error(_instance.task().id(), _instance.idAsLong())
           << "cannot execute task with unknown mean '"
           << Task::meanAsString(mean) << "'";
-      taskInstanceFinishing(false, -1);
+      taskInstanceStopping(false, -1);
     }
   });
 }
@@ -205,7 +205,7 @@ void Executor::dockerMean() {
     Log::warning(_instance.task().id(), _instance.idAsLong())
         << "cannot execute container with empty image name '"
         << _instance.task().id() << "'";
-    taskInstanceFinishing(false, -1);
+    taskInstanceStopping(false, -1);
     return;
   }
   if (shouldPull)
@@ -259,7 +259,7 @@ void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
     Log::warning(_instance.task().id(), _instance.idAsLong())
         << "cannot execute task with empty command '"
         << _instance.task().id() << "'";
-    taskInstanceFinishing(false, -1);
+    taskInstanceStopping(false, -1);
     return;
   }
   _errBuf.clear();
@@ -315,10 +315,10 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
       .valueAsBool("return.code.default.success", success);
   success = _instance.task().params()
       .valueAsBool("return.code."+QString::number(exitCode)+".success",success);
-  _instance.setEndDatetime();
+  _instance.setStopDatetime();
   Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
            _instance.idAsLong())
-      << "task '" << _instance.task().id() << "' finished "
+      << "task '" << _instance.task().id() << "' stopped "
       << (success ? "successfully" : "in failure") << " with return code "
       << exitCode << " on host '" << _instance.target().hostname()
       << "' after running " << _instance.runningMillis()
@@ -334,7 +334,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
   _process->deleteLater();
   _process = 0;
   _errBuf.clear();
-  taskInstanceFinishing(success, exitCode);
+  taskInstanceStopping(success, exitCode);
 }
 
 static QRegularExpression _sshConnClosedRE("^Connection to [^ ]* closed\\.$");
@@ -432,13 +432,13 @@ void Executor::httpMean() {
     } else {
       Log::error(_instance.task().id(), _instance.idAsLong())
           << "cannot start HTTP request";
-      taskInstanceFinishing(false, -1);
+      taskInstanceStopping(false, -1);
     }
   } else {
     Log::error(_instance.task().id(), _instance.idAsLong())
         << "unsupported HTTP URL: "
         << networkRequest.url().toString(QUrl::RemovePassword);
-    taskInstanceFinishing(false, -1);
+    taskInstanceStopping(false, -1);
   }
 }
 
@@ -539,9 +539,9 @@ void Executor::replyHasFinished(QNetworkReply *reply,
         << "HTTP reply began with: "
         << replyContent; // FIXME .replace(asciiControlCharsRE, QStringLiteral(" "));
   }
-  _instance.setEndDatetime();
+  _instance.setStopDatetime();
   Log::log(success ? Log::Info : Log::Warning, taskId, _instance.idAsLong())
-      << "task '" << taskId << "' finished "
+      << "task '" << taskId << "' stopped "
       << (success ? "successfully" : "in failure") << " with return code "
       << status << " (" << reason << ") on host '"
       << _instance.target().hostname() << "' in " << _instance.runningMillis()
@@ -549,7 +549,7 @@ void Executor::replyHasFinished(QNetworkReply *reply,
       << "' (QNetworkReply::NetworkError code " << error << ")";
   reply->deleteLater();
   _reply = 0;
-  taskInstanceFinishing(success, status);
+  taskInstanceStopping(success, status);
 }
 
 void Executor::noticePosted(QString notice, ParamSet params) {
@@ -608,11 +608,11 @@ void Executor::abort() {
   });
 }
 
-void Executor::taskInstanceFinishing(bool success, int returnCode) {
+void Executor::taskInstanceStopping(bool success, int returnCode) {
   _abortTimeout->stop();
   _instance.setSuccess(success);
   _instance.setReturnCode(returnCode);
-  _instance.setEndDatetime();
-  emit taskInstanceFinished(_instance, this);
+  _instance.setStopDatetime();
+  emit taskInstanceStopped(_instance, this);
   _instance = TaskInstance();
 }
