@@ -32,8 +32,9 @@
 #define TASK_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE ",constraint=true"
 #define GLOBAL_EVENT_NODE "shape=plain"
 //#define GLOBAL_EVENT_NODE "shape=pentagon"
-#define GLOBAL_POSTNOTICE_EDGE "dir=back,arrowtail=vee,constraint=false"
-#define GLOBAL_REQUESTTASK_EDGE TASK_POSTNOTICE_EDGE ",constraint=true"
+#define GLOBAL_EDGE "dir=back,arrowhead=vee"
+#define GLOBAL_POSTNOTICE_EDGE GLOBAL_EDGE ",constraint=false"
+#define GLOBAL_REQUESTTASK_EDGE GLOBAL_EDGE
 #define ANDJOIN_NODE "shape=square,label=and"
 #define ORJOIN_NODE "shape=circle,label=or"
 #define START_NODE "shape=circle,style=\"filled\",width=.2,label=\"\",fillcolor=black"
