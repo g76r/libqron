@@ -701,7 +701,9 @@ bool Scheduler::startQueuedTask(TaskInstance instance) {
     _alerter->raiseAlert("task.failure."+taskId);
     instance.setReturnCode(-1);
     instance.setSuccess(false);
+    instance.setStartDatetime();
     instance.setStopDatetime();
+    instance.setFinishDatetime();
     task.fetchAndAddRunningCount(-1);
     task.setLastExecution(QDateTime::currentDateTime());
     task.setLastSuccessful(false);
