@@ -34,7 +34,8 @@ static QString _uiHeaderNames[] = {
   "Herd Id", // 10
   "Herded Task Instances",
   "Finish Date",
-  "Time waiting", // 13
+  "Time waiting",
+  "Total time", // 14
 };
 
 static QAtomicInt _sequence;
@@ -249,7 +250,7 @@ qint64 TaskInstance::liveTotalMillis() const {
 
 TaskInstance::TaskInstanceStatus TaskInstance::status() const {
   const TaskInstanceData *d = data();
-  return d ? d->status() : Queued;
+  return d ? d->status() : Failure;
 }
 
 bool TaskInstance::success() const {
@@ -539,6 +540,9 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
     case 13:
       return finishDatetime().isNull() || stopDatetime().isNull()
           ? QVariant() : QString::number(waitingMillis()/1000.0);
+    case 14:
+      return finishDatetime().isNull() || requestDatetime().isNull()
+          ? QVariant() : QString::number(totalMillis()/1000.0);
     }
     break;
   default:
