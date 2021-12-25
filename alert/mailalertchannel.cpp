@@ -35,7 +35,7 @@ public:
   void scheduleNext(MailAlertChannel *channel, qint64 ms) {
     QDateTime scheduling = QDateTime::currentDateTime().addMSecs(ms);
     _nextProcessing = scheduling;
-    QTimer::singleShot(ms, channel, [this,channel](){
+    QTimer::singleShot(ms, Qt::PreciseTimer, channel, [this,channel](){
       channel->processQueue(_address);
     });
   }

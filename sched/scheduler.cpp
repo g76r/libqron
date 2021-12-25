@@ -530,7 +530,8 @@ bool Scheduler::checkTrigger(CronTrigger trigger, Task task, QString taskId) {
     //             << now.toString("yyyy-MM-dd hh:mm:ss,zzz") << " "
     //             << next.toString("yyyy-MM-dd hh:mm:ss,zzz") << " " << ms;
     // LATER one timer per trigger, not a new timer each time
-    QTimer::singleShot(ms < INT_MAX ? ((int)ms) : INT_MAX, [this,taskId](){
+    QTimer::singleShot(ms < INT_MAX ? ((int)ms) : INT_MAX, Qt::PreciseTimer,
+                       this, [this,taskId](){
       checkTriggersForTask(taskId);
     });
     task.setNextScheduledExecution(now.addMSecs(ms));
