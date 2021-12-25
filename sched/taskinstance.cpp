@@ -267,7 +267,7 @@ void TaskInstance::setHerderSuccess(Task::HerdingPolicy herdingpolicy) const {
   const TaskInstanceData *d = data();
   if (!d)
     return;
-  auto sheeps = d->_herdedTasks.lockedValue();
+  auto sheeps = d->_herdedTasks.lockedData();
   if (sheeps->isEmpty())
     return; // keep own status
   switch(herdingpolicy) {
@@ -455,16 +455,14 @@ TaskInstanceList TaskInstance::herdedTasks() const {
   const TaskInstanceData *d = data();
   if (!d)
     return TaskInstanceList();
-  TaskInstanceList sheeps = d->_herdedTasks;
-  sheeps.detach();
-  return sheeps;
+  return d->_herdedTasks.detachedData();
 }
 
 void TaskInstance::appendHerdedTask(TaskInstance sheep) const {
   const TaskInstanceData *d = data();
   if (!d || sheep.idAsLong() == idAsLong())
     return;
-  auto sheeps = d->_herdedTasks.lockedValue();
+  auto sheeps = d->_herdedTasks.lockedData();
   sheeps->append(sheep);
 }
 
@@ -534,7 +532,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
     case 10:
       return _herder.isNull() ? _idAsString : _herder.id();
     case 11:
-      return _herdedTasks->operator QStringList().join(' ');
+      return _herdedTasks.detachedData().operator QStringList().join(' ');
     case 12:
       return finishDatetime().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));

@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -237,7 +237,7 @@ public:
   qint64 gridboardsUpdatesCounter() const;
   /** Provide a gridboard given its id.
    * This method is thread-safe. */
-  Gridboard gridboard(QString gridboardId) const;
+  Gridboard gridboard(QString gridboardId);
   /** Remove any current data from a gridboard given its id.
    * This method is thread-safe. */
   void clearGridboard(QString gridboardId);

@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2021 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -56,16 +56,15 @@ public:
       Alert alert;
       if (_buffer.tryGet(&alert, 500)) {
         ++_gridboardsEvaluationsCounter;
-        QList<Gridboard> &gridboards = _alerter->_gridboards.lockData();
-        for (int i = 0; i < gridboards.size(); ++i) {
+        auto gridboards = _alerter->_gridboards.lockedData();
+        for (auto gridboard: *gridboards) {
           QRegularExpressionMatch match =
-              gridboards[i].patternRegexp().match(alert.id());
+              gridboard.patternRegexp().match(alert.id());
           if (match.hasMatch()) {
             ++_gridboardsUpdatesCounter;
-            gridboards[i].update(match, alert);
+            gridboard.update(match, alert);
           }
         }
-        _alerter->_gridboards.unlockData();
       }
     }
     // only connect deleteLater() to avoid dandling pointers in case of
@@ -509,21 +508,22 @@ qint64 Alerter::duplicateEmitDelay(QString alertId) {
   return delay > 0 ? delay : _config.duplicateEmitDelay();
 }
 
-Gridboard Alerter::gridboard(QString gridboardId) const {
-  foreach (const Gridboard &gridboard, _gridboards.data())
+Gridboard Alerter::gridboard(QString gridboardId) {
+  auto gridboards = _gridboards.lockedData();
+  for (auto gridboard: *gridboards)
     if (gridboard.id() == gridboardId)
       return gridboard;
   return Gridboard();
 }
 
 void Alerter::clearGridboard(QString gridboardId) {
-  QList<Gridboard> &gridboards = _gridboards.lockData();
-  for (int i = 0; i < gridboards.size(); ++i)
-    if (gridboards[i].id() == gridboardId) {
-      gridboards[i].clear();
+  auto gridboards = _gridboards.lockedData();
+  for (auto gridboard: *gridboards) {
+    if (gridboard.id() == gridboardId) {
+      gridboard.clear();
       break;
     }
-  _gridboards.unlockData();
+  }
 }
 
 qint64 Alerter::gridboardsEvaluationsCounter() const {
