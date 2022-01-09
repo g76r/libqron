@@ -307,7 +307,9 @@ TaskInstance Scheduler::enqueueTaskInstance(
         }
       }
       if (count >= max) {
-        QString msg = "canceling task because of enqueueuntilmaxinstances";
+        QString msg = "canceling task because too many instances of this task "
+                      "are already queued and enqueuepolicy is "
+            + task.enqueuePolicyAsString();
         if (!task.enabled())
           msg += " and the task is disabled";
         msg += " : " + taskId + "/" + instance.id();
