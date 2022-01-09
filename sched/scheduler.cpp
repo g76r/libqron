@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -296,7 +296,7 @@ TaskInstance Scheduler::enqueueTaskInstance(
     instance.setParam(name, value);
   }
   if (!instance.force()) {
-    if (task.enqueuePolicy() & Task::EnqueueUntilMaxInstances) {
+    if (task.enqueuePolicy() == Task::EnqueueUntilMaxInstances) {
       // reject task request if running count + queued count >= max instance
       int count = task.runningCount();
       int max = task.maxInstances();
@@ -307,14 +307,17 @@ TaskInstance Scheduler::enqueueTaskInstance(
         }
       }
       if (count >= max) {
-        Log::info(taskId, instance.idAsLong())
-            << "rejecting task request because of enqueueuntilmaxinstances "
-               "queuing policy: " << taskId;
-        return TaskInstance();
+        QString msg = "canceling task because of enqueueuntilmaxinstances";
+        if (!task.enabled())
+          msg += " and the task is disabled";
+        msg += " : " + taskId + "/" + instance.id();
+        doCancelTaskInstance(instance, !task.enabled(), msg);
+        instance.herder().appendHerdedTask(instance);
+        return instance;
       }
     }
     if (!task.enabled()
-        || task.enqueuePolicy() & Task::EnqueueAndDiscardQueued) {
+        || task.enqueuePolicy() == Task::EnqueueAndDiscardQueued) {
       // avoid stacking disabled task requests by canceling older ones
       auto queued = _queuedTasks;
       queued.detach();
@@ -325,7 +328,7 @@ TaskInstance Scheduler::enqueueTaskInstance(
                         "task is queued";
           if (!task.enabled())
             msg += " and the task is disabled";
-          if (task.enqueuePolicy() & Task::EnqueueAndDiscardQueued)
+          if (task.enqueuePolicy() == Task::EnqueueAndDiscardQueued)
             msg += " and enqueuepolicy is " + task.enqueuePolicyAsString();
           msg += " : " + taskId + "/" + instance.id();
           doCancelTaskInstance(other, !task.enabled(), msg);
@@ -626,7 +629,7 @@ void Scheduler::startAsManyTaskInstancesAsPossible() {
       // handle some misconfigurations like (onstart(requesttask %!taskid)) or
       // more generaly it discard requests received between the current one
       // and the actual task start
-      if (task.enqueuePolicy() & Task::EnqueueAndDiscardQueued) {
+      if (task.enqueuePolicy() == Task::EnqueueAndDiscardQueued) {
         // remove other requests of same task
         QString taskId= instance.task().id();
         auto queued = _queuedTasks;

@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -41,8 +41,8 @@ class LIBQRONSHARED_EXPORT Task : public SharedUiItem {
 public:
   enum EnqueuePolicy { // was DiscardAliasesOnStart
     EnqueueAndDiscardQueued = 1, // default, was: DiscardAll
-    EnqueueAll = 2, // was: DiscardNone
-    EnqueueUntilMaxInstances = 4,
+    EnqueueAll, // was: DiscardNone
+    EnqueueUntilMaxInstances,
     EnqueuePolicyUnknown = 0
   };
   enum Mean {
