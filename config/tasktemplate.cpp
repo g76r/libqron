@@ -363,7 +363,7 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
     node.appendChild(
           PfNode("enqueuepolicy",
                  Task::enqueuePolicyAsString(_enqueuePolicy)));
-  if (_herdingPolicy != Task::WaitAnd)
+  if (_herdingPolicy != Task::NoFailure)
     node.appendChild(
           PfNode("herdingpolicy",
                  Task::herdingPolicyAsString(_herdingPolicy)));

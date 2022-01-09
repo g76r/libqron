@@ -5,9 +5,11 @@ graph g {
   node [shape=box,style="rounded,filled",fillcolor=grey90]
 
   start [shape=circle,style=filled,width=.2,label="",fillcolor=black]
+  end [shape=circle,style=filled,width=.2,peripheries=2,label="",fillcolor=black]
 
   start -- queued [label="trigger, action, etc."]
-  queued -- canceled [label="duplicated requests, depending\non enqueuepolicy"]
+  queued -- canceled [label="duplicated requests, depending\non enqueue policy"]
+  canceled -- end
   queued -- running [label="when all prerequesites\nare met (resources, etc.)"]
   running -- waiting [label="when there are\nunfinished\nherded tasks"]
   running -- success [label="depending on return\ncode and mean (ssh:\n0, http: 200..299,\netc.)"]
@@ -15,6 +17,8 @@ graph g {
   waiting -- success [label="depending on herding\npolicy and herded\ntasks statuses"]
   waiting -- failure [label="depending on herding\npolicy and herded\ntasks statuses"]
   queued -- failure [xlabel="when some config\nerrors disable\nstarting"]
+  success -- end
+  failure -- end
 
   edge [color=navy,fontcolor=navy]
   start -- queued [xlabel="requestTask()"]

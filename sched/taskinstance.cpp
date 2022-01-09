@@ -269,28 +269,42 @@ void TaskInstance::setHerderSuccess(Task::HerdingPolicy herdingpolicy) const {
   if (!d)
     return;
   auto sheeps = d->_herdedTasks.lockedData();
+  //qDebug() << "setHerderSuccess" << d->_task.id() << d->_id << sheeps->join(' ')
+  //         << d->_success << Task::herdingPolicyAsString(herdingpolicy);
   if (sheeps->isEmpty())
     return; // keep own status
   switch(herdingpolicy) {
-  case Task::WaitAnd:
+  case Task::AllSuccess:
     if (!d->_success)
       return;
+    //qDebug() << "sheeps";
     for (auto sheep: *sheeps)
-      if (!sheep.success()) {
+      if (sheep.status() != TaskInstance::Success) {
+        //qDebug() << "not success" << sheep.id();
         d->_success = false;
         return;
       }
-    d->_success = true;
     return;
-  case Task::WaitOr:
+  case Task::NoFailure:
+    if (!d->_success)
+      return;
+    //qDebug() << "sheeps";
     for (auto sheep: *sheeps)
-      if (sheep.success()) {
+      if (sheep.status() == TaskInstance::Failure) {
+        //qDebug() << "failure" << sheep.id();
+        d->_success = false;
+        return;
+      }
+    return;
+  case Task::OneSuccess:
+    d->_success = false;
+    for (auto sheep: *sheeps)
+      if (sheep.status() == TaskInstance::Success) {
         d->_success = true;
         return;
       }
-    d->_success = false;
     return;
-  case Task::WaitOwn:
+  case Task::OwnStatus:
   case Task::NoWait:
   case Task::HerdingPolicyUnknown: // should never happen
     return;

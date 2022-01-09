@@ -378,9 +378,10 @@ Task::EnqueuePolicy Task::enqueuePolicyFromString(QString v) {
 }
 
 static QHash<Task::HerdingPolicy,QString> _herdingPolicyAsString {
-  { Task::WaitAnd, "waitand" },
-  { Task::WaitOr, "waitor" },
-  { Task::WaitOwn, "waitown" },
+  { Task::AllSuccess, "allsuccess" },
+  { Task::NoFailure, "nofailure" },
+  { Task::OneSuccess, "onesuccess" },
+  { Task::OwnStatus, "ownstatus" },
   { Task::NoWait, "nowait" },
 };
 

@@ -106,7 +106,7 @@ public:
   TaskOrTemplateData() : _maxInstances(1), _maxExpectedDuration(LLONG_MAX),
     _minExpectedDuration(0), _maxDurationBeforeAbort(LLONG_MAX),
     _enqueuePolicy(Task::EnqueueAndDiscardQueued),
-    _herdingPolicy(Task::WaitAnd), _enabled(true) { }
+    _herdingPolicy(Task::NoFailure), _enabled(true) { }
   QString triggersAsString() const;
   QString triggersWithCalendarsAsString() const;
   bool triggersHaveCalendar() const;

@@ -49,8 +49,8 @@ public:
     UnknownMean = 0, DoNothing, Local, Ssh = 4, Docker, Http
   };
   enum HerdingPolicy {
-    WaitAnd = 1, // default
-    WaitOr, WaitOwn, NoWait,
+    NoFailure = 1, // default
+    AllSuccess, OneSuccess, OwnStatus, NoWait,
     HerdingPolicyUnknown = 0
   };
 

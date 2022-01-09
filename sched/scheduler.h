@@ -113,14 +113,14 @@ public slots:
   /** Cancel a queued request.
    * @return TaskInstance.isNull() iff error (e.g. request not found or no
    * longer queued) */
-  TaskInstance cancelRequest(quint64 id);
-  TaskInstance cancelRequest(TaskInstance instance) {
-    return cancelRequest(instance.idAsLong()); }
+  TaskInstance cancelTaskInstance(quint64 id);
+  TaskInstance cancelTaskInstance(TaskInstance instance) {
+    return cancelTaskInstance(instance.idAsLong()); }
   /** Cancel all queued requests of a given task. */
-  TaskInstanceList cancelRequestsByTaskId(QString taskId);
+  TaskInstanceList cancelTaskInstancesByTaskId(QString taskId);
   /** @see cancelRequestsByTaskId(QString) */
-  TaskInstanceList cancelRequestsByTaskId(Task task) {
-    return cancelRequestsByTaskId(task.id()); }
+  TaskInstanceList cancelTaskInstancesByTaskId(Task task) {
+    return cancelTaskInstancesByTaskId(task.id()); }
   /** Abort a running task instance.
    * For local tasks aborting means killing, for ssh tasks aborting means
    * killing ssh client hence most of time killing actual task, for http tasks
@@ -131,18 +131,18 @@ public slots:
    * same task.
    * @return TaskInstance.isNull() iff error (e.g. task instance not found or no
    * longer running) */
-  TaskInstance abortTask(quint64 id);
+  TaskInstance abortTaskInstance(quint64 id);
   /** @see abortTask(quint64) */
-  TaskInstance abortTask(TaskInstance instance) {
-    return abortTask(instance.idAsLong()); }
+  TaskInstance abortTaskInstance(TaskInstance instance) {
+    return abortTaskInstance(instance.idAsLong()); }
   /** Abort all running instance of a given task.
    * Same limitations than abortTask().
    * @see abortTask(quint64)
    */
-  TaskInstanceList abortTaskInstancesByTaskId(QString taskId);
+  TaskInstanceList abortTaskInstanceByTaskId(QString taskId);
   /** @see abortTaskInstancesByTaskId(QString) */
-  TaskInstanceList abortTaskInstancesByTaskId(Task task) {
-    return abortTaskInstancesByTaskId(task.id()); }
+  TaskInstanceList abortTaskInstanceByTaskId(Task task) {
+    return abortTaskInstanceByTaskId(task.id()); }
   /** Post a notice.
    * This method is thread-safe.
    * If params has no parent it will be set global params as parent */
@@ -153,7 +153,7 @@ public slots:
     * queued task runnable. Calling this method several time within the same
     * event loop iteration will trigger reevaluation only once (same pattern as
     * QWidget::update()). */
-  void reevaluateQueuedRequests();
+  void reevaluateQueuedTaskInstances();
   /** Enable or disable a task.
     * This method is threadsafe */
   bool enableTask(QString taskId, bool enable);
@@ -188,8 +188,10 @@ signals:
   void noticePosted(QString notice, ParamSet params);
 
 private:
-  void taskInstanceStoppedOrCanceled(TaskInstance instance, Executor *executor);
-  void taskInstanceFinishedOrCanceled(TaskInstance instance);
+  void taskInstanceStoppedOrCanceled(TaskInstance instance, Executor *executor,
+      bool processCanceledAsFailure);
+  void taskInstanceFinishedOrCanceled(
+      TaskInstance instance, bool processCanceledAsFailure);
   void periodicChecks();
   /** Fire expired triggers for a given task. */
   void checkTriggersForTask(QVariant taskId);
@@ -198,12 +200,12 @@ private:
   void reloadAccessControlConfig();
   /** Reevaluate queued requests and start any task that can be started.
     * @see reevaluateQueuedRequests() */
-  void startQueuedTasks();
+  void startAsManyTaskInstancesAsPossible();
   /** Check if it is permitted for a task to run now, if yes start it.
    * If instance.force() is true, start a task despite any constraint or limit,
    * even create a new (temporary) executor thread if needed.
    * @return true if the task was started or canceled */
-  bool startQueuedTask(TaskInstance instance);
+  bool startTaskInstance(TaskInstance instance);
   /** @return true iff the triggers fires a task request */
   bool checkTrigger(CronTrigger trigger, Task task, QString taskId);
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
@@ -212,11 +214,15 @@ private:
       QString taskId, ParamSet params, bool force, TaskInstance herder);
   TaskInstanceList doRequestTask(
       QString taskId, ParamSet params, bool force, QString herdId);
-  TaskInstance enqueueRequest(TaskInstance request, ParamSet params);
-  TaskInstance doCancelRequest(quint64 id);
-  TaskInstanceList doCancelRequestsByTaskId(QString taskId);
-  TaskInstanceList doAbortTaskInstancesByTaskId(QString taskId);
-  TaskInstance doAbortTask(quint64 id);
+  TaskInstance enqueueTaskInstance(TaskInstance request, ParamSet params);
+  TaskInstance doCancelTaskInstance(
+      TaskInstance instance, bool warning, const char *reason);
+  TaskInstance doCancelTaskInstance(
+      TaskInstance instance, bool warning, QString reason) {
+    return doCancelTaskInstance(instance, warning, reason.toUtf8().constData()); }
+  TaskInstanceList doCancelTaskInstancesByTaskId(QString taskId);
+  TaskInstanceList doAbortTaskInstanceByTaskId(QString taskId);
+  TaskInstance doAbortTaskInstance(quint64 id);
   void propagateTaskInstanceChange(TaskInstance instance);
   QHash<quint64, TaskInstance> detachedUnfinishedTaskInstances();
   TaskInstanceList detachedQueuedTaskInstances();
