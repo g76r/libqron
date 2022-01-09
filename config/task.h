@@ -40,9 +40,9 @@ class RequestFormField;
 class LIBQRONSHARED_EXPORT Task : public SharedUiItem {
 public:
   enum EnqueuePolicy { // was DiscardAliasesOnStart
-    EnqueueAndDiscardQueued = 1, // default, was: DiscardAll
+    EnqueueAndDiscardQueued = 1, // was: DiscardAll
     EnqueueAll, // was: DiscardNone
-    EnqueueUntilMaxInstances,
+    EnqueueUntilMaxInstances, // default
     EnqueuePolicyUnknown = 0
   };
   enum Mean {

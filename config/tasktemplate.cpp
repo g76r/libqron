@@ -1,4 +1,4 @@
-/* Copyright 2021 Gregoire Barbier and others.
+/* Copyright 2021-2022 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -359,7 +359,7 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   foreach (const Trigger &nt, _noticeTriggers)
     triggers.appendChild(nt.toPfNode());
   node.appendChild(triggers);
-  if (_enqueuePolicy != Task::EnqueueAndDiscardQueued)
+  if (_enqueuePolicy != Task::EnqueueUntilMaxInstances)
     node.appendChild(
           PfNode("enqueuepolicy",
                  Task::enqueuePolicyAsString(_enqueuePolicy)));

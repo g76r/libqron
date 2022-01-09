@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -105,7 +105,7 @@ public:
 
   TaskOrTemplateData() : _maxInstances(1), _maxExpectedDuration(LLONG_MAX),
     _minExpectedDuration(0), _maxDurationBeforeAbort(LLONG_MAX),
-    _enqueuePolicy(Task::EnqueueAndDiscardQueued),
+    _enqueuePolicy(Task::EnqueueUntilMaxInstances),
     _herdingPolicy(Task::NoFailure), _enabled(true) { }
   QString triggersAsString() const;
   QString triggersWithCalendarsAsString() const;

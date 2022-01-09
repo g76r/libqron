@@ -669,7 +669,7 @@ PfNode TaskData::toPfNode() const {
   foreach (const Trigger &nt, _noticeTriggers)
     triggers.appendChild(nt.toPfNode());
   node.appendChild(triggers);
-  if (_enqueuePolicy != Task::EnqueueAndDiscardQueued)
+  if (_enqueuePolicy != Task::EnqueueUntilMaxInstances)
     node.appendChild(
           PfNode("enqueuepolicy",
                  Task::enqueuePolicyAsString(_enqueuePolicy)));
