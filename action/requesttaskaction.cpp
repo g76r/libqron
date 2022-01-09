@@ -51,7 +51,11 @@ public:
         if (_scheduler->taskExists(idIfLocalToGroup))
           id = idIfLocalToGroup;
       }
-      TaskInstance herder = _lone ? TaskInstance() : parentInstance.herder();
+      TaskInstance herder;
+      if (!_lone // lone by request
+          && !parentInstance.herder().isNull() // lone since orphan
+          && !parentInstance.herder().isFinished()) // lone since in onfinish
+        herder = parentInstance;
       TaskInstanceList instances = _scheduler->syncRequestTask(
           id, evaluatedOverrindingParams(eventContext, parentInstance), _force,
           herder);
