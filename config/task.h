@@ -99,12 +99,9 @@ public:
   /** Atomic fetch-and-add of the executions count. */
   int fetchAndAddExecutionsCount(int valueToAdd) const;
   QList<QRegularExpression> stderrFilters() const;
-  void triggerStartEvents(TaskInstance instance) const;
-  void triggerSuccessEvents(TaskInstance instance) const;
-  void triggerFailureEvents(TaskInstance instance) const;
-  QList<EventSubscription> onstartEventSubscriptions() const;
-  QList<EventSubscription> onsuccessEventSubscriptions() const;
-  QList<EventSubscription> onfailureEventSubscriptions() const;
+  QList<EventSubscription> onstart() const;
+  QList<EventSubscription> onsuccess() const;
+  QList<EventSubscription> onfailure() const;
   /** Events hash with "onsuccess", "onfailure"... key, mainly for UI purpose.
    * Not including group events subscriptions. */
   QList<EventSubscription> allEventsSubscriptions() const;

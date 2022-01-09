@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -44,9 +44,9 @@ TaskGroup::TaskGroup(PfNode node, TaskGroup parentGroup, Scheduler *scheduler) {
   TaskGroupData *d = new TaskGroupData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
                                    ConfigUtils::FullyQualifiedId);
-  d->_onstart.append(parentGroup.onstartEventSubscriptions());
-  d->_onsuccess.append(parentGroup.onsuccessEventSubscriptions());
-  d->_onfailure.append(parentGroup.onfailureEventSubscriptions());
+  d->_onstart.append(parentGroup.onstart());
+  d->_onsuccess.append(parentGroup.onsuccess());
+  d->_onfailure.append(parentGroup.onfailure());
   if (d->loadConfig(node, parentGroup, scheduler))
     setData(d);
 }
@@ -94,37 +94,15 @@ ParamSet TaskGroup::params() const {
   return !isNull() ? data()->_params : ParamSet();
 }
 
-void TaskGroup::triggerStartEvents(TaskInstance instance) const {
-  // LATER trigger events in parent group first
-  if (isNull())
-    return;
-  for (const auto &sub: data()->_onstart)
-    sub.triggerActions(instance);
-}
-
-void TaskGroup::triggerSuccessEvents(TaskInstance instance) const {
-  if (isNull())
-    return;
-  for (auto sub: data()->_onsuccess)
-    sub.triggerActions(instance);
-}
-
-void TaskGroup::triggerFailureEvents(TaskInstance instance) const {
-  if (isNull())
-    return;
-  for (auto sub: data()->_onfailure)
-    sub.triggerActions(instance);
-}
-
-QList<EventSubscription> TaskGroup::onstartEventSubscriptions() const {
+QList<EventSubscription> TaskGroup::onstart() const {
   return !isNull() ? data()->_onstart : QList<EventSubscription>();
 }
 
-QList<EventSubscription> TaskGroup::onsuccessEventSubscriptions() const {
+QList<EventSubscription> TaskGroup::onsuccess() const {
   return !isNull() ? data()->_onsuccess : QList<EventSubscription>();
 }
 
-QList<EventSubscription> TaskGroup::onfailureEventSubscriptions() const {
+QList<EventSubscription> TaskGroup::onfailure() const {
   return !isNull() ? data()->_onfailure : QList<EventSubscription>();
 }
 

@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -49,12 +49,9 @@ public:
   static QString parentGroupId(QString groupId);
   QString label() const;
   ParamSet params() const;
-  void triggerStartEvents(TaskInstance instance) const;
-  void triggerSuccessEvents(TaskInstance instance) const;
-  void triggerFailureEvents(TaskInstance instance) const;
-  QList<EventSubscription> onstartEventSubscriptions() const;
-  QList<EventSubscription> onsuccessEventSubscriptions() const;
-  QList<EventSubscription> onfailureEventSubscriptions() const;
+  QList<EventSubscription> onstart() const;
+  QList<EventSubscription> onsuccess() const;
+  QList<EventSubscription> onfailure() const;
   ParamSet vars() const;
   QList<EventSubscription> allEventSubscriptions() const;
   PfNode originalPfNode() const;

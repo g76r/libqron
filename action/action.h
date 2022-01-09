@@ -1,4 +1,4 @@
-/* Copyright 2013-2021 Hallowyn and others.
+/* Copyright 2013-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -43,6 +43,8 @@ public:
   QString toString() const;
   /** Type of action for programmatic test, e.g. "postnotice" */
   QString actionType() const;
+  /** Action can create task instances, e.g. "requesttask" */
+  bool mayCreateTaskInstances() const;
   static QStringList toStringList(QList<Action> list);
   /** Name of the target, for actions where it makes sense. Null otherwise.
    * e.g. task id for requesttask, notice for postnotice, etc. */

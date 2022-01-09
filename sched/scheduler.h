@@ -220,6 +220,9 @@ private:
   void propagateTaskInstanceChange(TaskInstance instance);
   QHash<quint64, TaskInstance> detachedUnfinishedTaskInstances();
   void doShutdown(QDeadlineTimer deadline);
+  void triggerStartActions(TaskInstance instance);
+  void triggerFinishActions(
+      TaskInstance instance, std::function<bool(Action)> filter);
 };
 
 #endif // SCHEDULER_H

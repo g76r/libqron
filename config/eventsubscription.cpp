@@ -1,4 +1,4 @@
-/* Copyright 2013-2021 Hallowyn and others.
+/* Copyright 2013-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -81,7 +81,8 @@ EventSubscription &EventSubscription::operator=(const EventSubscription &rhs) {
 }
 
 void EventSubscription::triggerActions(
-    ParamSet eventParams, TaskInstance taskContext) const {
+    ParamSet eventParams, TaskInstance taskContext,
+    std::function<bool(Action a)> filter) const {
   if (!d)
     return;
   if (eventParams.parent().isNull())
@@ -90,20 +91,26 @@ void EventSubscription::triggerActions(
   // inheritage will be: eventContext > taskContext > ...
   //Log::fatal() << "EventSubscription::triggerActions " << eventContext << " "
   //             << taskContext.id();
-  foreach (Action a, d->_actions)
-    a.trigger(*this, eventParams, taskContext);
+  for (Action a: d->_actions)
+    if (filter(a))
+      a.trigger(*this, eventParams, taskContext);
 }
 
 void EventSubscription::triggerActions(TaskInstance taskContext) const {
-  triggerActions(ParamSet(), taskContext);
+  triggerActions(ParamSet(), taskContext, [](Action){return true;});
+}
+
+void EventSubscription::triggerActions(
+    TaskInstance taskContext, std::function<bool(Action a)> filter) const {
+  triggerActions(ParamSet(), taskContext, filter);
 }
 
 void EventSubscription::triggerActions(ParamSet eventParams) const {
-  triggerActions(eventParams, TaskInstance());
+  triggerActions(eventParams, TaskInstance(), [](Action){return true;});
 }
 
 void EventSubscription::triggerActions() const {
-  triggerActions(ParamSet(), TaskInstance());
+  triggerActions(ParamSet(), TaskInstance(), [](Action){return true;});
 }
 
 QStringList EventSubscription::toStringList(QList<EventSubscription> list) {

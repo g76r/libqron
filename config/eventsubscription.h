@@ -1,4 +1,4 @@
-/* Copyright 2013-2021 Hallowyn and others.
+/* Copyright 2013-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,6 +19,7 @@
 #include "pf/pfnode.h"
 #include "util/paramset.h"
 #include <QStringList>
+#include <functional>
 
 class EventSubscriptionData;
 class TaskInstance;
@@ -60,9 +61,13 @@ public:
    * Use this method if the event occured in the context of a task.
    * @param eventContext will get taskContext::params() as parent before being
    * passed to Action::trigger() */
-  void triggerActions(ParamSet eventPrams, TaskInstance taskContext) const;
+  void triggerActions(ParamSet eventPrams, TaskInstance taskContext,
+                      std::function<bool(Action a)> filter) const;
   /** Syntaxic sugar */
   void triggerActions(TaskInstance taskContext) const;
+  /** Syntaxic sugar */
+  void triggerActions(TaskInstance taskContext,
+                      std::function<bool(Action a)> filter) const;
   /** Syntaxic sugar */
   void triggerActions(ParamSet eventPrams) const;
   /** Syntaxic sugar */

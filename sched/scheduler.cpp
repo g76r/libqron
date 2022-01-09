@@ -350,7 +350,8 @@ TaskInstance Scheduler::enqueueTaskInstance(
   _alerter->cancelAlert("scheduler.maxqueuedrequests.reached");
   Log::debug(taskId, instance.idAsLong())
       << "queuing task " << taskId << "/" << instance.id() << " "
-      << params << " with request group id " << instance.groupId();
+      << params << " with request group id " << instance.groupId()
+      << " and herdid " << instance.herdid();
   // note: a request must always be queued even if the task can be started
   // immediately, to avoid the new tasks being started before queued ones
   _queuedTasks.append(instance);
@@ -778,9 +779,7 @@ bool Scheduler::startTaskInstance(TaskInstance instance) {
     _runningTasks.insert(instance, executor);
     if (_runningTasks.size() > _runningTasksHwm)
       _runningTasksHwm = _runningTasks.size();
-    for (auto sub: config().onstart())
-      sub.triggerActions(instance);
-    task.triggerStartEvents(instance);
+    triggerStartActions(instance);
     reevaluateQueuedTaskInstances();
     return true;
 nexthost:;
@@ -817,6 +816,9 @@ void Scheduler::taskInstanceStoppedOrCanceled(
     }
     return;
   }
+  triggerFinishActions(instance, [](Action a) {
+    return a.mayCreateTaskInstances();
+  });
   TaskInstanceList livingSheeps;
   for (auto sheep: instance.herdedTasks()) {
     if (!sheep.isFinished())
@@ -853,7 +855,7 @@ void Scheduler::taskInstanceFinishedOrCanceled(
       _alerter->cancelAlert("task.maxinstancesreached."+taskId);
     _queuedTasks.removeOne(instance);
   } else {
-    instance.setHerderSuccess(configuredTask.herdingPolicy());
+    instance.setHerderSuccess(instance.task().herdingPolicy());
     configuredTask.fetchAndAddRunningCount(-1);
     QHash<QString,qint64> taskResources = requestedTask.resources();
     QHash<QString,qint64> hostConsumedResources =
@@ -877,15 +879,9 @@ void Scheduler::taskInstanceFinishedOrCanceled(
     configuredTask.setLastReturnCode(instance.returnCode());
     configuredTask.setLastTotalMillis((int)instance.totalMillis());
     configuredTask.setLastTaskInstanceId(instance.idAsLong());
-    if (instance.success()) {
-      foreach (EventSubscription sub, config().onsuccess())
-        sub.triggerActions(instance);
-      configuredTask.triggerSuccessEvents(instance);
-    } else {
-      foreach (EventSubscription sub, config().onfailure())
-        sub.triggerActions(instance);
-      configuredTask.triggerFailureEvents(instance);
-    }
+    triggerFinishActions(instance, [](Action a) {
+      return !a.mayCreateTaskInstances();
+    });
     if (configuredTask.maxExpectedDuration() < LLONG_MAX) {
       if (configuredTask.maxExpectedDuration() < instance.totalMillis())
         _alerter->raiseAlert("task.toolong."+taskId);
@@ -1002,4 +998,26 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
               << " requests not started on leaving : " << taskIds
               << " with ids: " << instanceIds;
   QThread::usleep(100000);
+}
+
+void Scheduler::triggerStartActions(TaskInstance instance) {
+  for (auto subs: config().onstart()
+       + instance.task().taskGroup().onstart()
+       + instance.task().onstart())
+    subs.triggerActions(instance);
+}
+
+void Scheduler::triggerFinishActions(
+    TaskInstance instance, std::function<bool(Action)> filter) {
+  QList<EventSubscription> subs;
+  if (instance.success())
+    subs = config().onsuccess()
+        + instance.task().taskGroup().onsuccess()
+        + instance.task().onsuccess();
+  else
+    subs = config().onfailure()
+        + instance.task().taskGroup().onfailure()
+        + instance.task().onfailure();
+  for (auto es: subs)
+    es.triggerActions(instance, filter);
 }

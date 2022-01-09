@@ -1,4 +1,4 @@
-/* Copyright 2013-2021 Hallowyn and others.
+/* Copyright 2013-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,6 +28,8 @@ public:
   virtual QString toString() const;
   /** Type of action for programmatic test, e.g. "postnotice" */
   virtual QString actionType() const;
+  /** Action can create task instances, e.g. "requesttask" */
+  virtual bool mayCreateTaskInstances() const;
   /** Default: do nothing */
   virtual void trigger(EventSubscription subscription,
                        ParamSet eventContext, TaskInstance taskContext) const;

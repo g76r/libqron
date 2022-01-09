@@ -253,39 +253,15 @@ QList<QRegularExpression> Task::stderrFilters() const {
   return !isNull() ? data()->_stderrFilters : QList<QRegularExpression>();
 }
 
-void Task::triggerStartEvents(TaskInstance instance) const {
-  if (!isNull()) {
-    data()->_group.triggerStartEvents(instance);
-    foreach (EventSubscription sub, data()->_onstart)
-      sub.triggerActions(instance);
-  }
-}
-
-void Task::triggerSuccessEvents(TaskInstance instance) const {
-  if (!isNull()) {
-    data()->_group.triggerSuccessEvents(instance);
-    foreach (EventSubscription sub, data()->_onsuccess)
-      sub.triggerActions(instance);
-  }
-}
-
-void Task::triggerFailureEvents(TaskInstance instance) const {
-  if (!isNull()) {
-    data()->_group.triggerFailureEvents(instance);
-    foreach (EventSubscription sub, data()->_onfailure)
-      sub.triggerActions(instance);
-  }
-}
-
-QList<EventSubscription> Task::onstartEventSubscriptions() const {
+QList<EventSubscription> Task::onstart() const {
   return !isNull() ? data()->_onstart : QList<EventSubscription>();
 }
 
-QList<EventSubscription> Task::onsuccessEventSubscriptions() const {
+QList<EventSubscription> Task::onsuccess() const {
   return !isNull() ? data()->_onsuccess : QList<EventSubscription>();
 }
 
-QList<EventSubscription> Task::onfailureEventSubscriptions() const {
+QList<EventSubscription> Task::onfailure() const {
   return !isNull() ? data()->_onfailure : QList<EventSubscription>();
 }
 
