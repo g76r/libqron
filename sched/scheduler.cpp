@@ -954,63 +954,10 @@ QHash<quint64,TaskInstance> Scheduler::unfinishedTaskInstances() {
   return instances;
 }
 
-TaskInstanceList Scheduler::queuedTaskInstances() {
-  TaskInstanceList instances;
-  if (this->thread() == QThread::currentThread())
-    instances = detachedQueuedTaskInstances();
-  else
-    QMetaObject::invokeMethod(this, [this,&instances](){
-      instances = detachedQueuedTaskInstances();
-    }, Qt::BlockingQueuedConnection);
-  return instances;
-}
-
-TaskInstanceList Scheduler::runningTaskInstances() {
-  TaskInstanceList instances;
-  if (this->thread() == QThread::currentThread())
-    instances = detachedRunningTaskInstances();
-  else
-    QMetaObject::invokeMethod(this, [this,&instances](){
-      instances = detachedRunningTaskInstances();
-    }, Qt::BlockingQueuedConnection);
-  return instances;
-}
-
-TaskInstanceList Scheduler::queuedOrRunningTaskInstances() {
-  TaskInstanceList instances;
-  if (this->thread() == QThread::currentThread())
-    instances = detachedQueuedOrRunningTaskInstances();
-  else
-    QMetaObject::invokeMethod(this, [this,&instances](){
-      instances = detachedQueuedOrRunningTaskInstances();
-    }, Qt::BlockingQueuedConnection);
-  return instances;
-}
-
 QHash<quint64,TaskInstance> Scheduler::detachedUnfinishedTaskInstances() {
   QHash<quint64,TaskInstance> unfinished = _unfinishedTasks;
   unfinished.detach();
   return unfinished;
-}
-
-TaskInstanceList Scheduler::detachedQueuedTaskInstances() {
-  TaskInstanceList queued = _queuedTasks;
-  queued.detach();
-  return queued;
-}
-
-TaskInstanceList Scheduler::detachedRunningTaskInstances() {
-  TaskInstanceList running = _runningTasks.keys();
-  running.detach(); // keys() may or may not return a detached container
-  return running;
-}
-
-TaskInstanceList Scheduler::detachedQueuedOrRunningTaskInstances() {
-  TaskInstanceList instances = _queuedTasks;
-  instances.detach();
-  TaskInstanceList running = _runningTasks.keys();
-  instances.append(running);
-  return instances;
 }
 
 void Scheduler::shutdown(QDeadlineTimer deadline) {

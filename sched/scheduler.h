@@ -173,14 +173,8 @@ public:
   SchedulerConfig config() {
     QMutexLocker ml(&_configGuard);
     return QronConfigDocumentManager::config(); }
-  /** Thread-safe. Sorted in queue order. */
+  /** Thread-safe. No order guarantee. */
   QHash<quint64, TaskInstance> unfinishedTaskInstances();
-  /** Thread-safe. Sorted in queue order. */
-  TaskInstanceList queuedTaskInstances();
-  /** Thread-safe. No order guarantee. */
-  TaskInstanceList runningTaskInstances();
-  /** Thread-safe. No order guarantee. */
-  TaskInstanceList queuedOrRunningTaskInstances();
 
 signals:
   void hostsResourcesAvailabilityChanged(
@@ -225,9 +219,6 @@ private:
   TaskInstance doAbortTaskInstance(quint64 id);
   void propagateTaskInstanceChange(TaskInstance instance);
   QHash<quint64, TaskInstance> detachedUnfinishedTaskInstances();
-  TaskInstanceList detachedQueuedTaskInstances();
-  TaskInstanceList detachedRunningTaskInstances();
-  TaskInstanceList detachedQueuedOrRunningTaskInstances();
   void doShutdown(QDeadlineTimer deadline);
 };
 
