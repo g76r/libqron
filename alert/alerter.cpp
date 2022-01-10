@@ -57,7 +57,7 @@ public:
       if (_buffer.tryGet(&alert, 500)) {
         ++_gridboardsEvaluationsCounter;
         auto gridboards = _alerter->_gridboards.lockedData();
-        for (auto gridboard: *gridboards) {
+        for (Gridboard &gridboard: *gridboards) {
           QRegularExpressionMatch match =
               gridboard.patternRegexp().match(alert.id());
           if (match.hasMatch()) {
