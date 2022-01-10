@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -41,7 +41,10 @@ public:
   TaskInstance &operator=(const TaskInstance &other) {
     SharedUiItem::operator=(other); return *this; }
   Task task() const;
-  void setParam(QString key, QString value);
+  void setParam(QString key, QString value) const;
+  /** Either set param if empty or append a space followed by value to current
+   * value */
+  void paramAppend(QString key, QString value) const;
   ParamSet params() const;
   quint64 idAsLong() const;
   quint64 groupId() const;

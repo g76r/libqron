@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -45,7 +45,7 @@ public:
   quint64 _id, _groupId;
   QString _idAsString;
   Task _task;
-  ParamSet _overridingParams;
+  mutable AtomicValue<ParamSet> _params;
   QDateTime _requestDateTime;
   bool _force;
   TaskInstance _herder;
@@ -68,15 +68,16 @@ public:
   mutable bool _abortable;
   mutable AtomicValue<TaskInstanceList> _herdedTasks;
 
-  TaskInstanceData(Task task, ParamSet overridingParams, bool force,
+  TaskInstanceData(Task task, ParamSet params, bool force,
                    TaskInstance herder = TaskInstance(), quint64 groupId = 0)
     : _id(newId()), _groupId(groupId ? groupId : _id),
       _idAsString(QString::number(_id)),
-      _task(task), _overridingParams(overridingParams),
+      _task(task), _params(params),
       _requestDateTime(QDateTime::currentDateTime()), _force(force),
       _herder(herder), _start(LLONG_MIN), _stop(LLONG_MIN), _finish(LLONG_MIN),
       _success(false), _returnCode(0), _abortable(false) {
-    _overridingParams.setParent(task.params());
+    auto p = _params.lockedData();
+    p->setParent(task.params());
   }
   TaskInstanceData() : _id(0), _groupId(0), _force(false),
       _start(LLONG_MIN), _stop(LLONG_MIN), _finish(LLONG_MIN),
@@ -164,15 +165,29 @@ Task TaskInstance::task() const {
   return d ? d->_task : Task();
 }
 
-void TaskInstance::setParam(QString key, QString value) {
-  TaskInstanceData *d = data();
-  if (d)
-    d->_overridingParams.setValue(key, value);
+void TaskInstance::setParam(QString key, QString value) const {
+  auto d = data();
+  if (!d)
+    return;
+  auto params = d->_params.lockedData();
+  params->setValue(key, value);
+}
+
+void TaskInstance::paramAppend(QString key, QString value) const {
+  auto d = data();
+  if (!d)
+    return;
+  auto params = d->_params.lockedData();
+  auto current = params->rawValue(key);
+  if (current.isEmpty())
+    params->setValue(key, value);
+  else
+    params->setValue(key, current+' '+value);
 }
 
 ParamSet TaskInstance::params() const {
   const TaskInstanceData *d = data();
-  return d ? d->_overridingParams : ParamSet();
+  return d ? d->_params.detachedData() : ParamSet();
 }
 
 quint64 TaskInstance::idAsLong() const {

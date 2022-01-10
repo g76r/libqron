@@ -87,7 +87,7 @@ public slots:
    * queued either denied by Scheduler thread.
    * If current thread is the Scheduler thread, the method is a direct call.
    * @param taskId fully qualified task name, on the form "taskGroupId.taskId"
-   * @param paramsOverriding override params, using RequestFormField semantics
+   * @param params override params, using RequestFormField semantics
    * @param force if true, any constraints or ressources are ignored
    * @return isEmpty() if task cannot be queued
    * @see asyncRequestTask
@@ -101,7 +101,7 @@ public slots:
    * processing the request.
    * If current thread is the Scheduler thread, the call is queued anyway.
    * @param taskId fully qualified task name, on the form "taskGroupId.taskId"
-   * @param paramsOverriding override params, using RequestFormField semantics
+   * @param params override params, using RequestFormField semantics
    * @param force if true, any constraints or ressources are ignored
    * @see syncRequestTask
    * @see RequestFormField */

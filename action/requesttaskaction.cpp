@@ -21,52 +21,57 @@ public:
   QString _id;
   ParamSet _overridingParams;
   bool _force, _lone;
+  QHash<QString,QString> _paramappend;
   RequestTaskActionData(
-      Scheduler *scheduler, QString id, ParamSet params, bool force, bool lone)
+      Scheduler *scheduler, QString id, ParamSet params, bool force, bool lone,
+      QHash<QString,QString> paramappend)
     : ActionData(scheduler), _id(id), _overridingParams(params),
-      _force(force), _lone(lone) { }
-  inline ParamSet evaluatedOverrindingParams(ParamSet eventContext,
-                                             TaskInstance instance) const {
-    ParamSet overridingParams;
-    TaskInstancePseudoParamsProvider ppp = instance.pseudoParams();
-    ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp)
-        (instance.params());
-    foreach (QString key, _overridingParams.keys())
-      overridingParams.setValue(key, _overridingParams.value(key, &ppm));
-    //Log::fatal() << "******************* " << eventContext << overridingParams
-    //             << _overridingParams;
-    return overridingParams;
-  }
+      _force(force), _lone(lone), _paramappend(paramappend) { }
   void trigger(EventSubscription subscription, ParamSet eventContext,
                TaskInstance parentInstance) const override {
-    if (_scheduler) {
-      QString id;
-      if (parentInstance.isNull()) {
-        id = _id;
-      } else {
-        TaskInstancePseudoParamsProvider ppp = parentInstance.pseudoParams();
-        id = eventContext.evaluate(_id, &ppp);
-        QString idIfLocalToGroup = parentInstance.task().taskGroup().id()
-            +"."+_id;
-        if (_scheduler->taskExists(idIfLocalToGroup))
-          id = idIfLocalToGroup;
-      }
-      TaskInstance herder = _lone ? TaskInstance() : parentInstance.herder();
-      TaskInstanceList instances = _scheduler->syncRequestTask(
-          id, evaluatedOverrindingParams(eventContext, parentInstance), _force,
-          herder);
-      if (instances.isEmpty())
-        Log::error(parentInstance.task().id(), parentInstance.idAsLong())
-            << "requesttask action failed to request execution of task "
-            << id << " within event subscription context "
-            << subscription.subscriberName() << "|" << subscription.eventName();
-      else
-        foreach (TaskInstance childInstance, instances)
-          Log::info(parentInstance.task().id(), parentInstance.idAsLong())
-              << "requesttask action requested execution of task "
-              << childInstance.task().id() << "/" << childInstance.groupId();
+    if (!_scheduler)
+      return;
+    TaskInstancePseudoParamsProvider ppp = parentInstance.pseudoParams();
+    ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp)
+        (parentInstance.params());
+    QString id;
+    if (parentInstance.isNull()) {
+      id = _id;
+    } else {
+      id = ParamSet().evaluate(_id, &ppm);
+      QString idIfLocalToGroup = parentInstance.task().taskGroup().id()
+          +"."+_id;
+      if (_scheduler->taskExists(idIfLocalToGroup))
+        id = idIfLocalToGroup;
     }
-
+    TaskInstance herder = _lone ? TaskInstance() : parentInstance.herder();
+    ParamSet overridingParams;
+    foreach (QString key, _overridingParams.keys())
+      overridingParams.setValue(key, _overridingParams.value(key, &ppm));
+    TaskInstanceList instances = _scheduler->syncRequestTask(
+          id, overridingParams, _force, herder);
+    if (instances.isEmpty()) {
+      Log::error(parentInstance.task().id(), parentInstance.idAsLong())
+          << "requesttask action failed to request execution of task "
+          << id << " within event subscription context "
+          << subscription.subscriberName() << "|" << subscription.eventName();
+      return;
+    }
+    for (auto childInstance: instances) {
+      Log::info(parentInstance.task().id(), parentInstance.idAsLong())
+          << "requesttask action requested execution of task "
+          << childInstance.task().id() << "/" << childInstance.groupId();
+      if (_paramappend.isEmpty())
+        continue;
+      ParamsProviderMergerRestorer ppmr(&ppm);
+      auto ppp = childInstance.pseudoParams();
+      ppm.prepend(childInstance.params());
+      ppm.prepend(&ppp);
+      for (auto key: _paramappend.keys()) {
+        auto value = ParamSet().evaluate(_paramappend.value(key), &ppm);
+        parentInstance.paramAppend(key, ParamSet::escape(value));
+      }
+    }
   }
   QString toString() const override {
     return "*" + _id;
@@ -90,6 +95,7 @@ public:
       node.appendChild(PfNode("force"));
     if (_lone)
       node.appendChild(PfNode("lone"));
+    ConfigUtils::writeParamSet(&node, ParamSet(_paramappend), "paramappend");
     return node;
   }
 };
@@ -98,12 +104,14 @@ RequestTaskAction::RequestTaskAction(Scheduler *scheduler, PfNode node)
   : Action(new RequestTaskActionData(
              scheduler, node.contentAsString(),
              ConfigUtils::loadParamSet(node, "param"), node.hasChild("force"),
-             node.hasChild("lone"))) {
+             node.hasChild("lone"),
+             ConfigUtils::loadParamSet(node, "paramappend").toHash())) {
 }
 
 RequestTaskAction::RequestTaskAction(Scheduler *scheduler, QString taskId)
   : Action(new RequestTaskActionData(
-             scheduler, taskId, ParamSet(), false, false)) {
+             scheduler, taskId, ParamSet(), false, false,
+             QHash<QString,QString>())) {
 }
 
 RequestTaskAction::RequestTaskAction(const RequestTaskAction &rhs)
