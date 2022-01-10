@@ -268,14 +268,15 @@ TaskInstanceList Scheduler::doRequestTask(
   }
   if (!instances.isEmpty()) {
     reevaluateQueuedTaskInstances();
-    if (!herder.isNull()) {
-      for (auto instance: instances) {
-        if (_waitingTasks.contains(herder))
-          _waitingTasks[herder].append(instance);
-        Log::info(herder.task().id(), herder.id())
-            << "task appended to herded tasks: "
-            << instance.task().id()+"/"+instance.id();
-      }
+    for (auto instance: instances) {
+      if (herder.isNull() || herder == instance)
+        continue;
+      if (_waitingTasks.contains(herder))
+        _waitingTasks[herder].append(instance);
+      Log::info(herder.task().id(), herder.id())
+          << "task appended to herded tasks: "
+          << instance.task().id()+"/"+instance.id();
+      emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
     }
   }
   return instances;
