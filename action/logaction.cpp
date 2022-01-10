@@ -1,4 +1,4 @@
-/* Copyright 2013-2016 Hallowyn and others.
+/* Copyright 2013-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,6 +14,7 @@
 #include "logaction.h"
 #include "action_p.h"
 #include "util/paramset.h"
+#include "util/paramsprovidermerger.h"
 
 class LogActionData : public ActionData {
 public:
@@ -28,16 +29,16 @@ public:
   QString actionType() const {
     return QStringLiteral("log");
   }
-  void trigger(EventSubscription subscription, ParamSet eventContext,
+  void trigger(EventSubscription, ParamSet eventContext,
                TaskInstance instance) const {
-    Q_UNUSED(subscription)
-    if (instance.isNull()) {
-      Log::log(_severity) << eventContext.evaluate(_message);
-    } else {
-      TaskInstancePseudoParamsProvider ppp = instance.pseudoParams();
+    TaskInstancePseudoParamsProvider ppp = instance.pseudoParams();
+    ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp)
+        (instance.params());
+    if (instance.isNull())
+      Log::log(_severity) << ParamSet().evaluate(_message, &ppm);
+    else
       Log::log(_severity, instance.task().id(), instance.idAsLong())
-          << eventContext.evaluate(_message, &ppp);
-    }
+          << ParamSet().evaluate(_message, &ppm);
   }
   PfNode toPfNode() const{
     PfNode node(actionType(), _message);
