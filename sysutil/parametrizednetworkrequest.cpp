@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,7 @@ const QSet<QString> ParametrizedNetworkRequest::supportedParamNames {
   "follow-redirect", "redirect-max" };
 
 ParametrizedNetworkRequest::ParametrizedNetworkRequest(
-    QString url, ParamSet params, ParamsProvider *paramsEvaluationContext,
+    QString url, ParamSet params, const ParamsProvider *paramsEvaluationContext,
     QString logTask, quint64 logExecId)
   : QNetworkRequest(), _logTask(logTask),
     _logExecId(logExecId ? QString::number(logExecId) : QString()),
@@ -70,7 +70,7 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
 
 QNetworkReply *ParametrizedNetworkRequest::performRequest(
     QNetworkAccessManager *nam, QString payload,
-    ParamsProvider *payloadEvaluationContext) {
+    const ParamsProvider *payloadEvaluationContext) {
   QNetworkReply *reply = 0;
   QUrl url = this->url();
   if (payload.isNull())
