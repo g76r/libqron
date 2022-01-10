@@ -267,8 +267,13 @@ TaskInstanceList Scheduler::doRequestTask(
       instances.append(request);
   }
   if (!instances.isEmpty()) {
-    reevaluateQueuedTaskInstances();
     for (auto instance: instances) {
+      auto instanceparams = instance.task().instanceparams();
+      for (auto key: instanceparams.keys()) {
+        auto ppp = instance.pseudoParams();
+        auto value = instanceparams.value(key, &ppp);
+        instance.setParam(key, ParamSet::escape(value));
+      }
       if (herder.isNull() || herder == instance)
         continue;
       if (_waitingTasks.contains(herder))
@@ -278,6 +283,7 @@ TaskInstanceList Scheduler::doRequestTask(
           << instance.task().id()+"/"+instance.id();
       emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
     }
+    reevaluateQueuedTaskInstances();
   }
   return instances;
 }
@@ -524,7 +530,7 @@ bool Scheduler::checkTrigger(CronTrigger trigger, Task task, QString taskId) {
     // for notices and fix this
     foreach (QString key, trigger.overridingParams().keys())
       overridingParams
-          .setValue(key, config().globalParams()
+          .setValue(key, config().params()
                     .value(trigger.overridingParams().rawValue(key)));
     TaskInstanceList requests = syncRequestTask(taskId, overridingParams);
     if (!requests.isEmpty())
@@ -576,7 +582,7 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
   }
   QHash<QString,Task> tasks = config().tasks();
   if (params.parent().isNull())
-    params.setParent(config().globalParams());
+    params.setParent(config().params());
   params.setValue(QStringLiteral("!notice"), notice);
   Log::debug() << "posting notice ^" << notice << " with params " << params;
   foreach (Task task, tasks.values()) {

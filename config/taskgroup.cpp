@@ -33,10 +33,11 @@ TaskGroup::TaskGroup() {
 TaskGroup::TaskGroup(const TaskGroup &other) : SharedUiItem(other) {
 }
 
-TaskGroup::TaskGroup(ParamSet params, ParamSet vars) {
+TaskGroup::TaskGroup(ParamSet params, ParamSet vars, ParamSet instanceparams) {
   TaskGroupData *d = new TaskGroupData;
   d->_params = params;
   d->_vars = vars;
+  d->_instanceparams = instanceparams;
   setData(d);
 }
 
@@ -59,6 +60,8 @@ bool TaskOrGroupData::loadConfig(
   ConfigUtils::loadParamSet(node, &_params, "param");
   _vars.setParent(parentGroup.vars());
   ConfigUtils::loadParamSet(node, &_vars, "var");
+  _instanceparams.setParent(parentGroup.instanceparams());
+  ConfigUtils::loadParamSet(node, &_instanceparams, "instanceparam");
   ConfigUtils::loadEventSubscription(
         node, "onstart", _id, &_onstart, scheduler);
   ConfigUtils::loadEventSubscription(
@@ -110,6 +113,10 @@ ParamSet TaskGroup::vars() const {
   return !isNull() ? data()->_vars : ParamSet();
 }
 
+ParamSet TaskGroup::instanceparams() const {
+  return !isNull() ? data()->_instanceparams : ParamSet();
+}
+
 QList<EventSubscription> TaskGroup::allEventSubscriptions() const {
   // LATER avoid creating the collection at every call
   return !isNull() ? data()->_onstart + data()->_onsuccess + data()->_onfailure
@@ -147,9 +154,9 @@ QVariant TaskOrGroupData::uiData(int section, int role) const {
     case 16:
       return EventSubscription::toStringList(_onfailure).join("\n");
     case 21:
-      return QronUiUtils::paramsAsString(_vars);
+      return _vars.toString(false, false);
     case 22:
-      return QVariant(); // was: Unsetenv willbe: instanceparam
+      return _instanceparams.toString(false, false);
     }
     break;
   default:
@@ -193,6 +200,7 @@ void TaskOrGroupData::fillPfNode(PfNode &node) const {
   // params and vars
   ConfigUtils::writeParamSet(&node, _params, "param");
   ConfigUtils::writeParamSet(&node, _vars, "var");
+  ConfigUtils::writeParamSet(&node, _instanceparams, "instanceparam");
 
   // event subcription
   ConfigUtils::writeEventSubscriptions(&node, _onstart);

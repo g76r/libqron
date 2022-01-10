@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,20 +57,4 @@ bool QronUiUtils::resourcesFromString(
     resources->insert(key, value);
   }
   return true;
-}
-
-QString QronUiUtils::paramsAsString(ParamSet params, bool inherit) {
-  QString s;
-  foreach(const QString key, params.keys(inherit))
-    s.append(key).append('=').append(params.rawValue(key)).append(' ');
-  s.chop(1);
-  return s;
-}
-
-QString QronUiUtils::paramsKeysAsString(ParamSet params, bool inherit) {
-  QString s;
-  foreach(const QString key, params.keys(inherit))
-    s.append(key).append(' ');
-  s.chop(1);
-  return s;
 }

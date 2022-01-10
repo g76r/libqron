@@ -46,7 +46,7 @@ static QString _uiHeaderNames[] = {
   "Last execution status",
   "Applied templates", // was: System environment // 20
   "Vars",
-  "", // was: Unsetenv willbe: instanceparam
+  "Instance params", // was: Unsetenv
   "Min expected duration",
   "Max expected duration",
   "Request form overridable params", // 25
@@ -71,7 +71,7 @@ static QStringList excludeOnfinishSubscriptions { "onfinish" };
 class TaskOrGroupData : public SharedUiItemData {
 public:
   QString _id, _label;
-  ParamSet _params, _vars;
+  ParamSet _params, _vars, _instanceparams;
   QList<EventSubscription> _onstart, _onsuccess, _onfailure;
   QStringList _commentsList;
   PfNode _originalPfNode;

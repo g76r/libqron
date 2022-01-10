@@ -1,4 +1,4 @@
-/* Copyright 2015-2021 Hallowyn and others.
+/* Copyright 2015-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   : SharedUiItemDocumentManager(parent) {
   registerItemType(
         "taskgroup", &TaskGroup::setUiData, [this](QString id) -> SharedUiItem {
-    TaskGroup rootPseudoGroup(_config.globalParams(), _config.vars());
+    TaskGroup rootPseudoGroup(_config.params(), _config.vars(),
+                              _config.instanceparams());
     return TaskGroup(PfNode("taskgroup", id), rootPseudoGroup, 0);
   });
   addChangeItemTrigger(
@@ -64,7 +65,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   registerItemType(
         "host", &Host::setUiData,
         [this](QString id) -> SharedUiItem {
-    return Host(PfNode("host", id), _config.globalParams());
+    return Host(PfNode("host", id), _config.params());
   });
   addChangeItemTrigger(
         "host", BeforeUpdate|BeforeCreate,
@@ -218,7 +219,7 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
   _config = newConfig;
   if (locker)
     locker->unlock();
-  emit paramsChanged(newConfig.globalParams(), oldConfig.globalParams(),
+  emit paramsChanged(newConfig.params(), oldConfig.params(),
                      QStringLiteral("globalparams"));
   emit paramsChanged(newConfig.vars(), oldConfig.vars(),
                      QStringLiteral("globalvars"));

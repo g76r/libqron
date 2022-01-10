@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -52,8 +52,9 @@ public:
   SchedulerConfig &operator=(const SchedulerConfig &other) {
     SharedUiItem::operator=(other); return *this; }
   bool isNull() const;
-  ParamSet globalParams() const;
+  ParamSet params() const;
   ParamSet vars() const;
+  ParamSet instanceparams() const;
   QHash<QString,TaskGroup> taskgroups() const;
   QHash<QString,TaskTemplate> tasktemplates() const;
   QHash<QString,Task> tasks() const;

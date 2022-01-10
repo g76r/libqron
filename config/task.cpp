@@ -331,6 +331,10 @@ ParamSet Task::vars() const {
   return !isNull() ? data()->_vars : ParamSet();
 }
 
+ParamSet Task::instanceparams() const {
+  return !isNull() ? data()->_instanceparams : ParamSet();
+}
+
 Task::EnqueuePolicy Task::enqueuePolicy() const {
   return !isNull() ? data()->_enqueuePolicy : Task::EnqueuePolicyUnknown;
 }
@@ -660,6 +664,7 @@ PfNode TaskData::toPfNode() const {
   // params and vars
   ConfigUtils::writeParamSet(&node, _params, "param");
   ConfigUtils::writeParamSet(&node, _vars, "var");
+  ConfigUtils::writeParamSet(&node, _instanceparams, "instanceparam");
 
   // monitoring and alerting attributes
   if (_maxExpectedDuration < LLONG_MAX)

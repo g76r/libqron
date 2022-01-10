@@ -48,7 +48,7 @@ public:
   int maxqueuedrequests() const { return _config.maxqueuedrequests(); }
   Calendar calendarByName(QString name) const {
     return _config.namedCalendars().value(name); }
-  ParamSet globalParams() const { return _config.globalParams(); }
+  ParamSet globalParams() const { return _config.params(); }
   ParamSet globalVars() const { return _config.vars(); }
   /** This method is threadsafe */
   bool taskExists(QString taskId) { return _config.tasks().contains(taskId); }

@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,7 +57,7 @@ public:
 
 class SchedulerConfigData : public SharedUiItemData{
 public:
-  ParamSet _params, _vars;
+  ParamSet _params, _vars, _instanceparams;
   QHash<QString,TaskGroup> _taskgroups;
   QHash<QString,TaskTemplate> _tasktemplates;
   QHash<QString,Task> _tasks;
@@ -80,6 +80,7 @@ public:
   SchedulerConfigData(const SchedulerConfigData &other)
     : SharedUiItemData(other),
       _params(other._params), _vars(other._vars),
+      _instanceparams(other._instanceparams),
       _taskgroups(other._taskgroups), _tasktemplates(other._tasktemplates),
       _tasks(other._tasks), _clusters(other._clusters), _hosts(other._hosts),
       _onstart(other._onstart), _onsuccess(other._onsuccess),
@@ -155,8 +156,10 @@ SchedulerConfigData::SchedulerConfigData(
     this->applyLogConfig();
   _params.clear();
   _vars.clear();
+  _instanceparams.clear();
   ConfigUtils::loadParamSet(root, &_params, "param");
   ConfigUtils::loadParamSet(root, &_vars, "var");
+  ConfigUtils::loadParamSet(root, &_instanceparams, "instanceparam");
   _namedCalendars.clear();
   foreach (PfNode node, root.childrenByName("calendar")) {
     QString name = node.contentAsString();
@@ -205,7 +208,7 @@ SchedulerConfigData::SchedulerConfigData(
     else
       _clusters.insert(cluster.id(), cluster);
   }
-  TaskGroup rootPseudoGroup(_params, _vars);
+  TaskGroup rootPseudoGroup(_params, _vars, _instanceparams);
   _taskgroups.clear();
   QList<PfNode> taskGroupNodes = root.childrenByName("taskgroup");
   std::sort(taskGroupNodes.begin(), taskGroupNodes.end());
@@ -382,7 +385,7 @@ bool SchedulerConfig::isNull() const {
   return !data();
 }
 
-ParamSet SchedulerConfig::globalParams() const {
+ParamSet SchedulerConfig::params() const {
   const SchedulerConfigData *d = data();
   return d ? d->_params : ParamSet();
 }
@@ -390,6 +393,11 @@ ParamSet SchedulerConfig::globalParams() const {
 ParamSet SchedulerConfig::vars() const {
   const SchedulerConfigData *d = data();
   return d ? d->_vars : ParamSet();
+}
+
+ParamSet SchedulerConfig::instanceparams() const {
+  const SchedulerConfigData *d = data();
+  return d ? d->_instanceparams : ParamSet();
 }
 
 QHash<QString,TaskGroup> SchedulerConfig::taskgroups() const {
@@ -587,9 +595,10 @@ PfNode SchedulerConfig::toPfNode() const {
     return PfNode();
   PfNode node("config");
   ConfigUtils::writeComments(&node, d->_commentsList);
-  ParamSet configuredVars = d->_vars;
   ConfigUtils::writeParamSet(&node, d->_params, QStringLiteral("param"));
-  ConfigUtils::writeParamSet(&node, configuredVars, QStringLiteral("var"));
+  ConfigUtils::writeParamSet(&node, d->_vars, QStringLiteral("var"));
+  ConfigUtils::writeParamSet(&node, d->_instanceparams,
+                             QStringLiteral("instanceparam"));
   ConfigUtils::writeEventSubscriptions(&node, d->_onstart);
   ConfigUtils::writeEventSubscriptions(&node, d->_onsuccess);
   ConfigUtils::writeEventSubscriptions(&node, d->_onfailure,
