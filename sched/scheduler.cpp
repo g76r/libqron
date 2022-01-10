@@ -268,6 +268,15 @@ TaskInstanceList Scheduler::doRequestTask(
   }
   if (!instances.isEmpty()) {
     reevaluateQueuedTaskInstances();
+    if (!herder.isNull()) {
+      for (auto instance: instances) {
+        if (_waitingTasks.contains(herder))
+          _waitingTasks[herder].append(instance);
+        Log::info(herder.task().id(), herder.id())
+            << "task appended to herded tasks: "
+            << instance.task().id()+"/"+instance.id();
+      }
+    }
   }
   return instances;
 }
@@ -811,6 +820,9 @@ void Scheduler::taskInstanceStoppedOrCanceled(
     if (_waitingTasks.contains(herder)) {
       TaskInstanceList &sheeps = _waitingTasks[herder];
       sheeps.removeOne(instance);
+      Log::info(herder.task().id(), herder.id())
+          << "herded task finished: " << instance.task().id()+"/"+instance.id()
+          << " remaining: " << sheeps.size() << " : " << sheeps;
       if (sheeps.isEmpty())
         taskInstanceFinishedOrCanceled(herder, false);
     }
