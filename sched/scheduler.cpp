@@ -891,8 +891,9 @@ void Scheduler::taskInstanceFinishedOrCanceled(
     configuredTask.setLastReturnCode(instance.returnCode());
     configuredTask.setLastTotalMillis((int)instance.totalMillis());
     configuredTask.setLastTaskInstanceId(instance.idAsLong());
-    triggerFinishActions(instance, [](Action a) {
-      return !a.mayCreateTaskInstances();
+    triggerFinishActions(instance, [instance](Action a) {
+      return instance.idAsLong() != instance.herdid()
+          || !a.mayCreateTaskInstances();
     });
     if (configuredTask.maxExpectedDuration() < LLONG_MAX) {
       if (configuredTask.maxExpectedDuration() < instance.totalMillis())
