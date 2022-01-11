@@ -1,4 +1,4 @@
-/* Copyright 2021 Gregoire Barbier and others.
+/* Copyright 2021-2022 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,32 +28,7 @@ public:
                QHash<QString, Calendar> namedCalendars);
   TaskTemplate &operator=(const TaskTemplate &other) {
     SharedUiItem::operator=(other); return *this; }
-  ParamSet params() const;
-  QString label() const;
-  Task::Mean mean() const;
-  QString command() const;
-  QString target() const;
-  QString info() const;
-  QHash<QString, qint64> resources() const;
   int maxInstances() const;
-  QList<QRegularExpression> stderrFilters() const;
-  QList<EventSubscription> onstartEventSubscriptions() const;
-  QList<EventSubscription> onsuccessEventSubscriptions() const;
-  QList<EventSubscription> onfailureEventSubscriptions() const;
-  bool enabled() const;
-  /** in millis, LLONG_MAX if not set */
-  long long maxExpectedDuration() const;
-  /** in millis, 0 if not set */
-  long long minExpectedDuration() const;
-  /** in millis, LLONG_MAX if not set */
-  long long maxDurationBeforeAbort() const;
-  ParamSet setenv() const;
-  ParamSet unsetenv() const;
-  Task::EnqueuePolicy enqueuePolicy() const;
-  QList<RequestFormField> requestFormFields() const;
-  QString requestFormFieldsAsHtmlDescription() const;
-  QList<CronTrigger> cronTriggers() const;
-  QList<NoticeTrigger> noticeTriggers() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
   PfNode originalPfNode() const;
