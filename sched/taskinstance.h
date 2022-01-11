@@ -22,6 +22,7 @@
 #include "util/paramset.h"
 #include "modelview/shareduiitem.h"
 #include "modelview/shareduiitemlist.h"
+#include "condition/condition.h"
 
 class TaskInstanceData;
 class TaskInstancePseudoParamsProvider;
@@ -31,11 +32,13 @@ class TaskInstanceList;
  * the execution until it is finished and even after. */
 class LIBQRONSHARED_EXPORT TaskInstance : public SharedUiItem {
 public:
-  enum TaskInstanceStatus { Queued, Running, Waiting, Success, Failure,
+  enum TaskInstanceStatus { Planned, Queued, Running, Waiting, Success, Failure,
                             Canceled };
   TaskInstance();
   TaskInstance(const TaskInstance &);
-  TaskInstance(Task task, bool force, ParamSet params, TaskInstance herder);
+  TaskInstance(Task task, bool force, ParamSet params, TaskInstance herder,
+               Condition queuewhen = Condition(),
+               Condition cancelwhen = Condition());
   TaskInstance(Task task, quint64 groupId, bool force,
                ParamSet params, TaskInstance herder);
   TaskInstance &operator=(const TaskInstance &other) {
@@ -48,7 +51,9 @@ public:
   ParamSet params() const;
   quint64 idAsLong() const;
   quint64 groupId() const;
-  QDateTime requestDatetime() const;
+  QDateTime creationDatetime() const;
+  QDateTime queueDatetime() const;
+  void setQueueDatetime(QDateTime datetime= QDateTime::currentDateTime()) const;
   QDateTime startDatetime() const;
   void setStartDatetime(QDateTime datetime
                         = QDateTime::currentDateTime()) const;
@@ -86,6 +91,7 @@ public:
   /** @return true iff status != Queued or Running */
   bool isFinished() const {
     switch(status()) {
+    case Planned:
     case Queued:
     case Running:
     case Waiting:
@@ -106,6 +112,8 @@ public:
   quint64 herdid() const { return herder().idAsLong(); }
   TaskInstanceList herdedTasks() const;
   void appendHerdedTask(TaskInstance sheep) const;
+  Condition queuewhen() const;
+  Condition cancelwhen() const;
 
 private:
   TaskInstanceData *data();

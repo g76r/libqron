@@ -23,7 +23,7 @@ public:
   virtual ~ConditionData();
   virtual QString toString() const;
   virtual QString conditionType() const;
-  virtual bool evaluate(ParamSet eventContext, TaskInstance taskContext) const;
+  virtual bool evaluate(TaskInstance taskContext, ParamSet eventContext) const;
   virtual PfNode toPfNode() const;
 };
 

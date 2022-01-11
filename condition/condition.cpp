@@ -14,6 +14,7 @@
 #include "condition_p.h"
 #include <QSharedData>
 #include "log/log.h"
+#include "taskwaitcondition.h"
 
 Condition::Condition() {
 }
@@ -44,7 +45,7 @@ QString ConditionData::conditionType() const {
   return "unknown"; // should never happen
 }
 
-bool ConditionData::evaluate(ParamSet, TaskInstance) const {
+bool ConditionData::evaluate(TaskInstance, ParamSet) const {
   return false; // should never happen
 }
 
@@ -60,9 +61,9 @@ QString Condition::conditionType() const {
   return d ? d->conditionType() : QString();
 }
 
-bool Condition::evaluate(
-    ParamSet eventContext, TaskInstance taskContext) const {
-  return d ? d->evaluate(eventContext, taskContext) : false;
+bool Condition::evaluate(TaskInstance taskContext,
+    ParamSet eventContext) const {
+  return d ? d->evaluate(taskContext, eventContext) : false;
 }
 
 PfNode Condition::toPfNode() const {
@@ -70,10 +71,8 @@ PfNode Condition::toPfNode() const {
 }
 
 Condition Condition::createCondition(PfNode node) {
-  Condition condition;
-  if (node.name() == "anyfinished") {
-    //action = PostNoticeAction(scheduler, node);
-  } else {
+  Condition condition = TaskWaitCondition(node);
+  if (condition.isNull()) {
     Log::error() << "unknown condition type: " << node.name();
   }
   return condition;

@@ -23,7 +23,12 @@ public:
   DisjunctionCondition(QList<PfNode> nodes);
   DisjunctionCondition(const DisjunctionCondition&);
   ~DisjunctionCondition();
-  void appendConditions(QList<PfNode> nodes);
+  void append(QList<PfNode> nodes);
+  QList<Condition> conditions() const;
+  operator QList<Condition>() const { return conditions(); }
+  QList<PfNode> toPfNodes() const;
+  bool isEmpty() const { return conditions().isEmpty(); }
+  int size() const { return conditions().size(); }
 };
 
 Q_DECLARE_TYPEINFO(DisjunctionCondition, Q_MOVABLE_TYPE);

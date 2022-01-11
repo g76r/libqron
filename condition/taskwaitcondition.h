@@ -33,8 +33,11 @@ enum TaskWaitOperator {
 class LIBQRONSHARED_EXPORT TaskWaitCondition : public Condition {
 public: 
   explicit TaskWaitCondition(PfNode node = PfNode());
+  TaskWaitCondition(TaskWaitOperator op, QString expr);
   TaskWaitCondition(const TaskWaitCondition &other);
   ~TaskWaitCondition();
+  TaskWaitOperator op() const;
+  QString expr() const;
   static TaskWaitOperator operatorFromString(QString op);
   static QString operatorAsString(TaskWaitOperator op);
   static TaskWaitOperator cancelOperatorFromQueueOperator(TaskWaitOperator op);

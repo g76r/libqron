@@ -90,8 +90,12 @@ class Counters {
   quint32 success = 0;
 
 public:
-  Counters(TaskInstanceList tasks) {
+  Counters(QList<quint64> ids, TaskInstanceList tasks) {
     for (auto task: tasks) {
+      quint64 id = task.idAsLong();
+      if (!ids.contains(id))
+        continue;
+      //ids.removeAll(id);
       switch(task.status()) {
       case TaskInstance::Canceled:
         ++canceled;
@@ -102,12 +106,16 @@ public:
       case TaskInstance::Success:
         ++success;
         break;
+      case TaskInstance::Planned:
       case TaskInstance::Queued:
       case TaskInstance::Running:
       case TaskInstance::Waiting:
         ++unfinished;
       }
     }
+    //unfinished += ids.size();
+    //qDebug() << "Counters" << ids << tasks << unfinished << canceled
+    //          << failure << success;
   }
 
   bool evaluate(TaskWaitOperator op) {
@@ -165,49 +173,36 @@ public:
 class TaskWaitConditionData : public ConditionData {
 public:
   TaskWaitOperator _op;
-  QList<quint64> _ids;
+  QString _expr;
 
-  TaskWaitConditionData(TaskWaitOperator op, QList<quint64> ids)
-    : _op(op), _ids(ids) { }
+  TaskWaitConditionData(TaskWaitOperator op, QString expr)
+    : _op(op), _expr(expr) { }
   TaskWaitConditionData() : _op(UnknownOperator) { }
   QString toString() const override {
-    QString s = conditionType();
-    for (auto id: _ids)
-      s += ' ' + QString::number(id);
-    return s;
+    return TaskWaitCondition::operatorAsString(_op)+' '+_expr;
   }
   QString conditionType() const override {
-    return TaskWaitCondition::operatorAsString(_op);
+    return "taskwait";
   }
-  bool evaluate(ParamSet eventContext, TaskInstance instance) const override {
-    Q_UNUSED(eventContext)
-    return Counters(instance.herder().herdedTasks()).evaluate(_op);
+  bool evaluate(TaskInstance instance, ParamSet) const override {
+    return Counters(evaluateIds(instance.herder()),
+                    instance.herder().herdedTasks()).evaluate(_op);
   }
   PfNode toPfNode() const override {
-    PfNode node(conditionType());
-    QString s;
-    for (auto id: _ids)
-      s += QString::number(id) + ' ';
-    s.chop(1);
-    node.setContent(s);
-    return node;
+    return PfNode(TaskWaitCondition::operatorAsString(_op), _expr);
   }
+  QList<quint64> evaluateIds(TaskInstance herder) const;
 };
 
 TaskWaitCondition::TaskWaitCondition(PfNode node) {
   TaskWaitOperator op = operatorFromString(node.name());
   if (op == UnknownOperator)
     return;
-  auto list = node.contentAsStringList();
-  QList<quint64> ids;
-  for (auto item: list) {
-    bool ok;
-    quint64 id = item.toULongLong(&ok);
-    if (!ok)
-      return;
-    ids << id;
-  }
-  d = new TaskWaitConditionData(op, ids);
+  d = new TaskWaitConditionData(op, node.contentAsString());
+}
+
+TaskWaitCondition::TaskWaitCondition(TaskWaitOperator op, QString expr)
+    : Condition(new TaskWaitConditionData(op, expr)) {
 }
 
 TaskWaitCondition::TaskWaitCondition(const TaskWaitCondition &other)
@@ -215,4 +210,32 @@ TaskWaitCondition::TaskWaitCondition(const TaskWaitCondition &other)
 }
 
 TaskWaitCondition::~TaskWaitCondition() {
+}
+
+TaskWaitOperator TaskWaitCondition::op() const {
+  auto data = static_cast<const TaskWaitConditionData*>(d.data());
+  return data ? data->_op : UnknownOperator;
+}
+
+QString TaskWaitCondition::expr() const {
+  auto data = static_cast<const TaskWaitConditionData*>(d.data());
+  return data ? data->_expr : QString();
+}
+
+QList<quint64> TaskWaitConditionData::evaluateIds(TaskInstance herder) const {
+  QList<quint64> ids;
+  auto ppp = herder.pseudoParams();
+  auto value = herder.params().evaluate(_expr, &ppp);
+  auto list = value.split(' ', Qt::SkipEmptyParts);
+  for (auto item: list) {
+    bool ok;
+    quint64 id = item.toULongLong(&ok);
+    if (ok)
+      ids << id;
+  }
+  //qDebug() << "evaluateIds" << herder.idAsLong()
+  //         << TaskWaitCondition::operatorAsString(_op) << _expr
+  //         << herder.params().evaluate(_expr, &ppp)
+  //         << ids;
+  return ids;
 }

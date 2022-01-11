@@ -21,14 +21,20 @@ public:
   DisjunctionConditionData(
       QList<Condition> conditions = QList<Condition>())
     : _conditions(conditions) { }
-  QString toString() const override { return "DisjunctionCondition"; }
-  QString conditionType() const override { return "or"; }
-  bool evaluate(ParamSet eventContext,
-                TaskInstance taskContext) const override {
+  QString toString() const override {
+    QString s = "anyof {";
+    for (auto c: _conditions)
+      s += ' ' + c.toString();
+    s += " }";
+    return s;
+  }
+  QString conditionType() const override { return "disjunction"; }
+  bool evaluate(TaskInstance taskContext,
+                ParamSet eventContext) const override {
     if (_conditions.isEmpty())
       return true;
     for (auto condition: _conditions) {
-      if (condition.evaluate(eventContext, taskContext))
+      if (condition.evaluate(taskContext, eventContext))
         return true;
     }
     return false;
@@ -49,21 +55,34 @@ DisjunctionCondition::DisjunctionCondition(const DisjunctionCondition &other)
   : Condition(other) {
 }
 
-DisjunctionCondition::DisjunctionCondition(QList<PfNode> nodes) {
-  appendConditions(nodes);
+DisjunctionCondition::DisjunctionCondition(QList<PfNode> nodes)
+    : Condition(new DisjunctionConditionData) {
+  append(nodes);
 }
 
 DisjunctionCondition::~DisjunctionCondition() {
 }
 
-void DisjunctionCondition::appendConditions(QList<PfNode> nodes) {
-  if (!d)
+void DisjunctionCondition::append(QList<PfNode> nodes) {
+  auto data = static_cast<DisjunctionConditionData*>(d.data());
+  if (!data)
     return;
-  auto dd = static_cast<DisjunctionConditionData*>(d.data());
-  for (auto child: nodes) {
-    Condition c = Condition::createCondition(child);
+  for (auto node: nodes) {
+    Condition c = Condition::createCondition(node);
     if (c.isNull())
       continue;
-    dd->_conditions.append(c);
+    data->_conditions.append(c);
   }
+}
+
+QList<Condition> DisjunctionCondition::conditions() const {
+  auto data = static_cast<const DisjunctionConditionData*>(d.data());
+  return data ? data->_conditions : QList<Condition>();
+}
+
+QList<PfNode> DisjunctionCondition::toPfNodes() const {
+  QList<PfNode> nodes;
+  for (auto c: conditions())
+    nodes.append(c.toPfNode());
+  return nodes;
 }

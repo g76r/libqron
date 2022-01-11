@@ -36,6 +36,7 @@
 #include "config/qronconfigdocumentmanager.h"
 #include <random>
 #include <QDeadlineTimer>
+#include "condition/condition.h"
 
 class QThread;
 class CronTrigger;
@@ -50,6 +51,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   QHash<quint64,TaskInstance> _unfinishedTasks;
   QHash<TaskInstance,TaskInstanceList> _waitingTasks;
   QHash<TaskInstance,Executor*> _runningTasks;
+  QSet<quint64> _dirtyHerds; // for which planned tasks must be reevaluated
   QList<Executor*> _availableExecutors;
   Alerter *_alerter;
   InMemoryAuthenticator *_authenticator;
@@ -82,41 +84,39 @@ public:
   qint64 queuedTasksHwm() const { return _queuedTasksHwm; }
 
 public slots:
-  /** Explicitely request task execution now.
+  /** Request task execution as soon as possible (create and queue it for
+   * execution).
+   * This method is thread-safe.
    * This method will block current thread until the request is either
    * queued either denied by Scheduler thread.
-   * If current thread is the Scheduler thread, the method is a direct call.
    * @param taskId fully qualified task name, on the form "taskGroupId.taskId"
    * @param params override params, using RequestFormField semantics
    * @param force if true, any constraints or ressources are ignored
    * @return isEmpty() if task cannot be queued
-   * @see asyncRequestTask
    * @see RequestFormField */
-  TaskInstanceList syncRequestTask(QString taskId, ParamSet params = ParamSet(),
+  TaskInstanceList requestTask(
+      QString taskId, ParamSet overridingParams = ParamSet(),
       bool force = false, TaskInstance herder = TaskInstance());
-  TaskInstanceList syncRequestTask(
-      QString taskId, ParamSet params, bool force, QString herdId);
-  /** Explicitely request task execution now, but do not wait for validity
-   * check of the request, therefore do not wait for Scheduler thread
-   * processing the request.
-   * If current thread is the Scheduler thread, the call is queued anyway.
-   * @param taskId fully qualified task name, on the form "taskGroupId.taskId"
-   * @param params override params, using RequestFormField semantics
-   * @param force if true, any constraints or ressources are ignored
-   * @see syncRequestTask
-   * @see RequestFormField */
-  void asyncRequestTask(
-      const QString taskId, ParamSet params = ParamSet(), bool force = false,
-      TaskInstance herder = TaskInstance());
-  void asyncRequestTask(
-      const QString taskId, ParamSet params, bool force, QString herdId);
-  /** Cancel a queued request.
+  TaskInstanceList requestTask(
+      QString taskId, ParamSet overridingParams, bool force, QString herdId);
+  /** Plan task execution with conditions that must be met to queue it or
+   * cancel it.
+   * This method is thread-safe.
+   * This method will block current thread until the request is either
+   * queued either denied by Scheduler thread. */
+  TaskInstanceList planTask(
+      QString taskId, ParamSet overridingParams, bool force,
+      TaskInstance herder, Condition queuewhen, Condition cancelwhen);
+  TaskInstanceList planTask(
+      QString taskId, ParamSet overridingParams, bool force, QString herdId,
+      Condition queuewhen, Condition cancelwhen);
+  /** Cancel a planned or queued request.
    * @return TaskInstance.isNull() iff error (e.g. request not found or no
    * longer queued) */
   TaskInstance cancelTaskInstance(quint64 id);
   TaskInstance cancelTaskInstance(TaskInstance instance) {
     return cancelTaskInstance(instance.idAsLong()); }
-  /** Cancel all queued requests of a given task. */
+  /** Cancel all planned or queued requests of a given task. */
   TaskInstanceList cancelTaskInstancesByTaskId(QString taskId);
   /** @see cancelRequestsByTaskId(QString) */
   TaskInstanceList cancelTaskInstancesByTaskId(Task task) {
@@ -192,9 +192,12 @@ private:
   /** Fire expired triggers for all tasks. */
   void checkTriggersForAllTasks();
   void reloadAccessControlConfig();
-  /** Reevaluate queued requests and start any task that can be started.
+  /** Reevaluate queued instances  and start any task that can be started.
     * @see reevaluateQueuedRequests() */
   void startAsManyTaskInstancesAsPossible();
+  /** Reevaluate planned instances and start any task that can be started. */
+  void reevaluatePlannedTaskInstancesForHerd(quint64 herdid);
+  void enqueueAsManyTaskInstancesAsPossible();
   /** Check if it is permitted for a task to run now, if yes start it.
    * If instance.force() is true, start a task despite any constraint or limit,
    * even create a new (temporary) executor thread if needed.
@@ -205,10 +208,17 @@ private:
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
                               = QDateTime::currentDateTime());
   TaskInstanceList doRequestTask(
-      QString taskId, ParamSet params, bool force, TaskInstance herder);
+      QString taskId, ParamSet overridingParams, bool force,
+      TaskInstance herder);
   TaskInstanceList doRequestTask(
-      QString taskId, ParamSet params, bool force, QString herdId);
-  TaskInstance enqueueTaskInstance(TaskInstance request, ParamSet params);
+      QString taskId, ParamSet overridingParams, bool force, QString herdId);
+  TaskInstanceList doPlanTask(
+      QString taskId, ParamSet overridingParams, bool force,
+      TaskInstance herder, Condition queuewhen, Condition cancelwhen);
+  TaskInstanceList doPlanTask(
+      QString taskId, ParamSet overridingParams, bool force, QString herdId,
+      Condition queuewhen, Condition cancelwhen);
+  TaskInstance enqueueTaskInstance(TaskInstance request);
   TaskInstance doCancelTaskInstance(
       TaskInstance instance, bool warning, const char *reason);
   TaskInstance doCancelTaskInstance(

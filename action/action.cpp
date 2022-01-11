@@ -19,6 +19,7 @@
 #include "cancelalertaction.h"
 #include "emitalertaction.h"
 #include "requesttaskaction.h"
+#include "plantaskaction.h"
 #include "logaction.h"
 #include "config/configutils.h"
 #include "requesturlaction.h"
@@ -137,6 +138,8 @@ Action Action::createAction(PfNode node, Scheduler *scheduler,
     action = EmitAlertAction(scheduler, node);
   } else if (node.name() == "requesttask") {
     action = RequestTaskAction(scheduler, node);
+  } else if (node.name() == "plantask") {
+    action = PlanTaskAction(scheduler, node);
   } else if (node.name() == "requesturl") {
     action = RequestUrlAction(scheduler, node);
   } else if (node.name() == "writefile") {

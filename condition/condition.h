@@ -24,7 +24,7 @@ class ConditionData;
 class TaskInstance;
 
 /** Runtime condition in the context of a task instance, e.g. a set of
- * other tasks of same herd has finished. */
+ * other tasks of same herd has finished, or a timeout is over. */
 class LIBQRONSHARED_EXPORT Condition {
 protected:
   QSharedDataPointer<ConditionData> d;
@@ -35,7 +35,8 @@ public:
   Condition &operator=(const Condition &other);
   ~Condition();
   bool isNull() const { return !d; }
-  bool evaluate(ParamSet eventContext, TaskInstance taskContext) const;
+  bool evaluate(TaskInstance taskContext,
+                ParamSet eventContext = ParamSet()) const;
   /** Human readable description of action */
   QString toString() const;
   /** Type of action for programmatic test, e.g. "anyfinished" */

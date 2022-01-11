@@ -19,12 +19,13 @@
 #include <functional>
 #include "util/radixtree.h"
 #include "thread/atomicvalue.h"
+#include "condition/disjunctioncondition.h"
 
 static QString _uiHeaderNames[] = {
   "Instance Id", // 0
   "Task Id",
   "Status",
-  "Request Date",
+  "Creation Date",
   "Start Date",
   "Stop Date", // 5
   "Time queued",
@@ -35,7 +36,11 @@ static QString _uiHeaderNames[] = {
   "Herded Task Instances",
   "Finish Date",
   "Time waiting",
-  "Total time", // 14
+  "Total time",
+  "Queue date", // 15
+  "Time planned",
+  "Queue when",
+  "Cancel when", // 18
 };
 
 static QAtomicInt _sequence;
@@ -46,13 +51,13 @@ public:
   QString _idAsString;
   Task _task;
   mutable AtomicValue<ParamSet> _params;
-  QDateTime _requestDateTime;
+  QDateTime _creationDateTime;
   bool _force;
   TaskInstance _herder;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
-  mutable qint64 _start, _stop, _finish;
+  mutable qint64 _queue, _start, _stop, _finish;
   mutable bool _success;
   mutable int _returnCode;
   // note: Host is not thread-safe either, however setTarget() is not likely to
@@ -67,21 +72,28 @@ public:
   mutable Host _target;
   mutable bool _abortable;
   mutable AtomicValue<TaskInstanceList> _herdedTasks;
+  Condition _queuewhen, _cancelwhen;
 
   TaskInstanceData(Task task, ParamSet params, bool force,
-                   TaskInstance herder = TaskInstance(), quint64 groupId = 0)
+                   TaskInstance herder = TaskInstance(), quint64 groupId = 0,
+                   Condition queuewhen = Condition(),
+                   Condition cancelwhen = Condition())
     : _id(newId()), _groupId(groupId ? groupId : _id),
       _idAsString(QString::number(_id)),
       _task(task), _params(params),
-      _requestDateTime(QDateTime::currentDateTime()), _force(force),
-      _herder(herder), _start(LLONG_MIN), _stop(LLONG_MIN), _finish(LLONG_MIN),
-      _success(false), _returnCode(0), _abortable(false) {
+      _creationDateTime(QDateTime::currentDateTime()), _force(force),
+      _herder(herder), _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
+      _finish(LLONG_MIN),
+      _success(false), _returnCode(0), _abortable(false), _queuewhen(queuewhen),
+      _cancelwhen(cancelwhen) {
     auto p = _params.lockedData();
     p->setParent(task.params());
   }
-  TaskInstanceData() : _id(0), _groupId(0), _force(false),
-      _start(LLONG_MIN), _stop(LLONG_MIN), _finish(LLONG_MIN),
-      _success(false), _returnCode(0), _abortable(false) { }
+  TaskInstanceData()
+    : _id(0), _groupId(0), _force(false),
+      _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
+      _finish(LLONG_MIN), _success(false), _returnCode(0),
+      _abortable(false) { }
 
 private:
   static quint64 newId() {
@@ -101,7 +113,11 @@ public:
   int uiSectionCount() const override;
   QVariant uiData(int section, int role) const override;
   QVariant uiHeaderData(int section, int role) const override;
-  QDateTime inline requestDatetime() const { return _requestDateTime; }
+  QDateTime inline creationDatetime() const { return _creationDateTime; }
+  QDateTime inline queueDatetime() const { return _queue != LLONG_MIN
+        ? QDateTime::fromMSecsSinceEpoch(_queue) : QDateTime(); }
+  void inline setQueueDatetime(QDateTime datetime) const {
+    _queue = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
   QDateTime inline startDatetime() const { return _start != LLONG_MIN
         ? QDateTime::fromMSecsSinceEpoch(_start) : QDateTime(); }
   void inline setStartDatetime(QDateTime datetime) const {
@@ -114,18 +130,21 @@ public:
         ? QDateTime::fromMSecsSinceEpoch(_finish) : QDateTime(); }
   void inline setFinishDatetime(QDateTime datetime) const {
     _finish = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
-  qint64 inline queuedMillis() const { return _requestDateTime.msecsTo(startDatetime()); }
+  qint64 inline plannedMillis() const {
+    return _creationDateTime.msecsTo(queueDatetime()); }
+  qint64 inline queuedMillis() const {
+    return _queue != LLONG_MIN && _start != LLONG_MIN ? _start - _queue : 0; }
   qint64 inline runningMillis() const {
     return _start != LLONG_MIN && _stop != LLONG_MIN ? _stop - _start : 0; }
   qint64 inline waitingMillis() const {
     return _stop != LLONG_MIN && _finish != LLONG_MIN ? _finish - _stop : 0; }
   qint64 inline totalMillis() const {
-    return _requestDateTime.isValid() && _finish != LLONG_MIN
-        ? _finish - _requestDateTime.toMSecsSinceEpoch() : 0; }
+    return _creationDateTime.isValid() && _finish != LLONG_MIN
+        ? _finish - _creationDateTime.toMSecsSinceEpoch() : 0; }
   qint64 inline liveTotalMillis() const {
     return (_finish != LLONG_MIN ? _finish
                                  : QDateTime::currentMSecsSinceEpoch())
-        - _requestDateTime.toMSecsSinceEpoch(); }
+        - _creationDateTime.toMSecsSinceEpoch(); }
   TaskInstance::TaskInstanceStatus inline status() const {
     if (_finish != LLONG_MIN) {
       if (_start == LLONG_MIN)
@@ -139,7 +158,9 @@ public:
     }
     if (_start != LLONG_MIN)
       return TaskInstance::Running;
-    return TaskInstance::Queued;
+    if (_queue != LLONG_MIN)
+      return TaskInstance::Queued;
+    return TaskInstance::Planned;
   }
 };
 
@@ -150,8 +171,10 @@ TaskInstance::TaskInstance(const TaskInstance &other) : SharedUiItem(other) {
 }
 
 TaskInstance::TaskInstance(
-    Task task, bool force, ParamSet params, TaskInstance herder)
-  : SharedUiItem(new TaskInstanceData(task, params, force, herder)) {
+    Task task, bool force, ParamSet params, TaskInstance herder,
+    Condition queuewhen, Condition cancelwhen)
+  : SharedUiItem(new TaskInstanceData(
+          task, params, force, herder, 0, queuewhen, cancelwhen)) {
 }
 
 TaskInstance::TaskInstance(Task task, quint64 groupId,
@@ -200,14 +223,25 @@ quint64 TaskInstance::groupId() const {
   return d ? d->_groupId : 0;
 }
 
-QDateTime TaskInstance::requestDatetime() const {
+QDateTime TaskInstance::creationDatetime() const {
   const TaskInstanceData *d = data();
-  return d ? d->requestDatetime() : QDateTime();
+  return d ? d->creationDatetime() : QDateTime();
+}
+
+QDateTime TaskInstance::queueDatetime() const {
+  const TaskInstanceData *d = data();
+  return d ? d->queueDatetime() : QDateTime();
+}
+
+void TaskInstance::setQueueDatetime(QDateTime datetime) const {
+  const TaskInstanceData *d = data();
+  if (d)
+    d->setQueueDatetime(datetime);
 }
 
 QDateTime TaskInstance::startDatetime() const {
   const TaskInstanceData *d = data();
-  return d ? d->requestDatetime() : QDateTime();
+  return d ? d->startDatetime() : QDateTime();
 }
 
 void TaskInstance::setStartDatetime(QDateTime datetime) const {
@@ -424,11 +458,11 @@ static RadixTree<std::function<QVariant(
 } },
 { "!requestdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.requestDatetime(), key.mid(15));
+        taskInstance.creationDatetime(), key.mid(15));
 }, true },
 { "!herdrequestdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.herder().requestDatetime(), key.mid(19));
+        taskInstance.herder().creationDatetime(), key.mid(19));
 }, true },
 { "!startdate", [](const TaskInstance &taskInstance, const QString &key) {
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
@@ -493,10 +527,22 @@ void TaskInstance::appendHerdedTask(TaskInstance sheep) const {
   if (!d || sheep.idAsLong() == idAsLong())
     return;
   auto sheeps = d->_herdedTasks.lockedData();
-  sheeps->append(sheep);
+  if (!sheeps->contains(sheep))
+    sheeps->append(sheep);
+}
+
+Condition TaskInstance::queuewhen() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_queuewhen : Condition();
+}
+
+Condition TaskInstance::cancelwhen() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_cancelwhen : Condition();
 }
 
 static QHash<TaskInstance::TaskInstanceStatus,QString> _statuses {
+  { TaskInstance::Planned, "planned" },
   { TaskInstance::Queued, "queued" },
   { TaskInstance::Running, "running" },
   { TaskInstance::Waiting, "waiting" },
@@ -541,7 +587,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
     case 2:
       return TaskInstance::statusAsString(status());
     case 3:
-      return requestDatetime().toString(
+      return creationDatetime().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
     case 4:
       return startDatetime().toString(
@@ -550,7 +596,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
       return stopDatetime().toString(
             QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
     case 6:
-      return startDatetime().isNull() || requestDatetime().isNull()
+      return startDatetime().isNull() || queueDatetime().isNull()
           ? QVariant() : QString::number(queuedMillis()/1000.0);
     case 7:
       return stopDatetime().isNull() || startDatetime().isNull()
@@ -570,8 +616,18 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
       return finishDatetime().isNull() || stopDatetime().isNull()
           ? QVariant() : QString::number(waitingMillis()/1000.0);
     case 14:
-      return finishDatetime().isNull() || requestDatetime().isNull()
+      return finishDatetime().isNull() || creationDatetime().isNull()
           ? QVariant() : QString::number(totalMillis()/1000.0);
+    case 15:
+      return queueDatetime().toString(
+          QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+    case 16:
+      return queueDatetime().isNull() || creationDatetime().isNull()
+                 ? QVariant() : QString::number(plannedMillis()/1000.0);
+    case 17:
+      return _queuewhen.toString();
+    case 18:
+      return _cancelwhen.toString();
     }
     break;
   default:

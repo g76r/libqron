@@ -1,4 +1,4 @@
-/* Copyright 2013-2022 Hallowyn and others.
+/* Copyright 2022 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -11,22 +11,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "requesttaskaction.h"
+#include "plantaskaction.h"
 #include "action_p.h"
 #include "config/configutils.h"
 #include "util/paramsprovidermerger.h"
+#include "condition/disjunctioncondition.h"
 
-class RequestTaskActionData : public ActionData {
+class PlanTaskActionData : public ActionData {
 public:
   QString _id;
   ParamSet _overridingParams;
-  bool _force, _lone;
+  bool _force;
   QHash<QString,QString> _paramappend;
-  RequestTaskActionData(
-      Scheduler *scheduler, QString id, ParamSet params, bool force, bool lone,
-      QHash<QString,QString> paramappend)
-    : ActionData(scheduler), _id(id), _overridingParams(params),
-      _force(force), _lone(lone), _paramappend(paramappend) { }
+  DisjunctionCondition _queuewhen, _cancelwhen;
+
+  PlanTaskActionData(
+      Scheduler *scheduler, QString id, ParamSet params, bool force,
+      QHash<QString,QString> paramappend, DisjunctionCondition queuewhen,
+      DisjunctionCondition cancelwhen)
+      : ActionData(scheduler), _id(id), _overridingParams(params),
+        _force(force), _paramappend(paramappend),
+        _queuewhen(queuewhen),
+        _cancelwhen(ConfigUtils::guessCancelwhenCondition(
+            queuewhen, cancelwhen)) { }
   void trigger(EventSubscription subscription, ParamSet eventContext,
                TaskInstance parentInstance) const override {
     if (!_scheduler)
@@ -40,27 +47,29 @@ public:
     } else {
       id = ParamSet().evaluate(_id, &ppm);
       QString idIfLocalToGroup = parentInstance.task().taskGroup().id()
-          +"."+_id;
+                                 +"."+_id;
       if (_scheduler->taskExists(idIfLocalToGroup))
         id = idIfLocalToGroup;
     }
-    TaskInstance herder = _lone ? TaskInstance() : parentInstance.herder();
+    TaskInstance herder = parentInstance.herder();
     ParamSet overridingParams;
     foreach (QString key, _overridingParams.keys())
       overridingParams.setValue(key, _overridingParams.value(key, &ppm));
-    TaskInstanceList instances = _scheduler->requestTask(
-          id, overridingParams, _force, herder);
+    TaskInstanceList instances = _scheduler->planTask(
+        id, overridingParams, _force, herder, _queuewhen, _cancelwhen);
     if (instances.isEmpty()) {
       Log::error(parentInstance.task().id(), parentInstance.idAsLong())
-          << "requesttask action failed to request execution of task "
+          << "plantask action failed to plan execution of task "
           << id << " within event subscription context "
           << subscription.subscriberName() << "|" << subscription.eventName();
       return;
     }
     for (auto childInstance: instances) {
       Log::info(parentInstance.task().id(), parentInstance.idAsLong())
-          << "requesttask action requested execution of task "
-          << childInstance.task().id() << "/" << childInstance.groupId();
+          << "plantask action planned execution of task "
+          << childInstance.task().id() << "/" << childInstance.groupId()
+          << " with queue condition " << _queuewhen.toString()
+          << " and cancel condition " << _cancelwhen.toString();
       if (_paramappend.isEmpty())
         continue;
       ParamsProviderMergerRestorer ppmr(&ppm);
@@ -74,10 +83,10 @@ public:
     }
   }
   QString toString() const override {
-    return "*" + _id;
+    return ">" + _id;
   }
   QString actionType() const override {
-    return QStringLiteral("requesttask");
+    return QStringLiteral("plantask");
   }
   bool mayCreateTaskInstances() const override {
     return true;
@@ -93,30 +102,32 @@ public:
     ConfigUtils::writeParamSet(&node, _overridingParams, "param");
     if (_force)
       node.appendChild(PfNode("force"));
-    if (_lone)
-      node.appendChild(PfNode("lone"));
     ConfigUtils::writeParamSet(&node, ParamSet(_paramappend), "paramappend");
+    ConfigUtils::writeConditions(&node, "queuewhen", _queuewhen);
+    ConfigUtils::writeConditions(&node, "cancelwhen", _cancelwhen);
     return node;
   }
 };
 
-RequestTaskAction::RequestTaskAction(Scheduler *scheduler, PfNode node)
-  : Action(new RequestTaskActionData(
-             scheduler, node.contentAsString(),
-             ConfigUtils::loadParamSet(node, "param"), node.hasChild("force"),
-             node.hasChild("lone"),
-             ConfigUtils::loadParamSet(node, "paramappend").toHash())) {
+PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
+    : Action(new PlanTaskActionData(
+          scheduler, node.contentAsString(),
+          ConfigUtils::loadParamSet(node, "param"), node.hasChild("force"),
+          ConfigUtils::loadParamSet(node, "paramappend").toHash(),
+          DisjunctionCondition(node.grandChildrenByChildrenName("queuewhen")),
+          DisjunctionCondition(node.grandChildrenByChildrenName("cancelwhen"))
+          )) {
 }
 
-RequestTaskAction::RequestTaskAction(Scheduler *scheduler, QString taskId)
-  : Action(new RequestTaskActionData(
-             scheduler, taskId, ParamSet(), false, false,
-             QHash<QString,QString>())) {
+PlanTaskAction::PlanTaskAction(Scheduler *scheduler, QString taskId)
+    : Action(new PlanTaskActionData(
+          scheduler, taskId, ParamSet(), false,
+          QHash<QString,QString>(), DisjunctionCondition(),
+          DisjunctionCondition())) {
 }
 
-RequestTaskAction::RequestTaskAction(const RequestTaskAction &rhs)
-  : Action(rhs) {
+PlanTaskAction::PlanTaskAction(const PlanTaskAction &rhs) : Action(rhs) {
 }
 
-RequestTaskAction::~RequestTaskAction() {
+PlanTaskAction::~PlanTaskAction() {
 }

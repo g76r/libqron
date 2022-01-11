@@ -22,6 +22,8 @@
 
 class EventSubscription;
 class Scheduler;
+class Condition;
+class DisjunctionCondition;
 
 /** Miscellaneous tools for handling configuration */
 class LIBQRONSHARED_EXPORT ConfigUtils {
@@ -121,6 +123,12 @@ public:
           node, attributeName, field,
           [](QString value) -> T { return value; }, isValid );
   }
+  static void writeConditions(
+      PfNode *parentnode, QString attrname, DisjunctionCondition conditions);
+  /** @return cancelwhen if not empty, or try to guess one from queuewhen
+   *  if possible */
+  static DisjunctionCondition guessCancelwhenCondition(
+      QList<Condition> queuewhen, DisjunctionCondition cancelwhen);
 
 private:
   ConfigUtils();
