@@ -14,7 +14,7 @@
 QT       += network
 QT       -= gui
 
-CONFIG += largefile c++2a c++17 c++14 c++11 force_debug_info
+CONFIG += largefile c++17 c++14 c++11 force_debug_info
 CONFIG -= app_bundle
 
 TEMPLATE = lib
