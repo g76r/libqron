@@ -61,6 +61,9 @@ LIBS += \
 LIBS += -lqtpf -lp6core
 
 SOURCES += \
+    condition/condition.cpp \
+    condition/disjunctioncondition.cpp \
+    condition/taskwaitcondition.cpp \
     config/task.cpp \
     config/taskgroup.cpp \
     config/tasktemplate.cpp \
@@ -120,6 +123,10 @@ SOURCES += \
     action/writefileaction.cpp
 
 HEADERS += \
+    condition/condition.h \
+    condition/condition_p.h \
+    condition/disjunctioncondition.h \
+    condition/taskwaitcondition.h \
     config/task.h \
     config/taskgroup.h \
     config/tasktemplate.h \

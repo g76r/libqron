@@ -1,4 +1,4 @@
-/* Copyright 2013-2022 Hallowyn and others.
+/* Copyright 2022 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -11,23 +11,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LOGACTION_H
-#define LOGACTION_H
+#ifndef DISJUNCTIONCONDITION_H
+#define DISJUNCTIONCONDITION_H
 
-#include "action.h"
-#include "log/log.h"
+#include "condition.h"
 
-class LogActionData;
-class Scheduler;
-
-/** Action recording a log line. */
-class LIBQRONSHARED_EXPORT LogAction : public Action {
+class LIBQRONSHARED_EXPORT DisjunctionCondition : public Condition {
 public:
-  explicit LogAction(Scheduler *scheduler = 0, PfNode node = PfNode());
-  LogAction(const LogAction &);
-  ~LogAction();
+  DisjunctionCondition();
+  DisjunctionCondition(std::initializer_list<Condition> conditions);
+  DisjunctionCondition(QList<PfNode> nodes);
+  DisjunctionCondition(const DisjunctionCondition&);
+  ~DisjunctionCondition();
+  void appendConditions(QList<PfNode> nodes);
 };
 
-Q_DECLARE_TYPEINFO(LogAction, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(DisjunctionCondition, Q_MOVABLE_TYPE);
 
-#endif // LOGACTION_H
+#endif // DISJUNCTIONCONDITION_H
+
