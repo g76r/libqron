@@ -359,9 +359,6 @@ TaskInstanceList Scheduler::doPlanTask(
       << " and cancel condition " << instance.cancelwhen().toString();
   planOrRequestCommonPostProcess(instance, herder, _waitingTasks,
                                  overridingParams);
-  Log::info(herder.task().id(), herder.id())
-      << "task appended to herded tasks: "
-      << instance.task().id()+"/"+instance.id();
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
   emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
   instances.append(instance);
