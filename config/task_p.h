@@ -59,11 +59,12 @@ static QString _uiHeaderNames[] = {
   "Last task instance id",
   "Additional info",
   "Executions count",
-  "Enqueue policy" // 35
+  "Enqueue policy", // 35
+  "On plan",
 };
 
 static QSet<QString> excludedDescendantsForComments {
-  "trigger", "onsuccess", "onfailure", "onfinish", "onstart"
+  "trigger", "onsuccess", "onfailure", "onfinish", "onstart", "onplan"
 };
 
 static QStringList excludeOnfinishSubscriptions { "onfinish" };
@@ -72,7 +73,7 @@ class TaskOrGroupData : public SharedUiItemData {
 public:
   QString _id, _label;
   ParamSet _params, _vars, _instanceparams;
-  QList<EventSubscription> _onstart, _onsuccess, _onfailure;
+  QList<EventSubscription> _onstart, _onsuccess, _onfailure, _onplan;
   QStringList _commentsList;
   PfNode _originalPfNode;
 

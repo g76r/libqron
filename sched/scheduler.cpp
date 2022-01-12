@@ -288,6 +288,7 @@ TaskInstanceList Scheduler::doRequestTask(
       emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
       if (!herder.isNull() && herder != instance)
         emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
+      triggerPlanActions(instance);
     }
   }
   return instances;
@@ -361,6 +362,7 @@ TaskInstanceList Scheduler::doPlanTask(
                                  overridingParams);
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
   emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
+  triggerPlanActions(instance);
   instances.append(instance);
   return instances;
 }
@@ -1128,6 +1130,12 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
               << " requests not started on leaving : " << taskIds
               << " with ids: " << instanceIds;
   QThread::usleep(100000);
+}
+
+void Scheduler::triggerPlanActions(TaskInstance instance) {
+  for (auto subs: instance.task().taskGroup().onplan()
+       + instance.task().onplan())
+    subs.triggerActions(instance);
 }
 
 void Scheduler::triggerStartActions(TaskInstance instance) {

@@ -49,6 +49,7 @@ public:
   static QString parentGroupId(QString groupId);
   QString label() const;
   ParamSet params() const;
+  QList<EventSubscription> onplan() const;
   QList<EventSubscription> onstart() const;
   QList<EventSubscription> onsuccess() const;
   QList<EventSubscription> onfailure() const;

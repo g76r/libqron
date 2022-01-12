@@ -253,6 +253,10 @@ QList<QRegularExpression> Task::stderrFilters() const {
   return !isNull() ? data()->_stderrFilters : QList<QRegularExpression>();
 }
 
+QList<EventSubscription> Task::onplan() const {
+  return !isNull() ? data()->_onplan : QList<EventSubscription>();
+}
+
 QList<EventSubscription> Task::onstart() const {
   return !isNull() ? data()->_onstart : QList<EventSubscription>();
 }
@@ -267,7 +271,8 @@ QList<EventSubscription> Task::onfailure() const {
 
 QList<EventSubscription> Task::allEventsSubscriptions() const {
   // LATER avoid creating the collection at every call
-  return !isNull() ? data()->_onstart + data()->_onsuccess + data()->_onfailure
+  return !isNull() ? data()->_onplan + data()->_onstart + data()->_onsuccess
+                         + data()->_onfailure
                    : QList<EventSubscription>();
 }
 
@@ -679,6 +684,7 @@ PfNode TaskData::toPfNode() const {
                                             /1e3)));
 
   // events
+  ConfigUtils::writeEventSubscriptions(&node, _onplan);
   ConfigUtils::writeEventSubscriptions(&node, _onstart);
   ConfigUtils::writeEventSubscriptions(&node, _onsuccess);
   ConfigUtils::writeEventSubscriptions(&node, _onfailure,

@@ -45,6 +45,7 @@ TaskGroup::TaskGroup(PfNode node, TaskGroup parentGroup, Scheduler *scheduler) {
   TaskGroupData *d = new TaskGroupData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
                                    ConfigUtils::FullyQualifiedId);
+  d->_onplan.append(parentGroup.onplan());
   d->_onstart.append(parentGroup.onstart());
   d->_onsuccess.append(parentGroup.onsuccess());
   d->_onfailure.append(parentGroup.onfailure());
@@ -62,6 +63,8 @@ bool TaskOrGroupData::loadConfig(
   ConfigUtils::loadParamSet(node, &_vars, "var");
   _instanceparams.setParent(parentGroup.instanceparams());
   ConfigUtils::loadParamSet(node, &_instanceparams, "instanceparam");
+  ConfigUtils::loadEventSubscription(
+      node, "onplan", _id, &_onplan, scheduler);
   ConfigUtils::loadEventSubscription(
         node, "onstart", _id, &_onstart, scheduler);
   ConfigUtils::loadEventSubscription(
@@ -97,6 +100,10 @@ ParamSet TaskGroup::params() const {
   return !isNull() ? data()->_params : ParamSet();
 }
 
+QList<EventSubscription> TaskGroup::onplan() const {
+  return !isNull() ? data()->_onplan : QList<EventSubscription>();
+}
+
 QList<EventSubscription> TaskGroup::onstart() const {
   return !isNull() ? data()->_onstart : QList<EventSubscription>();
 }
@@ -119,7 +126,8 @@ ParamSet TaskGroup::instanceparams() const {
 
 QList<EventSubscription> TaskGroup::allEventSubscriptions() const {
   // LATER avoid creating the collection at every call
-  return !isNull() ? data()->_onstart + data()->_onsuccess + data()->_onfailure
+  return !isNull() ? data()->_onplan + data()->_onstart + data()->_onsuccess
+                         + data()->_onfailure
                    : QList<EventSubscription>();
 }
 
@@ -157,6 +165,8 @@ QVariant TaskOrGroupData::uiData(int section, int role) const {
       return _vars.toString(false, false);
     case 22:
       return _instanceparams.toString(false, false);
+    case 36:
+      return EventSubscription::toStringList(_onplan).join("\n");
     }
     break;
   default:
@@ -203,6 +213,7 @@ void TaskOrGroupData::fillPfNode(PfNode &node) const {
   ConfigUtils::writeParamSet(&node, _instanceparams, "instanceparam");
 
   // event subcription
+  ConfigUtils::writeEventSubscriptions(&node, _onplan);
   ConfigUtils::writeEventSubscriptions(&node, _onstart);
   ConfigUtils::writeEventSubscriptions(&node, _onsuccess);
   ConfigUtils::writeEventSubscriptions(&node, _onfailure,

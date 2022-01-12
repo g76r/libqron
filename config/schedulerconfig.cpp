@@ -127,7 +127,8 @@ static inline void recordTaskActionLinks(
     for (auto listnode: parentNode.childrenByName(childName)) {
       EventSubscription sub("", listnode, 0, ignoredChildren);
       foreach (Action a, sub.actions()) {
-        if (a.actionType() == "requesttask") {
+        if (a.actionType() == "requesttask"
+            || a.actionType() == "plantask") {
           requestTaskActionLinks
               ->append(RequestTaskActionLink(a, childName, contextLabel,
                                              contextTask));
@@ -227,7 +228,7 @@ SchedulerConfigData::SchedulerConfigData(
       continue;
     }
     recordTaskActionLinks(
-          node, { "onstart", "onsuccess", "onfailure", "onfinish" },
+          node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish" },
           &requestTaskActionLinks, taskGroup.id()+".*");
     _taskgroups.insert(taskGroup.id(), taskGroup);
   }
@@ -264,14 +265,13 @@ ignore_tasktemplate:;
       goto ignore_task;
     }
     _tasks.insert(task.id(), task);
-    // FIXME not only task node but also applied templates nodes
     recordTaskActionLinks(
-          node, { "onstart", "onsuccess", "onfailure", "onfinish" },
+          node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish" },
           &requestTaskActionLinks, task.id(), task);
     for (auto tmpl: task.appliedTemplates()) {
       recordTaskActionLinks(
             tmpl.originalPfNode(),
-            { "onstart", "onsuccess", "onfailure", "onfinish" },
+            { "onplan", "onstart", "onsuccess", "onfailure", "onfinish" },
             &requestTaskActionLinks, task.id(), task);
     }
 ignore_task:;

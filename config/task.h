@@ -100,6 +100,7 @@ public:
   /** Atomic fetch-and-add of the executions count. */
   int fetchAndAddExecutionsCount(int valueToAdd) const;
   QList<QRegularExpression> stderrFilters() const;
+  QList<EventSubscription> onplan() const;
   QList<EventSubscription> onstart() const;
   QList<EventSubscription> onsuccess() const;
   QList<EventSubscription> onfailure() const;
