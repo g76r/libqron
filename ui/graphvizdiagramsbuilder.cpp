@@ -228,7 +228,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
               .append(action.targetName().remove('"')).append("\" [xlabel=\"")
               .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
               .append("\"," TASK_POSTNOTICE_EDGE "]\n");
-        } else if (actionType == "requesttask") {
+        } else if (actionType == "requesttask"
+                   || actionType == "plantask") {
           QString target = action.targetName();
           if (!target.contains('.'))
             target = task.taskGroup().id()+"."+target;
