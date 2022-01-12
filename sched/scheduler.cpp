@@ -214,7 +214,7 @@ static void planOrRequestCommonPostProcess(
     instance.setParam(key, ParamSet::escape(value));
   }
   for (auto key: overridingParams.keys()) {
-    auto rawvalue = instanceparams.rawValue(key);
+    auto rawvalue = overridingParams.rawValue(key);
     auto value = params.evaluate(rawvalue, &ppp);
     instance.setParam(key, ParamSet::escape(value));
   }
