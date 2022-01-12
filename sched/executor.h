@@ -25,6 +25,7 @@ class QThread;
 class QNetworkAccessManager;
 class QNetworkReply;
 class Alerter;
+class Scheduler;
 
 /** Class handling execution of a task after its being dequeued, from start
  * to end or cancellation. */
@@ -41,9 +42,10 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   QNetworkReply *_reply;
   Alerter *_alerter;
   QTimer *_abortTimeout;
+  Scheduler *_scheduler;
 
 public:
-  explicit Executor(Alerter *alerter);
+  explicit Executor(Scheduler *scheduler);
   ~Executor();
   void setTemporary(bool temporary = true) { _isTemporary = temporary; }
   bool isTemporary() const { return _isTemporary; }
@@ -76,6 +78,7 @@ private:
   void sshMean();
   void dockerMean();
   void httpMean();
+  void scatterMean();
   void execProcess(QStringList cmdline, QProcessEnvironment sysenv);
   inline QProcessEnvironment prepareEnv(const ParamSet vars);
   void replyHasFinished(QNetworkReply *reply,

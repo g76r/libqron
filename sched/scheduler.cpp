@@ -103,7 +103,7 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
                     "maxtotaltaskinstances of "
                  << newConfig.maxtotaltaskinstances();
     for (int i = 0; i < executorsToAdd; ++i) {
-      Executor *executor = new Executor(_alerter);
+      Executor *executor = new Executor(this);
       connect(executor, &Executor::taskInstanceStopped,
               this, [this](TaskInstance instance, Executor *executor) {
         taskInstanceStoppedOrCanceled(instance, executor, false);
@@ -912,7 +912,7 @@ bool Scheduler::startTaskInstance(TaskInstance instance) {
     executor = _availableExecutors.takeFirst();
     if (!executor) {
       // this should only happen with force == true
-      executor = new Executor(_alerter);
+      executor = new Executor(this);
       executor->setTemporary();
       connect(executor, &Executor::taskInstanceStopped,
               this, [this](TaskInstance instance, Executor *executor) {

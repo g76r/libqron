@@ -29,6 +29,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+#include "scheduler.h"
+#include "util/paramsprovidermerger.h"
+#include "util/regexpparamsprovider.h"
 
 static QString _localDefaultShell;
 static const QRegularExpression _httpHeaderForbiddenSeqRE("[^a-zA-Z0-9_\\-]+");
@@ -42,10 +45,11 @@ static int staticInit() {
 }
 Q_CONSTRUCTOR_FUNCTION(staticInit)
 
-Executor::Executor(Alerter *alerter) : QObject(0), _isTemporary(false),
+Executor::Executor(Scheduler *scheduler) : QObject(0), _isTemporary(false),
   _stderrWasUsed(false), _thread(new QThread),
   _process(0), _nam(new QNetworkAccessManager(this)), _reply(0),
-  _alerter(alerter), _abortTimeout(new QTimer(this)) {
+  _alerter(scheduler->alerter()), _abortTimeout(new QTimer(this)),
+  _scheduler(scheduler) {
   _baseenv = QProcessEnvironment::systemEnvironment();
   _thread->setObjectName(QString("Executor-%1")
                          .arg(reinterpret_cast<long long>(_thread),
@@ -87,6 +91,9 @@ void Executor::execute(TaskInstance instance) {
       break;
     case Task::Http:
       httpMean();
+      break;
+    case Task::Scatter:
+      scatterMean();
       break;
     case Task::DoNothing:
       emit taskInstanceStarted(_instance);
@@ -553,6 +560,69 @@ void Executor::replyHasFinished(QNetworkReply *reply,
   _reply = 0;
   taskInstanceStopping(success, status);
 }
+
+void Executor::scatterMean() {
+  const QString command = _instance.task().command();
+  const auto ppp = _instance.pseudoParams();
+  const auto params = _instance.params();
+  const auto vars = _instance.task().vars();
+  const auto herder = _instance.herder();
+  auto ppm = ParamsProviderMerger(params)(&ppp);
+  const auto inputs = ParamSet().splitAndEvaluate(
+      params.rawValue("scatter.input"), &ppm);
+  const auto regexp = QRegularExpression(params.value("scatter.regexp", ".*"));
+  const auto paramappend = params.rawValue("scatter.paramappend").trimmed();
+  const auto force = params.valueAsBool("scatter.force", false, true, &ppp);
+  // LATER const auto mean = params.value("scatter.mean", "plantask", &ppm);
+  // LATER queuewhen ?
+  TaskInstanceList instances;
+
+  emit taskInstanceStarted(_instance);
+  for (auto input: inputs) {
+    const auto match = regexp.match(input);
+    const auto rpp = RegexpParamsProvider(match);
+    const auto ppmr = ParamsProviderMergerRestorer(ppm);
+    if (match.hasMatch())
+      ppm.prepend(&rpp);
+    else
+      ppm.overrideParamValue("0", input); // %0 will be available anyway
+    auto taskid = ParamSet().evaluate(command, &ppm);
+    const auto idIfLocalToGroup = _instance.task().taskGroup().id()+"."+taskid;
+    if (_scheduler->taskExists(idIfLocalToGroup))
+      taskid = idIfLocalToGroup;
+    ParamSet overridingParams;
+    for (auto key: vars.keys()) {
+      auto value = ParamSet().evaluate(vars.rawValue(key), &ppm);
+      overridingParams.setValue(key, ParamSet::escape(value));
+    }
+    auto instance = _scheduler->planTask(
+        taskid, overridingParams, force, herder, Condition(), Condition())
+        .value(0);
+    if (instance.isNull()) {
+      Log::error(_instance.task().id(), _instance.idAsLong())
+          << "scatter failed to plan task : " << taskid << overridingParams
+          << force << herder.idAsLong();
+      continue;
+    }
+    int i = paramappend.indexOf(' ');
+    if (i > 0) {
+      const auto key = paramappend.left(i);
+      const auto rawvalue = paramappend.mid(i+1);
+      const auto ppp = instance.pseudoParams();
+      ppm.prepend(instance.params()).prepend(&ppp);
+      auto value = ParamSet().evaluate(rawvalue, &ppm);
+      herder.paramAppend(key, value);
+    }
+    instances << instance;
+  }
+  Log::debug(_instance.task().id(), _instance.idAsLong())
+      << "scatter planned " << instances.size() << " tasks : "
+      << instances.join(' ');
+  //Log::error(_instance.task().id(), _instance.idAsLong()) << "cannot start HTTP request";
+  //taskInstanceStopping(false, -1);
+  taskInstanceStopping(true, 0);
+}
+
 
 void Executor::noticePosted(QString notice, ParamSet params) {
   params.setValue(QStringLiteral("!notice"), notice);

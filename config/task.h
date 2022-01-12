@@ -40,7 +40,7 @@ class RequestFormField;
 class LIBQRONSHARED_EXPORT Task : public SharedUiItem {
 public:
   enum Mean {
-    UnknownMean = 0, DoNothing, Local, Ssh = 4, Docker, Http
+    UnknownMean = 0, DoNothing, Local, Ssh = 4, Docker, Http, Scatter,
   };
   enum HerdingPolicy {
     NoFailure = 1,

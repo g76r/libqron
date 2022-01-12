@@ -99,6 +99,7 @@ Task::Task(
     case Local:
     case DoNothing:
     case Docker:
+    case Scatter:
       d->_target = "localhost";
       break;
     case UnknownMean: // impossible
@@ -622,11 +623,21 @@ PfNode TaskData::toPfNode() const {
   node.setAttribute("mean", Task::meanAsString(_mean));
   // do not set target attribute if it is empty,
   // or in case it is implicit ("localhost" for targetless means)
-  if (!_target.isEmpty()
-      && (_target != "localhost" ||
-          (_mean != Task::Local && _mean != Task::DoNothing &&
-           _mean != Task::Docker)))
-    node.setAttribute("target", _target);
+  if (!_target.isEmpty()) {
+    switch(_mean) {
+    case Task::Local:
+    case Task::DoNothing:
+    case Task::Docker:
+    case Task::Scatter:
+      break;
+      break;
+    case Task::UnknownMean: // should never happen
+    case Task::Ssh:
+    case Task::Http:
+      if (_target != "localhost")
+        node.setAttribute("target", _target);
+    }
+  }
   // do not set command attribute if it is empty
   // or for means that do not use it (DoNothing)
   if (!_command.isEmpty()
@@ -697,6 +708,7 @@ static QHash<Task::Mean,QString> _meansAsString {
   { Task::Ssh, "ssh" },
   { Task::Docker, "docker" },
   { Task::Http, "http" },
+  { Task::Scatter, "scatter" },
 };
 
 static QHash<QString,Task::Mean> _meansFromString {
