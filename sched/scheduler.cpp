@@ -207,11 +207,13 @@ static void planOrRequestCommonPostProcess(
   auto instanceparams = instance.task().instanceparams();
   auto ppp = instance.pseudoParams();
   for (auto key: instanceparams.keys()) {
-    auto value = params.value(key, &ppp);
+    auto rawvalue = instanceparams.rawValue(key);
+    auto value = params.evaluate(rawvalue, &ppp);
     instance.setParam(key, ParamSet::escape(value));
   }
   for (auto key: overridingParams.keys()) {
-    auto value = params.value(key, &ppp);
+    auto rawvalue = instanceparams.rawValue(key);
+    auto value = params.evaluate(rawvalue, &ppp);
     instance.setParam(key, ParamSet::escape(value));
   }
   if (herder.isNull() || herder == instance)
