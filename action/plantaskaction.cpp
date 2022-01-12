@@ -80,7 +80,7 @@ public:
       ppm.prepend(&ppp);
       for (auto key: _paramappend.keys()) {
         auto value = ParamSet().evaluate(_paramappend.value(key), &ppm);
-        parentInstance.paramAppend(key, ParamSet::escape(value));
+        herder.paramAppend(key, ParamSet::escape(value));
       }
     }
   }
