@@ -7,7 +7,10 @@ graph g {
   start [shape=circle,style=filled,width=.2,label="",fillcolor=black]
   end [shape=circle,style=filled,width=.2,peripheries=2,label="",fillcolor=black]
 
+  start -- planned [label="plantask action"]
   start -- queued [label="trigger, action, etc."]
+  planned -- queued [label="queuewhen met"]
+  planned -- canceled [label="cancelwhen met"]
   queued -- canceled [label="duplicated requests, depending\non enqueue policy"]
   canceled -- end
   queued -- running [label="when all prerequesites\nare met (resources, etc.)"]
@@ -21,6 +24,7 @@ graph g {
   failure -- end
 
   edge [color=navy,fontcolor=navy]
+  start -- planned [xlabel="planTask()"]
   start -- queued [xlabel="requestTask()"]
 
   edge [color=orangered,fontcolor=orange]
