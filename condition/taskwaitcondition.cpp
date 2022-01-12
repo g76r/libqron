@@ -14,6 +14,7 @@
 #include "taskwaitcondition.h"
 #include "condition_p.h"
 #include "util/containerutils.h"
+#include "util/paramsprovidermerger.h"
 
 static QHash<TaskWaitOperator,QString> _operatorsAsString {
   { AllFinished, "allfinished" },
@@ -185,13 +186,13 @@ public:
     return "taskwait";
   }
   bool evaluate(TaskInstance instance, ParamSet) const override {
-    return Counters(evaluateIds(instance.herder()),
+    return Counters(evaluateIds(instance),
                     instance.herder().herdedTasks()).evaluate(_op);
   }
   PfNode toPfNode() const override {
     return PfNode(TaskWaitCondition::operatorAsString(_op), _expr);
   }
-  QList<quint64> evaluateIds(TaskInstance herder) const;
+  QList<quint64> evaluateIds(TaskInstance instance) const;
 };
 
 TaskWaitCondition::TaskWaitCondition(PfNode node) {
@@ -222,10 +223,13 @@ QString TaskWaitCondition::expr() const {
   return data ? data->_expr : QString();
 }
 
-QList<quint64> TaskWaitConditionData::evaluateIds(TaskInstance herder) const {
+QList<quint64> TaskWaitConditionData::evaluateIds(TaskInstance instance) const {
   QList<quint64> ids;
-  auto ppp = herder.pseudoParams();
-  auto value = herder.params().evaluate(_expr, &ppp);
+  auto herder = instance.herder();
+  auto ipp = instance.pseudoParams();
+  auto hpp = herder.pseudoParams();
+  auto ppm = ParamsProviderMerger(&hpp)(herder.params())(&ipp)(instance.params());
+  auto value = ParamSet().evaluate(_expr, &ppm);
   auto list = value.split(' ', Qt::SkipEmptyParts);
   for (auto item: list) {
     bool ok;
@@ -234,8 +238,7 @@ QList<quint64> TaskWaitConditionData::evaluateIds(TaskInstance herder) const {
       ids << id;
   }
   //qDebug() << "evaluateIds" << herder.idAsLong()
-  //         << TaskWaitCondition::operatorAsString(_op) << _expr
-  //         << herder.params().evaluate(_expr, &ppp)
+  //         << TaskWaitCondition::operatorAsString(_op) << _expr << value
   //         << ids;
   return ids;
 }
