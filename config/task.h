@@ -39,12 +39,6 @@ class RequestFormField;
 /** Core task definition object. */
 class LIBQRONSHARED_EXPORT Task : public SharedUiItem {
 public:
-  enum EnqueuePolicy { // was DiscardAliasesOnStart
-    EnqueueAndDiscardQueued = 1, // was: DiscardAll
-    EnqueueAll, // was: DiscardNone
-    EnqueueUntilMaxInstances, // default
-    EnqueuePolicyUnknown = 0
-  };
   enum Mean {
     UnknownMean = 0, DoNothing, Local, Ssh = 4, Docker, Http
   };
@@ -125,11 +119,8 @@ public:
   long long maxDurationBeforeAbort() const;
   ParamSet vars() const;
   ParamSet instanceparams() const;
-  EnqueuePolicy enqueuePolicy() const;
-  inline QString enqueuePolicyAsString() const {
-    return enqueuePolicyAsString(enqueuePolicy()); }
-  static QString enqueuePolicyAsString(EnqueuePolicy v);
-  static EnqueuePolicy enqueuePolicyFromString(QString v);
+  QString maxQueuedInstances() const;
+  QString deduplicateCriterion() const;
   HerdingPolicy herdingPolicy() const;
   inline QString herdingPolicyAsString() const {
     return herdingPolicyAsString(herdingPolicy()); }

@@ -122,14 +122,9 @@ bool TaskOrTemplateData::loadConfig(
     }
   }
   ConfigUtils::loadResourcesSet(node, &_resources, "resource");
-  if (!ConfigUtils::loadAttribute<Task::EnqueuePolicy>(
-        node, "enqueuepolicy", &_enqueuePolicy,
-        [](QString value) { return Task::enqueuePolicyFromString(value); },
-        [](Task::EnqueuePolicy p) { return p != Task::EnqueuePolicyUnknown;})) {
-    Log::error() << "invalid enqueuepolicy on "+idQualifier()+": "
-                 << node.toPf();
-    return false;
-  }
+  ConfigUtils::loadAttribute(node, "maxqueuedinstances", &_maxQueuedInstances);
+  ConfigUtils::loadAttribute(node, "deduplicatecriterion",
+                             &_deduplicateCriterion);
   if (!ConfigUtils::loadAttribute<Task::HerdingPolicy>(
         node, "herdingpolicy", &_herdingPolicy,
         [](QString value) { return Task::herdingPolicyFromString(value); },
@@ -270,7 +265,9 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
     case 33:
       return _info;
     case 35:
-      return Task::enqueuePolicyAsString(_enqueuePolicy);
+      return _maxQueuedInstances;
+    case 37:
+      return _deduplicateCriterion;
     }
     break;
   default:
@@ -359,10 +356,10 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   foreach (const Trigger &nt, _noticeTriggers)
     triggers.appendChild(nt.toPfNode());
   node.appendChild(triggers);
-  if (_enqueuePolicy != Task::EnqueueUntilMaxInstances)
-    node.appendChild(
-          PfNode("enqueuepolicy",
-                 Task::enqueuePolicyAsString(_enqueuePolicy)));
+  if (_maxQueuedInstances != "%!maxinstances")
+    node.setAttribute("maxqueuedinstances", _maxQueuedInstances);
+  if (!_deduplicateCriterion.isEmpty())
+    node.setAttribute("deduplicatecriterion", _deduplicateCriterion);
   if (_herdingPolicy != Task::AllSuccess)
     node.appendChild(
           PfNode("herdingpolicy",

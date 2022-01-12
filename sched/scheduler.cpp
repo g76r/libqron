@@ -416,54 +416,50 @@ TaskInstanceList Scheduler::doPlanTask(
 }
 
 TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
-  Task task(instance.task());
-  QString taskId(task.id());
+  auto task = instance.task();
+  auto taskId = task.id();
+  auto params = instance.params();
+  auto ppp = instance.pseudoParams();
   if (_shutingDown) {
     Log::warning(taskId, instance.idAsLong())
         << "cannot queue task because scheduler is shuting down";
     return TaskInstance();
   }
   if (!instance.force()) {
-    if (task.enqueuePolicy() == Task::EnqueueUntilMaxInstances) {
-      // reject task request if running count + queued count >= max instance
-      int count = task.runningCount();
-      int max = task.maxInstances();
-      if (count < max) {
-        for (const TaskInstance &request : _queuedTasks) {
-          if (request.task().id() == taskId)
-            ++count;
-        }
-      }
-      if (count >= max) {
-        QString msg = "canceling task because too many instances of this task "
-                      "are already queued and enqueuepolicy is "
-            + task.enqueuePolicyAsString();
-        if (!task.enabled())
-          msg += " and the task is disabled";
-        msg += " : " + taskId + "/" + instance.id();
-        doCancelTaskInstance(instance, !task.enabled(), msg);
-        instance.herder().appendHerdedTask(instance);
-        return instance;
-      }
+    if (!task.enabled()) {
+      doCancelTaskInstance(instance, false,
+                           "canceling task because it is disabled : " + taskId
+                               + "/" + instance.id());
+      return TaskInstance();
     }
-    if (!task.enabled()
-        || task.enqueuePolicy() == Task::EnqueueAndDiscardQueued) {
-      // avoid stacking disabled task requests by canceling older ones
-      auto queued = _queuedTasks;
-      queued.detach();
-      for (auto other: queued) {
-        if (taskId == other.task().id()
-            && instance.groupId() != other.groupId()) {
-          QString msg = "canceling task because another instance of the same "
-                        "task is queued";
-          if (!task.enabled())
-            msg += " and the task is disabled";
-          if (task.enqueuePolicy() == Task::EnqueueAndDiscardQueued)
-            msg += " and enqueuepolicy is " + task.enqueuePolicyAsString();
-          msg += " : " + taskId + "/" + instance.id();
-          doCancelTaskInstance(other, !task.enabled(), msg);
-        }
+    auto mqi = params.evaluate(task.maxQueuedInstances(), &ppp).toInt();
+    if (mqi > 0) {
+      auto criterion = task.deduplicateCriterion();
+      auto newcrit = params.evaluate(criterion, &ppp);
+      QList<TaskInstance> others;
+      for (auto other: _queuedTasks) {
+        if (other.task().id() != taskId)
+          continue;
+        if (other.groupId() == instance.groupId())
+          continue;
+        auto ppp = other.pseudoParams();
+        auto params = other.params();
+        auto othercrit = params.evaluate(criterion, &ppp);
+        if (othercrit == newcrit)
+          others.append(other);
       }
+      int canceled = 0;
+      while (others.size() > mqi-1) {
+        auto other = others.takeLast();
+        doCancelTaskInstance(
+            other, true,
+            "canceling task because another instance of the same task is "
+            "queued : " + taskId + "/" + instance.id()
+            + " with same deduplicate criterion : " + newcrit);
+        ++canceled;
+      }
+      if (canceled)
+        instance.herder().appendHerdedTask(instance);
     }
   }
   if (_queuedTasks.size() >= config().maxqueuedrequests()) {
@@ -804,29 +800,7 @@ void Scheduler::startAsManyTaskInstancesAsPossible() {
     if (instance.status() != TaskInstance::Queued)
       continue; // changed meanwhile, e.g. canceled
     auto task = instance.task();
-    if (startTaskInstance(instance)) {
-      // discarding queued taskinstances when starting in addition to when
-      // queuing is most of the time useless, however it make it possible to
-      // handle some misconfigurations like (onstart(requesttask %!taskid)) or
-      // more generaly it discard requests received between the current one
-      // and the actual task start
-      if (task.enqueuePolicy() == Task::EnqueueAndDiscardQueued) {
-        // remove other requests of same task
-        QString taskId= instance.task().id();
-        auto queued = _queuedTasks;
-        queued.detach();
-        for (auto other: queued) {
-          if (task.id() == other.task().id()
-              && instance.groupId() != other.groupId()) {
-            doCancelTaskInstance(other, false,
-                         "canceling task because another instance of the same "
-                         "task is starting, other task is: "
-                                 +taskId+"/"+instance.id());
-          }
-        }
-        emit itemChanged(task, task, QStringLiteral("task"));
-      }
-    }
+    startTaskInstance(instance);
   }
 }
 

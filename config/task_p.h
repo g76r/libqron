@@ -59,8 +59,9 @@ static QString _uiHeaderNames[] = {
   "Last task instance id",
   "Additional info",
   "Executions count",
-  "Enqueue policy", // 35
+  "Max queued instances", // 35 was: Enqueue policy
   "On plan",
+  "Deduplicate criterion",
 };
 
 static QSet<QString> excludedDescendantsForComments {
@@ -98,7 +99,7 @@ public:
   QList<CronTrigger> _cronTriggers;
   QList<QRegularExpression> _stderrFilters;
   long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
-  Task::EnqueuePolicy _enqueuePolicy;
+  QString _maxQueuedInstances, _deduplicateCriterion;
   Task::HerdingPolicy _herdingPolicy;
   QList<RequestFormField> _requestFormFields;
   QStringList _otherTriggers; // guessed indirect triggers resulting from events
@@ -106,7 +107,7 @@ public:
 
   TaskOrTemplateData() : _maxInstances(1), _maxExpectedDuration(LLONG_MAX),
     _minExpectedDuration(0), _maxDurationBeforeAbort(LLONG_MAX),
-    _enqueuePolicy(Task::EnqueueUntilMaxInstances),
+    _maxQueuedInstances("%!maxinstances"),
     _herdingPolicy(Task::AllSuccess), _enabled(true) { }
   QString triggersAsString() const;
   QString triggersWithCalendarsAsString() const;

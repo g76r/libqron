@@ -340,26 +340,14 @@ ParamSet Task::instanceparams() const {
   return !isNull() ? data()->_instanceparams : ParamSet();
 }
 
-Task::EnqueuePolicy Task::enqueuePolicy() const {
-  return !isNull() ? data()->_enqueuePolicy : Task::EnqueuePolicyUnknown;
+QString Task::maxQueuedInstances() const {
+  auto d = data();
+  return d ? d->_maxQueuedInstances : QString();
 }
 
-static QHash<Task::EnqueuePolicy,QString> _enqueuePolicyAsString {
-  { Task::EnqueueAll, "enqueueall" },
-  { Task::EnqueueAndDiscardQueued, "enqueueanddiscardqueued" },
-  { Task::EnqueueUntilMaxInstances, "enqueueuntilmaxinstances" }
-};
-
-static QHash<QString,Task::EnqueuePolicy> _enqueuePolicyFromString {
-  ContainerUtils::reversed(_enqueuePolicyAsString)
-};
-
-QString Task::enqueuePolicyAsString(Task::EnqueuePolicy v) {
-  return _enqueuePolicyAsString.value(v, QStringLiteral("unknown"));
-}
-
-Task::EnqueuePolicy Task::enqueuePolicyFromString(QString v) {
-  return _enqueuePolicyFromString.value(v, Task::EnqueuePolicyUnknown);
+QString Task::deduplicateCriterion() const {
+  auto d = data();
+  return d ? d->_deduplicateCriterion : QString();
 }
 
 static QHash<Task::HerdingPolicy,QString> _herdingPolicyAsString {
@@ -451,6 +439,9 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
 { "!maxbeforeaborts0", [](const Task &task, const QVariant &) {
   long long ms = task.maxDurationBeforeAbort();
   return (ms == LLONG_MAX) ? 0.0 : (double)ms/1000.0;
+} },
+{ "!maxinstances", [](const Task &task, const QVariant &) {
+  return task.maxInstances();
 } },
 { "", [](const Task &, const QVariant &defaultValue) {
   return defaultValue;
@@ -654,10 +645,10 @@ PfNode TaskData::toPfNode() const {
   foreach (const Trigger &nt, _noticeTriggers)
     triggers.appendChild(nt.toPfNode());
   node.appendChild(triggers);
-  if (_enqueuePolicy != Task::EnqueueUntilMaxInstances)
-    node.appendChild(
-          PfNode("enqueuepolicy",
-                 Task::enqueuePolicyAsString(_enqueuePolicy)));
+  if (_maxQueuedInstances != "%!maxinstances")
+    node.setAttribute("maxqueuedinstances", _maxQueuedInstances);
+  if (!_deduplicateCriterion.isEmpty())
+    node.setAttribute("deduplicatecriterion", _deduplicateCriterion);
   if (_maxInstances != 1)
     node.appendChild(PfNode("maxinstances",
                             QString::number(_maxInstances)));
