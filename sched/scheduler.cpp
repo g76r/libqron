@@ -286,11 +286,13 @@ TaskInstanceList Scheduler::doRequestTask(
       planOrRequestCommonPostProcess(instance, herder, _waitingTasks,
                                      overridingParams);
       emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
+      triggerPlanActions(instance);
+      Log::debug(taskId, instance.idAsLong())
+          << "task instance params after planning" << instance.params();
       if (!herder.isNull() && herder != instance) {
         emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
         reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
       }
-      triggerPlanActions(instance);
     }
   }
   return instances;
@@ -363,11 +365,13 @@ TaskInstanceList Scheduler::doPlanTask(
   planOrRequestCommonPostProcess(instance, herder, _waitingTasks,
                                  overridingParams);
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
-  emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
   triggerPlanActions(instance);
-  instances.append(instance);
+  emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
+  Log::debug(taskId, instance.idAsLong())
+      << "task instance params after planning" << instance.params();
   if (!herder.isNull())
     reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
+  instances.append(instance);
   return instances;
 }
 
