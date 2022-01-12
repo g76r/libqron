@@ -31,9 +31,7 @@ public:
       DisjunctionCondition cancelwhen)
       : ActionData(scheduler), _id(id), _overridingParams(params),
         _force(force), _paramappend(paramappend),
-        _queuewhen(queuewhen),
-        _cancelwhen(ConfigUtils::guessCancelwhenCondition(
-            queuewhen, cancelwhen)) { }
+        _queuewhen(queuewhen), _cancelwhen(cancelwhen) { }
   void trigger(EventSubscription subscription, ParamSet eventContext,
                TaskInstance parentInstance) const override {
     if (!_scheduler)

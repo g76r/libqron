@@ -25,6 +25,7 @@ public:
   virtual QString conditionType() const;
   virtual bool evaluate(TaskInstance taskContext, ParamSet eventContext) const;
   virtual PfNode toPfNode() const;
+  virtual bool isEmpty() const;
 };
 
 #endif // CONDITION_P_H

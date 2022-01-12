@@ -189,6 +189,9 @@ public:
     return Counters(evaluateIds(instance),
                     instance.herder().herdedTasks()).evaluate(_op);
   }
+  bool isEmpty() const override {
+    return false;
+  }
   PfNode toPfNode() const override {
     return PfNode(TaskWaitCondition::operatorAsString(_op), _expr);
   }

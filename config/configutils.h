@@ -125,10 +125,6 @@ public:
   }
   static void writeConditions(
       PfNode *parentnode, QString attrname, DisjunctionCondition conditions);
-  /** @return cancelwhen if not empty, or try to guess one from queuewhen
-   *  if possible */
-  static DisjunctionCondition guessCancelwhenCondition(
-      QList<Condition> queuewhen, DisjunctionCondition cancelwhen);
 
 private:
   ConfigUtils();

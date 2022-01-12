@@ -35,6 +35,7 @@ public:
   Condition &operator=(const Condition &other);
   ~Condition();
   bool isNull() const { return !d; }
+  bool isEmpty() const;
   bool evaluate(TaskInstance taskContext,
                 ParamSet eventContext = ParamSet()) const;
   /** Human readable description of action */

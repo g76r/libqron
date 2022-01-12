@@ -239,22 +239,3 @@ void ConfigUtils::writeConditions(
   childnode.appendChildren(conditions.toPfNodes());
   parentnode->appendChild(childnode);
 }
-
-DisjunctionCondition ConfigUtils::guessCancelwhenCondition(
-    QList<Condition> queuewhen, DisjunctionCondition cancelwhen) {
-  if (!cancelwhen.isEmpty())
-    return cancelwhen;
-  if (queuewhen.size() != 1)
-    return cancelwhen;
-  Condition c = queuewhen.at(0);
-  if (c.conditionType() != "taskwait")
-    return cancelwhen;
-  auto twc = static_cast<const TaskWaitCondition&>(c);
-  TaskWaitOperator op =
-      TaskWaitCondition::cancelOperatorFromQueueOperator(twc.op());
-  //qDebug() << "guessing cancel condition from queue condition: "
-  //         << twc.toPfNode().toString()
-  //         << TaskWaitCondition::operatorAsString(twc.op()) << twc.expr()
-  //         << "->" << TaskWaitCondition::operatorAsString(op);
-  return DisjunctionCondition({TaskWaitCondition(op, twc.expr())});
-}

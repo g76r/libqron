@@ -30,6 +30,8 @@
 #include "trigger/crontrigger.h"
 #include "trigger/noticetrigger.h"
 #include "thread/blockingtimer.h"
+#include "condition/taskwaitcondition.h"
+#include "condition/disjunctioncondition.h"
 
 #define REEVALUATE_QUEUED_INSTANCES_EVENT (QEvent::Type(QEvent::User+1))
 #define REEVALUATE_PLANNED_INSTANCES_EVENT (QEvent::Type(QEvent::User+2))
@@ -338,6 +340,31 @@ TaskInstanceList Scheduler::doPlanTask(
                     cancelwhen);
 }
 
+static Condition guessCancelwhenCondition(
+    Condition queuewhen, Condition cancelwhen) {
+  if (!cancelwhen.isEmpty())
+    return cancelwhen; // keep it if already set
+  if (queuewhen.conditionType() == "disjunction") {
+    // try to open a condition list and take the only item if size is 1
+    auto dc = static_cast<const DisjunctionCondition&>(queuewhen);
+    if (dc.size() != 1)
+      return cancelwhen;
+    queuewhen = dc.conditions().first();
+  }
+  if (queuewhen.conditionType() == "taskwait") {
+    // if TaskWaitCondition, use conjugate operator
+    auto twc = static_cast<const TaskWaitCondition&>(queuewhen);
+    TaskWaitOperator op =
+        TaskWaitCondition::cancelOperatorFromQueueOperator(twc.op());
+    //qDebug() << "guessing cancel condition from queue condition: "
+    //         << twc.toPfNode().toString()
+    //         << TaskWaitCondition::operatorAsString(twc.op()) << twc.expr()
+    //         << "->" << TaskWaitCondition::operatorAsString(op);
+    return TaskWaitCondition(op, twc.expr());
+  }
+  return cancelwhen;
+}
+
 TaskInstanceList Scheduler::doPlanTask(
     QString taskId, ParamSet overridingParams, bool force, TaskInstance herder,
     Condition queuewhen, Condition cancelwhen) {
@@ -355,6 +382,17 @@ TaskInstanceList Scheduler::doPlanTask(
     Log::error() << "wont plan a task that is not herded" << taskId;
     return instances;
   }
+  /* default queuewhen condition is (allfinished %!parenttaskinstanceid)
+   * rather than (true), which means "when parent is finished" if parent is
+   * an intermediary task or "as soon as herder started" if parent is the
+   * herder (because the herder task instance id is not in it's herded
+   * task list and is thus ignored by allfinished condition) */
+  if (queuewhen.isEmpty())
+    queuewhen = TaskWaitCondition(TaskWaitOperator::AllFinished,
+                                  "%!parenttaskinstanceid");
+
+  if (cancelwhen.isEmpty())
+    cancelwhen = guessCancelwhenCondition(queuewhen, cancelwhen);
   TaskInstance instance(task, force, overridingParams, herder, queuewhen,
                         cancelwhen);
   _unfinishedTasks.insert(instance.idAsLong(), instance);

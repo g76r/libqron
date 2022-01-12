@@ -53,12 +53,20 @@ PfNode ConditionData::toPfNode() const {
   return PfNode(); // should never happen
 }
 
+bool ConditionData::isEmpty() const {
+  return true; // right: a Condition() is an empty condition
+}
+
 QString Condition::toString() const {
   return d ? d->toString() : QString();
 }
 
 QString Condition::conditionType() const {
   return d ? d->conditionType() : QString();
+}
+
+bool Condition::isEmpty() const {
+  return d ? d->isEmpty() : true;
 }
 
 bool Condition::evaluate(TaskInstance taskContext,

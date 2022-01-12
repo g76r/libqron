@@ -39,6 +39,9 @@ public:
     }
     return false;
   }
+  bool isEmpty() const override {
+    return _conditions.isEmpty();
+  }
   PfNode toPfNode() const override {
     return PfNode();
   }
