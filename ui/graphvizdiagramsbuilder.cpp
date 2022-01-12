@@ -34,6 +34,21 @@ static QString humanReadableActionEdgeLabel(
   return label;
 }
 
+static QString actionEdgeStyle(
+    const EventSubscription &sub, const Action &action) {
+  Q_UNUSED(action)
+  if (sub.eventName() == "onplan")
+    return ",color=\"/paired12/4\",fontcolor=\"/paired12/4\"";
+  if (sub.eventName() == "onstart")
+    return ",color=\"/paired12/2\",fontcolor=\"/paired12/2\"";
+  if (sub.eventName() == "onfailure")
+    return ",color=\"/paired12/6\",fontcolor=\"/paired12/6\"";
+  if (sub.eventName() == "onschedulerstart"
+      || sub.eventName() == "onconfigload")
+    return ",color=\"/paired12/8\",fontcolor=\"/paired12/8\"";
+  return QString();
+}
+
 QHash<QString,QString> GraphvizDiagramsBuilder
 ::configDiagrams(SchedulerConfig config) {
   QHash<QString,Task> tasks = config.tasks();
@@ -227,7 +242,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
           gv.append("\"").append(task.id()).append("\"--\"$notice_")
               .append(action.targetName().remove('"')).append("\" [xlabel=\"")
               .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
-              .append("\"," TASK_POSTNOTICE_EDGE "]\n");
+              .append("\"," TASK_POSTNOTICE_EDGE + actionEdgeStyle(sub, action)
+                      + "]\n");
         } else if (actionType == "requesttask"
                    || actionType == "plantask") {
           QString target = action.targetName();
@@ -236,7 +252,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
           if (taskIds.contains(target))
             edges.insert("\""+task.id()+"\"--\""+target+"\" [xlabel=\""
                          +humanReadableActionEdgeLabel(sub, action).remove('"')
-                         +"\"," TASK_REQUESTTASK_EDGE "]\n");
+                         +"\"," TASK_REQUESTTASK_EDGE
+                         + actionEdgeStyle(sub, action) +  "]\n");
         }
       }
     }
@@ -250,7 +267,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
       if (actionType == "postnotice") {
         gv.append("\"$notice_").append(action.targetName().remove('"'))
             .append("\"--\"$global_").append(sub.eventName())
-            .append("\" [" GLOBAL_POSTNOTICE_EDGE ",xlabel=\"")
+            .append("\" [" GLOBAL_POSTNOTICE_EDGE
+                    + actionEdgeStyle(sub, action) + ",xlabel=\"")
             .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
             .append("\"]\n");
       } else if (actionType == "requesttask") {
@@ -258,7 +276,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
         if (taskIds.contains(target)) {
           gv.append("\"").append(target).append("\"--\"$global_")
               .append(sub.eventName())
-              .append("\" [" GLOBAL_REQUESTTASK_EDGE ",xlabel=\"")
+              .append("\" [" GLOBAL_REQUESTTASK_EDGE
+                      + actionEdgeStyle(sub, action) + ",xlabel=\"")
               .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
               .append("\"]\n");
         }
