@@ -48,6 +48,8 @@ public:
     ParamSet overridingParams;
     foreach (QString key, _overridingParams.keys())
       overridingParams.setValue(key, _overridingParams.value(key, &ppm));
+    if (!parentInstance.isNull())
+      overridingParams.setValue("!parenttaskinstanceid", parentInstance.id());
     TaskInstanceList instances = _scheduler->requestTask(
           id, overridingParams, _force, herder);
     if (instances.isEmpty()) {
