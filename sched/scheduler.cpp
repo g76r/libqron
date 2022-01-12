@@ -992,6 +992,7 @@ void Scheduler::taskInstanceStoppedOrCanceled(
       << "waiting for herded tasks to finish: " << livingSheeps;
   _waitingTasks.insert(instance, livingSheeps);
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
+  reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
 }
 
 void Scheduler::taskInstanceFinishedOrCanceled(
