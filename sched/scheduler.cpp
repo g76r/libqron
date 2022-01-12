@@ -734,6 +734,10 @@ void Scheduler::enqueueAsManyTaskInstancesAsPossible() {
       continue;
     if (instance.status() != TaskInstance::Planned)
       continue;
+    auto herder = instance.herder();
+    if (herder.status() == TaskInstance::Planned || // should never happen
+        herder.status() == TaskInstance::Queued) // e.g. waiting for resource
+      continue;
     Condition queuewhen = instance.queuewhen();
     if (queuewhen.evaluate(instance)) {
       Log::info(instance.task().id(), instance.id())
