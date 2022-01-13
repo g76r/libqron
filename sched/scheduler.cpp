@@ -378,16 +378,24 @@ TaskInstanceList Scheduler::doPlanTask(
                     "cluster: " << taskId;
     return instances;
   }
-  if (herder.isNull()) {
-    Log::error() << "wont plan a task that is not herded" << taskId;
-    return instances;
+  if (herder.isNull()) { // no herder -> no conditions
+    if (!queuewhen.isEmpty()) {
+      Log::warning() << "ignoring queuewhen condition when planning a task out"
+                        " of any herd : " << queuewhen.toString();
+    }
+    if (!cancelwhen.isEmpty()) {
+      Log::warning() << "ignoring cancelwhen condition when planning a task out"
+                        " of any herd : " << cancelwhen.toString();
+    }
+    queuewhen = Condition();
+    cancelwhen = Condition();
   }
   /* default queuewhen condition is (allfinished %!parenttaskinstanceid)
    * rather than (true), which means "when parent is finished" if parent is
    * an intermediary task or "as soon as herder started" if parent is the
    * herder (because the herder task instance id is not in it's herded
    * task list and is thus ignored by allfinished condition) */
-  if (queuewhen.isEmpty())
+  if (queuewhen.isEmpty() && !herder.isNull())
     queuewhen = TaskWaitCondition(TaskWaitOperator::AllFinished,
                                   "%!parenttaskinstanceid");
 
@@ -404,14 +412,20 @@ TaskInstanceList Scheduler::doPlanTask(
       << " and cancel condition " << instance.cancelwhen().toString();
   planOrRequestCommonPostProcess(instance, herder, _waitingTasks,
                                  overridingParams);
+  if (herder.isNull()) {
+    emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
+    triggerPlanActions(instance);
+    instance = enqueueTaskInstance(instance);
+  } else {
+    triggerPlanActions(instance);
+    reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
+  }
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
-  triggerPlanActions(instance);
   emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
   Log::debug(taskId, instance.idAsLong())
       << "task instance params after planning" << instance.params();
-  if (!herder.isNull())
-    reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
-  instances.append(instance);
+  if (!instance.isNull())
+    instances.append(instance);
   return instances;
 }
 

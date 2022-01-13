@@ -21,16 +21,16 @@ class PlanTaskActionData : public ActionData {
 public:
   QString _id;
   ParamSet _overridingParams;
-  bool _force;
+  bool _force, _lone;
   QHash<QString,QString> _paramappend;
   DisjunctionCondition _queuewhen, _cancelwhen;
 
   PlanTaskActionData(
-      Scheduler *scheduler, QString id, ParamSet params, bool force,
+      Scheduler *scheduler, QString id, ParamSet params, bool force, bool lone,
       QHash<QString,QString> paramappend, DisjunctionCondition queuewhen,
       DisjunctionCondition cancelwhen)
       : ActionData(scheduler), _id(id), _overridingParams(params),
-        _force(force), _paramappend(paramappend),
+        _force(force), _lone(lone), _paramappend(paramappend),
         _queuewhen(queuewhen), _cancelwhen(cancelwhen) { }
   void trigger(EventSubscription subscription, ParamSet eventContext,
                TaskInstance parentInstance) const override {
@@ -49,7 +49,7 @@ public:
       if (_scheduler->taskExists(idIfLocalToGroup))
         id = idIfLocalToGroup;
     }
-    TaskInstance herder = parentInstance.herder();
+    TaskInstance herder = _lone ? TaskInstance() : parentInstance.herder();
     ParamSet overridingParams;
     foreach (QString key, _overridingParams.keys())
       overridingParams.setValue(key, _overridingParams.value(key, &ppm));
@@ -76,9 +76,11 @@ public:
       auto ppp = childInstance.pseudoParams();
       ppm.prepend(childInstance.params());
       ppm.prepend(&ppp);
-      for (auto key: _paramappend.keys()) {
-        auto value = ParamSet().evaluate(_paramappend.value(key), &ppm);
-        herder.paramAppend(key, ParamSet::escape(value));
+      if (!herder.isNull()) {
+        for (auto key: _paramappend.keys()) {
+          auto value = ParamSet().evaluate(_paramappend.value(key), &ppm);
+          herder.paramAppend(key, ParamSet::escape(value));
+        }
       }
     }
   }
@@ -102,6 +104,8 @@ public:
     ConfigUtils::writeParamSet(&node, _overridingParams, "param");
     if (_force)
       node.appendChild(PfNode("force"));
+    if (_lone)
+      node.appendChild(PfNode("lone"));
     ConfigUtils::writeParamSet(&node, ParamSet(_paramappend), "paramappend");
     ConfigUtils::writeConditions(&node, "queuewhen", _queuewhen);
     ConfigUtils::writeConditions(&node, "cancelwhen", _cancelwhen);
@@ -113,6 +117,7 @@ PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
     : Action(new PlanTaskActionData(
           scheduler, node.contentAsString(),
           ConfigUtils::loadParamSet(node, "param"), node.hasChild("force"),
+          node.hasChild("lone"),
           ConfigUtils::loadParamSet(node, "paramappend").toHash(),
           DisjunctionCondition(node.grandChildrenByChildrenName("queuewhen")),
           DisjunctionCondition(node.grandChildrenByChildrenName("cancelwhen"))
@@ -121,7 +126,7 @@ PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
 
 PlanTaskAction::PlanTaskAction(Scheduler *scheduler, QString taskId)
     : Action(new PlanTaskActionData(
-          scheduler, taskId, ParamSet(), false,
+          scheduler, taskId, ParamSet(), false, false,
           QHash<QString,QString>(), DisjunctionCondition(),
           DisjunctionCondition())) {
 }
