@@ -234,6 +234,7 @@ private:
   void triggerStartActions(TaskInstance instance);
   void triggerFinishActions(
       TaskInstance instance, std::function<bool(Action)> filter);
+  void cancelOrAbortHerdedTasks(TaskInstance herder, bool allowEvenAbort);
 };
 
 #endif // SCHEDULER_H

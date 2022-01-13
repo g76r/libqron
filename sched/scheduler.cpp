@@ -498,18 +498,41 @@ TaskInstance Scheduler::cancelTaskInstance(quint64 id) {
   return instance;
 }
 
+void Scheduler::cancelOrAbortHerdedTasks(
+    TaskInstance herder, bool allowEvenAbort) {
+  for (auto instance: herder.herdedTasks()) { // _waitingTasks.value(herder) ?
+    switch (instance.status()) {
+    case TaskInstance::Planned:
+    case TaskInstance::Queued:
+      doCancelTaskInstance(
+          instance, false, "canceling task because herder task was canceled : "
+                               + herder.task().id() + "/" + herder.id());
+      break;
+    case TaskInstance::Running:
+      if (allowEvenAbort)
+        doAbortTaskInstance(instance.idAsLong());
+      break;
+    case TaskInstance::Waiting:
+    case TaskInstance::Success:
+    case TaskInstance::Failure:
+    case TaskInstance::Canceled:
+      break;
+    }
+  }
+}
+
 TaskInstance Scheduler::doCancelTaskInstance(
     TaskInstance instance, bool warning, const char *reason) {
   switch (instance.status()) {
   case TaskInstance::Planned:
-  case TaskInstance::Queued: {
+  case TaskInstance::Queued:
+    cancelOrAbortHerdedTasks(instance, false);
       if (warning)
         Log::warning(instance.task().id(), instance.id()) << reason;
       else
         Log::info(instance.task().id(), instance.id()) << reason;
       taskInstanceStoppedOrCanceled(instance, 0, false);
       return instance;
-    }
   case TaskInstance::Running:
   case TaskInstance::Waiting:
   case TaskInstance::Success:
@@ -521,7 +544,6 @@ TaskInstance Scheduler::doCancelTaskInstance(
       << "cannot cancel task instance because it was found in a cancelable "
          "status, was in status: " << instance.statusAsString();
   return TaskInstance();
-
 }
 
 TaskInstanceList Scheduler::cancelTaskInstancesByTaskId(QString taskId) {
@@ -559,22 +581,28 @@ TaskInstance Scheduler::abortTaskInstance(quint64 id) {
 }
 
 TaskInstance Scheduler::doAbortTaskInstance(quint64 id) {
-  for (auto instance: _runningTasks.keys()) {
-    if (id == instance.idAsLong()) {
-      QString taskId(instance.task().id());
-      Executor *executor = _runningTasks.value(instance);
+  for (auto instance: _unfinishedTasks) {
+    if (id != instance.idAsLong())
+      continue;
+    auto taskId = instance.task().id();
+    auto executor = _runningTasks.value(instance);
+    switch (instance.status()) {
+    case TaskInstance::Running:
+    case TaskInstance::Waiting:
+      cancelOrAbortHerdedTasks(instance, true);
       if (executor) {
         Log::warning(taskId, id) << "aborting running task as requested";
         // TODO should return TaskInstance() if executor cannot actually abort
         executor->abort();
-        return instance;
       }
+      return instance;
+    case TaskInstance::Planned:
+    case TaskInstance::Queued:
+    case TaskInstance::Success:
+    case TaskInstance::Failure:
+    case TaskInstance::Canceled:
+      break;
     }
-  }
-  TaskInstance instance = _unfinishedTasks.value(id);
-  QString taskId = instance.task().id();
-  if (!instance.isNull() && _waitingTasks.contains(instance)) {
-    // LATER abort or cancel every sheep, depending on its status
   }
   Log::warning() << "cannot abort task because it is not in running tasks list";
   return TaskInstance();
@@ -991,6 +1019,7 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   Log::info(instance.task().id(), instance.id())
       << "waiting for herded tasks to finish: " << livingSheeps;
   _waitingTasks.insert(instance, livingSheeps);
+  instance.setAbortable();
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
   reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
 }
