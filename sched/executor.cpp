@@ -330,7 +330,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
       << (success ? "successfully" : "in failure") << " with return code "
       << exitCode << " on host '" << _instance.target().hostname()
       << "' after running " << _instance.runningMillis()
-      << " ms (total time including queue: " << _instance.totalMillis()
+      << " ms (duration including queue: " << _instance.durationMillis()
       << " ms)";
   if (!_stderrWasUsed  && _alerter)
     _alerter->cancelAlert("task.stderr."+_instance.task().id());

@@ -37,12 +37,12 @@ public:
   // LATER QAtomicInt is not needed since only one thread changes these values (Executor's)
   mutable QAtomicInt _runningCount, _executionsCount;
   mutable bool _lastSuccessful;
-  mutable int _lastReturnCode, _lastTotalMillis;
+  mutable int _lastReturnCode, _lastDurationMillis;
   mutable quint64 _lastTaskInstanceId;
 
   TaskData(): _lastExecution(LLONG_MIN), _nextScheduledExecution(LLONG_MIN),
       _lastSuccessful(true), _lastReturnCode(-1),
-      _lastTotalMillis(-1), _lastTaskInstanceId(0) { }
+      _lastDurationMillis(-1), _lastTaskInstanceId(0) { }
   QDateTime lastExecution() const;
   QDateTime nextScheduledExecution() const;
   QVariant uiData(int section, int role) const override;
@@ -121,7 +121,7 @@ void Task::copyLiveAttributesFromOldTask(Task oldTask) {
   d->_executionsCount = oldTask.executionsCount();
   d->_lastSuccessful = oldTask.lastSuccessful();
   d->_lastReturnCode = oldTask.lastReturnCode();
-  d->_lastTotalMillis = oldTask.lastTotalMillis();
+  d->_lastDurationMillis = oldTask.lastDurationMillis();
   d->_lastTaskInstanceId = oldTask.lastTaskInstanceId();
   d->_enabled = oldTask.enabled();
   // keep last triggered timestamp from previously defined trigger
@@ -303,13 +303,13 @@ void Task::setLastReturnCode(int code) const {
     data()->_lastReturnCode = code;
 }
 
-int Task::lastTotalMillis() const {
-  return !isNull() ? data()->_lastTotalMillis : -1;
+int Task::lastDurationMillis() const {
+  return !isNull() ? data()->_lastDurationMillis : -1;
 }
 
-void Task::setLastTotalMillis(int lastTotalMillis) const {
+void Task::setLastDurationMillis(int lastDurationMillis) const {
   if (!isNull())
-    data()->_lastTotalMillis = lastTotalMillis;
+    data()->_lastDurationMillis = lastDurationMillis;
 }
 
 quint64 Task::lastTaskInstanceId() const {
@@ -522,7 +522,7 @@ QVariant TaskData::uiData(int section, int role) const {
     case 20:
       return _appliedTemplates.join(' ');
     case 26:
-      return _lastTotalMillis >= 0 ? _lastTotalMillis/1000.0 : QVariant();
+      return _lastDurationMillis >= 0 ? _lastDurationMillis/1000.0 : QVariant();
     case 32:
       return _lastTaskInstanceId > 0 ? _lastTaskInstanceId : QVariant();
     case 34:

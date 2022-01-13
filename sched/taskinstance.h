@@ -65,8 +65,8 @@ public:
   qint64 queuedMillis() const;
   qint64 runningMillis() const;
   qint64 waitingMillis() const;
-  qint64 totalMillis() const;
-  qint64 liveTotalMillis() const;
+  qint64 durationMillis() const;
+  qint64 liveDurationMillis() const;
   bool success() const;
   void setSuccess(bool success) const;
   void setHerderSuccess(Task::HerdingPolicy herdingpolicy) const;

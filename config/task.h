@@ -107,8 +107,8 @@ public:
   void setLastSuccessful(bool successful) const;
   int lastReturnCode() const;
   void setLastReturnCode(int code) const;
-  int lastTotalMillis() const;
-  void setLastTotalMillis(int lastTotalMillis) const;
+  int lastDurationMillis() const;
+  void setLastDurationMillis(int lastDurationMillis) const;
   quint64 lastTaskInstanceId() const;
   void setLastTaskInstanceId(quint64 lastTaskInstanceId) const;
   /** in millis, LLONG_MAX if not set */

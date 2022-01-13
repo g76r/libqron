@@ -36,7 +36,7 @@ static QString _uiHeaderNames[] = {
   "Herded Task Instances",
   "Finish Date",
   "Time waiting",
-  "Total time",
+  "Duration",
   "Queue date", // 15
   "Time planned",
   "Queue when",
@@ -138,13 +138,15 @@ public:
     return _start != LLONG_MIN && _stop != LLONG_MIN ? _stop - _start : 0; }
   qint64 inline waitingMillis() const {
     return _stop != LLONG_MIN && _finish != LLONG_MIN ? _finish - _stop : 0; }
-  qint64 inline totalMillis() const {
-    return _creationDateTime.isValid() && _finish != LLONG_MIN
-        ? _finish - _creationDateTime.toMSecsSinceEpoch() : 0; }
-  qint64 inline liveTotalMillis() const {
-    return (_finish != LLONG_MIN ? _finish
-                                 : QDateTime::currentMSecsSinceEpoch())
-        - _creationDateTime.toMSecsSinceEpoch(); }
+  qint64 inline durationMillis() const {
+    return _queue != LLONG_MIN && _finish != LLONG_MIN ? _finish - _queue : 0; }
+  qint64 inline liveDurationMillis() const {
+    if (_queue == LLONG_MIN) // still planned
+      return 0;
+    if (_finish == LLONG_MIN) // not finished : taking live value so far
+      return QDateTime::currentMSecsSinceEpoch() - _queue;
+    return _finish - _queue; // regular durationMillis()
+  }
   TaskInstance::TaskInstanceStatus inline status() const {
     if (_finish != LLONG_MIN) {
       if (_start == LLONG_MIN)
@@ -287,14 +289,14 @@ qint64 TaskInstance::waitingMillis() const {
   return d ? d->waitingMillis() : 0;
 }
 
-qint64 TaskInstance::totalMillis() const {
+qint64 TaskInstance::durationMillis() const {
   const TaskInstanceData *d = data();
-  return d ? d->totalMillis() : 0;
+  return d ? d->durationMillis() : 0;
 }
 
-qint64 TaskInstance::liveTotalMillis() const {
+qint64 TaskInstance::liveDurationMillis() const {
   const TaskInstanceData *d = data();
-  return d ? d->liveTotalMillis() : 0;
+  return d ? d->liveDurationMillis() : 0;
 }
 
 TaskInstance::TaskInstanceStatus TaskInstance::status() const {
@@ -431,18 +433,17 @@ static RadixTree<std::function<QVariant(
 { "!herdqueueds", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.herder().queuedMillis()/1000;
 } },
-{ "!totalms", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.runningMillis()+taskInstance.queuedMillis();
+{ "!durationms", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.durationMillis();
 } },
-{ "!herdtotalms", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.herder().runningMillis()+taskInstance.queuedMillis();
+{ "!herddurationms", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().durationMillis();
 } },
-{ "!totals", [](const TaskInstance &taskInstance, const QString&) {
-  return (taskInstance.runningMillis()+taskInstance.queuedMillis())/1000;
+{ "!durations", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.durationMillis()/1000;
 } },
-{ "!herdtotals", [](const TaskInstance &taskInstance, const QString&) {
-  return (taskInstance.herder().runningMillis()+taskInstance.queuedMillis())
-      /1000;
+{ "!herddurations", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.herder().durationMillis()/1000;
 } },
 { "!returncode", [](const TaskInstance &taskInstance, const QString&) {
   return QString::number(taskInstance.returnCode());
@@ -616,8 +617,8 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
       return finishDatetime().isNull() || stopDatetime().isNull()
           ? QVariant() : QString::number(waitingMillis()/1000.0);
     case 14:
-      return finishDatetime().isNull() || creationDatetime().isNull()
-          ? QVariant() : QString::number(totalMillis()/1000.0);
+      return finishDatetime().isNull() || queueDatetime().isNull()
+          ? QVariant() : QString::number(durationMillis()/1000.0);
     case 15:
       return queueDatetime().toString(
           QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));

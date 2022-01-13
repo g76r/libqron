@@ -1078,14 +1078,14 @@ void Scheduler::taskInstanceFinishedOrCanceled(
     configuredTask.setLastExecution(instance.startDatetime());
     configuredTask.setLastSuccessful(instance.success());
     configuredTask.setLastReturnCode(instance.returnCode());
-    configuredTask.setLastTotalMillis((int)instance.totalMillis());
+    configuredTask.setLastDurationMillis((int)instance.durationMillis());
     configuredTask.setLastTaskInstanceId(instance.idAsLong());
     triggerFinishActions(instance, [instance](Action a) {
       return instance.idAsLong() != instance.herdid()
           || !a.mayCreateTaskInstances();
     });
     if (configuredTask.maxExpectedDuration() < LLONG_MAX) {
-      if (configuredTask.maxExpectedDuration() < instance.totalMillis())
+      if (configuredTask.maxExpectedDuration() < instance.durationMillis())
         _alerter->raiseAlert("task.toolong."+taskId);
       else
         _alerter->cancelAlert("task.toolong."+taskId);
@@ -1133,7 +1133,7 @@ void Scheduler::periodicChecks() {
   currentInstances.append(_runningTasks.keys());
   foreach (const TaskInstance r, currentInstances) {
     const Task t(r.task());
-    if (t.maxExpectedDuration() < r.liveTotalMillis())
+    if (t.maxExpectedDuration() < r.liveDurationMillis())
       _alerter->raiseAlert("task.toolong."+t.id());
   }
   // restart timer for triggers if any was lost, this is never usefull apart
