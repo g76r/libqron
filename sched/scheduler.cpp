@@ -390,13 +390,13 @@ TaskInstanceList Scheduler::doPlanTask(
     queuewhen = Condition();
     cancelwhen = Condition();
   }
-  /* default queuewhen condition is (allfinished %!parenttaskinstanceid)
+  /* default queuewhen condition is (allsuccess %!parenttaskinstanceid)
    * rather than (true), which means "when parent is finished" if parent is
    * an intermediary task or "as soon as herder started" if parent is the
    * herder (because the herder task instance id is not in it's herded
-   * task list and is thus ignored by allfinished condition) */
+   * task list and is thus ignored by allsuccess condition) */
   if (queuewhen.isEmpty() && !herder.isNull())
-    queuewhen = TaskWaitCondition(TaskWaitOperator::AllFinished,
+    queuewhen = TaskWaitCondition(TaskWaitOperator::AllSuccess,
                                   "%!parenttaskinstanceid");
 
   if (cancelwhen.isEmpty())
