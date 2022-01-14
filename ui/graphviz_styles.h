@@ -17,13 +17,13 @@
 #define GLOBAL_GRAPH "rankdir=LR,bgcolor=transparent,splines=polyline,ranksep=0"
 #define CLUSTER_NODE "shape=box,peripheries=2,style=filled,fillcolor=\"/paired12/5\""
 #define HOST_NODE "shape=box,style=filled,fillcolor=\"/paired12/5\""
-#define RESOURCE_NODE "shape=ellipse,style=filled,fillcolor=\"/paired12/7\""
+#define RESOURCE_NODE "shape=egg,style=filled,fillcolor=\"/paired12/3\""
 #define TASK_NODE "shape=box,style=\"rounded,filled\",fillcolor=\"/paired12/1\""
 #define TASKGROUP_NODE "shape=ellipse,style=dashed"
 #define TASK_TARGET_EDGE "dir=forward,arrowhead=vee"
 #define CLUSTER_HOST_EDGE TASK_TARGET_EDGE
-#define TASK_RESOURCE_EDGE CLUSTER_HOST_EDGE
-#define RESOURCE_HOST_EDGE "dir=back,arrowtail=vee"
+#define TASK_RESOURCE_EDGE "dir=forward,arrowhead=odot"
+#define RESOURCE_HOST_EDGE "dir=back,arrowtail=dot"
 #define TASKGROUP_TASK_EDGE "style=dashed"
 #define TASKGROUP_EDGE "style=dashed"
 #define NOTICE_NODE "shape=note,style=filled,fillcolor=\"/paired12/7\""
