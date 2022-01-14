@@ -37,6 +37,7 @@ static QString _localDefaultShell;
 static const QRegularExpression _httpHeaderForbiddenSeqRE("[^a-zA-Z0-9_\\-]+");
 static const QRegularExpression _asciiControlCharsSeqRE("[\\0-\\x1f]+");
 static const QRegularExpression _unallowedDockerNameFirstChar{"^[^A-Za-z0-9]"};
+static const QRegularExpression _whitespace { "\\s+" };
 
 static int staticInit() {
   char *value = getenv("SHELL");
@@ -567,8 +568,7 @@ void Executor::scatterMean() {
   const auto params = _instance.params();
   const auto vars = _instance.task().vars();
   auto ppm = ParamsProviderMerger(params)(&ppp);
-  const auto inputs = ParamSet().splitAndEvaluate(
-      params.rawValue("scatter.input"), &ppm);
+  const auto inputs = params.value("scatter.input", &ppp).split(_whitespace);
   const auto regexp = QRegularExpression(params.value("scatter.regexp", ".*"));
   const auto paramappend = params.rawValue("scatter.paramappend").trimmed();
   const auto force = params.valueAsBool("scatter.force", false, true, &ppp);
