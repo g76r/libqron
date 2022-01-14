@@ -566,13 +566,14 @@ void Executor::scatterMean() {
   const auto ppp = _instance.pseudoParams();
   const auto params = _instance.params();
   const auto vars = _instance.task().vars();
-  const auto herder = _instance.herder();
   auto ppm = ParamsProviderMerger(params)(&ppp);
   const auto inputs = ParamSet().splitAndEvaluate(
       params.rawValue("scatter.input"), &ppm);
   const auto regexp = QRegularExpression(params.value("scatter.regexp", ".*"));
   const auto paramappend = params.rawValue("scatter.paramappend").trimmed();
   const auto force = params.valueAsBool("scatter.force", false, true, &ppp);
+  const auto lone = params.valueAsBool("scatter.lone", false, true, &ppp);
+  const auto herder = lone ? TaskInstance() : _instance.herder();
   // LATER const auto mean = params.value("scatter.mean", "plantask", &ppm);
   // LATER queuewhen ?
   TaskInstanceList instances;
@@ -601,7 +602,7 @@ void Executor::scatterMean() {
     if (instance.isNull()) {
       Log::error(_instance.task().id(), _instance.idAsLong())
           << "scatter failed to plan task : " << taskid << overridingParams
-          << force << herder.idAsLong();
+          << force << instance.herdid();
       continue;
     }
     int i = paramappend.indexOf(' ');
