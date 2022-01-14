@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,8 +57,9 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   QList<EventSubscription> schedulerEventsSubscriptions
       = config.allEventsSubscriptions();
   QSet<QString> displayedGroups, displayedHosts, notices, taskIds,
-      displayedGlobalEventsName;
+      displayedGlobalEventsName, resourcesSet;
   QHash<QString,QString> diagrams;
+  QStringList sortedResources;
   // search for:
   // * displayed groups, i.e. (i) actual groups containing at less one task
   //   and (ii) virtual parent groups (e.g. a group "foo.bar" as a virtual
@@ -73,6 +74,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   // * displayed global event names, i.e. global event names (e.g. onstartup)
   //   with at less one displayed event subscription (e.g. requesttask,
   //   postnotice, emitalert)
+  // * resources defined in either tasks or hosts
   foreach (const Task &task, tasks.values()) {
     QString s = task.taskGroup().id();
     displayedGroups.insert(s);
@@ -107,6 +109,15 @@ QHash<QString,QString> GraphvizDiagramsBuilder
         displayedGlobalEventsName.insert(sub.eventName());
     }
   }
+  for (auto task: tasks)
+    for (auto key: task.resources().keys())
+      resourcesSet.insert(key);
+  for (auto host: hosts) {
+    for (auto key: host.resources().keys())
+      resourcesSet.insert(key);
+  }
+  sortedResources = resourcesSet.values();
+  std::sort(sortedResources.begin(), sortedResources.end());
   /***************************************************************************/
   // tasks deployment diagram
   QString gv;
@@ -286,6 +297,73 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   }
   gv.append("}");
   diagrams.insert("tasksTriggerDiagram", gv);
+  /***************************************************************************/
+  // tasks-resources-hosts diagram
+  gv.clear();
+  gv.append("graph \"tasks-resources diagram\" {\n"
+            "graph[" GLOBAL_GRAPH "]\n");
+  for (auto resource: sortedResources)
+    gv.append("\"resource__").append(resource).append("\"").append("[label=\"")
+        .append(resource).append("\"," RESOURCE_NODE "]\n");
+  gv.append("subgraph{graph[rank=max]\n");
+  for (auto host: hosts.values())
+    if (!host.resources().isEmpty()) // display hosts with resources
+      gv.append("\"").append(host.id()).append("\"").append("[label=\"")
+          .append(host.id()).append(" (")
+          .append(host.hostname()).append(")\"," HOST_NODE "]\n");
+  gv.append("}\n");
+  for (auto host: hosts.values()) // draw host--resources edges
+      for (auto resource: host.resources().keys()) {
+        gv.append("\"resource__").append(resource).append("\" -- \"")
+            .append(host.id()).append("\" [headlabel=\"")
+            .append(QString::number(host.resources().value(resource)))
+            .append("\"" RESOURCE_HOST_EDGE "]\n");
+      }
+  gv.append("subgraph{graph[rank=min]\n");
+  displayedGroups.clear();// recompute displayedGroups w/ only tasks w/ resources
+  for (auto task: tasks.values()) {
+    if (task.resources().isEmpty())
+      continue;
+    QString s = task.taskGroup().id();
+    displayedGroups.insert(s);
+    for (int i = 0; (i = s.indexOf('.', i+1)) > 0; )
+      displayedGroups.insert(s.mid(0, i));
+  }
+  foreach (const QString &id, displayedGroups) {
+    if (!id.contains('.')) // root groups
+      gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
+  }
+  gv.append("}\n");
+  foreach (const QString &id, displayedGroups) {
+    if (id.contains('.')) // non root groups
+      gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
+  }
+  foreach (const QString &parent, displayedGroups) {
+    foreach (const QString &child, displayedGroups) {
+      if (child == parent+child.mid(child.lastIndexOf('.')))
+        gv.append("\"").append(parent).append("\" -- \"")
+            .append(child).append("\" [" TASKGROUP_EDGE "]\n");
+    }
+  }
+  foreach (const Task &task, tasks.values()) {
+    if (task.resources().isEmpty())
+      continue;
+    // draw task node and group--task edge
+    gv.append("\""+task.id()+"\" [label=\""+task.localId()+"\","
+              +TASK_NODE+",tooltip=\""+task.id()+"\"]\n");
+    gv.append("\"").append(task.taskGroup().id()).append("\"--")
+        .append("\"").append(task.id())
+        .append("\" [" TASKGROUP_TASK_EDGE "]\n");
+    // draw task--resources edges
+    for (auto resource: task.resources().keys()) {
+      gv.append("\"").append(task.id()).append("\" -- \"resource__")
+          .append(resource).append("\" [taillabel=\"")
+          .append(QString::number(task.resources().value(resource)))
+          .append("\"" TASK_RESOURCE_EDGE "]\n");
+    }
+  }
+  gv.append("}");
+  diagrams.insert("tasksResourcesHostsDiagram", gv);
   return diagrams;
   // LATER add a full events diagram with log, udp, etc. events
 }
