@@ -434,7 +434,8 @@ void Alerter::notifyChannels(Alert newAlert) {
 }
 
 void Alerter::notifyGridboards(Alert newAlert) {
-  _gridboardThread->_buffer.tryPut(newAlert, 10);
+  if (!_gridboardThread->_buffer.tryPut(newAlert))
+    Log::warning() << "alerter could not notify gridboards, buffer full";
 }
 
 void Alerter::commitChange(Alert *newAlert, Alert *oldAlert) {
