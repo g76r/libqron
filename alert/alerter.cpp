@@ -261,6 +261,8 @@ void Alerter::doCancelAlert(QString alertId, bool immediately) {
       newAlert.setStatus(Alert::MayRise);
       newAlert.setCancellationDate(QDateTime::currentDateTime().addMSecs(
                                      mayriseDelay(alertId)));
+      newAlert.setVisibilityDate(std::max(newAlert.visibilityDate(),
+                                          newAlert.cancellationDate()));
       break;
     case Alert::Raised:
       newAlert.setStatus(Alert::Dropping);
