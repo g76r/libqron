@@ -18,7 +18,6 @@
 #include "raisealertaction.h"
 #include "cancelalertaction.h"
 #include "emitalertaction.h"
-#include "requesttaskaction.h"
 #include "plantaskaction.h"
 #include "logaction.h"
 #include "config/configutils.h"
@@ -137,7 +136,8 @@ Action Action::createAction(PfNode node, Scheduler *scheduler,
   } else if (node.name() == "emitalert") {
     action = EmitAlertAction(scheduler, node);
   } else if (node.name() == "requesttask") {
-    action = RequestTaskAction(scheduler, node);
+    Log::warning() << "requesttask action is deprecated, use plantask instead";
+    action = PlanTaskAction(scheduler, node);
   } else if (node.name() == "plantask") {
     action = PlanTaskAction(scheduler, node);
   } else if (node.name() == "requesturl") {
