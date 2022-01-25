@@ -1,4 +1,4 @@
-/* Copyright 2012-2018 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,6 +13,7 @@
  */
 #include "alert.h"
 #include "config/alertsubscription.h"
+#include "util/radixtree.h"
 
 static QString _uiHeaderNames[] = {
   "Id", // 0
@@ -63,7 +64,7 @@ QVariant AlertData::uiData(int section, int role) const {
     case 0:
       return _id;
     case 1:
-      return Alert::statusToString(_status);
+      return Alert::statusAsString(_status);
     case 2:
       return _riseDate.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
     case 3:
@@ -81,7 +82,7 @@ QVariant AlertData::uiData(int section, int role) const {
     case 7:
       return idWithCount();
     case 8:
-      return Alert::statusToString(_status);
+      return Alert::statusAsString(_status);
     }
     break;
   default:
@@ -191,7 +192,7 @@ Alert::AlertStatus Alert::statusFromString(QString string) {
   return Alert::Nonexistent;
 }
 
-QString Alert::statusToString(Alert::AlertStatus status) {
+QString Alert::statusAsString(Alert::AlertStatus status) {
   switch(status) {
   case Alert::Rising:
     return risingStatus;
@@ -209,36 +210,48 @@ QString Alert::statusToString(Alert::AlertStatus status) {
   return nonexistentStatus;
 }
 
+static RadixTree<std::function<QVariant(const Alert&, const QVariant &)>>
+    _pseudoParams {
+{ "!alertid" , [](const Alert &alert, const QVariant &) {
+   return alert.id();
+} },
+{ "!alertidwithcount" , [](const Alert &alert, const QVariant &) {
+   return alert.idWithCount();
+ } },
+{ "!alertcount" , [](const Alert &alert, const QVariant &) {
+   return alert.count();
+ } },
+{ "!risedate" , [](const Alert &alert, const QVariant &) {
+   return alert.riseDate()
+       .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+ } },
+{ "!cancellationdate" , [](const Alert &alert, const QVariant &) {
+   return alert.cancellationDate()
+       .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+ } },
+{ "!visibilitydate" , [](const Alert &alert, const QVariant &) {
+   return alert.visibilityDate()
+       .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+ } },
+{ "!alertstatus" , [](const Alert &alert, const QVariant &) {
+   return alert.statusAsString();
+ } },
+};
+
 QVariant AlertPseudoParamsProvider::paramValue(
     QString key, const ParamsProvider *context, QVariant defaultValue,
     QSet<QString> alreadyEvaluated) const {
-  Q_UNUSED(alreadyEvaluated)
-  if (key.at(0) == '!') {
-    if (key == "!alertid") {
-      return _alert.id();
-    } else if (key == "!alertidwithcount") {
-      return _alert.idWithCount();
-    } else if (key == "!alertcount") {
-      return _alert.count();
-    } else if (key == "!risedate") {
-      // LATER make this support !date formating
-      return _alert.riseDate()
-          .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    } else if (key == "!cancellationdate") {
-      // LATER make this support !date formating
-      return _alert.cancellationDate()
-          .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    } else if (key == "!visibilitydate") {
-      // LATER make this support !date formating
-      return _alert.visibilityDate()
-          .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    } else if (key == "!alertstatus") {
-      return _alert.statusToString();
-    }
-    // MAYDO guess !taskid from "task.{failure,toolong...}.%!taskid" alerts
-  }
+  auto value = _pseudoParams.value(key)(_alert, QVariant());
+  if (value.isValid())
+    return value;
   return _alert.subscription().params()
       .paramValue(key, context, defaultValue, alreadyEvaluated);
+}
+
+QSet<QString> AlertPseudoParamsProvider::keys() const {
+  QSet<QString> keys = _pseudoParams.keys();
+  keys += _alert.subscription().params().keys();
+  return keys;
 }
 
 int Alert::count() const {

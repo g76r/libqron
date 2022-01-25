@@ -1,4 +1,4 @@
-/* Copyright 2012-2018 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -40,8 +40,8 @@ public:
   Alert::AlertStatus status() const;
   void setStatus(Alert::AlertStatus status);
   static Alert::AlertStatus statusFromString(QString string);
-  static QString statusToString(Alert::AlertStatus status);
-  QString statusToString() const { return statusToString(status()); }
+  static QString statusAsString(Alert::AlertStatus status);
+  QString statusAsString() const { return statusAsString(status()); }
   /** Initial raise() call date, before rising period.
    * Won't change in the alert lifetime. */
   QDateTime riseDate() const;
@@ -87,7 +87,9 @@ public:
   inline AlertPseudoParamsProvider(Alert alert) : _alert(alert) { }
   QVariant paramValue(QString key, const ParamsProvider *context = 0,
                       QVariant defaultValue = QVariant(),
-                      QSet<QString> alreadyEvaluated = QSet<QString>()) const;
+                      QSet<QString> alreadyEvaluated = QSet<QString>()
+                      ) const override;
+  QSet<QString> keys() const override;
 };
 
 inline AlertPseudoParamsProvider Alert::pseudoParams() const {

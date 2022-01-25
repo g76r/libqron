@@ -165,7 +165,9 @@ public:
   inline TaskPseudoParamsProvider(Task task) : _task(task) { }
   QVariant paramValue(QString key, const ParamsProvider *context = 0,
                       QVariant defaultValue = QVariant(),
-                      QSet<QString> alreadyEvaluated = QSet<QString>()) const;
+                      QSet<QString> alreadyEvaluated = QSet<QString>()
+                      ) const override;
+  QSet<QString> keys() const override;
 };
 
 inline TaskPseudoParamsProvider Task::pseudoParams() const {

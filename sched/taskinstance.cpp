@@ -500,6 +500,10 @@ QVariant TaskInstancePseudoParamsProvider::paramValue(
   return _taskPseudoParams.paramValue(key, context, defaultValue, alreadyEvaluated);
 }
 
+QSet<QString> TaskInstancePseudoParamsProvider::keys() const {
+  return _taskPseudoParams.keys()+_pseudoParams.keys();
+}
+
 void TaskInstance::setTask(Task task) {
   TaskInstanceData *d = data();
   if (d)

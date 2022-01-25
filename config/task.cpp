@@ -456,6 +456,10 @@ QVariant TaskPseudoParamsProvider::paramValue(
   return _pseudoParams.value(key)(_task, defaultValue);
 }
 
+QSet<QString> TaskPseudoParamsProvider::keys() const {
+  return _pseudoParams.keys();
+}
+
 QList<CronTrigger> Task::cronTriggers() const {
   return !isNull() ? data()->_cronTriggers : QList<CronTrigger>();
 }
