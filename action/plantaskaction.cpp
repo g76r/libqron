@@ -82,7 +82,7 @@ public:
     }
   }
   QString toString() const override {
-    return ">" + _id;
+    return "*" + _id;
   }
   QString actionType() const override {
     return QStringLiteral("plantask");

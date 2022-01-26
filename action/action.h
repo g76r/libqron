@@ -54,8 +54,7 @@ public:
   PfNode toPfNode() const;
   /** Create the appropriate Action subclass according to configuration
    *  fragment. */
-  static Action createAction(PfNode node, Scheduler *scheduler,
-                             QString eventName);
+  static Action createAction(PfNode node, Scheduler *scheduler);
 
 protected:
   explicit Action(ActionData *data);

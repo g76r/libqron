@@ -49,7 +49,7 @@ EventSubscription::EventSubscription(
   foreach (PfNode child, node.children()) {
     if (ignoredChildren.contains(child.name()) || child.isComment())
       continue;
-    Action a = Action::createAction(child, scheduler, d->_eventName);
+    Action a = Action::createAction(child, scheduler);
     if (!a.isNull())
       d->_actions.append(a);
   }
@@ -80,31 +80,32 @@ EventSubscription &EventSubscription::operator=(const EventSubscription &rhs) {
   return *this;
 }
 
-void EventSubscription::triggerActions(
+bool EventSubscription::triggerActions(
     ParamsProviderMerger *context, TaskInstance instance,
     std::function<bool(Action a)> filter) const {
   if (!d)
-    return;
+    return false;
+  ParamsProviderMergerRestorer ppmr(context);
   auto ppp = instance.pseudoParams();
-  if (!instance.isNull()) {
-    context->save();
+  if (!instance.isNull())
     context->append(&ppp).append(instance.params());
-  }
-  for (Action a: d->_actions)
+  for (Action a: d->_actions) {
+    if (a.actionType() == "stop")
+      return true;
     if (filter(a))
       a.trigger(*this, context, instance);
-  if (!instance.isNull())
-    context->restore();
+  }
+  return false;
 }
 
-void EventSubscription::triggerActions(
+bool EventSubscription::triggerActions(
     ParamsProviderMerger *context, TaskInstance instance) const {
-  triggerActions(context, instance, [](Action){ return true; });
+  return triggerActions(context, instance, [](Action){ return true; });
 }
 
-void EventSubscription::triggerActions() const {
+bool EventSubscription::triggerActions() const {
   ParamsProviderMerger context;
-  triggerActions(&context, TaskInstance(), [](Action){ return true; });
+  return triggerActions(&context, TaskInstance(), [](Action){ return true; });
 }
 
 QStringList EventSubscription::toStringList(QList<EventSubscription> list) {

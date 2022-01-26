@@ -61,6 +61,7 @@ LIBS += \
 LIBS += -lqtpf -lp6core
 
 SOURCES += \
+    action/donothingaction.cpp \
     action/plantaskaction.cpp \
     condition/condition.cpp \
     condition/disjunctioncondition.cpp \
@@ -123,6 +124,7 @@ SOURCES += \
     action/writefileaction.cpp
 
 HEADERS += \
+    action/donothingaction.h \
     action/plantaskaction.h \
     condition/condition.h \
     condition/condition_p.h \

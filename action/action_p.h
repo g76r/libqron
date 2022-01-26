@@ -28,7 +28,7 @@ public:
   virtual QString toString() const;
   /** Type of action for programmatic test, e.g. "postnotice" */
   virtual QString actionType() const;
-  /** Action can create task instances, e.g. "requesttask" */
+  /** Action can create task instances, e.g. "plantask" */
   virtual bool mayCreateTaskInstances() const;
   /** Default: do nothing */
   virtual void trigger(

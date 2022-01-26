@@ -61,14 +61,16 @@ public:
   /** Trigger actions if context complies with filter conditions.
    * Use this method if the event occured in the context of a task.
    * @param eventContext will get taskContext::params() as parent before being
-   * passed to Action::trigger() */
-  void triggerActions(ParamsProviderMerger *context, TaskInstance instance,
-                      std::function<bool(Action a)> filter) const;
+   * passed to Action::trigger()
+   * @return true if stop action was encountered */
+  [[nodiscard]] bool triggerActions(
+      ParamsProviderMerger *context, TaskInstance instance,
+      std::function<bool(Action a)> filter) const;
   /** Syntaxic sugar */
-  void triggerActions(ParamsProviderMerger *context,
-                      TaskInstance instance) const;
+  [[nodiscard]] bool triggerActions(
+      ParamsProviderMerger *context, TaskInstance instance) const;
   /** Syntaxic sugar */
-  void triggerActions() const;
+  [[nodiscard]] bool triggerActions() const;
   static QStringList toStringList(QList<EventSubscription> list);
   QStringList toStringList() const;
   PfNode toPfNode() const;

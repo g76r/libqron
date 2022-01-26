@@ -161,10 +161,12 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
     _firstConfigurationLoad = false;
     Log::info() << "starting scheduler";
     for (auto sub: newConfig.onschedulerstart())
-      sub.triggerActions();
+      if (sub.triggerActions())
+        break;
   }
   for (auto sub: newConfig.onconfigload())
-    sub.triggerActions();
+    if (sub.triggerActions())
+      break;
 }
 
 void Scheduler::reloadAccessControlConfig() {
@@ -771,7 +773,8 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
   // TODO filter onnotice events
   ParamsProviderMerger ppm(params);
   for (auto sub: config().onnotice())
-    sub.triggerActions(&ppm, TaskInstance());
+    if (sub.triggerActions(&ppm, TaskInstance()))
+      break;
 }
 
 void Scheduler::reevaluateQueuedTaskInstances() {
@@ -1209,7 +1212,8 @@ void Scheduler::triggerPlanActions(TaskInstance instance) {
   auto ppm = ParamsProviderMerger(&ppp)(instance.params());
   for (auto subs: instance.task().taskGroup().onplan()
        + instance.task().onplan())
-    subs.triggerActions(&ppm, instance);
+    if (subs.triggerActions(&ppm, instance))
+      break;
 }
 
 void Scheduler::triggerStartActions(TaskInstance instance) {
@@ -1218,7 +1222,8 @@ void Scheduler::triggerStartActions(TaskInstance instance) {
   for (auto subs: config().onstart()
        + instance.task().taskGroup().onstart()
        + instance.task().onstart())
-    subs.triggerActions(&ppm, instance);
+    if (subs.triggerActions(&ppm, instance))
+      break;
 }
 
 void Scheduler::triggerFinishActions(
@@ -1235,5 +1240,6 @@ void Scheduler::triggerFinishActions(
   auto ppp = instance.pseudoParams();
   auto ppm = ParamsProviderMerger(&ppp)(instance.params());
   for (auto es: subs)
-    es.triggerActions(&ppm, instance, filter);
+    if (es.triggerActions(&ppm, instance, filter))
+      break;
 }

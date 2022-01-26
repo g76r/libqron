@@ -23,6 +23,9 @@
 #include "config/configutils.h"
 #include "requesturlaction.h"
 #include "writefileaction.h"
+#include "donothingaction.h"
+#include "util/radixtree.h"
+#include <functional>
 
 Action::Action() {
 }
@@ -123,37 +126,38 @@ PfNode ActionData::toPfNode() const {
   return PfNode(); // should never happen
 }
 
-Action Action::createAction(PfNode node, Scheduler *scheduler,
-                            QString eventName) {
+static RadixTree<std::function<Action(PfNode,Scheduler*)>> _actionBuilders {
+{ "postnotice", [](PfNode node, Scheduler *scheduler) -> Action {
+  return PostNoticeAction(scheduler, node); } },
+{ "raisealert", [](PfNode node, Scheduler *scheduler) -> Action {
+   return RaiseAlertAction(scheduler, node); } },
+{ "cancelalert", [](PfNode node, Scheduler *scheduler) -> Action {
+   return CancelAlertAction(scheduler, node); } },
+{ "emitalert", [](PfNode node, Scheduler *scheduler) -> Action {
+   return EmitAlertAction(scheduler, node); } },
+{ "requesttask", [](PfNode node, Scheduler *scheduler) -> Action {
+   Log::warning() << "requesttask action is deprecated, use plantask instead";
+   return PlanTaskAction(scheduler, node); } },
+{ "plantask", [](PfNode node, Scheduler *scheduler) -> Action {
+   return PlanTaskAction(scheduler, node); } },
+{ "requesturl", [](PfNode node, Scheduler *scheduler) -> Action {
+   return RequestUrlAction(scheduler, node); } },
+{ "writefile", [](PfNode node, Scheduler *scheduler) -> Action {
+   return WriteFileAction(scheduler, node); } },
+{ "log", [](PfNode node, Scheduler *scheduler) -> Action {
+   return LogAction(scheduler, node); } },
+{ { "donothing", "stop" }, [](PfNode node, Scheduler *) -> Action {
+   return DoNothingAction(node.name()); } },
+};
+
+Action Action::createAction(PfNode node, Scheduler *scheduler) {
   Action action;
-  // LATER implement ExecAction
-  if (node.name() == "postnotice") {
-    action = PostNoticeAction(scheduler, node);
-  } else if (node.name() == "raisealert") {
-    action = RaiseAlertAction(scheduler, node);
-  } else if (node.name() == "cancelalert") {
-    action = CancelAlertAction(scheduler, node);
-  } else if (node.name() == "emitalert") {
-    action = EmitAlertAction(scheduler, node);
-  } else if (node.name() == "requesttask") {
-    Log::warning() << "requesttask action is deprecated, use plantask instead";
-    action = PlanTaskAction(scheduler, node);
-  } else if (node.name() == "plantask") {
-    action = PlanTaskAction(scheduler, node);
-  } else if (node.name() == "requesturl") {
-    action = RequestUrlAction(scheduler, node);
-  } else if (node.name() == "writefile") {
-    action = WriteFileAction(scheduler, node);
-  } else if (node.name() == "log") {
-    action = LogAction(scheduler, node);
+  auto builder = _actionBuilders.value(node.name());
+  if (builder)
+    action = builder(node, scheduler);
+  if (action.isNull()) {
+    Log::error() << "unknown action type: " << node.name();
   } else {
-    if (eventName == "ontrigger"
-        && (node.name() == "cron" || node.name() == "notice"))
-      ;
-    else
-      Log::error() << "unknown action type: " << node.name();
-  }
-  if (!action.isNull()) {
     ConfigUtils::loadComments(node, &action.d->_commentsList);
   }
   return action;
