@@ -31,8 +31,9 @@ public:
   /** Action can create task instances, e.g. "requesttask" */
   virtual bool mayCreateTaskInstances() const;
   /** Default: do nothing */
-  virtual void trigger(EventSubscription subscription,
-                       ParamSet eventContext, TaskInstance taskContext) const;
+  virtual void trigger(
+      EventSubscription subscription, ParamsProviderMerger *context,
+      TaskInstance instance) const;
   virtual QString targetName() const;
   virtual PfNode toPfNode() const;
   virtual ParamSet params() const;

@@ -1,4 +1,4 @@
-/* Copyright 2017 Hallowyn and others.
+/* Copyright 2017-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,17 +27,14 @@ public:
                 ParamSet params = ParamSet())
     : _path(path), _message(message), _params(params) {
   }
-  void trigger(EventSubscription subscription, ParamSet eventContext,
-               TaskInstance taskContext) const {
-    Q_UNUSED(subscription)
+  void trigger(EventSubscription, ParamsProviderMerger *context,
+               TaskInstance instance) const {
+    ParamsProviderMergerRestorer ppmr(context);
+    context->prepend(_params);
     // LATER support binary payloads
-    TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
-    ParamsProviderMerger evaluationContext =
-        ParamsProviderMerger(_params)(eventContext)(&ppp)(taskContext.params());
     ParametrizedFileWriter writer(
-          _path, _params, &evaluationContext, taskContext.task().id(),
-          taskContext.idAsLong());
-    writer.performWrite(_message, &evaluationContext);
+          _path, _params, context, instance.task().id(), instance.idAsLong());
+    writer.performWrite(_message, context);
   }
   QString toString() const {
     return "writefile{ "+_path+" }";

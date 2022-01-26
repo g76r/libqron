@@ -23,7 +23,6 @@
 #include "log/log.h"
 #include "log/filelogger.h"
 #include <QFile>
-#include "action/requesttaskaction.h"
 #include <QThread>
 #include "config/configutils.h"
 #include "config/requestformfield.h"
@@ -32,6 +31,8 @@
 #include "thread/blockingtimer.h"
 #include "condition/taskwaitcondition.h"
 #include "condition/disjunctioncondition.h"
+#include "util/paramsprovidermerger.h"
+#include "action/action.h"
 
 #define REEVALUATE_QUEUED_INSTANCES_EVENT (QEvent::Type(QEvent::User+1))
 #define REEVALUATE_PLANNED_INSTANCES_EVENT (QEvent::Type(QEvent::User+2))
@@ -159,10 +160,10 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   if (_firstConfigurationLoad) {
     _firstConfigurationLoad = false;
     Log::info() << "starting scheduler";
-    foreach(EventSubscription sub, newConfig.onschedulerstart())
+    for (auto sub: newConfig.onschedulerstart())
       sub.triggerActions();
   }
-  foreach(EventSubscription sub, newConfig.onconfigload())
+  for (auto sub: newConfig.onconfigload())
     sub.triggerActions();
 }
 
@@ -768,8 +769,9 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
   }
   emit noticePosted(notice, params);
   // TODO filter onnotice events
-  foreach (EventSubscription sub, config().onnotice())
-    sub.triggerActions(params);
+  ParamsProviderMerger ppm(params);
+  for (auto sub: config().onnotice())
+    sub.triggerActions(&ppm, TaskInstance());
 }
 
 void Scheduler::reevaluateQueuedTaskInstances() {
@@ -1203,16 +1205,20 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
 }
 
 void Scheduler::triggerPlanActions(TaskInstance instance) {
+  auto ppp = instance.pseudoParams();
+  auto ppm = ParamsProviderMerger(&ppp)(instance.params());
   for (auto subs: instance.task().taskGroup().onplan()
        + instance.task().onplan())
-    subs.triggerActions(instance);
+    subs.triggerActions(&ppm, instance);
 }
 
 void Scheduler::triggerStartActions(TaskInstance instance) {
+  auto ppp = instance.pseudoParams();
+  auto ppm = ParamsProviderMerger(&ppp)(instance.params());
   for (auto subs: config().onstart()
        + instance.task().taskGroup().onstart()
        + instance.task().onstart())
-    subs.triggerActions(instance);
+    subs.triggerActions(&ppm, instance);
 }
 
 void Scheduler::triggerFinishActions(
@@ -1226,6 +1232,8 @@ void Scheduler::triggerFinishActions(
     subs = config().onfailure()
         + instance.task().taskGroup().onfailure()
         + instance.task().onfailure();
+  auto ppp = instance.pseudoParams();
+  auto ppm = ParamsProviderMerger(&ppp)(instance.params());
   for (auto es: subs)
-    es.triggerActions(instance, filter);
+    es.triggerActions(&ppm, instance, filter);
 }

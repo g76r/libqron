@@ -29,26 +29,15 @@ public:
   QString actionType() const override {
     return QStringLiteral("postnotice");
   }
-  void trigger(EventSubscription subscription, ParamSet eventContext,
-               TaskInstance taskContext) const override {
-    // we must implement trigger(,,TaskInstance) rather than trigger(,) because
-    // even though we do not directly use TaskInstance, we want that
-    // EventSubscription::triggerActions() use task params as eventContext
-    // grandparent
-    Q_UNUSED(subscription)
-    if (_scheduler) {
-      ParamSet noticeParams;
-      TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
-      ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp)
-          (taskContext.params());
-      foreach (QString key, _noticeParams.keys())
-        noticeParams.setValue(key, _noticeParams.value(key, &ppm));
-      _scheduler->postNotice(_noticeParams.evaluate(_notice, &ppm),
-                             noticeParams);
-    }
-  }
-  void trigger(EventSubscription subscription, ParamSet eventContext) const {
-    trigger(subscription, eventContext, TaskInstance());
+  void trigger(EventSubscription, ParamsProviderMerger *context,
+               TaskInstance) const override {
+    if (!_scheduler)
+      return;
+    ParamSet noticeParams;
+    for (auto key: _noticeParams.keys())
+      noticeParams.setValue(key, ParamSet().value(key, context));
+    _scheduler->postNotice(ParamSet().evaluate(_notice, context),
+                           noticeParams);
   }
   QString targetName() const override {
     return _notice;

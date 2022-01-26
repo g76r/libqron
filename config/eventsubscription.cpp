@@ -81,36 +81,30 @@ EventSubscription &EventSubscription::operator=(const EventSubscription &rhs) {
 }
 
 void EventSubscription::triggerActions(
-    ParamSet eventParams, TaskInstance taskContext,
+    ParamsProviderMerger *context, TaskInstance instance,
     std::function<bool(Action a)> filter) const {
   if (!d)
     return;
-  if (eventParams.parent().isNull())
-    eventParams.setParent(d->_globalParams);
-  // LATER implement filters
-  // inheritage will be: eventContext > taskContext > ...
-  //Log::fatal() << "EventSubscription::triggerActions " << eventContext << " "
-  //             << taskContext.id();
+  auto ppp = instance.pseudoParams();
+  if (!instance.isNull()) {
+    context->save();
+    context->append(&ppp).append(instance.params());
+  }
   for (Action a: d->_actions)
     if (filter(a))
-      a.trigger(*this, eventParams, taskContext);
-}
-
-void EventSubscription::triggerActions(TaskInstance taskContext) const {
-  triggerActions(ParamSet(), taskContext, [](Action){return true;});
+      a.trigger(*this, context, instance);
+  if (!instance.isNull())
+    context->restore();
 }
 
 void EventSubscription::triggerActions(
-    TaskInstance taskContext, std::function<bool(Action a)> filter) const {
-  triggerActions(ParamSet(), taskContext, filter);
-}
-
-void EventSubscription::triggerActions(ParamSet eventParams) const {
-  triggerActions(eventParams, TaskInstance(), [](Action){return true;});
+    ParamsProviderMerger *context, TaskInstance instance) const {
+  triggerActions(context, instance, [](Action){ return true; });
 }
 
 void EventSubscription::triggerActions() const {
-  triggerActions(ParamSet(), TaskInstance(), [](Action){return true;});
+  ParamsProviderMerger context;
+  triggerActions(&context, TaskInstance(), [](Action){ return true; });
 }
 
 QStringList EventSubscription::toStringList(QList<EventSubscription> list) {

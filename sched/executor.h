@@ -32,6 +32,7 @@ class Scheduler;
 class LIBQRONSHARED_EXPORT Executor : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY(Executor)
+
   bool _isTemporary, _stderrWasUsed;
   QThread *_thread;
   QProcess *_process;

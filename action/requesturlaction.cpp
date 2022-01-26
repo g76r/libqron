@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -37,27 +37,24 @@ public:
                 ParamSet params = ParamSet())
     : _address(address), _message(message), _params(params) {
   }
-  void trigger(EventSubscription subscription, ParamSet eventContext,
-               TaskInstance taskContext) const override {
-    Q_UNUSED(subscription)
+  void trigger(EventSubscription, ParamsProviderMerger *context,
+               TaskInstance instance) const override {
+    ParamsProviderMergerRestorer ppmr(context);
+    context->prepend(_params);
     // LATER support binary payloads
-    TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
-    ParamsProviderMerger evaluationContext =
-        ParamsProviderMerger(_params)(eventContext)(&ppp)(taskContext.params());
     if (_address.startsWith("udp:", Qt::CaseInsensitive)) {
       // LATER run UDP in a separate thread to avoid network/dns/etc. hangups
-      ParametrizedUdpSender sender(_address, _params, &evaluationContext,
-                                   taskContext.task().id(),
-                                   taskContext.idAsLong());
-      sender.performRequest(_message, &evaluationContext);
+      ParametrizedUdpSender sender(
+          _address, _params, context, instance.task().id(),
+          instance.idAsLong());
+      sender.performRequest(_message, context);
     } else {
       ParametrizedNetworkRequest request(
-            _address, _params, &evaluationContext, taskContext.task().id(),
-            taskContext.idAsLong());
+            _address, _params, context, instance.task().id(),
+          instance.idAsLong());
       QNetworkReply *reply = request.performRequest(
-            globalNetworkActionHub->_nam, _message, &evaluationContext);
+            globalNetworkActionHub->_nam, _message, context);
       if (reply) {
-        // FIXME use errorOccurred() instead of (non signal!) error()
         QObject::connect(reply, &QNetworkReply::errorOccurred,
                          reply, &QObject::deleteLater);
         QObject::connect(reply, &QNetworkReply::finished,

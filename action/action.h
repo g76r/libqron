@@ -17,6 +17,7 @@
 #include "libqron_global.h"
 #include <QSharedDataPointer>
 #include "util/paramset.h"
+#include "util/paramsprovidermerger.h"
 #include <QStringList>
 #include "pf/pfnode.h"
 
@@ -37,8 +38,8 @@ public:
   Action &operator=(const Action &);
   ~Action();
   bool isNull() const { return !d; }
-  void trigger(EventSubscription subscription, ParamSet eventContext,
-               TaskInstance taskContext) const;
+  void trigger(EventSubscription subscription, ParamsProviderMerger *context,
+               TaskInstance instance) const;
   /** Human readable description of action */
   QString toString() const;
   /** Type of action for programmatic test, e.g. "postnotice" */

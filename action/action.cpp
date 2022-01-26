@@ -45,11 +45,11 @@ Action::~Action() {
 ActionData::~ActionData() {
 }
 
-void Action::trigger(EventSubscription subscription,
-                     ParamSet eventContext,
-                     TaskInstance taskContext) const {
+void Action::trigger(
+    EventSubscription subscription, ParamsProviderMerger *context,
+    TaskInstance instance) const {
   if (d)
-    d->trigger(subscription, eventContext, taskContext);
+    d->trigger(subscription, context, instance);
 }
 
 QString ActionData::toString() const {
@@ -65,10 +65,10 @@ bool ActionData::mayCreateTaskInstances() const {
 }
 
 void ActionData::trigger(
-    EventSubscription subscription, ParamSet eventContext,
-    TaskInstance taskContext) const {
-  Q_UNUSED(eventContext)
-  Q_UNUSED(taskContext)
+    EventSubscription subscription, ParamsProviderMerger *context,
+    TaskInstance instance) const {
+  Q_UNUSED(context)
+  Q_UNUSED(instance)
   Log::error() << "ActionData::trigger() called whereas it should never, "
                   "from subscription " << subscription.subscriberName()
                   << "|" << subscription.eventName();

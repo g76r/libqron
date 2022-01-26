@@ -32,18 +32,15 @@ public:
       : ActionData(scheduler), _id(id), _overridingParams(params),
         _force(force), _lone(lone), _paramappend(paramappend),
         _queuewhen(queuewhen), _cancelwhen(cancelwhen) { }
-  void trigger(EventSubscription subscription, ParamSet eventContext,
+  void trigger(EventSubscription subscription, ParamsProviderMerger *context,
                TaskInstance parentInstance) const override {
     if (!_scheduler)
       return;
-    TaskInstancePseudoParamsProvider ppp = parentInstance.pseudoParams();
-    ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp)
-        (parentInstance.params());
     QString id;
     if (parentInstance.isNull()) {
       id = _id;
     } else {
-      id = ParamSet().evaluate(_id, &ppm);
+      id = ParamSet().evaluate(_id, context);
       QString idIfLocalToGroup = parentInstance.task().taskGroup().id()
                                  +"."+_id;
       if (_scheduler->taskExists(idIfLocalToGroup))
@@ -51,8 +48,8 @@ public:
     }
     TaskInstance herder = _lone ? TaskInstance() : parentInstance.herder();
     ParamSet overridingParams;
-    foreach (QString key, _overridingParams.keys())
-      overridingParams.setValue(key, _overridingParams.value(key, &ppm));
+    for (auto key: _overridingParams.keys())
+      overridingParams.setValue(key, _overridingParams.value(key, context));
     if (!parentInstance.isNull())
       overridingParams.setValue("!parenttaskinstanceid", parentInstance.id());
     TaskInstanceList instances = _scheduler->planTask(
@@ -72,13 +69,13 @@ public:
           << " and cancel condition " << _cancelwhen.toString();
       if (_paramappend.isEmpty())
         continue;
-      ParamsProviderMergerRestorer ppmr(&ppm);
+      ParamsProviderMergerRestorer ppmr(context);
       auto ppp = childInstance.pseudoParams();
-      ppm.prepend(childInstance.params());
-      ppm.prepend(&ppp);
+      context->prepend(childInstance.params());
+      context->prepend(&ppp);
       if (!herder.isNull()) {
         for (auto key: _paramappend.keys()) {
-          auto value = ParamSet().evaluate(_paramappend.value(key), &ppm);
+          auto value = ParamSet().evaluate(_paramappend.value(key), context);
           herder.paramAppend(key, ParamSet::escape(value));
         }
       }

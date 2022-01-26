@@ -29,16 +29,13 @@ public:
   QString actionType() const {
     return QStringLiteral("log");
   }
-  void trigger(EventSubscription, ParamSet eventContext,
+  void trigger(EventSubscription, ParamsProviderMerger *context,
                TaskInstance instance) const {
-    TaskInstancePseudoParamsProvider ppp = instance.pseudoParams();
-    ParamsProviderMerger ppm = ParamsProviderMerger(eventContext)(&ppp)
-        (instance.params());
     if (instance.isNull())
-      Log::log(_severity) << ParamSet().evaluate(_message, &ppm);
+      Log::log(_severity) << ParamSet().evaluate(_message, context);
     else
       Log::log(_severity, instance.task().id(), instance.idAsLong())
-          << ParamSet().evaluate(_message, &ppm);
+          << ParamSet().evaluate(_message, context);
   }
   PfNode toPfNode() const{
     PfNode node(actionType(), _message);

@@ -90,7 +90,6 @@ SOURCES += \
     action/raisealertaction.cpp \
     action/cancelalertaction.cpp \
     action/emitalertaction.cpp \
-    action/requesttaskaction.cpp \
     ui/schedulereventsmodel.cpp \
     ui/lastoccuredtexteventsmodel.cpp \
     ui/taskgroupsmodel.cpp \
@@ -155,7 +154,6 @@ HEADERS += \
     action/raisealertaction.h \
     action/cancelalertaction.h \
     action/emitalertaction.h \
-    action/requesttaskaction.h \
     ui/schedulereventsmodel.h \
     ui/lastoccuredtexteventsmodel.h \
     ui/taskgroupsmodel.h \

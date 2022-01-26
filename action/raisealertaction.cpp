@@ -1,4 +1,4 @@
-/* Copyright 2013-2016 Hallowyn and others.
+/* Copyright 2013-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,24 +19,22 @@ public:
   QString _alert;
   RaiseAlertActionData(Scheduler *scheduler = 0, QString alert = QString())
     : ActionData(scheduler), _alert(alert) { }
-  void trigger(EventSubscription subscription, ParamSet eventContext,
-               TaskInstance taskContext) const {
-    Q_UNUSED(subscription)
-    if (_scheduler) {
-      TaskInstancePseudoParamsProvider ppp = taskContext.pseudoParams();
-      _scheduler->alerter()->raiseAlert(eventContext.evaluate(_alert, &ppp));
-    }
+  void trigger(EventSubscription, ParamsProviderMerger *context,
+               TaskInstance) const override {
+    if (!_scheduler)
+      return;
+    _scheduler->alerter()->raiseAlert(ParamSet().evaluate(_alert, context));
   }
-  QString toString() const {
+  QString toString() const override {
     return "!+"+_alert;
   }
-  QString actionType() const {
+  QString actionType() const override {
     return QStringLiteral("raisealert");
   }
-  QString targetName() const {
+  QString targetName() const override {
     return _alert;
   }
-  PfNode toPfNode() const{
+  PfNode toPfNode() const override {
     return PfNode(actionType(), _alert);
   }
 };

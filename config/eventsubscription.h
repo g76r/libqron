@@ -20,6 +20,7 @@
 #include "util/paramset.h"
 #include <QStringList>
 #include <functional>
+#include "util/paramsprovidermerger.h"
 
 class EventSubscriptionData;
 class TaskInstance;
@@ -61,15 +62,11 @@ public:
    * Use this method if the event occured in the context of a task.
    * @param eventContext will get taskContext::params() as parent before being
    * passed to Action::trigger() */
-  void triggerActions(ParamSet eventPrams, TaskInstance taskContext,
+  void triggerActions(ParamsProviderMerger *context, TaskInstance instance,
                       std::function<bool(Action a)> filter) const;
   /** Syntaxic sugar */
-  void triggerActions(TaskInstance taskContext) const;
-  /** Syntaxic sugar */
-  void triggerActions(TaskInstance taskContext,
-                      std::function<bool(Action a)> filter) const;
-  /** Syntaxic sugar */
-  void triggerActions(ParamSet eventPrams) const;
+  void triggerActions(ParamsProviderMerger *context,
+                      TaskInstance instance) const;
   /** Syntaxic sugar */
   void triggerActions() const;
   static QStringList toStringList(QList<EventSubscription> list);
