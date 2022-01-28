@@ -54,8 +54,16 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   QHash<QString,Task> tasks = config.tasks();
   QHash<QString,Cluster> clusters = config.clusters();
   QHash<QString,Host> hosts = config.hosts();
-  QList<EventSubscription> schedulerEventsSubscriptions
-      = config.allEventsSubscriptions();
+  QList<EventSubscription> schedulerEventsSubscriptions,
+      rootEventsSubscriptions;
+  for (auto sub: config.allEventsSubscriptions()) {
+    if (sub.eventName() == "onschedulerstart"
+        || sub.eventName() == "onconfigload"
+        || sub.eventName() == "onnotice")
+      schedulerEventsSubscriptions << sub;
+    else
+      rootEventsSubscriptions << sub;
+  }
   QSet<QString> displayedGroups, displayedHosts, notices, taskIds,
       displayedGlobalEventsName, resourcesSet;
   QHash<QString,QString> diagrams;
@@ -92,9 +100,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   foreach (const Task &task, tasks.values()) {
     foreach (const NoticeTrigger &trigger, task.noticeTriggers())
       notices.insert(trigger.expression());
-    foreach (const EventSubscription &sub,
-             task.allEventsSubscriptions()
-             + task.taskGroup().allEventSubscriptions())
+    for (auto sub: rootEventsSubscriptions + task.allEventsSubscriptions()
+                        + task.taskGroup().allEventSubscriptions())
       foreach (const Action &action, sub.actions()) {
         if (action.actionType() == "postnotice")
           notices.insert(action.targetName());
@@ -245,8 +252,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
     }
     // events defined at task level
     QSet<QString> edges;
-    foreach (const EventSubscription &sub,
-             task.allEventsSubscriptions() + task.taskGroup().allEventSubscriptions()) {
+    for (auto sub: rootEventsSubscriptions + task.allEventsSubscriptions()
+                        + task.taskGroup().allEventSubscriptions()) {
       foreach (const Action &action, sub.actions()) {
         QString actionType = action.actionType();
         if (actionType == "postnotice") {
@@ -255,8 +262,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
               .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
               .append("\"," TASK_POSTNOTICE_EDGE + actionEdgeStyle(sub, action)
                       + "]\n");
-        } else if (actionType == "requesttask"
-                   || actionType == "plantask") {
+        } else if (actionType == "plantask") {
           QString target = action.targetName();
           if (!target.contains('.'))
             target = task.taskGroup().id()+"."+target;
