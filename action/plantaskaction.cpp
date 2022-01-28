@@ -37,12 +37,9 @@ public:
     if (!_scheduler)
       return;
     QString id;
-    if (parentInstance.isNull()) {
-      id = _id;
-    } else {
-      id = ParamSet().evaluate(_id, context);
-      QString idIfLocalToGroup = parentInstance.task().taskGroup().id()
-                                 +"."+_id;
+    id = ParamSet().evaluate(_id, context);
+    if (!parentInstance.isNull()) {
+      QString idIfLocalToGroup = parentInstance.task().taskGroup().id()+"."+id;
       if (_scheduler->taskExists(idIfLocalToGroup))
         id = idIfLocalToGroup;
     }
