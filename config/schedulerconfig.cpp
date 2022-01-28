@@ -19,6 +19,7 @@
 #include "configutils.h"
 #include <QCryptographicHash>
 #include <QMutex>
+#include "tasksroot.h"
 
 #define DEFAULT_MAXTOTALTASKINSTANCES 16
 #define DEFAULT_MAXQUEUEDREQUESTS 128
@@ -33,7 +34,7 @@ static QString _uiHeaderNames[] {
 static QSet<QString> excludedDescendantsForComments {
   "task", "taskgroup", "host", "cluster", "calendar", "alerts",
   "access-control", "onsuccess", "onfailure", "onfinish", "onstart",
-  "ontrigger", "onschedulerstart", "onconfigload", "onnotice"
+  "onstderr", "onstdout", "onschedulerstart", "onconfigload", "onnotice"
 };
 
 static QStringList excludeOnfinishSubscriptions { "onfinish" };
@@ -57,13 +58,12 @@ public:
 
 class SchedulerConfigData : public SharedUiItemData{
 public:
-  ParamSet _params, _vars, _instanceparams;
   QHash<QString,TaskGroup> _taskgroups;
   QHash<QString,TaskTemplate> _tasktemplates;
   QHash<QString,Task> _tasks;
   QHash<QString,Cluster> _clusters;
   QHash<QString,Host> _hosts;
-  QList<EventSubscription> _onstart, _onsuccess, _onfailure;
+  TasksRoot _tasksRoot;
   QList<EventSubscription> _onlog, _onnotice, _onschedulerstart, _onconfigload;
   qint32 _maxtotaltaskinstances, _maxqueuedrequests;
   QHash<QString,Calendar> _namedCalendars;
@@ -79,12 +79,9 @@ public:
   SchedulerConfigData(PfNode root, Scheduler *scheduler, bool applyLogConfig);
   SchedulerConfigData(const SchedulerConfigData &other)
     : SharedUiItemData(other),
-      _params(other._params), _vars(other._vars),
-      _instanceparams(other._instanceparams),
       _taskgroups(other._taskgroups), _tasktemplates(other._tasktemplates),
       _tasks(other._tasks), _clusters(other._clusters), _hosts(other._hosts),
-      _onstart(other._onstart), _onsuccess(other._onsuccess),
-      _onfailure(other._onfailure), _onlog(other._onlog),
+      _tasksRoot(other._tasksRoot), _onlog(other._onlog),
       _onnotice(other._onnotice), _onschedulerstart(other._onschedulerstart),
       _onconfigload(other._onconfigload),
       _maxtotaltaskinstances(other._maxtotaltaskinstances),
@@ -155,12 +152,7 @@ SchedulerConfigData::SchedulerConfigData(
   _logfiles = logfiles;
   if (applyLogConfig)
     this->applyLogConfig();
-  _params.clear();
-  _vars.clear();
-  _instanceparams.clear();
-  ConfigUtils::loadParamSet(root, &_params, "param");
-  ConfigUtils::loadParamSet(root, &_vars, "var");
-  ConfigUtils::loadParamSet(root, &_instanceparams, "instanceparam");
+  _tasksRoot = TasksRoot(root, scheduler);
   _namedCalendars.clear();
   foreach (PfNode node, root.childrenByName("calendar")) {
     QString name = node.contentAsString();
@@ -174,7 +166,7 @@ SchedulerConfigData::SchedulerConfigData(
   }
   _hosts.clear();
   foreach (PfNode node, root.childrenByName("host")) {
-    Host host(node, _params);
+    Host host(node, _tasksRoot.params());
     if (_hosts.contains(host.id())) {
       Log::error() << "ignoring duplicate host: " << host.id();
     } else {
@@ -184,7 +176,7 @@ SchedulerConfigData::SchedulerConfigData(
   // create default "localhost" host if it is not declared
   if (!_hosts.contains("localhost"))
     _hosts.insert("localhost", Host(PfNode("host", "localhost"),
-                                    _params));
+                                    _tasksRoot.params()));
   _clusters.clear();
   foreach (PfNode node, root.childrenByName("cluster")) {
     Cluster cluster(node);
@@ -209,7 +201,6 @@ SchedulerConfigData::SchedulerConfigData(
     else
       _clusters.insert(cluster.id(), cluster);
   }
-  TaskGroup rootPseudoGroup(_params, _vars, _instanceparams);
   _taskgroups.clear();
   QList<PfNode> taskGroupNodes = root.childrenByName("taskgroup");
   std::sort(taskGroupNodes.begin(), taskGroupNodes.end());
@@ -221,20 +212,23 @@ SchedulerConfigData::SchedulerConfigData(
       continue;
     }
     QString parentId = TaskGroup::parentGroupId(id);
-    TaskGroup parentGroup = _taskgroups.value(parentId, rootPseudoGroup);
-    TaskGroup taskGroup(node, parentGroup, scheduler);
+    SharedUiItem parent = _taskgroups.value(parentId);
+    if (parent.isNull())
+      parent = _tasksRoot;
+    TaskGroup taskGroup(node, parent, scheduler);
     if (taskGroup.isNull() || id.isEmpty()) {
       Log::error() << "ignoring invalid taskgroup: " << node.toPf();
       continue;
     }
     recordTaskActionLinks(
-          node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish" },
+          node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
+               "onstderr", "onstdout" },
           &requestTaskActionLinks, taskGroup.id()+".*");
     _taskgroups.insert(taskGroup.id(), taskGroup);
   }
   _tasktemplates.clear();
   for (auto node: root.childrenByName("tasktemplate")) {
-    TaskTemplate tmpl(node, scheduler, rootPseudoGroup, _namedCalendars);
+    TaskTemplate tmpl(node, scheduler, _tasksRoot, _namedCalendars);
     if (tmpl.isNull()) { // cstr detected an error
       Log::error() << "ignoring invalid tasktemplate: " << node.toString();
       goto ignore_tasktemplate;
@@ -266,12 +260,14 @@ ignore_tasktemplate:;
     }
     _tasks.insert(task.id(), task);
     recordTaskActionLinks(
-          node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish" },
+          node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
+               "onstderr", "onstdout" },
           &requestTaskActionLinks, task.id(), task);
     for (auto tmpl: task.appliedTemplates()) {
       recordTaskActionLinks(
             tmpl.originalPfNode(),
-            { "onplan", "onstart", "onsuccess", "onfailure", "onfinish" },
+            { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
+           "onstderr", "onstdout" },
             &requestTaskActionLinks, task.id(), task);
     }
 ignore_task:;
@@ -318,19 +314,6 @@ ignore_task:;
     _alerterConfig = AlerterConfig(alerts.last());
   else // build an empty but not null AlerterConfig
     _alerterConfig = AlerterConfig(PfNode(QStringLiteral("alerts")));
-  _onstart.clear();
-  ConfigUtils::loadEventSubscription(root, "onstart", "*", &_onstart,
-                                     scheduler);
-  _onsuccess.clear();
-  ConfigUtils::loadEventSubscription(root, "onsuccess", "*", &_onsuccess,
-                                     scheduler);
-  ConfigUtils::loadEventSubscription(root, "onfinish", "*", &_onsuccess,
-                                     scheduler);
-  _onfailure.clear();
-  ConfigUtils::loadEventSubscription(root, "onfailure", "*", &_onfailure,
-                                     scheduler);
-  ConfigUtils::loadEventSubscription(root, "onfinish", "*", &_onfailure,
-                                     scheduler);
   _onlog.clear();
   ConfigUtils::loadEventSubscription(root, "onlog", "*", &_onlog, scheduler);
   _onnotice.clear();
@@ -385,19 +368,9 @@ bool SchedulerConfig::isNull() const {
   return !data();
 }
 
-ParamSet SchedulerConfig::params() const {
+TasksRoot SchedulerConfig::tasksRoot() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_params : ParamSet();
-}
-
-ParamSet SchedulerConfig::vars() const {
-  const SchedulerConfigData *d = data();
-  return d ? d->_vars : ParamSet();
-}
-
-ParamSet SchedulerConfig::instanceparams() const {
-  const SchedulerConfigData *d = data();
-  return d ? d->_instanceparams : ParamSet();
+  return d ? d->_tasksRoot : TasksRoot();
 }
 
 QHash<QString,TaskGroup> SchedulerConfig::taskgroups() const {
@@ -432,17 +405,17 @@ QHash<QString,Calendar> SchedulerConfig::namedCalendars() const {
 
 QList<EventSubscription> SchedulerConfig::onstart() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_onstart : QList<EventSubscription>();
+  return d ? d->_tasksRoot.onstart() : QList<EventSubscription>();
 }
 
 QList<EventSubscription> SchedulerConfig::onsuccess() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_onsuccess : QList<EventSubscription>();
+  return d ? d->_tasksRoot.onsuccess() : QList<EventSubscription>();
 }
 
 QList<EventSubscription> SchedulerConfig::onfailure() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_onfailure : QList<EventSubscription>();
+  return d ? d->_tasksRoot.onfailure() : QList<EventSubscription>();
 }
 
 QList<EventSubscription> SchedulerConfig::onlog() const {
@@ -467,7 +440,7 @@ QList<EventSubscription> SchedulerConfig::onconfigload() const {
 
 QList<EventSubscription> SchedulerConfig::allEventsSubscriptions() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_onstart + d->_onsuccess + d->_onfailure + d->_onlog
+  return d ? d->_tasksRoot.allEventSubscriptions() + d->_onlog
              + d->_onnotice + d->_onschedulerstart + d->_onconfigload
            : QList<EventSubscription>();
 }
@@ -532,7 +505,7 @@ void SchedulerConfig::changeItem(
   }
 }
 
-void SchedulerConfig::changeParams(
+/*void SchedulerConfig::changeParams(
     ParamSet newParams, ParamSet oldParams, QString setId) {
   Q_UNUSED(oldParams)
   SchedulerConfigData *d = data();
@@ -547,7 +520,7 @@ void SchedulerConfig::changeParams(
                   "unknown paramsetid:" << setId;
   }
   recomputeId();
-}
+}*/
 
 QString SchedulerConfig::recomputeId() const {
   const SchedulerConfigData *d = data();
@@ -595,13 +568,13 @@ PfNode SchedulerConfig::toPfNode() const {
     return PfNode();
   PfNode node("config");
   ConfigUtils::writeComments(&node, d->_commentsList);
-  ConfigUtils::writeParamSet(&node, d->_params, QStringLiteral("param"));
-  ConfigUtils::writeParamSet(&node, d->_vars, QStringLiteral("var"));
-  ConfigUtils::writeParamSet(&node, d->_instanceparams,
+  ConfigUtils::writeParamSet(&node, d->_tasksRoot.params(), QStringLiteral("param"));
+  ConfigUtils::writeParamSet(&node, d->_tasksRoot.vars(), QStringLiteral("var"));
+  ConfigUtils::writeParamSet(&node, d->_tasksRoot.instanceparams(),
                              QStringLiteral("instanceparam"));
-  ConfigUtils::writeEventSubscriptions(&node, d->_onstart);
-  ConfigUtils::writeEventSubscriptions(&node, d->_onsuccess);
-  ConfigUtils::writeEventSubscriptions(&node, d->_onfailure,
+  ConfigUtils::writeEventSubscriptions(&node, d->_tasksRoot.onstart());
+  ConfigUtils::writeEventSubscriptions(&node, d->_tasksRoot.onsuccess());
+  ConfigUtils::writeEventSubscriptions(&node, d->_tasksRoot.onfailure(),
                                        excludeOnfinishSubscriptions);
   ConfigUtils::writeEventSubscriptions(&node, d->_onlog);
   ConfigUtils::writeEventSubscriptions(&node, d->_onnotice);

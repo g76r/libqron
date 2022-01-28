@@ -32,8 +32,9 @@ public:
     ParamsProviderMergerRestorer ppmr(context);
     context->prepend(_params);
     // LATER support binary payloads
+    auto path = ParamSet().evaluate(_path, context);
     ParametrizedFileWriter writer(
-          _path, _params, context, instance.task().id(), instance.idAsLong());
+          path, _params, context, instance.task().id(), instance.idAsLong());
     writer.performWrite(_message, context);
   }
   QString toString() const {

@@ -62,30 +62,54 @@ static QString _uiHeaderNames[] = {
   "Max queued instances", // 35 was: Enqueue policy
   "On plan",
   "Deduplicate criterion",
+  "Merge stdout into stderr",
+  "On stderr",
+  "On stdout", // 40
 };
 
 static QSet<QString> excludedDescendantsForComments {
-  "trigger", "onsuccess", "onfailure", "onfinish", "onstart", "onplan"
+  "trigger", "onsuccess", "onfailure", "onfinish", "onstart", "onplan",
+  "onstderr", "onstdout"
 };
 
 static QStringList excludeOnfinishSubscriptions { "onfinish" };
 
-class TaskOrGroupData : public SharedUiItemData {
+#define TASKSROOTID "*"
+
+class TasksRootData : public SharedUiItemData {
 public:
-  QString _id, _label;
   ParamSet _params, _vars, _instanceparams;
-  QList<EventSubscription> _onstart, _onsuccess, _onfailure, _onplan;
+  QList<EventSubscription> _onstart, _onsuccess, _onfailure, _onplan, _onstderr,
+      _onstdout;
   QStringList _commentsList;
   PfNode _originalPfNode;
+  bool _mergeStderrIntoStdout = false;
 
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const;
-  int uiSectionCount() const;
-  QString id() const { return _id; }
-  bool setUiData(int section, const QVariant &value, QString *errorString,
-                 SharedUiItemDocumentTransaction *transaction, int role);
-  Qt::ItemFlags uiFlags(int section) const;
-  bool loadConfig(PfNode node, TaskGroup parentGroup, Scheduler *scheduler);
+  QVariant uiData(int section, int role) const override;
+  QVariant uiHeaderData(int section, int role) const override;
+  int uiSectionCount() const override;
+  QString idQualifier() const override { return "tasksroot"; }
+  QString id() const override { return TASKSROOTID; }
+  bool setUiData(
+      int section, const QVariant &value, QString *errorString,
+      SharedUiItemDocumentTransaction *transaction, int role) override;
+  Qt::ItemFlags uiFlags(int section) const override;
+  bool loadConfig(PfNode node, Scheduler *scheduler);
+  void fillPfNode(PfNode &node) const;
+};
+
+class TaskOrGroupData : public TasksRootData {
+public:
+  QString _id, _label;
+
+  QVariant uiData(int section, int role) const override;
+  QString idQualifier() const override = 0;
+  QString id() const override { return _id; }
+  bool setUiData(
+      int section, const QVariant &value, QString *errorString,
+      SharedUiItemDocumentTransaction *transaction, int role) override;
+  Qt::ItemFlags uiFlags(int section) const override;
+  bool loadConfig(PfNode node, SharedUiItem parentGroup, Scheduler *scheduler);
   void fillPfNode(PfNode &node) const;
 };
 
@@ -97,7 +121,6 @@ public:
   QHash<QString,qint64> _resources;
   int _maxInstances;
   QList<CronTrigger> _cronTriggers;
-  QList<QRegularExpression> _stderrFilters;
   long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
   QString _maxQueuedInstances, _deduplicateCriterion;
   Task::HerdingPolicy _herdingPolicy;
@@ -118,7 +141,7 @@ public:
                  int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
   void setId(QString id) { _id = id; }
-  bool loadConfig(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
+  bool loadConfig(PfNode node, Scheduler *scheduler, SharedUiItem parent,
                   QHash<QString,Calendar> namedCalendars);
   void fillPfNode(PfNode &node) const;
 };

@@ -28,7 +28,7 @@ static QString humanReadableActionEdgeLabel(
   QStringList keys = action.params().keys().values();
   if (!keys.isEmpty())
     label += " ("+keys.join(',')+")";
-  QString filter = sub.filter();
+  QString filter = sub.filter().pattern();
   if (!filter.isEmpty())
     label += "\\n"+filter;
   return label;

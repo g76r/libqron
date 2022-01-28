@@ -21,7 +21,8 @@
 
 class EventSubscriptionData : public QSharedData {
 public:
-  QString _subscriberName, _eventName, _filter;
+  QString _subscriberName, _eventName;
+  QRegularExpression _filter;
   QList<Action> _actions;
   ParamSet _globalParams;
   QStringList _commentsList;
@@ -39,11 +40,8 @@ EventSubscription::EventSubscription(
     QString subscriberName, PfNode node, Scheduler *scheduler,
     QStringList ignoredChildren)
   : d(new EventSubscriptionData(subscriberName)) {
-  // LATER implement at less regexp filter
-  // LATER support for non-text/non-regexp filters e.g. "onstatus >=3"
-  // LATER support for (calendar) and other structured filters
   d->_eventName = node.name();
-  d->_filter = node.contentAsString();
+  d->_filter = QRegularExpression(node.contentAsString());
   if (scheduler)
     d->_globalParams = scheduler->globalParams();
   foreach (PfNode child, node.children()) {
@@ -136,14 +134,14 @@ void EventSubscription::setSubscriberName(QString name) {
     d->_subscriberName = name;
 }
 
-QString EventSubscription::filter() const {
-  return d ? d->_filter : QString();
+QRegularExpression EventSubscription::filter() const {
+  return d ? d->_filter : QRegularExpression();
 }
 
 PfNode EventSubscription::toPfNode() const {
   if (!d)
     return PfNode();
-  PfNode node(d->_eventName, d->_filter);
+  PfNode node(d->_eventName, d->_filter.pattern());
   ConfigUtils::writeComments(&node, d->_commentsList);
   foreach(const Action &action, d->_actions)
     node.appendChild(action.toPfNode());

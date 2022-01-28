@@ -57,7 +57,7 @@ public:
   void setSubscriberName(QString name);
   /** Filter expression, if any.
    * e.g. path and file pattern for onfilexxx events */
-  QString filter() const;
+  QRegularExpression filter() const;
   /** Trigger actions if context complies with filter conditions.
    * Use this method if the event occured in the context of a task.
    * @param eventContext will get taskContext::params() as parent before being

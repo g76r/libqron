@@ -16,6 +16,7 @@
 #include <QPointer>
 #include "sched/taskinstance.h"
 #include "modelview/shareduiitemdocumentmanager.h"
+#include "tasksroot.h"
 
 class TaskGroupData : public TaskOrGroupData {
 public:
@@ -25,6 +26,7 @@ public:
                  SharedUiItemDocumentTransaction *transaction, int role);
   Qt::ItemFlags uiFlags(int section) const;
   PfNode toPfNode() const;
+  bool loadConfig(PfNode node, SharedUiItem parentGroup, Scheduler *scheduler);
 };
 
 TaskGroup::TaskGroup() {
@@ -33,50 +35,36 @@ TaskGroup::TaskGroup() {
 TaskGroup::TaskGroup(const TaskGroup &other) : SharedUiItem(other) {
 }
 
-TaskGroup::TaskGroup(ParamSet params, ParamSet vars, ParamSet instanceparams) {
-  TaskGroupData *d = new TaskGroupData;
-  d->_params = params;
-  d->_vars = vars;
-  d->_instanceparams = instanceparams;
-  setData(d);
-}
-
-TaskGroup::TaskGroup(PfNode node, TaskGroup parentGroup, Scheduler *scheduler) {
+TaskGroup::TaskGroup(PfNode node, SharedUiItem parent, Scheduler *scheduler) {
   TaskGroupData *d = new TaskGroupData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
                                    ConfigUtils::FullyQualifiedId);
-  d->_onplan.append(parentGroup.onplan());
-  d->_onstart.append(parentGroup.onstart());
-  d->_onsuccess.append(parentGroup.onsuccess());
-  d->_onfailure.append(parentGroup.onfailure());
-  if (d->loadConfig(node, parentGroup, scheduler))
+  if (d->loadConfig(node, parent, scheduler))
     setData(d);
 }
 
+bool TaskGroupData::loadConfig(
+    PfNode node, SharedUiItem parent, Scheduler *scheduler) {
+  if (!TaskOrGroupData::loadConfig(node, parent, scheduler))
+    return false;
+  return true;
+}
+
 bool TaskOrGroupData::loadConfig(
-    PfNode node, TaskGroup parentGroup, Scheduler *scheduler) {
-  _originalPfNode = node;
+    PfNode node, SharedUiItem parent, Scheduler *scheduler) {
+  if (parent.idQualifier() != "tasksroot"
+      && parent.idQualifier() != "taskgroup") {
+    qWarning() << "internal error in TaskOrGroupData::loadConfig";
+    return false;
+  }
+  auto root = static_cast<const TasksRoot&>(parent);
   ConfigUtils::loadAttribute(node, "label", &_label);
-  _params.setParent(parentGroup.params());
-  ConfigUtils::loadParamSet(node, &_params, "param");
-  _vars.setParent(parentGroup.vars());
-  ConfigUtils::loadParamSet(node, &_vars, "var");
-  _instanceparams.setParent(parentGroup.instanceparams());
-  ConfigUtils::loadParamSet(node, &_instanceparams, "instanceparam");
-  ConfigUtils::loadEventSubscription(
-      node, "onplan", _id, &_onplan, scheduler);
-  ConfigUtils::loadEventSubscription(
-        node, "onstart", _id, &_onstart, scheduler);
-  ConfigUtils::loadEventSubscription(
-        node, "onsuccess", _id, &_onsuccess, scheduler);
-  ConfigUtils::loadEventSubscription(
-        node, "onfinish", _id, &_onsuccess, scheduler);
-  ConfigUtils::loadEventSubscription(
-        node, "onfailure", _id, &_onfailure, scheduler);
-  ConfigUtils::loadEventSubscription(
-        node, "onfinish", _id, &_onfailure, scheduler);
-  ConfigUtils::loadComments(
-        node, &_commentsList, excludedDescendantsForComments);
+  _params.setParent(root.params());
+  _vars.setParent(root.vars());
+  _instanceparams.setParent(root.instanceparams());
+  _mergeStderrIntoStdout = root.mergeStderrIntoStdout();
+  if (!TasksRootData::loadConfig(node, scheduler))
+    return false;
   return true;
 }
 
@@ -116,6 +104,14 @@ QList<EventSubscription> TaskGroup::onfailure() const {
   return !isNull() ? data()->_onfailure : QList<EventSubscription>();
 }
 
+QList<EventSubscription> TaskGroup::onstderr() const {
+  return !isNull() ? data()->_onstderr : QList<EventSubscription>();
+}
+
+QList<EventSubscription> TaskGroup::onstdout() const {
+  return !isNull() ? data()->_onstdout : QList<EventSubscription>();
+}
+
 ParamSet TaskGroup::vars() const {
   return !isNull() ? data()->_vars : ParamSet();
 }
@@ -128,17 +124,8 @@ QList<EventSubscription> TaskGroup::allEventSubscriptions() const {
   // LATER avoid creating the collection at every call
   return !isNull() ? data()->_onplan + data()->_onstart + data()->_onsuccess
                          + data()->_onfailure
+                         + data()->_onstderr + data()->_onstdout
                    : QList<EventSubscription>();
-}
-
-QVariant TaskOrGroupData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
-
-int TaskOrGroupData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
 }
 
 QVariant TaskOrGroupData::uiData(int section, int role) const {
@@ -153,26 +140,12 @@ QVariant TaskOrGroupData::uiData(int section, int role) const {
       if (role == Qt::EditRole)
         return _label == _id ? QVariant() : _label;
       return _label.isEmpty() ? _id : _label;
-    case 7:
-      return _params.toString(false, false);
-    case 14:
-      return EventSubscription::toStringList(_onstart).join("\n");
-    case 15:
-      return EventSubscription::toStringList(_onsuccess).join("\n");
-    case 16:
-      return EventSubscription::toStringList(_onfailure).join("\n");
-    case 21:
-      return _vars.toString(false, false);
-    case 22:
-      return _instanceparams.toString(false, false);
-    case 36:
-      return EventSubscription::toStringList(_onplan).join("\n");
     }
     break;
   default:
     ;
   }
-  return QVariant();
+  return TasksRootData::uiData(section, role);
 }
 
 QVariant TaskGroupData::uiData(int section, int role) const {
@@ -218,6 +191,8 @@ void TaskOrGroupData::fillPfNode(PfNode &node) const {
   ConfigUtils::writeEventSubscriptions(&node, _onsuccess);
   ConfigUtils::writeEventSubscriptions(&node, _onfailure,
                                        excludeOnfinishSubscriptions);
+  ConfigUtils::writeEventSubscriptions(&node, _onstderr);
+  ConfigUtils::writeEventSubscriptions(&node, _onstdout);
 }
 
 PfNode TaskGroupData::toPfNode() const {
@@ -252,8 +227,8 @@ bool TaskOrGroupData::setUiData(
       _label = QString();
     return true;
   }
-  return SharedUiItemData::setUiData(section, value, errorString, transaction,
-                                     role);
+  return TasksRootData::setUiData(
+      section, value, errorString, transaction, role);
 }
 
 bool TaskGroupData::setUiData(
@@ -276,7 +251,7 @@ bool TaskGroupData::setUiData(
 }
 
 Qt::ItemFlags TaskOrGroupData::uiFlags(int section) const {
-  Qt::ItemFlags flags = SharedUiItemData::uiFlags(section);
+  Qt::ItemFlags flags = TasksRootData::uiFlags(section);
   switch (section) {
   case 0:
   case 2:

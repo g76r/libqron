@@ -250,10 +250,6 @@ int Task::fetchAndAddExecutionsCount(int valueToAdd) const {
                    : 0;
 }
 
-QList<QRegularExpression> Task::stderrFilters() const {
-  return !isNull() ? data()->_stderrFilters : QList<QRegularExpression>();
-}
-
 QList<EventSubscription> Task::onplan() const {
   return !isNull() ? data()->_onplan : QList<EventSubscription>();
 }
@@ -270,11 +266,24 @@ QList<EventSubscription> Task::onfailure() const {
   return !isNull() ? data()->_onfailure : QList<EventSubscription>();
 }
 
+QList<EventSubscription> Task::onstderr() const {
+  return !isNull() ? data()->_onstderr : QList<EventSubscription>();
+}
+
+QList<EventSubscription> Task::onstdout() const {
+  return !isNull() ? data()->_onstdout : QList<EventSubscription>();
+}
+
 QList<EventSubscription> Task::allEventsSubscriptions() const {
   // LATER avoid creating the collection at every call
   return !isNull() ? data()->_onplan + data()->_onstart + data()->_onsuccess
                          + data()->_onfailure
+                         + data()->_onstderr + data()->_onstdout
                    : QList<EventSubscription>();
+}
+
+bool Task::mergeStderrIntoStdout() const {
+  return !isNull() ? data()->_mergeStderrIntoStdout : false;
 }
 
 bool Task::enabled() const {
@@ -695,6 +704,8 @@ PfNode TaskData::toPfNode() const {
   ConfigUtils::writeEventSubscriptions(&node, _onsuccess);
   ConfigUtils::writeEventSubscriptions(&node, _onfailure,
                                        excludeOnfinishSubscriptions);
+  ConfigUtils::writeEventSubscriptions(&node, _onstderr);
+  ConfigUtils::writeEventSubscriptions(&node, _onstdout);
 
   // user interface attributes
   if (!_requestFormFields.isEmpty()) {

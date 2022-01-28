@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,6 +33,8 @@
 #include "util/paramsprovidermerger.h"
 #include "util/regexpparamsprovider.h"
 
+#define PROCESS_OUTPUT_CHUNK_SIZE 16384
+
 static QString _localDefaultShell;
 static const QRegularExpression _httpHeaderForbiddenSeqRE("[^a-zA-Z0-9_\\-]+");
 static const QRegularExpression _asciiControlCharsSeqRE("[\\0-\\x1f]+");
@@ -47,10 +49,10 @@ static int staticInit() {
 Q_CONSTRUCTOR_FUNCTION(staticInit)
 
 Executor::Executor(Scheduler *scheduler) : QObject(0), _isTemporary(false),
-  _stderrWasUsed(false), _thread(new QThread),
+  _thread(new QThread),
   _process(0), _nam(new QNetworkAccessManager(this)), _reply(0),
   _alerter(scheduler->alerter()), _abortTimeout(new QTimer(this)),
-  _scheduler(scheduler) {
+  _scheduler(scheduler), _eventThread(new EventThread()) {
   _baseenv = QProcessEnvironment::systemEnvironment();
   _thread->setObjectName(QString("Executor-%1")
                          .arg(reinterpret_cast<long long>(_thread),
@@ -61,11 +63,11 @@ Executor::Executor(Scheduler *scheduler) : QObject(0), _isTemporary(false),
   moveToThread(_thread);
   _abortTimeout->setSingleShot(true);
   connect(_abortTimeout, &QTimer::timeout, this, &Executor::abort);
-  //qDebug() << "creating new task executor" << this;
+  connect(this, &QObject::destroyed, _eventThread, &QObject::deleteLater);
+  _eventThread->start();
 }
 
 Executor::~Executor() {
-  //qDebug() << "~Executor" << this;
 }
 
 void Executor::execute(TaskInstance instance) {
@@ -76,7 +78,6 @@ void Executor::execute(TaskInstance instance) {
         << "starting task '" << _instance.task().id() << "' through mean '"
         << Task::meanAsString(mean) << "' after " << _instance.queuedMillis()
         << " ms in queue";
-    _stderrWasUsed = false;
     long long maxDurationBeforeAbort = _instance.task().maxDurationBeforeAbort();
     if (maxDurationBeforeAbort <= INT_MAX)
       _abortTimeout->start((int)maxDurationBeforeAbort);
@@ -272,6 +273,7 @@ void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
     return;
   }
   _errBuf.clear();
+  _outBuf.clear();
   _process = new QProcess(this);
   _process->setProcessChannelMode(QProcess::SeparateChannels);
   connect(_process, &QProcess::errorOccurred,
@@ -302,7 +304,6 @@ void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
 }
 
 void Executor::processError(QProcess::ProcessError error) {
-  //qDebug() << "************ processError" << _instance.id() << _process;
   if (!_process)
     return; // LATER add log
   readyReadStandardError();
@@ -314,7 +315,6 @@ void Executor::processError(QProcess::ProcessError error) {
 }
 
 void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
-  //qDebug() << "************ processFinished" << _instance.id() << _process;
   if (!_process)
     return; // LATER add log
   readyReadStandardError();
@@ -333,8 +333,6 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
       << "' after running " << _instance.runningMillis()
       << " ms (duration including queue: " << _instance.liveDurationMillis()
       << " ms)";
-  if (!_stderrWasUsed  && _alerter)
-    _alerter->cancelAlert("task.stderr."+_instance.task().id());
   /* Qt doc is not explicit if delete should only be done when
      * QProcess::finished() is emited, but we get here too when
      * QProcess::error() is emited.
@@ -343,66 +341,72 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
   _process->deleteLater();
   _process = 0;
   _errBuf.clear();
+  _outBuf.clear();
   taskInstanceStopping(success, exitCode);
 }
 
-static QRegularExpression _sshConnClosedRE("^Connection to [^ ]* closed\\.$");
-
-void Executor::readyProcessWarningOutput() {
-  // LATER provide a way to define several stderr filter regexps
-  // LATER provide a way to choose log level for stderr
-  QByteArray ba;
-  while (!(ba = _process->read(1024)).isEmpty()) {
-    _errBuf.append(ba);
+void Executor::processProcessOutput(bool isStderr) {
+  QByteArray ba, &buf = isStderr ? _errBuf : _outBuf;
+  QList<EventSubscription> subs;
+  if (isStderr)
+    subs = _scheduler->config().tasksRoot().onstderr()
+           + _instance.task().taskGroup().onstderr()
+           + _instance.task().onstderr();
+  else
+    subs = _scheduler->config().tasksRoot().onstdout()
+           + _instance.task().taskGroup().onstdout()
+           + _instance.task().onstdout();
+  if (subs.isEmpty()) {
+    while (!_process->read(PROCESS_OUTPUT_CHUNK_SIZE).isEmpty());
+    return;
+  }
+  const auto params = _instance.params();
+  const auto ppp = _instance.pseudoParams();
+  auto ppm = ParamsProviderMerger(params)(&ppp);
+  while (!(ba = _process->read(PROCESS_OUTPUT_CHUNK_SIZE)).isEmpty()) {
+    buf.append(ba);
     int i;
-    while (((i = _errBuf.indexOf('\n')) >= 0)) {
+    while (((i = buf.indexOf('\n')) >= 0)) {
       QString line;
-      if (i > 0 && _errBuf.at(i-1) == '\r')
-        line = QString::fromUtf8(_errBuf.mid(0, i-1)).trimmed();
+      if (i > 0 && buf.at(i-1) == '\r')
+        line = QString::fromUtf8(buf.mid(0, i-1)).trimmed();
       else
-        line = QString::fromUtf8(_errBuf.mid(0, i)).trimmed();
-      _errBuf.remove(0, i+1);
+        line = QString::fromUtf8(buf.mid(0, i)).trimmed();
+      buf.remove(0, i+1);
       line.remove(_asciiControlCharsSeqRE);
-      if (!line.isEmpty()) {
-        QList<QRegularExpression> filters(_instance.task().stderrFilters());
-        if (filters.isEmpty() && _instance.task().mean() == Task::Ssh)
-          filters.append(_sshConnClosedRE);
-        for (auto filter: filters)
-          if (filter.match(line).hasMatch())
-            goto line_filtered;
-        Log::warning(_instance.task().id(), _instance.idAsLong())
-            << "task stderr: " << line;
-        if (!_stderrWasUsed) {
-          _stderrWasUsed = true;
-          if (_alerter && !_instance.task().params()
-              .valueAsBool("disable.alert.stderr", false))
-            _alerter->raiseAlert("task.stderr."+_instance.task().id());
-        }
-line_filtered:;
+      if (line.isEmpty())
+        continue;
+      ppm.overrideParamValue("line", line);
+      QList<EventSubscription> filteredSubs;
+      for (auto sub: subs) {
+        if (sub.filter().match(line).hasMatch())
+          filteredSubs.append(sub);
       }
+      if (filteredSubs.isEmpty())
+        continue;
+      _eventThread->tryPut(
+          EventThread::Event{filteredSubs, &ppm, _instance, line });
     }
   }
 }
 
 void Executor::readyReadStandardError() {
-  //qDebug() << "************ readyReadStandardError" << _instance.task().id() << _instance.id() << _process;
   if (!_process)
     return;
   _process->setReadChannel(QProcess::StandardError);
-  readyProcessWarningOutput();
+  processProcessOutput(true);
 }
 
 void Executor::readyReadStandardOutput() {
-  //qDebug() << "************ readyReadStandardOutput" << _instance.task().id() << _instance.id() << _process;
   if (!_process)
     return;
   _process->setReadChannel(QProcess::StandardOutput);
-  if (_instance.task().mean() == Task::Ssh
-      && _instance.params().value("ssh.disablepty") != "true")
-    readyProcessWarningOutput(); // with pty, stderr and stdout are merged
-  else
-    while (!_process->read(1024).isEmpty());
-  // LATER make it possible to log stdout too (as debug, depending on task cfg)
+  bool isStderr = false;
+  if (_instance.task().mergeStderrIntoStdout()
+      || (_instance.task().mean() == Task::Ssh
+          && _instance.params().value("ssh.disablepty") != "true"))
+    isStderr = true;
+  processProcessOutput(isStderr);
 }
 
 void Executor::httpMean() {

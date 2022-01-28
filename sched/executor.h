@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,6 +20,7 @@
 #include <QProcess>
 #include <QNetworkReply>
 #include <QTimer>
+#include "eventthread.h"
 
 class QThread;
 class QNetworkAccessManager;
@@ -33,10 +34,10 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY(Executor)
 
-  bool _isTemporary, _stderrWasUsed;
+  bool _isTemporary;
   QThread *_thread;
   QProcess *_process;
-  QByteArray _errBuf;
+  QByteArray _errBuf, _outBuf;
   TaskInstance _instance;
   QNetworkAccessManager *_nam;
   QProcessEnvironment _baseenv;
@@ -44,6 +45,7 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   Alerter *_alerter;
   QTimer *_abortTimeout;
   Scheduler *_scheduler;
+  EventThread *_eventThread;
 
 public:
   explicit Executor(Scheduler *scheduler);
@@ -68,7 +70,7 @@ signals:
 private slots:
   void processError(QProcess::ProcessError error);
   void processFinished(int exitCode, QProcess::ExitStatus exitStatus);
-  void readyProcessWarningOutput();
+  void processProcessOutput(bool isStderr);
   void readyReadStandardError();
   void readyReadStandardOutput();
   void replyError(QNetworkReply::NetworkError error);

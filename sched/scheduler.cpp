@@ -1210,7 +1210,8 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
 void Scheduler::triggerPlanActions(TaskInstance instance) {
   auto ppp = instance.pseudoParams();
   auto ppm = ParamsProviderMerger(&ppp)(instance.params());
-  for (auto subs: instance.task().taskGroup().onplan()
+  for (auto subs: config().tasksRoot().onplan()
+       + instance.task().taskGroup().onplan()
        + instance.task().onplan())
     if (subs.triggerActions(&ppm, instance))
       break;
@@ -1219,7 +1220,7 @@ void Scheduler::triggerPlanActions(TaskInstance instance) {
 void Scheduler::triggerStartActions(TaskInstance instance) {
   auto ppp = instance.pseudoParams();
   auto ppm = ParamsProviderMerger(&ppp)(instance.params());
-  for (auto subs: config().onstart()
+  for (auto subs: config().tasksRoot().onstart()
        + instance.task().taskGroup().onstart()
        + instance.task().onstart())
     if (subs.triggerActions(&ppm, instance))
@@ -1230,11 +1231,11 @@ void Scheduler::triggerFinishActions(
     TaskInstance instance, std::function<bool(Action)> filter) {
   QList<EventSubscription> subs;
   if (instance.success())
-    subs = config().onsuccess()
+    subs = config().tasksRoot().onsuccess()
         + instance.task().taskGroup().onsuccess()
         + instance.task().onsuccess();
   else
-    subs = config().onfailure()
+    subs = config().tasksRoot().onfailure()
         + instance.task().taskGroup().onfailure()
         + instance.task().onfailure();
   auto ppp = instance.pseudoParams();

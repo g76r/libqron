@@ -24,7 +24,7 @@ class LIBQRONSHARED_EXPORT TaskTemplate : public SharedUiItem {
 public:
   TaskTemplate();
   TaskTemplate(const TaskTemplate &other);
-  TaskTemplate(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
+  TaskTemplate(PfNode node, Scheduler *scheduler, SharedUiItem parent,
                QHash<QString, Calendar> namedCalendars);
   TaskTemplate &operator=(const TaskTemplate &other) {
     SharedUiItem::operator=(other); return *this; }

@@ -13,6 +13,7 @@
  */
 #include "tasktemplate.h"
 #include "task_p.h"
+#include "tasksroot.h"
 
 TaskTemplate::TaskTemplate() {
 }
@@ -21,12 +22,12 @@ TaskTemplate::TaskTemplate(const TaskTemplate&other) : SharedUiItem(other) {
 }
 
 TaskTemplate::TaskTemplate(
-    PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
+    PfNode node, Scheduler *scheduler, SharedUiItem parent,
     QHash<QString,Calendar> namedCalendars) {
   TaskTemplateData *d = new TaskTemplateData;
   d->_id =
       ConfigUtils::sanitizeId(node.contentAsString(), ConfigUtils::LocalId);
-  if (!d->TaskOrTemplateData::loadConfig(node, scheduler, taskGroup,
+  if (!d->TaskOrTemplateData::loadConfig(node, scheduler, parent,
                                          namedCalendars)) {
     delete d;
     return;
@@ -35,9 +36,16 @@ TaskTemplate::TaskTemplate(
 }
 
 bool TaskOrTemplateData::loadConfig(
-    PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
+    PfNode node, Scheduler *scheduler, SharedUiItem parent,
     QHash<QString,Calendar> namedCalendars) {
-  if (!TaskOrGroupData::loadConfig(node, taskGroup, scheduler))
+  if (parent.idQualifier() != "tasksroot"
+      && parent.idQualifier() != "taskgroup") {
+    qWarning() << "internal error in TaskOrGroupData::loadConfig";
+    return false;
+  }
+  auto root = static_cast<const TasksRoot&>(parent);
+  _mergeStderrIntoStdout = root.mergeStderrIntoStdout();
+  if (!TaskOrGroupData::loadConfig(node, parent, scheduler))
     return false;
   if (!ConfigUtils::loadAttribute<Task::Mean>(
         node, "mean", &_mean,
@@ -77,9 +85,6 @@ bool TaskOrTemplateData::loadConfig(
         node, "maxdurationbeforeabort", &_maxDurationBeforeAbort,
         [](QString value) { bool ok; double f = value.toDouble(&ok);
                             return ok ? (long long)(f*1000) : 0.0; });
-  QString filter = _params.value("stderrfilter");
-  if (!filter.isEmpty())
-    _stderrFilters.append(QRegularExpression(filter));
   foreach (PfNode child, node.childrenByName("trigger")) {
     foreach (PfNode grandchild, child.children()) {
       QList<PfNode> inheritedComments;

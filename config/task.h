@@ -93,14 +93,16 @@ public:
   int executionsCount() const;
   /** Atomic fetch-and-add of the executions count. */
   int fetchAndAddExecutionsCount(int valueToAdd) const;
-  QList<QRegularExpression> stderrFilters() const;
   QList<EventSubscription> onplan() const;
   QList<EventSubscription> onstart() const;
   QList<EventSubscription> onsuccess() const;
   QList<EventSubscription> onfailure() const;
+  QList<EventSubscription> onstderr() const;
+  QList<EventSubscription> onstdout() const;
   /** Events hash with "onsuccess", "onfailure"... key, mainly for UI purpose.
    * Not including group events subscriptions. */
   QList<EventSubscription> allEventsSubscriptions() const;
+  bool mergeStderrIntoStdout() const;
   bool enabled() const;
   void setEnabled(bool enabled) const;
   bool lastSuccessful() const;

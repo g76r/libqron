@@ -26,6 +26,7 @@
 #include "accesscontrolconfig.h"
 #include "logfile.h"
 #include "modelview/shareduiitem.h"
+#include "tasksroot.h"
 
 class SchedulerConfigData;
 
@@ -52,9 +53,10 @@ public:
   SchedulerConfig &operator=(const SchedulerConfig &other) {
     SharedUiItem::operator=(other); return *this; }
   bool isNull() const;
-  ParamSet params() const;
-  ParamSet vars() const;
-  ParamSet instanceparams() const;
+  ParamSet params() const { return tasksRoot().params(); }
+  ParamSet vars() const { return tasksRoot().vars(); }
+  ParamSet instanceparams() const { return tasksRoot().instanceparams(); }
+  TasksRoot tasksRoot() const;
   QHash<QString,TaskGroup> taskgroups() const;
   QHash<QString,TaskTemplate> tasktemplates() const;
   QHash<QString,Task> tasks() const;

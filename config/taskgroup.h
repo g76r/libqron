@@ -36,11 +36,9 @@ class LIBQRONSHARED_EXPORT TaskGroup : public SharedUiItem {
 public:
   TaskGroup();
   TaskGroup(const TaskGroup &other);
-  TaskGroup(PfNode node, TaskGroup parentGroup, Scheduler *scheduler);
+  TaskGroup(PfNode node, SharedUiItem parent, Scheduler *scheduler);
   /** pseudo constructor for models */
   TaskGroup(QString id);
-  /** pseudo constructor for root pseudo taskgroup used when loading config */
-  TaskGroup(ParamSet params, ParamSet vars, ParamSet instanceparams);
   TaskGroup &operator=(const TaskGroup &other) {
     SharedUiItem::operator=(other); return *this; }
   /** return "foo.bar" for group "foo.bar.baz" and QString() for group "foo". */
@@ -53,6 +51,8 @@ public:
   QList<EventSubscription> onstart() const;
   QList<EventSubscription> onsuccess() const;
   QList<EventSubscription> onfailure() const;
+  QList<EventSubscription> onstderr() const;
+  QList<EventSubscription> onstdout() const;
   ParamSet vars() const;
   ParamSet instanceparams() const;
   QList<EventSubscription> allEventSubscriptions() const;

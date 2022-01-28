@@ -68,7 +68,9 @@ SOURCES += \
     condition/taskwaitcondition.cpp \
     config/task.cpp \
     config/taskgroup.cpp \
+    config/tasksroot.cpp \
     config/tasktemplate.cpp \
+    sched/eventthread.cpp \
     sched/scheduler.cpp \
     trigger/crontrigger.cpp \
     config/host.cpp \
@@ -132,7 +134,9 @@ HEADERS += \
     condition/taskwaitcondition.h \
     config/task.h \
     config/taskgroup.h \
+    config/tasksroot.h \
     config/tasktemplate.h \
+    sched/eventthread.h \
     sched/scheduler.h \
     trigger/crontrigger.h \
     config/host.h \

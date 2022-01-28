@@ -123,6 +123,23 @@ public:
           node, attributeName, field,
           [](QString value) -> T { return value; }, isValid );
   }
+  static bool loadBoolean(PfNode node, QString attributeName, bool *field) {
+    if (!node.hasChild(attributeName))
+      return true;
+    auto v = node.attribute(attributeName).trimmed().toLower();
+    bool ok;
+    auto i = v.toLongLong(&ok);
+    if (!ok) {
+      if (v == "true" || v == "")
+        i = 1;
+      else if (v == "false")
+        i = 0;
+      else
+        return false;
+    }
+    *field = i != 0;
+    return true;
+  }
   static void writeConditions(
       PfNode *parentnode, QString attrname, DisjunctionCondition conditions);
 

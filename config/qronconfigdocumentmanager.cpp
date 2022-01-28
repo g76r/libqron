@@ -27,9 +27,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   : SharedUiItemDocumentManager(parent) {
   registerItemType(
         "taskgroup", &TaskGroup::setUiData, [this](QString id) -> SharedUiItem {
-    TaskGroup rootPseudoGroup(_config.params(), _config.vars(),
-                              _config.instanceparams());
-    return TaskGroup(PfNode("taskgroup", id), rootPseudoGroup, 0);
+    return TaskGroup(PfNode("taskgroup", id), _config.tasksRoot(), 0);
   });
   addChangeItemTrigger(
         "taskgroup", AfterUpdate,
@@ -285,6 +283,10 @@ void QronConfigDocumentManager::commitChangeItem(
 
 void QronConfigDocumentManager::changeParams(
     ParamSet newParams, ParamSet oldParams, QString setId) {
-  _config.changeParams(newParams, oldParams, setId);
-  emit paramsChanged(newParams, oldParams, setId);
+  Q_UNUSED(newParams)
+  Q_UNUSED(oldParams)
+  Q_UNUSED(setId)
+  qWarning() << "QronConfigDocumentManager::changeParams no longer implemented";
+  //_config.changeParams(newParams, oldParams, setId);
+  //emit paramsChanged(newParams, oldParams, setId);
 }
