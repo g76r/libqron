@@ -851,12 +851,12 @@ void Scheduler::startAsManyTaskInstancesAsPossible() {
   }
 }
 
-bool Scheduler::startTaskInstance(TaskInstance instance) {
+void Scheduler::startTaskInstance(TaskInstance instance) {
   Task task(instance.task());
   QString taskId = task.id();
   Executor *executor = 0;
   if (!task.enabled())
-    return false; // do not start disabled tasks
+    return; // do not start disabled tasks
   if (_availableExecutors.isEmpty() && !instance.force()) {
     QString s;
     QDateTime now = QDateTime::currentDateTime();
@@ -871,7 +871,7 @@ bool Scheduler::startTaskInstance(TaskInstance instance) {
         << "' now because there are already too many tasks running "
            "(maxtotaltaskinstances reached) currently running tasks: " << s;
     _alerter->raiseAlert("scheduler.maxtotaltaskinstances.reached");
-    return false;
+    return;
   }
   _alerter->cancelAlert("scheduler.maxtotaltaskinstances.reached");
   if (instance.force())
@@ -882,7 +882,7 @@ bool Scheduler::startTaskInstance(TaskInstance instance) {
                       "because maxinstances is already reached ("
                    << task.maxInstances() << ")";
     _alerter->raiseAlert("task.maxinstancesreached."+taskId);
-    return false;
+    return;
   }
   _alerter->cancelAlert("task.maxinstancesreached."+taskId);
   QString target = instance.target().id();
@@ -919,7 +919,7 @@ bool Scheduler::startTaskInstance(TaskInstance instance) {
         << "' because its target '" << target << "' is invalid";
     task.fetchAndAddRunningCount(-1);
     taskInstanceStoppedOrCanceled(instance, 0, true);
-    return true;
+    return;
   }
   // LATER implement best effort resource check for forced requests
   QHash<QString,qint64> taskResources = task.resources();
@@ -980,7 +980,7 @@ bool Scheduler::startTaskInstance(TaskInstance instance) {
       _runningTasksHwm = _runningTasks.size();
     triggerStartActions(instance);
     reevaluateQueuedTaskInstances();
-    return true;
+    return;
 nexthost:;
   }
   // no host has enough resources to execute the task
@@ -991,7 +991,7 @@ nexthost:;
       << target << "'";
   // LATER suffix alert with resources kind (one alert per exhausted kind)
   _alerter->raiseAlert("task.resource_exhausted."+taskId);
-  return false;
+  return;
 }
 
 void Scheduler::taskInstanceStoppedOrCanceled(

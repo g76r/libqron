@@ -200,9 +200,8 @@ private:
   void enqueueAsManyTaskInstancesAsPossible();
   /** Check if it is permitted for a task to run now, if yes start it.
    * If instance.force() is true, start a task despite any constraint or limit,
-   * even create a new (temporary) executor thread if needed.
-   * @return true if the task was started or canceled */
-  bool startTaskInstance(TaskInstance instance);
+   * even create a new (temporary) executor thread if needed. */
+  void startTaskInstance(TaskInstance instance);
   /** @return true iff the triggers fires a task request */
   bool checkTrigger(CronTrigger trigger, Task task, QString taskId);
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
