@@ -34,6 +34,8 @@ static QHash<TaskWaitOperator,QString> _operatorsAsString {
   { AllFinishedAnySuccess, "allfinishedanysuccess" },
   { AllFinishedAnyFailure, "allfinishedanyfailure" },
   { AllFinishedAnyCanceled, "allfinishedanycanceled" },
+  { AllStarted, "allstarted" },
+  { AnyStarted, "anystarted" },
   { IsEmpty, "isempty" },
   { IsNotEmpty, "isnotempty" },
   { True, "true" },
@@ -59,6 +61,8 @@ _cancelOperatorFromQueueOperator {
   { AllFinishedAnySuccess, NoSuccess },
   { AllFinishedAnyFailure, NoFailure },
   { AllFinishedAnyCanceled, NoCanceled },
+  { AllStarted, False },
+  { AnyStarted, IsEmpty },
   { IsEmpty, IsNotEmpty },
   { IsNotEmpty, IsEmpty },
   { True, False },
@@ -85,6 +89,7 @@ TaskWaitOperator TaskWaitCondition::cancelOperatorFromQueueOperator(
 namespace {
 
 class Counters {
+  quint32 unstarted = 0;
   quint32 unfinished = 0;
   quint32 canceled = 0;
   quint32 failure = 0;
@@ -109,6 +114,8 @@ public:
         break;
       case TaskInstance::Planned:
       case TaskInstance::Queued:
+        ++unstarted;
+        [[fallthrough]];
       case TaskInstance::Running:
       case TaskInstance::Waiting:
         ++unfinished;
@@ -155,6 +162,10 @@ public:
       return unfinished == 0 && failure;
     case AllFinishedAnyCanceled:
       return unfinished == 0 && canceled;
+    case AllStarted:
+      return unstarted == 0;
+    case AnyStarted:
+      return canceled + failure + success + unfinished > unstarted;
     case IsEmpty:
       return unfinished + canceled + failure + success == 0;
     case IsNotEmpty:

@@ -34,7 +34,7 @@ public:
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
   mutable qint64 _lastExecution, _nextScheduledExecution;
-  // LATER QAtomicInt is not needed since only one thread changes these values (Executor's)
+  // LATER QAtomicInt is not needed since only one thread changes these values (Scheduler's)
   mutable QAtomicInt _runningCount, _executionsCount;
   mutable bool _lastSuccessful;
   mutable int _lastReturnCode, _lastDurationMillis;

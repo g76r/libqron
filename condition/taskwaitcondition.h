@@ -25,6 +25,7 @@ enum TaskWaitOperator {
   AnySuccess, AnyFailure, AnyCanceled,
   AnyNonSuccess, AnyNonFailure, AnyNonCanceled,
   AllFinishedAnySuccess, AllFinishedAnyFailure, AllFinishedAnyCanceled,
+  AllStarted, AnyStarted,
   IsEmpty, IsNotEmpty, True, False,
   UnknownOperator,
 };
