@@ -62,6 +62,7 @@ public:
   QDateTime finishDatetime() const;
   void setFinishDatetime(QDateTime datetime
                          = QDateTime::currentDateTime()) const;
+  qint64 plannedMillis() const;
   qint64 queuedMillis() const;
   qint64 runningMillis() const;
   qint64 waitingMillis() const;

@@ -274,6 +274,11 @@ void TaskInstance::setFinishDatetime(QDateTime datetime) const {
     d->setFinishDatetime(datetime);
 }
 
+qint64 TaskInstance::plannedMillis() const {
+  const TaskInstanceData *d = data();
+  return d ? d->plannedMillis() : 0;
+}
+
 qint64 TaskInstance::queuedMillis() const {
   const TaskInstanceData *d = data();
   return d ? d->queuedMillis() : 0;
@@ -421,6 +426,12 @@ static RadixTree<std::function<QVariant(
 { "!herdwaitings", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.herder().waitingMillis()/1000;
 } },
+{ "!plannedms", [](const TaskInstance &taskInstance, const QString&) {
+   return taskInstance.plannedMillis();
+ } },
+{ "!planneds", [](const TaskInstance &taskInstance, const QString&) {
+   return taskInstance.plannedMillis()/1000;
+ } },
 { "!queuedms", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.queuedMillis();
 } },
