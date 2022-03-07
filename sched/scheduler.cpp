@@ -1120,6 +1120,10 @@ bool Scheduler::enableTask(QString taskId, bool enable) {
     return false;
   t.setEnabled(enable);
   if (enable)
+    _alerter->cancelAlert("task.disabled."+taskId);
+  else
+    _alerter->raiseAlert("task.disabled."+taskId);
+  if (enable)
     reevaluateQueuedTaskInstances();
   emit itemChanged(t, t, QStringLiteral("task"));
   return true;
