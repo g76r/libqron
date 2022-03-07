@@ -1,4 +1,4 @@
-/* Copyright 2015 Hallowyn and others.
+/* Copyright 2015-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,7 +35,7 @@ static QString _uiHeaderNames[] = {
   "Additional Info" // 10
 };
 
-enum GridStatus { Unknown, Ok, Long, Error };
+enum GridStatus { Unknown, Ok, Long, Raised };
 
 inline QString statusToHumanReadableString(GridStatus status) {
   switch (status) {
@@ -43,8 +43,8 @@ inline QString statusToHumanReadableString(GridStatus status) {
     return QStringLiteral("ok");
   case Long:
     return QStringLiteral("OK BUT LONG");
-  case Error:
-    return QStringLiteral("ERROR");
+  case Raised:
+    return QStringLiteral("ALERT");
   case Unknown:
     ;
   }
@@ -57,8 +57,8 @@ inline QString statusToHtmlHumanReadableString(GridStatus status) {
     return QStringLiteral("ok");
   case Long:
     return QStringLiteral("<stong>OK BUT LONG</stong>");
-  case Error:
-    return QStringLiteral("<stong>ERROR</stong>");
+  case Raised:
+    return QStringLiteral("<stong>ALERT</stong>");
   case Unknown:
     ;
   }
@@ -77,7 +77,7 @@ public:
     switch (alert.status()) {
     case Alert::Raised:
     case Alert::Rising:
-      _status = Error;
+      _status = Raised;
       break;
     case Alert::MayRise:
     case Alert::Dropping:
@@ -397,8 +397,8 @@ QString Gridboard::toHtml() const {
   QString tdClassOk = d->_params.value(QStringLiteral("gridboard.tdclass.ok"));
   QString tdClassWarning = d->_params.value(
         QStringLiteral("gridboard.tdclass.warning"), QStringLiteral("warning"));
-  QString tdClassError = d->_params.value(
-        QStringLiteral("gridboard.tdclass.error"), QStringLiteral("danger"));
+  QString tdClassAlerted = d->_params.value(
+        QStringLiteral("gridboard.tdclass.alerted"), QStringLiteral("danger"));
   QString tdClassUnknown = d->_params.value(
         QStringLiteral("gridboard.tdclass.unknown"));
   QString s;
@@ -462,8 +462,8 @@ QString Gridboard::toHtml() const {
         case Long:
           tdClass = tdClassWarning;
           break;
-        case Error:
-          tdClass = tdClassError;
+        case Raised:
+          tdClass = tdClassAlerted;
           break;
         case Unknown:
           tdClass = tdClassUnknown;
