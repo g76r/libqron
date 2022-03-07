@@ -140,9 +140,8 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   }
   reevaluateQueuedTaskInstances();
   // inspect queued requests to replace Task objects or remove request
-  auto queued = _queuedTasks;
-  queued.detach();
-  for (auto instance: queued) {
+  for (int i = 0; i < _queuedTasks.size(); ++ i) {
+    TaskInstance &instance = _queuedTasks[i];
     QString taskId = instance.task().id();
     Task t = newConfig.tasks().value(taskId);
     if (t.isNull()) {
@@ -154,6 +153,7 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
           << "replacing task definition in queued request while reloading "
              "configuration";
       instance.setTask(t);
+      _unfinishedTasks.insert(instance.idAsLong(), instance);
     }
   }
   _configdate = QDateTime::currentDateTime().toMSecsSinceEpoch();
