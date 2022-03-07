@@ -521,7 +521,8 @@ Gridboard Alerter::gridboard(QString gridboardId) {
 
 void Alerter::clearGridboard(QString gridboardId) {
   auto gridboards = _gridboards.lockedData();
-  for (auto gridboard: *gridboards) {
+  for (int i = 0; i < gridboards->size(); ++i) {
+    Gridboard &gridboard = (*gridboards)[i];
     if (gridboard.id() == gridboardId) {
       gridboard.clear();
       break;
