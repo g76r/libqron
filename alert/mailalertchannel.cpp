@@ -19,6 +19,7 @@
 #include "alerter.h"
 #include <QSet>
 #include <QTimer>
+#include "mail/mailaddress.h"
 
 // LATER replace this 60" ugly batch with _remindFrequency and make reminding no longer drift
 #define ASYNC_PROCESSING_INTERVAL 60000
@@ -120,10 +121,16 @@ MailAlertChannel::~MailAlertChannel() {
 
 QStringList MailAlertChannel::splittedAddresses(
     QString commaSeparatedAddresses) {
-  // LATER support more complex mail addresses with quotes and so on
   QStringList addresses;
-  foreach (const QString &s, commaSeparatedAddresses.split(','))
-    addresses.append(s.trimmed());
+  static const QRegularExpression _whitespace{ "\\s+" };
+  for (auto s: commaSeparatedAddresses.split(_whitespace)) {
+    MailAddress addr(s);
+    if (addr.isValid())
+      addresses.append(s);
+    else
+      Log::error() << "MailAlertChannel ignoring invalid recipient email "
+                      "address: " << s;
+  }
   return addresses;
 }
 
@@ -373,7 +380,7 @@ void MailAlertChannel::processQueue(QVariant address) {
       queue->scheduleNext(this, std::max(minDelayBetweenSend-ms,1));
     }
   } else {
-    Log::debug() << "MailAlertChannel::processQueue called for nothing";
+    //Log::debug() << "MailAlertChannel::processQueue called for nothing";
   }
 }
 
