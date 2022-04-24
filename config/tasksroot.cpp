@@ -30,9 +30,9 @@ TasksRoot::TasksRoot(PfNode node, Scheduler *scheduler) {
 bool TasksRootData::loadConfig(
     PfNode node, Scheduler *scheduler) {
   _originalPfNode = node;
-  ConfigUtils::loadParamSet(node, &_params, "param");
-  ConfigUtils::loadParamSet(node, &_vars, "var");
-  ConfigUtils::loadParamSet(node, &_instanceparams, "instanceparam");
+  _params = ParamSet(node, "param");
+  _vars = ParamSet(node, "var");
+  _instanceparams = ParamSet(node, "instanceparam");
   ConfigUtils::loadBoolean(node, "mergestderrintostdout",
                            &_mergeStderrIntoStdout);
   ConfigUtils::loadEventSubscription(

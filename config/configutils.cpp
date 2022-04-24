@@ -1,4 +1,4 @@
-/* Copyright 2013-2017 Hallowyn and others.
+/* Copyright 2013-2022 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,32 +19,6 @@
 #include "condition/taskwaitcondition.h"
 
 ConfigUtils::ConfigUtils() {
-}
-
-void ConfigUtils::loadParamSet(PfNode parentnode, ParamSet *params,
-                               QString attrname) {
-  if (!params)
-    return;
-  QListIterator<QPair<QString,QString> > it(
-        parentnode.stringsPairChildrenByName(attrname));
-  while (it.hasNext()) {
-    const QPair<QString,QString> &p(it.next());
-    if (p.first.isEmpty())
-      Log::warning() << "invalid empty param in " << parentnode.toPf();
-    else {
-      QString value = p.second;
-      params->setValue(p.first, value.isNull() ? QStringLiteral("") : value);
-    }
-  }
-}
-
-void ConfigUtils::loadParamSet(PfNode parentnode, ParamSet *params,
-                               QSet<QString> attrnames) {
-  if (!params)
-    return;
-  for (const PfNode &child : parentnode.children())
-    if (attrnames.contains(child.name()))
-      params->setValue(child.name(), child.contentAsString());
 }
 
 static QRegularExpression whitespace("\\s");

@@ -54,7 +54,7 @@ public:
 
 PostNoticeAction::PostNoticeAction(Scheduler *scheduler, PfNode node)
   : Action(new PostNoticeActionData(scheduler, node.contentAsString(),
-                                    ConfigUtils::loadParamSet(node, "param"))) {
+                                    ParamSet(node, "param"))) {
 }
 
 PostNoticeAction::PostNoticeAction(const PostNoticeAction &rhs) : Action(rhs) {

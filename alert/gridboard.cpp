@@ -273,7 +273,7 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
   d->_warningDelay = node.doubleAttribute(
         QStringLiteral("warningdelay"), DEFAULT_WARNING_DELAY/1e3)*1e3;
   d->_params.setParent(parentParams);
-  ConfigUtils::loadParamSet(node, &d->_params, QStringLiteral("param"));
+  d->_params = ParamSet(node, "param");
   ConfigUtils::loadComments(node, &d->_commentsList);
   // LATER load old state
   // LATER load initvalues

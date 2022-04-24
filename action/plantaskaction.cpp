@@ -110,9 +110,9 @@ public:
 PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
     : Action(new PlanTaskActionData(
           scheduler, node.contentAsString(),
-          ConfigUtils::loadParamSet(node, "param"), node.hasChild("force"),
+          ParamSet(node, "param"), node.hasChild("force"),
           node.hasChild("lone"),
-          ConfigUtils::loadParamSet(node, "paramappend").toHash(),
+          ParamSet(node, "paramappend").toHash(),
           DisjunctionCondition(node.grandChildrenByChildrenName("queuewhen")),
           DisjunctionCondition(node.grandChildrenByChildrenName("cancelwhen"))
           )) {

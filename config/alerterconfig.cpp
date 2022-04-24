@@ -80,14 +80,14 @@ AlerterConfig::AlerterConfig(PfNode root)
 }
 
 AlerterConfigData::AlerterConfigData(PfNode root)
-  : _riseDelay(DEFAULT_RISE_DELAY), _mayriseDelay(DEFAULT_MAYRISE_DELAY),
+  : _params (root, "param"), _riseDelay(DEFAULT_RISE_DELAY),
+    _mayriseDelay(DEFAULT_MAYRISE_DELAY),
     _dropDelay(DEFAULT_DROP_DELAY),
     _duplicateEmitDelay(DEFAULT_DUPLICATE_EMIT_DELAY),
     _minDelayBetweenSend(DEFAULT_MIN_DELAY_BETWEEN_SEND),
     _delayBeforeFirstSend(DEFAULT_DELAY_BEFORE_FIRST_SEND),
     _remindPeriod(DEFAULT_REMIND_PERIOD) {
   _channelNames << "mail" << "url" << "log" << "stop";
-  ConfigUtils::loadParamSet(root, &_params, "param");
   foreach (PfNode node, root.childrenByName("settings")) {
     AlertSettings settings(node);
     _alertSettings.append(settings);

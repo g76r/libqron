@@ -53,9 +53,8 @@ public:
 
 WriteFileAction::WriteFileAction(Scheduler *scheduler, PfNode node)
   : Action(new WriteFileActionData(
-             node.attribute("path"), node.contentAsString(),
-             ConfigUtils::loadParamSet(
-               node, ParametrizedFileWriter::supportedParamNames))) {
+      node.attribute("path"), node.contentAsString(),
+      ParamSet(node, ParametrizedFileWriter::supportedParamNames))) {
   Q_UNUSED(scheduler)
 }
 
