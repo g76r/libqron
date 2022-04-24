@@ -23,28 +23,6 @@ ConfigUtils::ConfigUtils() {
 
 static QRegularExpression whitespace("\\s");
 
-void ConfigUtils::loadFlagSet(PfNode parentnode, ParamSet *params,
-                              QString attrname) {
-  if (!params)
-    return;
-  foreach (QString content, parentnode.stringChildrenByName(attrname)) {
-    QStringList names = content.split(whitespace);
-    foreach (const QString name, names)
-      params->setValue(name, QString());
-  }
-}
-
-void ConfigUtils::loadFlagSet(PfNode parentnode, QSet<QString> *set,
-                              QString attrname) {
-  if (!set)
-    return;
-  foreach (QString content, parentnode.stringChildrenByName(attrname)) {
-    QStringList names = content.split(whitespace);
-    foreach (const QString name, names)
-      set->insert(name);
-  }
-}
-
 void ConfigUtils::loadResourcesSet(
     PfNode parentnode, QHash<QString,qint64> *resources, QString attrname) {
   if (!resources)
@@ -70,15 +48,6 @@ void ConfigUtils::writeParamSet(PfNode *parentnode, ParamSet params,
   std::sort(list.begin(), list.end());
   foreach (const QString &key, list)
     parentnode->appendChild(PfNode(attrname, key+" "+params.rawValue(key)));
-}
-
-void ConfigUtils::writeFlagSet(PfNode *parentnode, QSet<QString> set,
-                               QString attrname) {
-  if (!parentnode || set.isEmpty())
-    return;
-  QStringList list = set.values();
-  std::sort(list.begin(), list.end());
-  parentnode->appendChild(PfNode(attrname, list.join(' ')));
 }
 
 void ConfigUtils::writeEventSubscriptions(PfNode *parentnode,

@@ -34,10 +34,6 @@ public:
     FullyQualifiedId, // used for groups, hosts and clusters: LocalId plus .
     Hostname // used for hostnames; disallows _ but allows - : [ ] and .
   };
-  static void loadFlagSet(PfNode parentnode, ParamSet *params,
-                          QString attrname);
-  static void loadFlagSet(PfNode parentnode, QSet<QString> *set,
-                          QString attrname);
   static void loadResourcesSet(
       PfNode parentnode, QHash<QString,qint64> *resources, QString attrname);
   inline static QHash<QString,qint64> loadResourcesSet(
@@ -57,12 +53,6 @@ public:
       QList<EventSubscription> *list, Scheduler *scheduler);
   static void writeParamSet(PfNode *parentnode, ParamSet params,
                             QString attrname, bool inherit = false);
-  static void writeFlagSet(PfNode *parentnode, QSet<QString> set,
-                           QString attrname);
-  static void writeFlagSet(PfNode *parentnode, ParamSet params,
-                           QString attrname, bool inherit = false) {
-    writeFlagSet(parentnode, params.keys(inherit), attrname);
-  }
   /** @param exclusionList may be used e.g. to avoid double "onfinish" which
    * are both in onsuccess and onfailure event subscriptions */
   static void writeEventSubscriptions(
