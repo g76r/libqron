@@ -216,7 +216,7 @@ static bool planOrRequestCommonPreProcess(
 
 static void planOrRequestCommonPostProcess(
     TaskInstance instance, TaskInstance herder,
-    QHash<TaskInstance,TaskInstanceList> &waitingTasks,
+    QHash<quint64,TaskInstanceList> &waitingTasks,
     ParamSet overridingParams) {
   auto params = instance.params();
   auto instanceparams = instance.task().instanceparams();
@@ -233,8 +233,8 @@ static void planOrRequestCommonPostProcess(
   }
   if (herder.isNull() || herder == instance)
     return;
-  if (waitingTasks.contains(herder))
-    waitingTasks[herder].append(instance);
+  herder.appendHerdedTask(instance);
+  waitingTasks[herder.idAsLong()] << instance;
   Log::info(herder.task().id(), herder.id())
       << "task appended to herded tasks: "
       << instance.task().id()+"/"+instance.id();
@@ -421,7 +421,6 @@ TaskInstanceList Scheduler::doPlanTask(
   TaskInstance instance(task, force, overridingParams, herder, queuewhen,
                         cancelwhen);
   _unfinishedTasks.insert(instance.idAsLong(), instance);
-  herder.appendHerdedTask(instance);
   Log::debug(taskId, instance.idAsLong())
       << "planning task " << taskId << "/" << instance.id() << " "
       << overridingParams << " with herdid " << instance.herdid()
@@ -468,7 +467,9 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
       auto criterion = task.deduplicateCriterion();
       auto newcrit = params.evaluate(criterion, &ppp);
       QList<TaskInstance> others;
-      for (auto other: _queuedTasks) {
+      for (auto other: _unfinishedTasks) {
+        if (other.status() != TaskInstance::Queued)
+          continue;
         if (other.task().id() != taskId)
           continue;
         if (other.groupId() == instance.groupId())
@@ -489,11 +490,13 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
             + " with same deduplicate criterion : " + newcrit);
         ++canceled;
       }
-      if (canceled)
-        instance.herder().appendHerdedTask(instance);
     }
   }
-  if (_queuedTasks.size() >= config().maxqueuedrequests()) {
+  qint64 queueSize = 0;
+  for (auto i: _unfinishedTasks)
+    if (i.status() == TaskInstance::Queued)
+      ++queueSize;
+  if (queueSize >= config().maxqueuedrequests()) {
     Log::error(taskId, instance.idAsLong())
         << "cannot queue task because maxqueuedrequests is already reached ("
         << config().maxqueuedrequests() << ")";
@@ -502,7 +505,6 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
   }
   instance.setQueueDatetime();
   _unfinishedTasks.insert(instance.idAsLong(), instance);
-  instance.herder().appendHerdedTask(instance);
   _alerter->cancelAlert("scheduler.maxqueuedrequests.reached");
   Log::debug(taskId, instance.idAsLong())
       << "queuing task " << taskId << "/" << instance.id()
@@ -510,9 +512,9 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
       << " and herdid " << instance.herdid();
   // note: a request must always be queued even if the task can be started
   // immediately, to avoid the new tasks being started before queued ones
-  _queuedTasks.append(instance);
-  if (_queuedTasks.size() > _queuedTasksHwm)
-    _queuedTasksHwm = _queuedTasks.size();
+  ++queueSize;
+  if (queueSize > _queuedTasksHwm)
+    _queuedTasksHwm = queueSize;
   reevaluateQueuedTaskInstances();
   return instance;
 }
@@ -558,12 +560,12 @@ TaskInstance Scheduler::doCancelTaskInstance(
   case TaskInstance::Planned:
   case TaskInstance::Queued:
     cancelOrAbortHerdedTasks(instance, false);
-      if (warning)
-        Log::warning(instance.task().id(), instance.id()) << reason;
-      else
-        Log::info(instance.task().id(), instance.id()) << reason;
-      taskInstanceStoppedOrCanceled(instance, 0, false);
-      return instance;
+    if (warning)
+      Log::warning(instance.task().id(), instance.id()) << reason;
+    else
+      Log::info(instance.task().id(), instance.id()) << reason;
+    taskInstanceStoppedOrCanceled(instance, 0, false);
+    return instance;
   case TaskInstance::Running:
   case TaskInstance::Waiting:
   case TaskInstance::Success:
@@ -589,12 +591,22 @@ TaskInstanceList Scheduler::cancelTaskInstancesByTaskId(QString taskId) {
 
 TaskInstanceList Scheduler::doCancelTaskInstancesByTaskId(QString taskId) {
   TaskInstanceList instances;
-  for (int i = 0; i < _queuedTasks.size(); ++i) {
-    TaskInstance r = _queuedTasks[i];
-    if (taskId == r.task().id())
-      instances.append(r);
+  for (auto i: _unfinishedTasks) {
+    switch (i.status()) {
+    case TaskInstance::Success:
+    case TaskInstance::Failure:
+    case TaskInstance::Canceled:
+    case TaskInstance::Running:
+    case TaskInstance::Waiting:
+      continue;
+    case TaskInstance::Queued:
+    case TaskInstance::Planned:
+        ;
+    }
+    if (i.task().id() == taskId)
+      instances << i;
   }
-  for (const TaskInstance &instance : instances)
+  for (auto instance : instances)
     if (doCancelTaskInstance(instance, false, "canceling task as requested")
             .isNull())
       instances.removeOne(instance);
@@ -616,7 +628,7 @@ TaskInstance Scheduler::doAbortTaskInstance(quint64 id) {
     if (id != instance.idAsLong())
       continue;
     auto taskId = instance.task().id();
-    auto executor = _runningTasks.value(instance);
+    auto executor = _runningExecutors.value(id);
     switch (instance.status()) {
     case TaskInstance::Running:
     case TaskInstance::Waiting:
@@ -651,15 +663,15 @@ TaskInstanceList Scheduler::abortTaskInstanceByTaskId(QString taskId) {
 
 TaskInstanceList Scheduler::doAbortTaskInstanceByTaskId(QString taskId) {
   TaskInstanceList instances;
-  TaskInstanceList tasks = _runningTasks.keys();
-  for (int i = 0; i < tasks.size(); ++i) {
-    TaskInstance r = tasks[i];
-    if (taskId == r.task().id())
-      instances.append(r);
+  for (auto ti: detachedUnfinishedTaskInstances()) {
+    if (ti.task().id() != taskId)
+      continue;
+    if (_runningExecutors.contains(ti.idAsLong())) {
+      ti = doAbortTaskInstance(ti.idAsLong());
+      if (!ti.isNull())
+        instances << ti;
+    }
   }
-  for (const TaskInstance &r : instances)
-    if (doAbortTaskInstance(r.idAsLong()).isNull())
-      instances.removeOne(r);
   return instances;
 }
 
@@ -751,10 +763,8 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
     return;
   }
   QHash<QString,Task> tasks = config().tasks();
-  if (params.parent().isNull())
-    params.setParent(config().params());
   params.setValue(QStringLiteral("!notice"), notice);
-  Log::debug() << "posting notice ^" << notice << " with params " << params;
+  Log::info() << "posting notice " << notice << " with params " << params;
   foreach (Task task, tasks.values()) {
     foreach (NoticeTrigger trigger, task.noticeTriggers()) {
       // LATER implement regexp patterns for notice triggers
@@ -855,11 +865,9 @@ void Scheduler::enqueueAsManyTaskInstancesAsPossible() {
 void Scheduler::startAsManyTaskInstancesAsPossible() {
   if (_shutingDown)
     return;
-  auto queued = _queuedTasks;
-  queued.detach();
-  for (auto instance: queued) {
+  for (auto instance: detachedUnfinishedTaskInstances()) {
     if (instance.status() != TaskInstance::Queued)
-      continue; // changed meanwhile, e.g. canceled
+      continue; // not queued, or even changed meanwhile, e.g. canceled
     auto task = instance.task();
     startTaskInstance(instance);
   }
@@ -872,18 +880,16 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
   if (!task.enabled())
     return; // do not start disabled tasks
   if (_availableExecutors.isEmpty() && !instance.force()) {
-    QString s;
+    QString s = "cannot execute task '"+taskId
+                +"' now because there are already too many tasks running "
+                  "(maxtotaltaskinstances reached) currently running tasks: ";
     QDateTime now = QDateTime::currentDateTime();
-    foreach (const TaskInstance &ti, _runningTasks.keys())
-      s.append(ti.id()).append(' ')
-          .append(ti.task().id()).append(" since ")
-          .append(QString::number(ti.startDatetime().msecsTo(now)))
-          .append(" ms; ");
-    if (s.size() >= 2)
-      s.chop(2);
-    Log::info(taskId, instance.idAsLong()) << "cannot execute task '" << taskId
-        << "' now because there are already too many tasks running "
-           "(maxtotaltaskinstances reached) currently running tasks: " << s;
+    for (auto tii: _runningExecutors.keys()) {
+      auto ti = _unfinishedTasks.value(tii);
+      s += ti.id()+" "+ti.task().id()+" since "
+           +QString::number(ti.startDatetime().msecsTo(now))+" ms; ";
+    }
+    Log::info(taskId, instance.idAsLong()) << s;
     _alerter->raiseAlert("scheduler.maxtotaltaskinstances.reached");
     return;
   }
@@ -988,10 +994,9 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
     executor->execute(instance);
     task.fetchAndAddExecutionsCount(1);
     ++_execCount;
-    _queuedTasks.removeOne(instance);
-    _runningTasks.insert(instance, executor);
-    if (_runningTasks.size() > _runningTasksHwm)
-      _runningTasksHwm = _runningTasks.size();
+    _runningExecutors.insert(instance.idAsLong(), executor);
+    if (_runningExecutors.size() > _runningTasksHwm)
+      _runningTasksHwm = _runningExecutors.size();
     triggerStartActions(instance);
     reevaluateQueuedTaskInstances();
     return;
@@ -1011,54 +1016,52 @@ nexthost:;
 void Scheduler::taskInstanceStoppedOrCanceled(
     TaskInstance instance, Executor *executor, bool processCanceledAsFailure) {
   if (executor) {
-    // deleteLater() because it lives in its own thread
     if (executor->isTemporary())
       executor->deleteLater();
     else
       _availableExecutors.append(executor);
   }
-  _runningTasks.remove(instance);
+  _runningExecutors.remove(instance.idAsLong());
   auto herder = instance.herder();
   if (herder != instance) {
     taskInstanceFinishedOrCanceled(instance, processCanceledAsFailure);
-    if (_waitingTasks.contains(herder)) {
-      TaskInstanceList &sheeps = _waitingTasks[herder];
+    if (_waitingTasks.contains(herder.idAsLong())) {
+      TaskInstanceList &sheeps = _waitingTasks[herder.idAsLong()];
       sheeps.removeOne(instance);
       Log::info(herder.task().id(), herder.id())
           << "herded task finished: " << instance.task().id()+"/"+instance.id()
           << " remaining: " << sheeps.size() << " : " << sheeps;
-      if (sheeps.isEmpty())
+      if (sheeps.isEmpty() && herder.status() == TaskInstance::Waiting)
         taskInstanceFinishedOrCanceled(herder, false);
       else
         reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
     }
     return;
   }
-  triggerFinishActions(instance, [](Action a) {
-    return a.mayCreateTaskInstances();
-  });
-  TaskInstanceList livingSheeps;
-  for (auto sheep: instance.herdedTasks()) {
-    if (!sheep.isFinished())
-      livingSheeps.append(sheep);
+  if (instance.status() != TaskInstance::Canceled) {
+    // must trigger actions that may create new herded tasks now, to be
+    // able to wait for them
+    triggerFinishActions(instance, [](Action a) {
+      return a.mayCreateTaskInstances();
+    });
   }
   // configured and requested tasks are different if config was reloaded
   Task configuredTask = config().tasks().value(instance.task().id());
-  if (instance.status() == TaskInstance::Canceled || livingSheeps.isEmpty()
+  auto waitingTasks = _waitingTasks[instance.idAsLong()];
+  if (instance.status() == TaskInstance::Canceled || waitingTasks.isEmpty()
       || configuredTask.herdingPolicy() == Task::NoWait) {
     taskInstanceFinishedOrCanceled(instance, processCanceledAsFailure);
     return;
   }
   Log::info(instance.task().id(), instance.id())
-      << "waiting for herded tasks to finish: " << livingSheeps;
-  _waitingTasks.insert(instance, livingSheeps);
+      << "waiting for herded tasks to finish: " << waitingTasks;
   instance.setAbortable();
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
   reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
 }
 
 void Scheduler::taskInstanceFinishedOrCanceled(
-    TaskInstance instance, bool processCanceledAsFailure) {
+    TaskInstance instance, bool markCanceledAsFailure) {
   Task requestedTask = instance.task();
   QString taskId = requestedTask.id();
   // configured and requested tasks are different if config was reloaded
@@ -1068,12 +1071,11 @@ void Scheduler::taskInstanceFinishedOrCanceled(
   if (instance.status() == TaskInstance::Canceled) { // i.e. start date not set
     instance.setReturnCode(-1);
     instance.setSuccess(false);
-    if (processCanceledAsFailure)
+    if (markCanceledAsFailure)
       instance.setStartDatetime(now);
     instance.setStopDatetime(now);
     if (instance.task().runningCount() < instance.task().maxInstances())
       _alerter->cancelAlert("task.maxinstancesreached."+taskId);
-    _queuedTasks.removeOne(instance);
   } else {
     instance.setHerderSuccess(instance.task().herdingPolicy());
     configuredTask.fetchAndAddRunningCount(-1);
@@ -1115,8 +1117,8 @@ void Scheduler::taskInstanceFinishedOrCanceled(
       else
         _alerter->cancelAlert("task.tooshort."+taskId);
     }
-    _waitingTasks.remove(instance);
   }
+  _waitingTasks.remove(instance.idAsLong());
   _unfinishedTasks.remove(instance.idAsLong());
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
   emit itemChanged(configuredTask, configuredTask, QStringLiteral("task"));
@@ -1151,12 +1153,20 @@ void Scheduler::enableAllTasks(bool enable) {
 
 void Scheduler::periodicChecks() {
   // detect queued or running tasks that exceeded their max expected duration
-  TaskInstanceList currentInstances;
-  currentInstances.append(_queuedTasks);
-  currentInstances.append(_runningTasks.keys());
-  foreach (const TaskInstance r, currentInstances) {
-    const Task t(r.task());
-    if (t.maxExpectedDuration() < r.liveDurationMillis())
+  for (auto i: _unfinishedTasks) {
+    switch (i.status()) {
+    case TaskInstance::Planned:
+    case TaskInstance::Success:
+    case TaskInstance::Failure:
+    case TaskInstance::Canceled:
+      continue;
+    case TaskInstance::Queued:
+    case TaskInstance::Running:
+    case TaskInstance::Waiting:
+        ;
+    }
+    auto t = i.task();
+    if (t.maxExpectedDuration() < i.liveDurationMillis())
       _alerter->raiseAlert("task.toolong."+t.id());
   }
   // restart timer for triggers if any was lost, this is never usefull apart
@@ -1200,13 +1210,14 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
   _shutingDown = true;
   BlockingTimer timer(1000);
   while (!deadline.hasExpired()) {
-    int remaining = _runningTasks.size();
+    int remaining = _runningExecutors.size();
     if (!remaining)
       break;
     QStringList instanceIds, taskIds;
-    for (auto i : _runningTasks.keys()) {
-      instanceIds.append(i.id());
-      taskIds.append(i.task().id());
+    for (auto tii : _runningExecutors.keys()) {
+      auto ti = _unfinishedTasks.value(tii);
+      instanceIds.append(ti.id());
+      taskIds.append(ti.task().id());
     }
     Log::info() << "shutdown : waiting for " << remaining
                 << " tasks to finish: " << taskIds << " with ids: "
@@ -1215,7 +1226,18 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
     timer.wait();
   }
   QStringList instanceIds, taskIds;
-  for (auto i : _queuedTasks) {
+  for (auto i: _unfinishedTasks) {
+    switch (i.status()) {
+    case TaskInstance::Success:
+    case TaskInstance::Failure:
+    case TaskInstance::Canceled:
+    case TaskInstance::Running:
+    case TaskInstance::Waiting:
+      continue;
+    case TaskInstance::Queued:
+    case TaskInstance::Planned:
+        ;
+    }
     instanceIds.append(i.id());
     taskIds.append(i.task().id());
   }

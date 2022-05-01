@@ -47,10 +47,9 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   Q_OBJECT
   Q_DISABLE_COPY(Scheduler)
   QThread *_thread;
-  TaskInstanceList _queuedTasks;
   QMap<quint64,TaskInstance> _unfinishedTasks;
-  QHash<TaskInstance,TaskInstanceList> _waitingTasks;
-  QHash<TaskInstance,Executor*> _runningTasks;
+  QHash<quint64,TaskInstanceList> _waitingTasks;// herders waiting lists
+  QHash<quint64,Executor*> _runningExecutors;
   QSet<quint64> _dirtyHerds; // for which planned tasks must be reevaluated
   QList<Executor*> _availableExecutors;
   Alerter *_alerter;
