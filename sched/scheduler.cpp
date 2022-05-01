@@ -602,7 +602,7 @@ TaskInstance Scheduler::abortTaskInstance(quint64 id) {
 }
 
 TaskInstance Scheduler::doAbortTaskInstance(quint64 id) {
-  for (auto instance: _unfinishedTasks) {
+  for (auto instance: detachedUnfinishedTaskInstances()) {
     if (id != instance.idAsLong())
       continue;
     auto taskId = instance.task().id();
@@ -814,7 +814,7 @@ void Scheduler::enqueueAsManyTaskInstancesAsPossible() {
     return;
   auto dirtyHerds = _dirtyHerds;
   _dirtyHerds.clear();
-  for (auto instance: _unfinishedTasks) {
+  for (auto instance: detachedUnfinishedTaskInstances()) {
     if (!dirtyHerds.contains(instance.herdid()))
       continue;
     if (instance.status() != TaskInstance::Planned)
