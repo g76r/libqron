@@ -1159,8 +1159,8 @@ void Scheduler::propagateTaskInstanceChange(TaskInstance instance) {
   emit itemChanged(instance, nullItem, QStringLiteral("taskinstance"));
 }
 
-QHash<quint64,TaskInstance> Scheduler::unfinishedTaskInstances() {
-  QHash<quint64,TaskInstance> instances;
+QMap<quint64,TaskInstance> Scheduler::unfinishedTaskInstances() {
+  QMap<quint64,TaskInstance> instances;
   if (this->thread() == QThread::currentThread())
     instances = detachedUnfinishedTaskInstances();
   else
@@ -1170,8 +1170,8 @@ QHash<quint64,TaskInstance> Scheduler::unfinishedTaskInstances() {
   return instances;
 }
 
-QHash<quint64,TaskInstance> Scheduler::detachedUnfinishedTaskInstances() {
-  QHash<quint64,TaskInstance> unfinished = _unfinishedTasks;
+QMap<quint64,TaskInstance> Scheduler::detachedUnfinishedTaskInstances() {
+  auto unfinished = _unfinishedTasks;
   unfinished.detach();
   return unfinished;
 }

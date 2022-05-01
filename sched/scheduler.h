@@ -48,7 +48,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   Q_DISABLE_COPY(Scheduler)
   QThread *_thread;
   TaskInstanceList _queuedTasks;
-  QHash<quint64,TaskInstance> _unfinishedTasks;
+  QMap<quint64,TaskInstance> _unfinishedTasks;
   QHash<TaskInstance,TaskInstanceList> _waitingTasks;
   QHash<TaskInstance,Executor*> _runningTasks;
   QSet<quint64> _dirtyHerds; // for which planned tasks must be reevaluated
@@ -173,8 +173,8 @@ public:
   SchedulerConfig config() {
     QMutexLocker ml(&_configGuard);
     return QronConfigDocumentManager::config(); }
-  /** Thread-safe. No order guarantee. */
-  QHash<quint64, TaskInstance> unfinishedTaskInstances();
+  /** Thread-safe. */
+  QMap<quint64,TaskInstance> unfinishedTaskInstances();
 
 signals:
   void hostsResourcesAvailabilityChanged(
@@ -227,7 +227,7 @@ private:
   TaskInstanceList doAbortTaskInstanceByTaskId(QString taskId);
   TaskInstance doAbortTaskInstance(quint64 id);
   void propagateTaskInstanceChange(TaskInstance instance);
-  QHash<quint64, TaskInstance> detachedUnfinishedTaskInstances();
+  QMap<quint64,TaskInstance> detachedUnfinishedTaskInstances();
   void doShutdown(QDeadlineTimer deadline);
   void triggerPlanActions(TaskInstance instance);
   void triggerStartActions(TaskInstance instance);
