@@ -140,17 +140,27 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   }
   reevaluateQueuedTaskInstances();
   // inspect queued requests to replace Task objects or remove request
-  for (int i = 0; i < _queuedTasks.size(); ++ i) {
-    TaskInstance &instance = _queuedTasks[i];
+  for (auto instance: detachedUnfinishedTaskInstances()) {
+    switch (instance.status()) {
+    case TaskInstance::Success:
+    case TaskInstance::Failure:
+    case TaskInstance::Canceled:
+    case TaskInstance::Running:
+    case TaskInstance::Waiting:
+      continue;
+    case TaskInstance::Queued:
+    case TaskInstance::Planned:
+        ;
+    }
     QString taskId = instance.task().id();
     Task t = newConfig.tasks().value(taskId);
     if (t.isNull()) {
       doCancelTaskInstance(instance, true,
-                      "canceling queued task while reloading configuration "
-                      "because this task no longer exists");
+                           "canceling task instance while reloading "
+                           "configuration because this task no longer exists");
     } else {
       Log::info(taskId, instance.id())
-          << "replacing task definition in queued request while reloading "
+          << "replacing task definition in task instance while reloading "
              "configuration";
       instance.setTask(t);
       _unfinishedTasks.insert(instance.idAsLong(), instance);
