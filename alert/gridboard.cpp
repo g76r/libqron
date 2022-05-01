@@ -280,6 +280,29 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
   setData(d);
 }
 
+void Gridboard::applyNewConfig(const Gridboard &other) {
+  auto d = data();
+  auto o = other.data();
+  bool clear = false;
+  if (o->_id != d->_id)
+    return;
+  d->_label = o->_label;
+  d->_info = o->_info;
+  if (d->_pattern != o->_pattern) {
+    clear = true;
+    d->_pattern = o->_pattern;
+    d->_patternRegexp = o->_patternRegexp;
+  }
+  if (d->_dimensions != o->_dimensions) // ids are not the same in same order
+    clear = true;
+  d->_dimensions = o->_dimensions;
+  d->_params = o->_params;
+  d->_warningDelay = o->_warningDelay;
+  qDebug() << "apply new config" << d->_id << clear;
+  if (clear)
+    this->clear();
+}
+
 PfNode Gridboard::toPfNode() const {
   const GridboardData *d = data();
   if (!d)
@@ -373,7 +396,11 @@ void Gridboard::clear() {
   d->_currentItemsCount = 0;
 }
 
-inline QString formatted(QString text, QString key, ParamSet params) {
+void Gridboard::detach() {
+  SharedUiItem::detachedData<GridboardData>();
+}
+
+inline static QString formatted(QString text, QString key, ParamSet params) {
   StringsParamsProvider slpp(text);
   return params.value(key, text, true, &slpp);
 }

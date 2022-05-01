@@ -131,7 +131,27 @@ void Alerter::doSetConfig(AlerterConfig config) {
   _alertSubscriptionsCache.clear();
   _alertSettingsCache.clear();
   _config = config;
-  _gridboards = config.gridboards(); // LATER merge with current data
+  auto newboards = config.gridboards();
+  auto gridboards = _gridboards.lockedData();
+  QSet<QString> ids;
+  for (auto id: (*gridboards).keys()) {
+    auto &g = (*gridboards)[id];
+    bool found = false;
+    ids << id;
+    for (auto newg: newboards)
+      if (newg.id() == id) {
+        g.applyNewConfig(newg);
+        found = true;
+      }
+    if (!found)
+      gridboards->remove(id);
+  }
+  for (auto newg: newboards) {
+    auto id = newg.id();
+    if (!(*gridboards).contains(id))
+      gridboards->insert(id, newg);
+  }
+  gridboards.unlock();
   // LATER recompute visibilityDate and cancellationDate in statefulAlerts and emittedAlerts
   emit paramsChanged(_config.params(), oldConfig.params(), "alertparams");
   emit configChanged(_config);
@@ -513,21 +533,15 @@ qint64 Alerter::duplicateEmitDelay(QString alertId) {
 
 Gridboard Alerter::gridboard(QString gridboardId) {
   auto gridboards = _gridboards.lockedData();
-  for (auto gridboard: *gridboards)
-    if (gridboard.id() == gridboardId)
-      return gridboard;
-  return Gridboard();
+  auto g = (*gridboards).value(gridboardId);
+  g.detach();
+  return g;
 }
 
 void Alerter::clearGridboard(QString gridboardId) {
   auto gridboards = _gridboards.lockedData();
-  for (int i = 0; i < gridboards->size(); ++i) {
-    Gridboard &gridboard = (*gridboards)[i];
-    if (gridboard.id() == gridboardId) {
-      gridboard.clear();
-      break;
-    }
-  }
+  if ((*gridboards).contains(gridboardId))
+    (*gridboards)[gridboardId].clear();
 }
 
 qint64 Alerter::gridboardsEvaluationsCounter() const {

@@ -63,6 +63,8 @@ public:
   PfNode toPfNode() const;
   void update(QRegularExpressionMatch match, Alert alert);
   void clear();
+  void detach();
+  void applyNewConfig(const Gridboard &other);
   QString toHtml() const;
 
 private:

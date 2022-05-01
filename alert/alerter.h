@@ -135,7 +135,7 @@ class LIBQRONSHARED_EXPORT Alerter : public QObject {
   _cancelNotificationsCounter, _totalChannelsNotificationsCounter;
   int _rulesCacheSize, _rulesCacheHwm, _deduplicatingAlertsCount,
   _deduplicatingAlertsHwm;
-  AtomicValue<QList<Gridboard>> _gridboards;
+  AtomicValue<QHash<QString,Gridboard>> _gridboards;
 
 public:
   explicit Alerter();
