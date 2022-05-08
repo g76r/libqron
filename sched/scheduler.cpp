@@ -1014,7 +1014,7 @@ nexthost:;
 }
 
 void Scheduler::taskInstanceStoppedOrCanceled(
-    TaskInstance instance, Executor *executor, bool processCanceledAsFailure) {
+    TaskInstance instance, Executor *executor, bool markCanceledAsFailure) {
   if (executor) {
     if (executor->isTemporary())
       executor->deleteLater();
@@ -1024,7 +1024,7 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   _runningExecutors.remove(instance.idAsLong());
   auto herder = instance.herder();
   if (herder != instance) {
-    taskInstanceFinishedOrCanceled(instance, processCanceledAsFailure);
+    taskInstanceFinishedOrCanceled(instance, markCanceledAsFailure);
     if (_waitingTasks.contains(herder.idAsLong())) {
       TaskInstanceList &sheeps = _waitingTasks[herder.idAsLong()];
       sheeps.removeOne(instance);
@@ -1050,7 +1050,7 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   auto waitingTasks = _waitingTasks[instance.idAsLong()];
   if (instance.status() == TaskInstance::Canceled || waitingTasks.isEmpty()
       || configuredTask.herdingPolicy() == Task::NoWait) {
-    taskInstanceFinishedOrCanceled(instance, processCanceledAsFailure);
+    taskInstanceFinishedOrCanceled(instance, markCanceledAsFailure);
     return;
   }
   Log::info(instance.task().id(), instance.id())
