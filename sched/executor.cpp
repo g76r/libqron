@@ -212,7 +212,7 @@ void Executor::dockerMean() {
   const bool shouldInit = params.valueAsBool("docker.init", true);
   const bool shouldRm = params.valueAsBool("docker.rm", true);
   if (image.isEmpty()) {
-    Log::warning(_instance.task().id(), _instance.idAsLong())
+    Log::error(_instance.task().id(), _instance.idAsLong())
         << "cannot execute container with empty image name '"
         << _instance.task().id() << "'";
     taskInstanceStopping(false, -1);
