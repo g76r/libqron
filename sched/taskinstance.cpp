@@ -517,8 +517,11 @@ QSet<QString> TaskInstancePseudoParamsProvider::keys() const {
 
 void TaskInstance::setTask(Task task) {
   TaskInstanceData *d = data();
-  if (d)
+  if (d) {
     d->_task = task;
+    auto p = d->_params.lockedData();
+    p->setParent(task.params());
+  }
 }
 
 bool TaskInstance::force() const {
