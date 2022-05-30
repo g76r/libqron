@@ -23,7 +23,8 @@ public:
   virtual ~ConditionData();
   virtual QString toString() const;
   virtual QString conditionType() const;
-  virtual bool evaluate(TaskInstance taskContext, ParamSet eventContext) const;
+  virtual bool evaluate(TaskInstance instance, TaskInstance herder,
+                        QSet<TaskInstance> herdedTasks) const;
   virtual PfNode toPfNode() const;
   virtual bool isEmpty() const;
 };

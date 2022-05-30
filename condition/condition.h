@@ -36,8 +36,8 @@ public:
   ~Condition();
   bool isNull() const { return !d; }
   bool isEmpty() const;
-  bool evaluate(TaskInstance taskContext,
-                ParamSet eventContext = ParamSet()) const;
+  bool evaluate(TaskInstance instance, TaskInstance herder,
+                QSet<TaskInstance> herdedTasks) const;
   /** Human readable description of action */
   QString toString() const;
   /** Type of action for programmatic test, e.g. "anyfinished" */

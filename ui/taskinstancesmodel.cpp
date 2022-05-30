@@ -16,8 +16,7 @@
 TaskInstancesModel::TaskInstancesModel(QObject *parent, int maxrows,
                                      bool keepFinished)
   : SharedUiItemsTableModel(parent), _keepFinished(keepFinished) {
-  setHeaderDataFromTemplate(TaskInstance(Task(), false, ParamSet(),
-                                         TaskInstance()));
+  setHeaderDataFromTemplate(TaskInstance(Task(), false, ParamSet(), 0));
   setDefaultInsertionPoint(SharedUiItemsTableModel::FirstItem);
   setMaxrows(maxrows);
 }

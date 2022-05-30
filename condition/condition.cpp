@@ -45,7 +45,8 @@ QString ConditionData::conditionType() const {
   return "unknown"; // should never happen
 }
 
-bool ConditionData::evaluate(TaskInstance, ParamSet) const {
+bool ConditionData::evaluate(TaskInstance, TaskInstance,
+                        QSet<TaskInstance>) const {
   return false; // should never happen
 }
 
@@ -69,9 +70,9 @@ bool Condition::isEmpty() const {
   return d ? d->isEmpty() : true;
 }
 
-bool Condition::evaluate(TaskInstance taskContext,
-    ParamSet eventContext) const {
-  return d ? d->evaluate(taskContext, eventContext) : false;
+bool Condition::evaluate(TaskInstance instance, TaskInstance herder,
+  QSet<TaskInstance> herdedTasks) const {
+  return d ? d->evaluate(instance, herder, herdedTasks) : false;
 }
 
 PfNode Condition::toPfNode() const {

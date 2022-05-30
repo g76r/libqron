@@ -214,9 +214,8 @@ static bool planOrRequestCommonPreProcess(
   return true;
 }
 
-static void planOrRequestCommonPostProcess(
+void Scheduler::planOrRequestCommonPostProcess(
     TaskInstance instance, TaskInstance herder,
-    QHash<quint64,TaskInstanceList> &waitingTasks,
     ParamSet overridingParams) {
   auto params = instance.params();
   auto instanceparams = instance.task().instanceparams();
@@ -233,46 +232,29 @@ static void planOrRequestCommonPostProcess(
   }
   if (herder.isNull() || herder == instance)
     return;
-  herder.appendHerdedTask(instance);
-  waitingTasks[herder.idAsLong()] << instance;
+  _awaitedTasks[herder.idAsLong()] << instance.idAsLong();
+  QSet<quint64> &herdedTasks = _unfinishedHerds[herder.idAsLong()];
+  herdedTasks << instance.idAsLong();
+  herder.appendToHerdedTasksCaption(instance.idSlashId());
   Log::info(herder.task().id(), herder.id())
-      << "task appended to herded tasks: "
-      << instance.task().id()+"/"+instance.id();
+      << "task appended to herded tasks: " << instance.idSlashId();
 }
 
 TaskInstanceList Scheduler::requestTask(
-    QString taskId, ParamSet overridingParams, bool force, QString herdId) {
+    QString taskId, ParamSet overridingParams, bool force, quint64 herdid) {
   if (this->thread() == QThread::currentThread())
-    return doRequestTask(taskId, overridingParams, force, herdId);
+    return doRequestTask(taskId, overridingParams, force, herdid);
   TaskInstanceList instances;
   QMetaObject::invokeMethod(this, [this,&instances,taskId,overridingParams,
-                            force,herdId](){
-      instances = doRequestTask(taskId, overridingParams, force, herdId);
-    }, Qt::BlockingQueuedConnection);
-  return instances;
-}
-
-TaskInstanceList Scheduler::requestTask(
-    QString taskId, ParamSet overridingParams, bool force, TaskInstance herder) {
-  if (this->thread() == QThread::currentThread())
-    return doRequestTask(taskId, overridingParams, force, herder);
-  TaskInstanceList instances;
-  QMetaObject::invokeMethod(this, [this,&instances,taskId,overridingParams,
-                            force,herder](){
-      instances = doRequestTask(taskId, overridingParams, force, herder);
+                            force,herdid](){
+      instances = doRequestTask(taskId, overridingParams, force, herdid);
     }, Qt::BlockingQueuedConnection);
   return instances;
 }
 
 TaskInstanceList Scheduler::doRequestTask(
-    QString taskId, ParamSet overridingParams, bool force, QString herdId) {
-  TaskInstance herder = _unfinishedTasks.value(herdId.toLongLong());
-  return doRequestTask(taskId, overridingParams, force, herder);
-}
-
-TaskInstanceList Scheduler::doRequestTask(
-    QString taskId, ParamSet overridingParams, bool force,
-    TaskInstance herder) {
+  QString taskId, ParamSet overridingParams, bool force, quint64 herdid) {
+  TaskInstance herder = _unfinishedTasks.value(herdid);
   TaskInstanceList instances;
   Task task = config().tasks().value(taskId);
   if (!planOrRequestCommonPreProcess(taskId, task, overridingParams))
@@ -281,7 +263,7 @@ TaskInstanceList Scheduler::doRequestTask(
   if (cluster.balancing() == Cluster::Each) {
     quint64 groupId = 0;
     foreach (Host host, cluster.hosts()) {
-      TaskInstance instance(task, groupId, force,  overridingParams, herder);
+      TaskInstance instance(task, groupId, force, overridingParams, herdid);
       if (!groupId) { // first iteration
         groupId = instance.groupId();
         if (herder.isNull())
@@ -293,15 +275,14 @@ TaskInstanceList Scheduler::doRequestTask(
         instances.append(instance);
     }
   } else {
-    TaskInstance request(task, force, overridingParams, herder);
-    request = enqueueTaskInstance(request);
-    if (!request.isNull())
-      instances.append(request);
+    TaskInstance instance(task, force, overridingParams, herdid);
+    instance = enqueueTaskInstance(instance);
+    if (!instance.isNull())
+      instances.append(instance);
   }
   if (!instances.isEmpty()) {
     for (auto instance: instances) {
-      planOrRequestCommonPostProcess(instance, herder, _waitingTasks,
-                                     overridingParams);
+      planOrRequestCommonPostProcess(instance, herder, overridingParams);
       emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
       triggerPlanActions(instance);
       Log::debug(taskId, instance.idAsLong())
@@ -316,41 +297,18 @@ TaskInstanceList Scheduler::doRequestTask(
 }
 
 TaskInstanceList Scheduler::planTask(
-    QString taskId, ParamSet overridingParams, bool force, QString herdId,
+  QString taskId, ParamSet overridingParams, bool force, quint64 herdid,
     Condition queuewhen, Condition cancelwhen) {
   if (this->thread() == QThread::currentThread())
-    return doPlanTask(taskId, overridingParams, force, herdId, queuewhen,
+    return doPlanTask(taskId, overridingParams, force, herdid, queuewhen,
                       cancelwhen);
   TaskInstanceList instances;
   QMetaObject::invokeMethod(this, [this,&instances,taskId,overridingParams,
-             force,herdId,queuewhen,cancelwhen](){
-        instances = doPlanTask(taskId, overridingParams, force, herdId,
+             force,herdid,queuewhen,cancelwhen](){
+        instances = doPlanTask(taskId, overridingParams, force, herdid,
                                queuewhen, cancelwhen);
       }, Qt::BlockingQueuedConnection);
   return instances;
-}
-
-TaskInstanceList Scheduler::planTask(
-    QString taskId, ParamSet overridingParams, bool force, TaskInstance herder,
-    Condition queuewhen, Condition cancelwhen) {
-  if (this->thread() == QThread::currentThread())
-    return doPlanTask(taskId, overridingParams, force, herder, queuewhen,
-                      cancelwhen);
-  TaskInstanceList instances;
-  QMetaObject::invokeMethod(this, [this,&instances,taskId,overridingParams,
-             force,herder,queuewhen,cancelwhen](){
-        instances = doPlanTask(taskId, overridingParams, force, herder,
-                               queuewhen, cancelwhen);
-      }, Qt::BlockingQueuedConnection);
-  return instances;
-}
-
-TaskInstanceList Scheduler::doPlanTask(
-    QString taskId, ParamSet overridingParams, bool force, QString herdId,
-    Condition queuewhen, Condition cancelwhen) {
-  TaskInstance herder = _unfinishedTasks.value(herdId.toLongLong());
-  return doPlanTask(taskId, overridingParams, force, herder, queuewhen,
-                    cancelwhen);
 }
 
 static Condition guessCancelwhenCondition(
@@ -379,8 +337,9 @@ static Condition guessCancelwhenCondition(
 }
 
 TaskInstanceList Scheduler::doPlanTask(
-    QString taskId, ParamSet overridingParams, bool force, TaskInstance herder,
-    Condition queuewhen, Condition cancelwhen) {
+  QString taskId, ParamSet overridingParams, bool force, quint64 herdid,
+  Condition queuewhen, Condition cancelwhen) {
+  TaskInstance herder = _unfinishedTasks.value(herdid);
   TaskInstanceList instances;
   Task task = config().tasks().value(taskId);
   if (!planOrRequestCommonPreProcess(taskId, task, overridingParams))
@@ -418,16 +377,15 @@ TaskInstanceList Scheduler::doPlanTask(
 
   if (cancelwhen.isEmpty())
     cancelwhen = guessCancelwhenCondition(queuewhen, cancelwhen);
-  TaskInstance instance(task, force, overridingParams, herder, queuewhen,
+  TaskInstance instance(task, force, overridingParams, herdid, queuewhen,
                         cancelwhen);
   _unfinishedTasks.insert(instance.idAsLong(), instance);
   Log::debug(taskId, instance.idAsLong())
-      << "planning task " << taskId << "/" << instance.id() << " "
+      << "planning task " << instance.idSlashId() << " "
       << overridingParams << " with herdid " << instance.herdid()
       << " and queue condition " << instance.queuewhen().toString()
       << " and cancel condition " << instance.cancelwhen().toString();
-  planOrRequestCommonPostProcess(instance, herder, _waitingTasks,
-                                 overridingParams);
+  planOrRequestCommonPostProcess(instance, herder, overridingParams);
   if (herder.isNull()) {
     emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
     triggerPlanActions(instance);
@@ -437,7 +395,8 @@ TaskInstanceList Scheduler::doPlanTask(
     reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
   }
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
-  emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
+  if (!herder.isNull())
+    emit itemChanged(herder, herder, QStringLiteral("taskinstance"));
   Log::debug(taskId, instance.idAsLong())
       << "task instance params after planning" << instance.params();
   if (!instance.isNull())
@@ -458,8 +417,8 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
   if (!instance.force()) {
     if (!task.enabled()) {
       doCancelTaskInstance(instance, false,
-                           "canceling task because it is disabled : " + taskId
-                               + "/" + instance.id());
+                           "canceling task because it is disabled : "
+                               + instance.idSlashId());
       return TaskInstance();
     }
     auto mqi = params.evaluate(task.maxQueuedInstances(), &ppp).toInt();
@@ -486,7 +445,7 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
         doCancelTaskInstance(
             other, true,
             "canceling task because another instance of the same task is "
-            "queued : " + taskId + "/" + instance.id()
+            "queued : " + instance.idSlashId()
             + " with same deduplicate criterion : " + newcrit);
         ++canceled;
       }
@@ -507,7 +466,7 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
   _unfinishedTasks.insert(instance.idAsLong(), instance);
   _alerter->cancelAlert("scheduler.maxqueuedrequests.reached");
   Log::debug(taskId, instance.idAsLong())
-      << "queuing task " << taskId << "/" << instance.id()
+      << "queuing task " << instance.idSlashId()
       << " with request group id " << instance.groupId()
       << " and herdid " << instance.herdid();
   // note: a request must always be queued even if the task can be started
@@ -533,13 +492,14 @@ TaskInstance Scheduler::cancelTaskInstance(quint64 id) {
 
 void Scheduler::cancelOrAbortHerdedTasks(
     TaskInstance herder, bool allowEvenAbort) {
-  for (auto instance: herder.herdedTasks()) { // _waitingTasks.value(herder) ?
+  auto herdedTasks = this->herdedTasks(herder.idAsLong());
+  for (auto instance: herdedTasks) {
     switch (instance.status()) {
     case TaskInstance::Planned:
     case TaskInstance::Queued:
       doCancelTaskInstance(
           instance, false, "canceling task because herder task was canceled : "
-                               + herder.task().id() + "/" + herder.id());
+                               + herder.idSlashId());
       break;
     case TaskInstance::Running:
       if (allowEvenAbort)
@@ -714,10 +674,10 @@ bool Scheduler::checkTrigger(CronTrigger trigger, Task task, QString taskId) {
       overridingParams
           .setValue(key, config().params()
                     .value(trigger.overridingParams().rawValue(key)));
-    TaskInstanceList requests = requestTask(taskId, overridingParams);
-    if (!requests.isEmpty())
-      for (TaskInstance request : requests)
-        Log::info(taskId, request.idAsLong())
+    TaskInstanceList instances = requestTask(taskId, overridingParams);
+    if (!instances.isEmpty())
+      for (auto ti : instances)
+        Log::info(taskId, ti.idAsLong())
             << "cron trigger " << trigger.humanReadableExpression()
             << " triggered task " << taskId;
     //else
@@ -779,11 +739,10 @@ void Scheduler::postNotice(QString notice, ParamSet params) {
                 ParamSet::escape(
                   trigger.overridingParams().value(key, &params)));
         }
-        TaskInstanceList requests
-            = requestTask(task.id(), overridingParams);
-        if (!requests.isEmpty())
-          foreach (TaskInstance request, requests)
-            Log::info(task.id(), request.idAsLong())
+        TaskInstanceList instances = requestTask(task.id(), overridingParams);
+        if (!instances.isEmpty())
+          for (auto ti: instances)
+            Log::info(task.id(), ti.idAsLong())
                 << "notice " << trigger.humanReadableExpression()
                 << " triggered task " << task.id();
         else
@@ -829,6 +788,18 @@ void Scheduler::customEvent(QEvent *event) {
   QObject::customEvent(event);
 }
 
+QSet<TaskInstance> Scheduler::herdedTasks(
+  quint64 herdid, bool includeFinished) {
+  QSet<TaskInstance> tasks;
+  for (auto id: includeFinished ? _unfinishedHerds.value(herdid)
+                                : _awaitedTasks.value(herdid)) {
+    auto i = _unfinishedTasks.value(id);
+    if (!i.isNull())
+      tasks << i;
+  }
+  return tasks;
+}
+
 void Scheduler::enqueueAsManyTaskInstancesAsPossible() {
   if (_shutingDown)
     return;
@@ -839,21 +810,23 @@ void Scheduler::enqueueAsManyTaskInstancesAsPossible() {
       continue;
     if (instance.status() != TaskInstance::Planned)
       continue;
-    auto herder = instance.herder();
+    auto herder = _unfinishedTasks.value(instance.herdid());
     if (herder.status() == TaskInstance::Planned || // should never happen
         herder.status() == TaskInstance::Queued) // e.g. waiting for resource
       continue;
+    QSet<TaskInstance> herdedTasks = this->herdedTasks(instance.herdid());
     Condition queuewhen = instance.queuewhen();
-    if (queuewhen.evaluate(instance)) {
+    if (queuewhen.evaluate(instance, herder, herdedTasks)) {
       Log::info(instance.task().id(), instance.id())
           << "queuing task because queue condition is met: "
           << queuewhen.toString();
       instance = enqueueTaskInstance(instance);
-      itemChanged(instance, instance, QStringLiteral("taskinstance"));
+      if (!instance.isNull()) [[likely]]
+        emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
       continue;
     }
     Condition cancelwhen = instance.cancelwhen();
-    if (cancelwhen.evaluate(instance)) {
+    if (cancelwhen.evaluate(instance, herder, herdedTasks)) {
       doCancelTaskInstance(instance, false,
                            "canceling task because cancel condition is met: "
                                +cancelwhen.toString());
@@ -1022,16 +995,16 @@ void Scheduler::taskInstanceStoppedOrCanceled(
       _availableExecutors.append(executor);
   }
   _runningExecutors.remove(instance.idAsLong());
-  auto herder = instance.herder();
-  if (herder != instance) {
+  auto herder = _unfinishedTasks.value(instance.herdid());
+  if (!instance.isHerder()) {
     taskInstanceFinishedOrCanceled(instance, markCanceledAsFailure);
-    if (_waitingTasks.contains(herder.idAsLong())) {
-      TaskInstanceList &sheeps = _waitingTasks[herder.idAsLong()];
-      sheeps.removeOne(instance);
+    if (_awaitedTasks.contains(herder.idAsLong())) {
+      QSet<quint64> &awaitedTasks = _awaitedTasks[herder.idAsLong()];
+      awaitedTasks.remove(instance.idAsLong());
       Log::info(herder.task().id(), herder.id())
-          << "herded task finished: " << instance.task().id()+"/"+instance.id()
-          << " remaining: " << sheeps.size() << " : " << sheeps;
-      if (sheeps.isEmpty() && herder.status() == TaskInstance::Waiting)
+          << "herded task finished: " << instance.idSlashId()
+          << " remaining: " << awaitedTasks.size() << " : " << awaitedTasks;
+      if (awaitedTasks.isEmpty() && herder.status() == TaskInstance::Waiting)
         taskInstanceFinishedOrCanceled(herder, false);
       else
         reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
@@ -1047,7 +1020,7 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   }
   // configured and requested tasks are different if config was reloaded
   Task configuredTask = config().tasks().value(instance.task().id());
-  auto waitingTasks = _waitingTasks[instance.idAsLong()];
+  auto waitingTasks = _awaitedTasks[instance.idAsLong()];
   if (instance.status() == TaskInstance::Canceled || waitingTasks.isEmpty()
       || configuredTask.herdingPolicy() == Task::NoWait) {
     taskInstanceFinishedOrCanceled(instance, markCanceledAsFailure);
@@ -1058,6 +1031,44 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   instance.setAbortable();
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
   reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
+}
+
+static void recomputeHerderSuccess(
+  TaskInstance &herder, QSet<TaskInstance> herdedTasks) {
+  if (herdedTasks.isEmpty())
+    return; // keep own status
+  switch(herder.task().herdingPolicy()) {
+    case Task::AllSuccess:
+      if (!herder.success())
+        return;
+      for (auto sheep: herdedTasks)
+        if (sheep.status() != TaskInstance::Success) {
+          herder.setSuccess(false);
+          return;
+        }
+      return;
+    case Task::NoFailure:
+      if (!herder.success())
+        return;
+      for (auto sheep: herdedTasks)
+        if (sheep.status() == TaskInstance::Failure) {
+          herder.setSuccess(false);
+          return;
+        }
+      return;
+    case Task::OneSuccess:
+      herder.setSuccess(false);
+      for (auto sheep: herdedTasks)
+        if (sheep.status() == TaskInstance::Success) {
+          herder.setSuccess(true);
+          return;
+        }
+      return;
+    case Task::OwnStatus:
+    case Task::NoWait:
+    case Task::HerdingPolicyUnknown: // should never happen
+      return;
+  }
 }
 
 void Scheduler::taskInstanceFinishedOrCanceled(
@@ -1077,7 +1088,8 @@ void Scheduler::taskInstanceFinishedOrCanceled(
     if (instance.task().runningCount() < instance.task().maxInstances())
       _alerter->cancelAlert("task.maxinstancesreached."+taskId);
   } else {
-    instance.setHerderSuccess(instance.task().herdingPolicy());
+    auto herdedTasks = this->herdedTasks(instance.idAsLong());
+    recomputeHerderSuccess(instance, herdedTasks);
     configuredTask.fetchAndAddRunningCount(-1);
     QHash<QString,qint64> taskResources = requestedTask.resources();
     QHash<QString,qint64> hostConsumedResources =
@@ -1118,8 +1130,14 @@ void Scheduler::taskInstanceFinishedOrCanceled(
         _alerter->cancelAlert("task.tooshort."+taskId);
     }
   }
-  _waitingTasks.remove(instance.idAsLong());
-  _unfinishedTasks.remove(instance.idAsLong());
+  _awaitedTasks.remove(instance.idAsLong());
+  // forget herded tasks only when the whole herd is finished
+  if (instance.herdid() == instance.idAsLong()) {
+    _unfinishedTasks.remove(instance.idAsLong());
+    for (auto i: _unfinishedHerds.value(instance.idAsLong()))
+      _unfinishedTasks.remove(i);
+  }
+  _unfinishedHerds.remove(instance.idAsLong());
   emit itemChanged(instance, instance, QStringLiteral("taskinstance"));
   emit itemChanged(configuredTask, configuredTask, QStringLiteral("task"));
   reevaluateQueuedTaskInstances();
@@ -1283,4 +1301,20 @@ void Scheduler::triggerFinishActions(
   for (auto es: subs)
     if (es.triggerActions(&ppm, instance, filter))
       break;
+}
+
+void Scheduler::taskInstanceParamAppend(
+  quint64 taskinstanceid, QString key, QString value) {
+  if (this->thread() == QThread::currentThread())
+    doTaskInstanceParamAppend(taskinstanceid, key, value);
+  QMetaObject::invokeMethod(this, [this,taskinstanceid,key,value](){
+      doTaskInstanceParamAppend(taskinstanceid, key, value);
+    }, Qt::QueuedConnection); // don't wait for return, async !
+}
+
+void Scheduler::doTaskInstanceParamAppend(
+  quint64 taskinstanceid, QString key, QString value) {
+  if (!_unfinishedTasks.contains(taskinstanceid))
+    return;
+  _unfinishedTasks[taskinstanceid].paramAppend(key, value);
 }

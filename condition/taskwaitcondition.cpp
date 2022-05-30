@@ -96,7 +96,7 @@ class Counters {
   quint32 success = 0;
 
 public:
-  Counters(QList<quint64> ids, TaskInstanceList tasks) {
+  Counters(QSet<quint64> ids, QSet<TaskInstance> tasks) {
     for (auto task: tasks) {
       quint64 id = task.idAsLong();
       if (!ids.contains(id))
@@ -196,9 +196,9 @@ public:
   QString conditionType() const override {
     return "taskwait";
   }
-  bool evaluate(TaskInstance instance, ParamSet) const override {
-    return Counters(evaluateIds(instance),
-                    instance.herder().herdedTasks()).evaluate(_op);
+  bool evaluate(TaskInstance instance, TaskInstance herder,
+                QSet<TaskInstance> herdedTasks) const override {
+    return Counters(evaluateIds(instance, herder), herdedTasks).evaluate(_op);
   }
   bool isEmpty() const override {
     return false;
@@ -206,7 +206,7 @@ public:
   PfNode toPfNode() const override {
     return PfNode(TaskWaitCondition::operatorAsString(_op), _expr);
   }
-  QList<quint64> evaluateIds(TaskInstance instance) const;
+  QSet<quint64> evaluateIds(TaskInstance instance, TaskInstance herder) const;
 };
 
 TaskWaitCondition::TaskWaitCondition(PfNode node) {
@@ -237,9 +237,9 @@ QString TaskWaitCondition::expr() const {
   return data ? data->_expr : QString();
 }
 
-QList<quint64> TaskWaitConditionData::evaluateIds(TaskInstance instance) const {
-  QList<quint64> ids;
-  auto herder = instance.herder();
+QSet<quint64> TaskWaitConditionData::evaluateIds(
+  TaskInstance instance, TaskInstance herder) const {
+  QSet<quint64> ids;
   auto ipp = instance.pseudoParams();
   auto hpp = herder.pseudoParams();
   auto ppm = ParamsProviderMerger(&hpp)(herder.params())(&ipp)(instance.params());

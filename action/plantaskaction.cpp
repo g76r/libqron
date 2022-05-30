@@ -43,14 +43,14 @@ public:
       if (_scheduler->taskExists(idIfLocalToGroup))
         id = idIfLocalToGroup;
     }
-    TaskInstance herder = _lone ? TaskInstance() : parentInstance.herder();
+    quint64 herdid = _lone ? 0 : parentInstance.herdid();
     ParamSet overridingParams;
     for (auto key: _overridingParams.keys())
       overridingParams.setValue(key, _overridingParams.value(key, context));
     if (!parentInstance.isNull())
       overridingParams.setValue("!parenttaskinstanceid", parentInstance.id());
     TaskInstanceList instances = _scheduler->planTask(
-        id, overridingParams, _force, herder, _queuewhen, _cancelwhen);
+      id, overridingParams, _force, herdid, _queuewhen, _cancelwhen);
     if (instances.isEmpty()) {
       Log::error(parentInstance.task().id(), parentInstance.idAsLong())
           << "plantask action failed to plan execution of task "
@@ -70,10 +70,11 @@ public:
       auto ppp = childInstance.pseudoParams();
       context->prepend(childInstance.params());
       context->prepend(&ppp);
-      if (!herder.isNull()) {
+      if (herdid != 0) {
         for (auto key: _paramappend.keys()) {
           auto value = ParamSet().evaluate(_paramappend.value(key), context);
-          herder.paramAppend(key, ParamSet::escape(value));
+          _scheduler->taskInstanceParamAppend(herdid, key,
+                                              ParamSet::escape(value));
         }
       }
     }

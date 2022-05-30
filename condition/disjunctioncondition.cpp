@@ -29,12 +29,12 @@ public:
     return s;
   }
   QString conditionType() const override { return "disjunction"; }
-  bool evaluate(TaskInstance taskContext,
-                ParamSet eventContext) const override {
+  bool evaluate(TaskInstance instance, TaskInstance herder,
+                QSet<TaskInstance> herdedTasks) const override {
     if (_conditions.isEmpty())
       return true;
     for (auto condition: _conditions) {
-      if (condition.evaluate(taskContext, eventContext))
+      if (condition.evaluate(instance, herder, herdedTasks))
         return true;
     }
     return false;

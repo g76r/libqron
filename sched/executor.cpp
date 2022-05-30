@@ -577,7 +577,7 @@ void Executor::scatterMean() {
   const auto paramappend = params.rawValue("scatter.paramappend").trimmed();
   const auto force = params.valueAsBool("scatter.force", false, true, &ppp);
   const auto lone = params.valueAsBool("scatter.lone", false, true, &ppp);
-  const auto herder = lone ? TaskInstance() : _instance.herder();
+  const auto herdid = lone ? 0 : _instance.herdid();
   // LATER const auto mean = params.value("scatter.mean", "plantask", &ppm);
   // LATER queuewhen ?
   TaskInstanceList instances;
@@ -601,7 +601,7 @@ void Executor::scatterMean() {
       overridingParams.setValue(key, ParamSet::escape(value));
     }
     auto instance = _scheduler->planTask(
-        taskid, overridingParams, force, herder, Condition(), Condition())
+        taskid, overridingParams, force, herdid, Condition(), Condition())
         .value(0);
     if (instance.isNull()) {
       Log::error(_instance.task().id(), _instance.idAsLong())
@@ -616,7 +616,7 @@ void Executor::scatterMean() {
       const auto ppp = instance.pseudoParams();
       ppm.prepend(instance.params()).prepend(&ppp);
       auto value = ParamSet().evaluate(rawvalue, &ppm);
-      herder.paramAppend(key, value);
+      _scheduler->taskInstanceParamAppend(herdid, key, value);
     }
     instances << instance;
   }

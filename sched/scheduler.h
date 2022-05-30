@@ -47,8 +47,9 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   Q_OBJECT
   Q_DISABLE_COPY(Scheduler)
   QThread *_thread;
-  QMap<quint64,TaskInstance> _unfinishedTasks;
-  QHash<quint64,TaskInstanceList> _waitingTasks;// herders waiting lists
+  QMap<quint64,TaskInstance> _unfinishedTasks; // task instances repository
+  QMap<quint64,QSet<quint64>> _unfinishedHerds; // herders -> herded tasks
+  QMap<quint64,QSet<quint64>> _awaitedTasks; // herders waiting lists
   QHash<quint64,Executor*> _runningExecutors;
   QSet<quint64> _dirtyHerds; // for which planned tasks must be reevaluated
   QList<Executor*> _availableExecutors;
@@ -94,21 +95,16 @@ public slots:
    * @return isEmpty() if task cannot be queued
    * @see RequestFormField */
   TaskInstanceList requestTask(
-      QString taskId, ParamSet overridingParams = ParamSet(),
-      bool force = false, TaskInstance herder = TaskInstance());
-  TaskInstanceList requestTask(
-      QString taskId, ParamSet overridingParams, bool force, QString herdId);
+    QString taskId, ParamSet overridingParams, bool force = false,
+    quint64 herdid = 0);
   /** Plan task execution with conditions that must be met to queue it or
    * cancel it.
    * This method is thread-safe.
    * This method will block current thread until the request is either
    * queued either denied by Scheduler thread. */
-  TaskInstanceList planTask(
-      QString taskId, ParamSet overridingParams, bool force,
-      TaskInstance herder, Condition queuewhen, Condition cancelwhen);
-  TaskInstanceList planTask(
-      QString taskId, ParamSet overridingParams, bool force, QString herdId,
-      Condition queuewhen, Condition cancelwhen);
+  TaskInstanceList planTask(QString taskId, ParamSet overridingParams,
+                            bool force, quint64 herdid,
+                            Condition queuewhen, Condition cancelwhen);
   /** Cancel a planned or queued request.
    * @return TaskInstance.isNull() iff error (e.g. request not found or no
    * longer queued) */
@@ -165,6 +161,12 @@ public slots:
   /** Shutdown scheduler: stop starting tasks and wait for those already running
    * until deadline is reached). */
   void shutdown(QDeadlineTimer deadline = QDeadlineTimer::Forever);
+  /** Either set param if empty or append a space followed by value to current
+   * value.
+   * Thread-safe asynchronous call (won't wait for the param being appended,
+   * won't guarantee any order if several calls are made in the same time). */
+  void taskInstanceParamAppend(quint64 taskinstanceid, QString key,
+                               QString value);
 
 public:
   // override config() to make it thread-safe
@@ -206,15 +208,9 @@ private:
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
                               = QDateTime::currentDateTime());
   TaskInstanceList doRequestTask(
-      QString taskId, ParamSet overridingParams, bool force,
-      TaskInstance herder);
-  TaskInstanceList doRequestTask(
-      QString taskId, ParamSet overridingParams, bool force, QString herdId);
+      QString taskId, ParamSet overridingParams, bool force, quint64 herdid);
   TaskInstanceList doPlanTask(
-      QString taskId, ParamSet overridingParams, bool force,
-      TaskInstance herder, Condition queuewhen, Condition cancelwhen);
-  TaskInstanceList doPlanTask(
-      QString taskId, ParamSet overridingParams, bool force, QString herdId,
+      QString taskId, ParamSet overridingParams, bool force, quint64 herdid,
       Condition queuewhen, Condition cancelwhen);
   TaskInstance enqueueTaskInstance(TaskInstance request);
   TaskInstance doCancelTaskInstance(
@@ -233,6 +229,11 @@ private:
   void triggerFinishActions(
       TaskInstance instance, std::function<bool(Action)> filter);
   void cancelOrAbortHerdedTasks(TaskInstance herder, bool allowEvenAbort);
+  void planOrRequestCommonPostProcess(
+    TaskInstance instance, TaskInstance herder,
+    ParamSet overridingParams);
+  QSet<TaskInstance> herdedTasks(quint64 herdid, bool includeFinished = true);
+  void doTaskInstanceParamAppend(quint64 taskinstanceid, QString key,
+                                 QString value);
 };
-
 #endif // SCHEDULER_H

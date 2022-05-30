@@ -36,11 +36,11 @@ public:
                             Canceled };
   TaskInstance();
   TaskInstance(const TaskInstance &);
-  TaskInstance(Task task, bool force, ParamSet params, TaskInstance herder,
+  TaskInstance(Task task, bool force, ParamSet params, quint64 herdid,
                Condition queuewhen = Condition(),
                Condition cancelwhen = Condition());
   TaskInstance(Task task, quint64 groupId, bool force,
-               ParamSet params, TaskInstance herder);
+               ParamSet params, quint64 herdid);
   TaskInstance &operator=(const TaskInstance &other) {
     SharedUiItem::operator=(other); return *this; }
   Task task() const;
@@ -50,6 +50,8 @@ public:
   void paramAppend(QString key, QString value) const;
   ParamSet params() const;
   quint64 idAsLong() const;
+  /** @return string of the form "taskid/taskinstanceid" */
+  QString idSlashId() const { return task().id()+'/'+id(); }
   quint64 groupId() const;
   QDateTime creationDatetime() const;
   QDateTime queueDatetime() const;
@@ -70,7 +72,6 @@ public:
   qint64 liveDurationMillis() const;
   bool success() const;
   void setSuccess(bool success) const;
-  void setHerderSuccess(Task::HerdingPolicy herdingpolicy) const;
   int returnCode() const;
   void setReturnCode(int returnCode) const;
   /** Note that this is the exact target on which the task is running/has been
@@ -107,12 +108,9 @@ public:
   QString command() const;
   bool abortable() const;
   void setAbortable(bool abortable = true) const;
-  /** @return herder (first task of a herd) if any, else *this */
-  TaskInstance herder() const;
-  /** syntaxic sugar for herder().idAsLong(); */
-  quint64 herdid() const { return herder().idAsLong(); }
-  TaskInstanceList herdedTasks() const;
-  void appendHerdedTask(TaskInstance sheep) const;
+  quint64 herdid() const;
+  bool isHerder() const { return herdid() == idAsLong(); }
+  void appendToHerdedTasksCaption(QString text) const;
   Condition queuewhen() const;
   Condition cancelwhen() const;
 
