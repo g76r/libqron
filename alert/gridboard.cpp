@@ -115,12 +115,12 @@ public:
     DimensionData *d = new DimensionData;
     QStringList idAndValue = node.contentAsTwoStringsList();
     d->_id = ConfigUtils::sanitizeId(
-          idAndValue.value(1), ConfigUtils::AlphanumId);
+          idAndValue.value(0), ConfigUtils::AlphanumId);
     if (d->_id.isEmpty()) {
       delete d;
       return;
     }
-    d->_rawValue = idAndValue.value(2);
+    d->_rawValue = idAndValue.value(1);
     if (d->_rawValue.isEmpty())
       d->_rawValue = "%"+d->_id;
     d->_label = node.attribute(QStringLiteral("label"));
