@@ -14,32 +14,22 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
 
-#include <QObject>
-#include <QSet>
-#include <QIODevice>
-#include "util/paramset.h"
-#include "config/taskgroup.h"
-#include "config/task.h"
-#include "config/host.h"
-#include "config/cluster.h"
-#include "sched/taskinstance.h"
-#include <QHash>
-#include "executor.h"
-#include <QVariant>
-#include "alert/alerter.h"
-#include "config/eventsubscription.h"
-#include "pf/pfnode.h"
-#include "auth/inmemoryauthenticator.h"
-#include "auth/inmemoryusersdatabase.h"
-#include <QFileSystemWatcher>
-#include "config/logfile.h"
 #include "config/qronconfigdocumentmanager.h"
+#include "taskinstance.h"
+#include "pf/pfnode.h"
 #include <random>
 #include <QDeadlineTimer>
 #include "condition/condition.h"
 
 class QThread;
+class QFileSystemWatcher;
 class CronTrigger;
+class Executor;
+class Alerter;
+class Authenticator;
+class InMemoryAuthenticator;
+class UsersDatabase;
+class InMemoryUsersDatabase;
 
 /** Core qron scheduler class.
  * Mainly responsible for configuration, queueing and event handling. */
@@ -72,8 +62,8 @@ public:
   ~Scheduler();
   void customEvent(QEvent *event);
   Alerter *alerter() { return _alerter; }
-  Authenticator *authenticator() { return _authenticator; }
-  UsersDatabase *usersDatabase() { return _usersDatabase; }
+  Authenticator *authenticator();
+  UsersDatabase *usersDatabase();
   QDateTime startdate() const {
     return QDateTime::fromMSecsSinceEpoch(_startdate); }
   QDateTime configdate() const {

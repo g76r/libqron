@@ -15,8 +15,6 @@
 #define HOST_H
 
 #include "libqron_global.h"
-#include <QSharedDataPointer>
-#include <QHash>
 #include "modelview/shareduiitem.h"
 #include "util/paramset.h"
 

@@ -13,6 +13,7 @@
  */
 #include "emitalertaction.h"
 #include "action_p.h"
+#include "alert/alerter.h"
 
 class EmitAlertActionData : public ActionData {
 public:

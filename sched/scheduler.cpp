@@ -33,6 +33,11 @@
 #include "condition/disjunctioncondition.h"
 #include "util/paramsprovidermerger.h"
 #include "action/action.h"
+#include "executor.h"
+#include <QFileSystemWatcher>
+#include "alert/alerter.h"
+#include "auth/inmemoryauthenticator.h"
+#include "auth/inmemoryusersdatabase.h"
 
 #define REEVALUATE_QUEUED_INSTANCES_EVENT (QEvent::Type(QEvent::User+1))
 #define REEVALUATE_PLANNED_INSTANCES_EVENT (QEvent::Type(QEvent::User+2))
@@ -1317,4 +1322,12 @@ void Scheduler::doTaskInstanceParamAppend(
   if (!_unfinishedTasks.contains(taskinstanceid))
     return;
   _unfinishedTasks[taskinstanceid].paramAppend(key, value);
+}
+
+Authenticator *Scheduler::authenticator() {
+  return _authenticator;
+}
+
+UsersDatabase *Scheduler::usersDatabase() {
+  return _usersDatabase;
 }

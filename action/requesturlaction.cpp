@@ -18,6 +18,7 @@
 #include "sysutil/parametrizednetworkrequest.h"
 #include "sysutil/parametrizedudpsender.h"
 #include "util/paramsprovidermerger.h"
+#include <QNetworkReply>
 
 class RequestUrlGlobalNetworkActionHub {
 public:

@@ -16,11 +16,9 @@
 
 #include <QSharedDataPointer>
 #include "config/task.h"
-#include "util/paramset.h"
 #include <QDateTime>
 #include "config/host.h"
 #include "util/paramset.h"
-#include "modelview/shareduiitem.h"
 #include "modelview/shareduiitemlist.h"
 #include "condition/condition.h"
 

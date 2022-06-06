@@ -15,8 +15,6 @@
 #define TASKGROUP_H
 
 #include "libqron_global.h"
-#include <QSharedData>
-#include <QList>
 #include "util/paramset.h"
 #include "modelview/shareduiitem.h"
 

@@ -13,6 +13,7 @@
  */
 #include "cancelalertaction.h"
 #include "action_p.h"
+#include "alert/alerter.h"
 
 class CancelAlertActionData : public ActionData {
 public:

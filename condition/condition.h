@@ -15,9 +15,7 @@
 #define CONDITION_H
 
 #include "libqron_global.h"
-#include <QSharedDataPointer>
 #include "util/paramset.h"
-#include <QStringList>
 #include "pf/pfnode.h"
 
 class ConditionData;

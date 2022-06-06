@@ -15,11 +15,8 @@
 #define TASK_H
 
 #include "libqron_global.h"
-#include <QSharedData>
 #include "util/paramset.h"
-#include <QSet>
 #include "taskgroup.h"
-#include <QList>
 #include "modelview/shareduiitemlist.h"
 
 class TaskData;
