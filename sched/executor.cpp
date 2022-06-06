@@ -433,7 +433,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
               << "background task '" << _instance.task().id()
               << "' failed, starting command finished with return code "
               << exitCode << " after "<< _instance.liveDurationMillis()
-              << " ms of duration";
+              << " ms of main task duration : " << _process->errorString();
             stopping = true;
             success = false;
             break;
@@ -441,13 +441,15 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
           Log::info(_instance.task().id(), _instance.idAsLong())
             << "background task '" << _instance.task().id() << "' started, "
             << "starting command finished with return code " << exitCode
-            << " after "<< _instance.liveDurationMillis() << " ms of duration";
+            << " after "<< _instance.liveDurationMillis()
+            << " ms of main task duration";
           break;
         case Started:
           Log::debug(_instance.task().id(), _instance.idAsLong())
             << "background task '" << _instance.task().id() << "' running, "
             << "status command finished with return code " << exitCode
-            << " after "<< _instance.liveDurationMillis() << " ms of duration";
+            << " after "<< _instance.liveDurationMillis()
+            << " ms of main task duration";
           if (exitCode == 0) // 0: still running
             break;
           stopping = true;
@@ -467,7 +469,8 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
           Log::info(_instance.task().id(), _instance.idAsLong())
             << "background task '" << _instance.task().id() << "' aborting, "
             << "aborting command finished with return code " << exitCode
-            << " after "<< _instance.liveDurationMillis() << " ms of duration";
+            << " after "<< _instance.liveDurationMillis()
+            << " ms of main task duration";
           QMetaObject::invokeMethod(this, &Executor::pollStatus,
                                     Qt::QueuedConnection);
           break;
