@@ -28,6 +28,7 @@
 #include <functional>
 #include "paramappendaction.h"
 #include "overrideparamaction.h"
+#include "execaction.h"
 
 Action::Action() {
 }
@@ -154,6 +155,8 @@ static RadixTree<std::function<Action(PfNode,Scheduler*)>> _actionBuilders {
    return ParamAppendAction(scheduler, node); } },
 { "overrideparam", [](PfNode node, Scheduler *scheduler) -> Action {
    return OverrideParamAction(scheduler, node); } },
+{ "exec", [](PfNode node, Scheduler *scheduler) -> Action {
+   return ExecAction(scheduler, node); } },
 };
 
 Action Action::createAction(PfNode node, Scheduler *scheduler) {

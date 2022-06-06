@@ -65,6 +65,7 @@ LIBS += -lqtpf -lp6core
 
 SOURCES += \
     action/donothingaction.cpp \
+    action/execaction.cpp \
     action/overrideparamaction.cpp \
     action/paramappendaction.cpp \
     action/plantaskaction.cpp \
@@ -132,6 +133,7 @@ SOURCES += \
 
 HEADERS += \
     action/donothingaction.h \
+    action/execaction.h \
     action/overrideparamaction.h \
     action/paramappendaction.h \
     action/plantaskaction.h \
