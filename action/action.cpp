@@ -26,6 +26,8 @@
 #include "donothingaction.h"
 #include "util/radixtree.h"
 #include <functional>
+#include "paramappendaction.h"
+#include "overrideparamaction.h"
 
 Action::Action() {
 }
@@ -148,6 +150,10 @@ static RadixTree<std::function<Action(PfNode,Scheduler*)>> _actionBuilders {
    return LogAction(scheduler, node); } },
 { { "donothing", "stop" }, [](PfNode node, Scheduler *) -> Action {
    return DoNothingAction(node.name()); } },
+{ "paramappend", [](PfNode node, Scheduler *scheduler) -> Action {
+   return ParamAppendAction(scheduler, node); } },
+{ "overrideparam", [](PfNode node, Scheduler *scheduler) -> Action {
+   return OverrideParamAction(scheduler, node); } },
 };
 
 Action Action::createAction(PfNode node, Scheduler *scheduler) {

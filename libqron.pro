@@ -65,6 +65,8 @@ LIBS += -lqtpf -lp6core
 
 SOURCES += \
     action/donothingaction.cpp \
+    action/overrideparamaction.cpp \
+    action/paramappendaction.cpp \
     action/plantaskaction.cpp \
     condition/condition.cpp \
     condition/disjunctioncondition.cpp \
@@ -130,6 +132,8 @@ SOURCES += \
 
 HEADERS += \
     action/donothingaction.h \
+    action/overrideparamaction.h \
+    action/paramappendaction.h \
     action/plantaskaction.h \
     condition/condition.h \
     condition/condition_p.h \

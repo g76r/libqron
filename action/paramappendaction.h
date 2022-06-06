@@ -1,4 +1,4 @@
-/* Copyright 2013-2022 Hallowyn and others.
+/* Copyright 2022 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -11,22 +11,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef LOGACTION_H
-#define LOGACTION_H
+#ifndef PARAMAPPENDACTION_H
+#define PARAMAPPENDACTION_H
 
 #include "action.h"
-#include "log/log.h"
 
 class Scheduler;
 
-/** Action recording a log line. */
-class LIBQRONSHARED_EXPORT LogAction : public Action {
+class LIBQRONSHARED_EXPORT ParamAppendAction : public Action {
 public:
-  explicit LogAction(Scheduler *scheduler = 0, PfNode node = PfNode());
-  LogAction(const LogAction &);
-  ~LogAction();
+  ParamAppendAction();
+  explicit ParamAppendAction(Scheduler *scheduler = 0, PfNode node = PfNode());
+  ParamAppendAction(const ParamAppendAction &);
+  ~ParamAppendAction();
 };
 
-Q_DECLARE_TYPEINFO(LogAction, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(ParamAppendAction, Q_MOVABLE_TYPE);
 
-#endif // LOGACTION_H
+#endif // PARAMAPPENDACTION_H
