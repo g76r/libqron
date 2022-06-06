@@ -65,6 +65,8 @@ static QString _uiHeaderNames[] = {
   "Merge stdout into stderr",
   "On stderr",
   "On stdout", // 40
+  "Status command",
+  "Abort command"
 };
 
 static QSet<QString> excludedDescendantsForComments {
@@ -115,7 +117,7 @@ public:
 
 class TaskOrTemplateData : public TaskOrGroupData {
 public:
-  QString _command, _target, _info;
+  QString _command, _statuscommand, _abortcommand, _target, _info;
   Task::Mean _mean;
   QList<NoticeTrigger> _noticeTriggers;
   QHash<QString,qint64> _resources;

@@ -39,8 +39,8 @@ bool TaskOrTemplateData::loadConfig(
     PfNode node, Scheduler *scheduler, SharedUiItem parent,
     QHash<QString,Calendar> namedCalendars) {
   if (parent.idQualifier() != "tasksroot"
-      && parent.idQualifier() != "taskgroup") {
-    qWarning() << "internal error in TaskOrGroupData::loadConfig";
+      && parent.idQualifier() != "taskgroup") [[unlikely]] {
+    Log::error() << "internal error in TaskOrGroupData::loadConfig";
     return false;
   }
   auto root = static_cast<const TasksRoot&>(parent);
@@ -56,6 +56,8 @@ bool TaskOrTemplateData::loadConfig(
     return false;
   }
   ConfigUtils::loadAttribute(node, "command", &_command);
+  ConfigUtils::loadAttribute(node, "abortcommand", &_abortcommand);
+  ConfigUtils::loadAttribute(node, "statuscommand", &_statuscommand);
   ConfigUtils::loadAttribute<QString>(
         node, "target", &_target, [](QString value) {
     return ConfigUtils::sanitizeId(value, ConfigUtils::FullyQualifiedId);
@@ -231,6 +233,7 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
     case 3:
       return Task::meanAsString(_mean);
     case 4: {
+      // TODO this behavior is probably buggy/out of date
       QString escaped = _command;
       escaped.replace('\\', "\\\\");
       return escaped;
@@ -273,6 +276,10 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
       return _maxQueuedInstances;
     case 37:
       return _deduplicateCriterion;
+    case 41:
+      return _statuscommand;
+    case 42:
+      return _abortcommand;
     }
     break;
   default:
@@ -341,12 +348,12 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   if (!_target.isEmpty()) {
     switch(_mean) {
     case Task::Local:
+    case Task::Background:
     case Task::DoNothing:
     case Task::Docker:
     case Task::Scatter:
       break;
-      break;
-    case Task::UnknownMean: // should never happen
+    case Task::UnknownMean: [[unlikely]] // should never happen
     case Task::Ssh:
     case Task::Http:
       if (_target != "localhost")
@@ -363,6 +370,10 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
     escaped.replace('\\', "\\\\");
     node.setAttribute("command", escaped);
   }
+  if (!_statuscommand.isEmpty())
+    node.setAttribute("statuscommand", _statuscommand);
+  if (!_abortcommand.isEmpty())
+    node.setAttribute("statuscommand", _abortcommand);
 
   // triggering and constraints attributes
   PfNode triggers("trigger");

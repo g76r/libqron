@@ -34,7 +34,7 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   Q_OBJECT
   Q_DISABLE_COPY(Executor)
 
-  bool _isTemporary;
+  bool _isTemporary, _outputSubsInitialized = false;
   QThread *_thread;
   QProcess *_process;
   QByteArray _errBuf, _outBuf;
@@ -43,9 +43,12 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   QProcessEnvironment _baseenv;
   QNetworkReply *_reply;
   Alerter *_alerter;
-  QTimer *_abortTimeout;
+  QTimer *_abortTimer, *_statusPollingTimer;
   Scheduler *_scheduler;
   EventThread *_eventThread;
+  QList<EventSubscription> _stdoutSubs, _stderrSubs;
+  enum BackgroundStatus { Starting, Started, Aborting };
+  BackgroundStatus _backgroundStatus;
 
 public:
   explicit Executor(Scheduler *scheduler);
@@ -75,9 +78,12 @@ private slots:
   void readyReadStandardOutput();
   void replyError(QNetworkReply::NetworkError error);
   void replyFinished();
+  void pollStatus();
 
 private:
   void localMean();
+  void backgroundStart();
+  void backgroundAbort();
   void sshMean();
   void dockerMean();
   void httpMean();

@@ -97,6 +97,7 @@ Task::Task(
   if (d->_target.isEmpty())
     switch(d->_mean) {
     case Local:
+    case Background:
     case DoNothing:
     case Docker:
     case Scatter:
@@ -165,6 +166,14 @@ Task::Mean Task::mean() const {
 
 QString Task::command() const {
   return !isNull() ? data()->_command : QString();
+}
+
+QString Task::statuscommand() const {
+  return !isNull() ? data()->_statuscommand : QString();
+}
+
+QString Task::abortcommand() const {
+  return !isNull() ? data()->_abortcommand : QString();
 }
 
 QString Task::target() const {
@@ -639,12 +648,12 @@ PfNode TaskData::toPfNode() const {
   if (!_target.isEmpty()) {
     switch(_mean) {
     case Task::Local:
+    case Task::Background:
     case Task::DoNothing:
     case Task::Docker:
     case Task::Scatter:
       break;
-      break;
-    case Task::UnknownMean: // should never happen
+    case Task::UnknownMean: [[unlikely]] // should never happen
     case Task::Ssh:
     case Task::Http:
       if (_target != "localhost")
@@ -655,6 +664,7 @@ PfNode TaskData::toPfNode() const {
   // or for means that do not use it (DoNothing)
   if (!_command.isEmpty()
       && _mean != Task::DoNothing) {
+    // TODO this behavior is probably buggy/out of date and the following comment is probably wrong
     // LATER store _command as QStringList _commandArgs instead, to make model consistent rather than splitting the \ escaping policy between here, uiData() and executor.cpp
     // moreover this is not consistent between means (luckily there are no backslashes nor spaces in http uris)
     QString escaped = _command;
@@ -720,6 +730,7 @@ PfNode TaskData::toPfNode() const {
 static QHash<Task::Mean,QString> _meansAsString {
   { Task::DoNothing, "donothing" },
   { Task::Local, "local" },
+  { Task::Background, "background" },
   { Task::Ssh, "ssh" },
   { Task::Docker, "docker" },
   { Task::Http, "http" },

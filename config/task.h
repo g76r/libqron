@@ -37,7 +37,7 @@ class RequestFormField;
 class LIBQRONSHARED_EXPORT Task : public SharedUiItem {
 public:
   enum Mean {
-    UnknownMean = 0, DoNothing, Local, Ssh = 4, Docker, Http, Scatter,
+    UnknownMean = 0, DoNothing, Local, Background, Ssh, Docker, Http, Scatter,
   };
   enum HerdingPolicy {
     NoFailure = 1,
@@ -68,6 +68,8 @@ public:
   /** List of valid mean strings, for ui or syntax check. */
   static QStringList validMeanStrings();
   QString command() const;
+  QString statuscommand() const;
+  QString abortcommand() const;
   QString target() const;
   void setTarget(QString target);
   QString info() const;
