@@ -533,7 +533,6 @@ void Executor::processProcessOutput(bool isStderr) {
         PfDomHandler pdh;
         PfParser pp(&pdh);
         pp.parse(line.sliced(6).toUtf8());
-        qDebug() << "error" << pdh.errorOccured() << pdh.errorString();
         if (pdh.errorOccured()) {
           QString errorString = pdh.errorString()+" at line "
                                 +QString::number(pdh.errorLine())
@@ -545,7 +544,6 @@ void Executor::processProcessOutput(bool isStderr) {
         PfNode root("!qron:");
         root.appendChildren(pdh.roots());
         EventSubscription sub("!qron:", root, _scheduler, {});
-        qDebug() << "!qron:" << line.sliced(6) << sub.toStringList() << root.toString() << pdh.roots().size();
         (void)sub.triggerActions(&ppm, _instance);
         continue;
       }
