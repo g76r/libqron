@@ -819,23 +819,24 @@ void Executor::abort() {
             << "cannot abort task";
       return;
     }
-    switch(_instance.task().mean()) {
+    const auto mean = _instance.task().mean();
+    bool hardkill = false;
+    switch(mean) {
       case Task::Local:
       case Task::Ssh:
-        if (_process) {
-          Log::info(_instance.task().id(), _instance.idAsLong())
-            << "process task abort requested";
-          // TODO kill the whole process group
-          _process->kill();
-          return;
-        }
-        break;
+        hardkill = true;
+        [[fallthrough]];
       case Task::Docker:
         if (_process) {
+          hardkill = _instance.params().valueAsBool(
+            "command.hardkill", hardkill);
           Log::info(_instance.task().id(), _instance.idAsLong())
-            << "process task abort requested";
-          // LATER maybe use docker run --cidfile and docker kill
-          _process->terminate();
+            << "process task abort requested, using "
+            << (hardkill ? "hard" : "soft") << " kill method";
+          if (hardkill)
+            _process->kill();
+          else
+            _process->terminate();
           return;
         }
         break;
