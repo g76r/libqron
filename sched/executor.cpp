@@ -154,7 +154,7 @@ void Executor::backgroundStart() {
   if (!_instance.task().abortcommand().isEmpty())
     _instance.setAbortable();
   _backgroundStatus = Starting;
-  int pollingInterval = params.valueAsInt("command.status.internval",
+  int pollingInterval = params.valueAsInt("command.status.interval",
                                           DEFAULT_STATUS_POLLING_INTERVAL);
   _statusPollingTimer->start(pollingInterval);
   execProcess(cmdline, true);
