@@ -88,8 +88,8 @@ private:
   void dockerMean();
   void httpMean();
   void scatterMean();
-  void execProcess(QStringList cmdline, QProcessEnvironment sysenv);
-  inline QProcessEnvironment prepareEnv(const ParamSet vars);
+  void execProcess(QStringList cmdline, bool useVarsAsEnv);
+  inline QProcessEnvironment prepareEnv();
   void replyHasFinished(QNetworkReply *reply,
                         QNetworkReply::NetworkError error);
   void taskInstanceStopping(bool success, int returnCode);

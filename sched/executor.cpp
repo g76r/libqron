@@ -39,7 +39,6 @@
 #define DEFAULT_STATUS_POLLING_INTERVAL 5000
 
 static QString _localDefaultShell;
-static const QRegularExpression _httpHeaderForbiddenSeqRE("[^a-zA-Z0-9_\\-]+");
 static const QRegularExpression _asciiControlCharsSeqRE("[\\0-\\x1f]+");
 static const QRegularExpression _unallowedDockerNameFirstChar{"^[^A-Za-z0-9]"};
 static const QRegularExpression _whitespace { "\\s+" };
@@ -131,7 +130,7 @@ void Executor::localMean() {
       << "exact command line to be executed (using shell " << shell << "): "
       << cmdline.value(2);
   _instance.setAbortable();
-  execProcess(cmdline, prepareEnv(_instance.task().vars()));
+  execProcess(cmdline, true);
 }
 
 void Executor::backgroundStart() {
@@ -158,7 +157,7 @@ void Executor::backgroundStart() {
   int pollingInterval = params.valueAsInt("command.status.internval",
                                           DEFAULT_STATUS_POLLING_INTERVAL);
   _statusPollingTimer->start(pollingInterval);
-  execProcess(cmdline, prepareEnv(_instance.task().vars()));
+  execProcess(cmdline, true);
   if (_process)
     QTimer::singleShot(10000, _process, &QProcess::terminate);
 }
@@ -178,7 +177,7 @@ void Executor::pollStatus() {
   QStringList cmdline;
   cmdline << shell << "-c"
           << params.evaluate(_instance.task().statuscommand(), &ppp);
-  execProcess(cmdline, prepareEnv(_instance.task().vars()));
+  execProcess(cmdline, true);
   if (_process)
     QTimer::singleShot(10000, _process, &QProcess::terminate);
 }
@@ -204,7 +203,7 @@ void Executor::backgroundAbort() {
   cmdline << shell << "-c"
           << params.evaluate(_instance.task().abortcommand(), &ppp);
   _backgroundStatus = Aborting;
-  execProcess(cmdline, prepareEnv(_instance.task().vars()));
+  execProcess(cmdline, true);
   if (_process)
     QTimer::singleShot(10000, _process, &QProcess::terminate);
 }
@@ -212,7 +211,6 @@ void Executor::backgroundAbort() {
 void Executor::sshMean() {
   QStringList cmdline, sshCmdline;
   const auto ppp = _instance.pseudoParams();
-  const auto vars = _instance.task().vars();
   const auto params = _instance.params();
   QString username = params.value("ssh.username");
   qlonglong port = params.valueAsLong("ssh.port");
@@ -244,10 +242,9 @@ void Executor::sshMean() {
     sshCmdline << "-oUser=" + username;
   sshCmdline << "--";
   sshCmdline << _instance.target().hostname();
-  for (auto key: vars.keys()) {
-      QString value = params.evaluate(vars.rawValue(key), &ppp);
-      cmdline << key.remove('\'')+"='"+value.remove('\'')+"'";
-  }
+  const auto vars = _instance.varsAsEnv();
+  for (auto key: vars.keys())
+    cmdline << key+"='"+vars.value(key).remove('\'')+"'";
   if (!shell.isEmpty()) {
     cmdline << shell << "-c";
     // must quote command line because remote user default shell will parse and
@@ -263,7 +260,7 @@ void Executor::sshMean() {
       << "exact command line to be executed (through ssh on host "
       << _instance.target().hostname() <<  "): " << cmdline;
   sshCmdline << cmdline;
-  execProcess(sshCmdline, _baseenv);
+  execProcess(sshCmdline, false);
 }
 
 void Executor::dockerParam(
@@ -290,7 +287,6 @@ void Executor::dockerMean() {
                                _localDefaultShell);
   QString cmdline;
   const auto ppp = _instance.pseudoParams();
-  const auto vars = _instance.task().vars();
   const auto image = params.value("docker.image", &ppp).remove('\'');
   const bool shouldPull = params.valueAsBool("docker.pull", true);
   const bool shouldInit = params.valueAsBool("docker.init", true);
@@ -309,9 +305,9 @@ void Executor::dockerMean() {
     cmdline += "--init -e TINI_KILL_PROCESS_GROUP=1 ";
   if (shouldRm)
     cmdline += "--rm ";
+  const auto vars = _instance.varsAsEnv();
   for (auto key: vars.keys())
-      cmdline += "-e '" + key.remove('\'') + "'='"
-          + params.evaluate(vars.rawValue(key), &ppp).remove('\'') + "' ";
+    cmdline += "-e " + key + "='" + vars.value(key).remove('\'') + "' ";
   dockerParam(&cmdline, "name", &ppp, params,
               _instance.task().id().remove(_unallowedDockerNameFirstChar)
               +"_"+_instance.id());
@@ -345,10 +341,18 @@ void Executor::dockerMean() {
   cmdline += "'" + image + "' "
       + params.evaluate(_instance.task().command(), &ppp);
   _instance.setAbortable();
-  execProcess({ shell, "-c", cmdline }, _baseenv);
+  execProcess({ shell, "-c", cmdline }, false);
 }
 
-void Executor::execProcess(QStringList cmdline, QProcessEnvironment sysenv) {
+void Executor::execProcess(QStringList cmdline, bool useVarsAsEnv) {
+  QProcessEnvironment sysenv;
+  if (useVarsAsEnv) {
+    auto env = _instance.varsAsEnv();
+    for (auto key: env.keys())
+      sysenv.insert(key, env.value(key));
+  } else {
+    sysenv = _baseenv;
+  }
   if (cmdline.isEmpty()) {
     Log::warning(_instance.task().id(), _instance.idAsLong())
         << "cannot execute task with empty command '"
@@ -588,15 +592,9 @@ void Executor::httpMean() {
   const auto params = _instance.params();
   ParametrizedNetworkRequest networkRequest(
         url, params, &ppp, _instance.task().id(), _instance.idAsLong());
-  foreach (QString name, _instance.task().vars().keys()) {
-    const QString rawValue = _instance.task().vars().rawValue(name);
-    if (name.endsWith(":")) // ignoring : at end of header name
-      name.chop(1);
-    name.replace(_httpHeaderForbiddenSeqRE, "_");
-    const QString value = params.evaluate(rawValue, &ppp);
-    //Log::fatal(_instance.task().id(), _instance.id()) << "setheader: " << name << "=" << value << ".";
-    networkRequest.setRawHeader(name.toLatin1(), value.toUtf8());
-  }
+  const auto vars = _instance.varsAsHeaders();
+  for (auto key: vars.keys())
+    networkRequest.setRawHeader(key.toLatin1(), vars.value(key).toUtf8());
   // LATER read request output, at less to avoid server being blocked and request never finish
   if (networkRequest.url().isValid()) {
     _instance.setAbortable();
@@ -801,23 +799,6 @@ void Executor::scatterMean() {
 
 void Executor::noticePosted(QString notice, ParamSet params) {
   params.setValue(QStringLiteral("!notice"), notice);
-}
-
-static QRegularExpression notIdentifier("[^a-zA-Z_0-9]+");
-
-QProcessEnvironment Executor::prepareEnv(const ParamSet vars) {
-  QProcessEnvironment sysenv;
-  foreach (QString key, vars.keys()) {
-    if (key.isEmpty())
-      continue;
-    key.replace(notIdentifier, "_");
-    if (key[0] >= '0' && key[0] <= '9' )
-      key.insert(0, '_');
-    const auto ppp = _instance.pseudoParams();
-    const QString value = _instance.params().evaluate(vars.rawValue(key), &ppp);
-    sysenv.insert(key, value);
-  }
-  return sysenv;
 }
 
 void Executor::abort() {

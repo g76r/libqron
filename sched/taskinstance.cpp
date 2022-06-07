@@ -412,7 +412,81 @@ static RadixTree<std::function<QVariant(
   return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
         taskInstance.finishDatetime(), key.mid(11));
 }, true },
+{ "!envvars", [](const TaskInstance &instance, const QString &) {
+ return instance.varsAsEnvKeys().join(' ');
+}, true },
+{ "!headervars", [](const TaskInstance &instance, const QString &) {
+   return instance.varsAsHeadersKeys().join(' ');
+}, true },
 };
+
+static const QRegularExpression _notIdentifierRE{"[^a-zA-Z0-9_]+"};
+static const QRegularExpression _notHeaderNameRE{"[^\\x21-\\x39\\x3b-\\x7e]+"};
+// rfc5322 states that a header may contain any ascii printable char but : (3a)
+static const QRegularExpression _notHeaderValueRE{"[\\0d\\0a]+"};
+
+static QString makeItAnIdentifier(QString key) {
+  key.replace(_notIdentifierRE, "_");
+  if (key[0] >= '0' && key[0] <= '9' )
+    key.insert(0, '_');
+  return key;
+}
+
+static QString makeItAHeaderName(QString key) {
+  if (key.endsWith(":")) // ignoring : at end of header name
+    key.chop(1);
+  key.replace(_notHeaderNameRE, "_");
+  if (key[0] >= '0' && key[0] <= '9' )
+    key.insert(0, '_');
+  return key;
+}
+
+QMap<QString,QString> TaskInstance::varsAsEnv() const {
+  QMap<QString,QString> env;
+  auto vars = task().vars();
+  for (QString key: vars.keys()) {
+    if (key.isEmpty())
+      continue;
+    const auto ppp = pseudoParams();
+    const QString value = params().evaluate(vars.rawValue(key), &ppp);
+    env.insert(makeItAnIdentifier(key), value);
+  }
+  return env;
+}
+
+QStringList TaskInstance::varsAsEnvKeys() const {
+  QStringList keys;
+  for (QString key: task().vars().keys()) {
+    if (key.isEmpty())
+      continue;
+    keys << makeItAnIdentifier(key);
+  }
+  return keys;
+}
+
+QMap<QString,QString> TaskInstance::varsAsHeaders() const {
+  QMap<QString,QString> env;
+  auto vars = task().vars();
+  for (QString key: vars.keys()) {
+    if (key.isEmpty())
+      continue;
+    const auto ppp = pseudoParams();
+    auto value = params().evaluate(vars.rawValue(key), &ppp);
+    value.replace(_notHeaderValueRE, " ");
+    env.insert(makeItAHeaderName(key), value);
+  }
+  return env;
+}
+
+QStringList TaskInstance::varsAsHeadersKeys() const {
+  QStringList keys;
+  for (QString key: task().vars().keys()) {
+    if (key.isEmpty())
+      continue;
+    keys << makeItAHeaderName(key);
+  }
+  return keys;
+}
 
 QVariant TaskInstancePseudoParamsProvider::paramValue(
     QString key, const ParamsProvider *context, QVariant defaultValue,
