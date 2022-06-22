@@ -242,6 +242,14 @@ int Task::maxInstances() const {
   return !isNull() ? data()->_maxInstances : 0;
 }
 
+int Task::maxTries() const {
+  return !isNull() ? data()->_maxTries : 0;
+}
+
+int Task::millisBetweenTries() const {
+  return !isNull() ? data()->_millisBetweenTries : 0;
+}
+
 int Task::runningCount() const {
   return !isNull() ? data()->_runningCount.loadRelaxed() : 0;
 }
@@ -461,6 +469,9 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
 } },
 { "!maxinstances", [](const Task &task, const QVariant &) {
   return task.maxInstances();
+} },
+{ "!maxtries", [](const Task &task, const QVariant &) {
+   return task.maxTries();
 } },
 { "", [](const Task &, const QVariant &defaultValue) {
   return defaultValue;

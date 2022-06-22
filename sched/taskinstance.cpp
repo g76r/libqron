@@ -71,6 +71,7 @@ public:
   mutable Host _target;
   mutable bool _abortable;
   mutable AtomicValue<QString> _herdedTasksCaption;
+  mutable AtomicValue<int> _remainingTries;
   Condition _queuewhen, _cancelwhen;
 
   TaskInstanceData(Task task, ParamSet params, bool force,
@@ -84,8 +85,9 @@ public:
       _creationDateTime(QDateTime::currentDateTime()), _force(force),
       _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
       _finish(LLONG_MIN),
-      _success(false), _returnCode(0), _abortable(false), _queuewhen(queuewhen),
-      _cancelwhen(cancelwhen) {
+      _success(false), _returnCode(0), _abortable(false),
+      _remainingTries(_task.maxTries()),
+      _queuewhen(queuewhen), _cancelwhen(cancelwhen) {
     auto p = _params.lockedData();
     p->setParent(task.params());
   }
@@ -93,7 +95,7 @@ public:
     : _id(0), _herdid(0), _groupId(0), _force(false),
       _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
       _finish(LLONG_MIN), _success(false), _returnCode(0),
-      _abortable(false) { }
+      _abortable(false), _remainingTries(0) { }
 
 private:
   static quint64 newId() {
@@ -414,10 +416,16 @@ static RadixTree<std::function<QVariant(
 }, true },
 { "!envvars", [](const TaskInstance &instance, const QString &) {
  return instance.varsAsEnvKeys().join(' ');
-}, true },
+}},
 { "!headervars", [](const TaskInstance &instance, const QString &) {
    return instance.varsAsHeadersKeys().join(' ');
-}, true },
+}},
+{ "!remainingtries", [](const TaskInstance &instance, const QString &) {
+   return instance.remainingTries();
+}},
+{ "!currenttry", [](const TaskInstance &instance, const QString &) {
+   return instance.currentTry();
+}},
 };
 
 static const QRegularExpression _notIdentifierRE{"[^a-zA-Z0-9_]+"};
@@ -507,6 +515,7 @@ void TaskInstance::setTask(Task task) {
     d->_task = task;
     auto p = d->_params.lockedData();
     p->setParent(task.params());
+    d->_remainingTries = task.maxTries();
   }
 }
 
@@ -528,6 +537,31 @@ void TaskInstance::appendToHerdedTasksCaption(QString text) const {
   if (!caption->isEmpty())
     *caption += ' ';
   *caption += text;
+}
+
+void TaskInstance::consumeOneTry() const {
+  const TaskInstanceData *d = data();
+  if (!d)
+    return;
+  auto r = d->_remainingTries.lockedData();
+  *r = std::max(*r-1, 0);
+}
+
+void TaskInstance::consumeAllTries() const {
+  const TaskInstanceData *d = data();
+  if (!d)
+    return;
+  d->_remainingTries.setData(0);
+}
+
+int TaskInstance::remainingTries() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_remainingTries.data() : 0;
+}
+
+int TaskInstance::currentTry() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_task.maxTries() - d->_remainingTries.data() : 0;
 }
 
 Condition TaskInstance::queuewhen() const {

@@ -49,6 +49,7 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   QList<EventSubscription> _stdoutSubs, _stderrSubs;
   enum BackgroundStatus { Starting, Started, Aborting };
   BackgroundStatus _backgroundStatus;
+  bool _aborting;
 
 public:
   explicit Executor(Scheduler *scheduler);
@@ -71,6 +72,7 @@ signals:
   void taskInstanceStopped(TaskInstance instance, Executor *executor);
 
 private slots:
+  void executeOneTry();
   void processError(QProcess::ProcessError error);
   void processFinished(int exitCode, QProcess::ExitStatus exitStatus);
   void processProcessOutput(bool isStderr);
@@ -92,7 +94,7 @@ private:
   inline QProcessEnvironment prepareEnv();
   void replyHasFinished(QNetworkReply *reply,
                         QNetworkReply::NetworkError error);
-  void taskInstanceStopping(bool success, int returnCode);
+  void stopOrRetry(bool success, int returnCode);
   void getReplyContent(QNetworkReply *reply, QString *replyContent,
                        QString maxsizeKey, QString maxwaitKey) const;
   void dockerParam(

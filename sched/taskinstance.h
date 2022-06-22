@@ -109,6 +109,10 @@ public:
   quint64 herdid() const;
   bool isHerder() const { return herdid() == idAsLong(); }
   void appendToHerdedTasksCaption(QString text) const;
+  void consumeOneTry() const;
+  void consumeAllTries() const;
+  int remainingTries() const;
+  int currentTry() const;
   Condition queuewhen() const;
   Condition cancelwhen() const;
   /** vars(), evaluated and protected to respect shell environment rules

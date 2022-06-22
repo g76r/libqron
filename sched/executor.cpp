@@ -77,15 +77,22 @@ Executor::~Executor() {
 void Executor::execute(TaskInstance instance) {
   QMetaObject::invokeMethod(this, [this,instance]() {
     _instance = instance;
-    const Task::Mean mean = _instance.task().mean();
-    Log::info(_instance.task().id(), _instance.idAsLong())
-        << "starting task '" << _instance.task().id() << "' through mean '"
-        << Task::meanAsString(mean) << "' after " << _instance.queuedMillis()
-        << " ms in queue";
+    _aborting = false;
     long long maxDurationBeforeAbort = _instance.task().maxDurationBeforeAbort();
     if (maxDurationBeforeAbort <= INT_MAX)
       _abortTimer->start((int)maxDurationBeforeAbort);
-    switch (mean) {
+    executeOneTry();
+  });
+}
+
+void Executor::executeOneTry() {
+  _instance.consumeOneTry();
+  const auto mean = _instance.task().mean();
+  Log::info(_instance.task().id(), _instance.idAsLong())
+    << "starting task '" << _instance.task().id() << "' through mean '"
+    << Task::meanAsString(mean) << "' after " << _instance.queuedMillis()
+    << " ms in queue";
+  switch (mean) {
     case Task::Local:
       localMean();
       return;
@@ -106,16 +113,16 @@ void Executor::execute(TaskInstance instance) {
       return;
     case Task::DoNothing:
       emit taskInstanceStarted(_instance);
-      taskInstanceStopping(true, 0);
+      stopOrRetry(true, 0);
       return;
     case Task::UnknownMean: [[unlikely]] // should never happen
       ;
-    }
-    Log::error(_instance.task().id(), _instance.idAsLong())
-      << "cannot execute task with unknown mean '"
-      << Task::meanAsString(mean) << "'";
-    taskInstanceStopping(false, -1);
-  });
+  }
+  Log::error(_instance.task().id(), _instance.idAsLong())
+    << "cannot execute task with unknown mean '"
+    << Task::meanAsString(mean) << "'";
+  _instance.consumeAllTries();
+  stopOrRetry(false, -1);
 }
 
 void Executor::localMean() {
@@ -139,10 +146,11 @@ void Executor::backgroundStart() {
   QString shell = params
                     .value(QStringLiteral("command.shell"), _localDefaultShell);
   if (_instance.task().statuscommand().isEmpty()) {
+    _instance.consumeAllTries();
     Log::error(_instance.task().id(), _instance.idAsLong())
       << "cannot execute background task without statuscommand '"
       << _instance.task().id() << "'";
-    taskInstanceStopping(false, -1);
+    stopOrRetry(false, -1);
     return;
   }
   QStringList cmdline;
@@ -292,10 +300,11 @@ void Executor::dockerMean() {
   const bool shouldInit = params.valueAsBool("docker.init", true);
   const bool shouldRm = params.valueAsBool("docker.rm", true);
   if (image.isEmpty()) {
+    _instance.consumeAllTries();
     Log::error(_instance.task().id(), _instance.idAsLong())
         << "cannot execute container with empty image name '"
         << _instance.task().id() << "'";
-    taskInstanceStopping(false, -1);
+    stopOrRetry(false, -1);
     return;
   }
   if (shouldPull)
@@ -354,10 +363,11 @@ void Executor::execProcess(QStringList cmdline, bool useVarsAsEnv) {
     sysenv = _baseenv;
   }
   if (cmdline.isEmpty()) {
+    _instance.consumeAllTries();
     Log::warning(_instance.task().id(), _instance.idAsLong())
         << "cannot execute task with empty command '"
         << _instance.task().id() << "'";
-    taskInstanceStopping(false, -1);
+    stopOrRetry(false, -1);
     return;
   }
   _errBuf.clear();
@@ -417,7 +427,6 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
                   .valueAsBool("return.code.default.success", success);
       success = _instance.task().params()
                   .valueAsBool("return.code."+QString::number(exitCode)+".success",success);
-      _instance.setStopDatetime();
       Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
                _instance.idAsLong())
         << "task '" << _instance.task().id() << "' stopped "
@@ -496,7 +505,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
   _errBuf.clear();
   _outBuf.clear();
   if (stopping)
-    taskInstanceStopping(success, exitCode);
+    stopOrRetry(success, exitCode);
 }
 
 void Executor::processProcessOutput(bool isStderr) {
@@ -614,13 +623,14 @@ void Executor::httpMean() {
     } else {
       Log::error(_instance.task().id(), _instance.idAsLong())
           << "cannot start HTTP request";
-      taskInstanceStopping(false, -1);
+      stopOrRetry(false, -1);
     }
   } else {
+    _instance.consumeAllTries();
     Log::error(_instance.task().id(), _instance.idAsLong())
         << "unsupported HTTP URL: "
         << networkRequest.url().toString(QUrl::RemovePassword);
-    taskInstanceStopping(false, -1);
+    stopOrRetry(false, -1);
   }
 }
 
@@ -721,7 +731,6 @@ void Executor::replyHasFinished(QNetworkReply *reply,
         << "HTTP reply began with: "
         << replyContent; // FIXME .replace(asciiControlCharsRE, QStringLiteral(" "));
   }
-  _instance.setStopDatetime();
   Log::log(success ? Log::Info : Log::Warning, taskId, _instance.idAsLong())
       << "task '" << taskId << "' stopped "
       << (success ? "successfully" : "in failure") << " with return code "
@@ -731,7 +740,7 @@ void Executor::replyHasFinished(QNetworkReply *reply,
       << "' (QNetworkReply::NetworkError code " << error << ")";
   reply->deleteLater();
   _reply = 0;
-  taskInstanceStopping(success, status);
+  stopOrRetry(success, status);
 }
 
 void Executor::scatterMean() {
@@ -793,7 +802,7 @@ void Executor::scatterMean() {
       << instances.join(' ');
   //Log::error(_instance.task().id(), _instance.idAsLong()) << "cannot start HTTP request";
   //taskInstanceStopping(false, -1);
-  taskInstanceStopping(true, 0);
+  stopOrRetry(true, 0);
 }
 
 
@@ -819,6 +828,7 @@ void Executor::abort() {
             << "cannot abort task";
       return;
     }
+    _aborting = true;
     const auto mean = _instance.task().mean();
     bool hardkill = false;
     switch(mean) {
@@ -861,7 +871,17 @@ void Executor::abort() {
   });
 }
 
-void Executor::taskInstanceStopping(bool success, int returnCode) {
+void Executor::stopOrRetry(bool success, int returnCode) {
+  _outputSubsInitialized = false;
+  _stdoutSubs.clear();
+  _stderrSubs.clear();
+  if (!success && _instance.remainingTries() && !_aborting) {
+    auto ms = _instance.task().millisBetweenTries();
+    QThread::msleep(ms); // FIXME wait asynchonously, at less if > 1s
+    _alerter->emitAlert("task.retry."+_instance.task().id());
+    executeOneTry();
+    return;
+  }
   _abortTimer->stop();
   _statusPollingTimer->stop();
   _instance.setSuccess(success);
@@ -869,7 +889,4 @@ void Executor::taskInstanceStopping(bool success, int returnCode) {
   _instance.setStopDatetime();
   emit taskInstanceStopped(_instance, this);
   _instance = TaskInstance();
-  _outputSubsInitialized = false;
-  _stdoutSubs.clear();
-  _stderrSubs.clear();
 }

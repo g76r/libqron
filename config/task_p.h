@@ -66,7 +66,9 @@ static QString _uiHeaderNames[] = {
   "On stderr",
   "On stdout", // 40
   "Status command",
-  "Abort command"
+  "Abort command",
+  "Max tries",
+  "Pause between tries",
 };
 
 static QSet<QString> excludedDescendantsForComments {
@@ -121,7 +123,8 @@ public:
   Task::Mean _mean;
   QList<NoticeTrigger> _noticeTriggers;
   QHash<QString,qint64> _resources;
-  int _maxInstances;
+  int _maxInstances, _maxTries;
+  long long _millisBetweenTries;
   QList<CronTrigger> _cronTriggers;
   long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
   QString _maxQueuedInstances, _deduplicateCriterion;
@@ -130,7 +133,8 @@ public:
   QStringList _otherTriggers; // guessed indirect triggers resulting from events
   mutable bool _enabled;
 
-  TaskOrTemplateData() : _maxInstances(1), _maxExpectedDuration(LLONG_MAX),
+  TaskOrTemplateData() : _maxInstances(1), _maxTries(1), _millisBetweenTries(0),
+    _maxExpectedDuration(LLONG_MAX),
     _minExpectedDuration(0), _maxDurationBeforeAbort(LLONG_MAX),
     _maxQueuedInstances("%!maxinstances"),
     _herdingPolicy(Task::AllSuccess), _enabled(true) { }

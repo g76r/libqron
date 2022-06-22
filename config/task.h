@@ -86,6 +86,10 @@ public:
   int maxInstances() const;
   /** Current running intances count (includes running and queued instances). */
   int runningCount() const;
+  /** Max time to try to execute task if it fails. */
+  int maxTries() const;
+  /** Time to wait before retrying, in ms. */
+  int millisBetweenTries() const;
   /** Atomic fetch-and-add of the current running instances count. */
   int fetchAndAddRunningCount(int valueToAdd) const;
   /** Executions count. */

@@ -74,19 +74,37 @@ bool TaskOrTemplateData::loadConfig(
     Log::error() << "invalid "+idQualifier()+" maxinstances: " << node.toPf();
     return false;
   }
-  // LATER warn if *duration* out of range (< 0)
+  if (!ConfigUtils::loadAttribute<int>(
+        node, "maxtries", &_maxTries,
+        [](QString value) { return value.toInt(0,0); },
+        [](int value) { return value > 0; })) {
+    Log::error() << "invalid "+idQualifier()+" maxtries: " << node.toPf();
+    return false;
+  }
+  ConfigUtils::loadAttribute<long long>(
+    node, "pausebetweentries", &_millisBetweenTries,
+    [](QString value) {
+      bool ok; double f = value.toDouble(&ok);
+      return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
+    });
   ConfigUtils::loadAttribute<long long>(
         node, "maxexpectedduration", &_maxExpectedDuration,
-        [](QString value) { bool ok; double f = value.toDouble(&ok);
-                            return ok ? (long long)(f*1000) : 0.0; });
+        [](QString value) {
+      bool ok; double f = value.toDouble(&ok);
+      return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
+    });
   ConfigUtils::loadAttribute<long long>(
         node, "minexpectedduration", &_minExpectedDuration,
-        [](QString value) { bool ok; double f = value.toDouble(&ok);
-                            return ok ? (long long)(f*1000) : 0.0; });
+        [](QString value) {
+      bool ok; double f = value.toDouble(&ok);
+      return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
+    });
   ConfigUtils::loadAttribute<long long>(
         node, "maxdurationbeforeabort", &_maxDurationBeforeAbort,
-        [](QString value) { bool ok; double f = value.toDouble(&ok);
-                            return ok ? (long long)(f*1000) : 0.0; });
+        [](QString value) {
+      bool ok; double f = value.toDouble(&ok);
+      return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
+    });
   foreach (PfNode child, node.childrenByName("trigger")) {
     foreach (PfNode grandchild, child.children()) {
       QList<PfNode> inheritedComments;
@@ -248,10 +266,10 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
       return _maxInstances;
     case 23:
       return (_minExpectedDuration > 0)
-          ? (double)_minExpectedDuration*.001 : QVariant();
+          ? _minExpectedDuration*.001 : QVariant();
     case 24:
       return (_maxExpectedDuration < LLONG_MAX)
-          ? (double)_maxExpectedDuration*.001 : QVariant();
+          ? _maxExpectedDuration*.001 : QVariant();
     case 25: {
       QString s;
       foreach (const RequestFormField rff, _requestFormFields)
@@ -261,7 +279,7 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
     }
     case 27:
       return (_maxDurationBeforeAbort < LLONG_MAX)
-          ? (double)_maxDurationBeforeAbort*.001 : QVariant();
+          ? _maxDurationBeforeAbort*.001 : QVariant();
     case 28:
       return triggersWithCalendarsAsString();
     case 29:
@@ -280,6 +298,10 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
       return _statuscommand;
     case 42:
       return _abortcommand;
+    case 43:
+      return _maxTries;
+    case 44:
+      return _millisBetweenTries*.001;
     }
     break;
   default:
@@ -393,6 +415,12 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   if (_maxInstances != 1)
     node.appendChild(PfNode("maxinstances",
                             QString::number(_maxInstances)));
+  if (_maxTries != 1)
+    node.appendChild(PfNode("maxtries",
+                            QString::number(_maxTries)));
+  if (_millisBetweenTries != 0)
+    node.appendChild(PfNode("pausebetweentries",
+                            QString::number(_millisBetweenTries*.001)));
   foreach (const QString &key, _resources.keys())
     node.appendChild(
           PfNode("resource",
