@@ -319,7 +319,8 @@ void Executor::dockerMean() {
     cmdline += "-e " + key + "='" + vars.value(key).remove('\'') + "' ";
   dockerParam(&cmdline, "name", &ppp, params,
               _instance.task().id().remove(_unallowedDockerNameFirstChar)
-              +"_"+_instance.id());
+                +"_"+_instance.id()+"_"
+                +QString::number(_instance.currentTry()));
   dockerArrayParam(&cmdline, "mount", &ppp, params);
   dockerArrayParam(&cmdline, "tmpfs", &ppp, params);
   dockerArrayParam(&cmdline, "volume", &ppp, params);
