@@ -654,7 +654,7 @@ void SchedulerConfigData::applyLogConfig() const {
                      logfile.buffered()));
   }
   // LATER make console severity log level a parameter
-  Log::replaceLoggersPlusConsole(Log::Fatal, loggers, true);
+  Log::replaceLoggersPlusConsole(Log::Fatal, loggers);
 }
 
 void SchedulerConfig::applyLogConfig() const {
