@@ -43,6 +43,7 @@ public:
     Event(QList<EventSubscription> subs, const ParamsProviderMerger *context,
           TaskInstance instance, QString payload)
         : Event(subs, context->snapshot(), instance, payload) { }
+    bool isNull() { return _instance.isNull(); }
   };
 
 private:

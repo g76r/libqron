@@ -25,6 +25,8 @@ void EventThread::run() {
   while (!isInterruptionRequested()) {
     EventThread::Event e;
     if (_buffer.tryGet(&e, 500)) {
+      if (e.isNull())
+        break;
       for (auto sub: e._subs) {
         auto match = sub.filter().match(e._payload);
         if (!match.hasMatch())

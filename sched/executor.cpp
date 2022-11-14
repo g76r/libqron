@@ -55,7 +55,7 @@ Executor::Executor(Scheduler *scheduler) : QObject(0), _isTemporary(false),
   _process(0), _nam(new QNetworkAccessManager(this)), _reply(0),
   _alerter(scheduler->alerter()), _abortTimer(new QTimer(this)),
   _statusPollingTimer(new QTimer(this)),
-  _scheduler(scheduler), _eventThread(new EventThread()) {
+  _scheduler(scheduler), _eventThread(new EventThread) {
   _baseenv = QProcessEnvironment::systemEnvironment();
   _thread->setObjectName(QString("Executor-%1")
                          .arg(reinterpret_cast<long long>(_thread),
@@ -67,7 +67,9 @@ Executor::Executor(Scheduler *scheduler) : QObject(0), _isTemporary(false),
   _abortTimer->setSingleShot(true);
   connect(_abortTimer, &QTimer::timeout, this, &Executor::abort);
   connect(_statusPollingTimer, &QTimer::timeout, this, &Executor::pollStatus);
-  connect(this, &QObject::destroyed, _eventThread, &QObject::deleteLater);
+  connect(this, &QObject::destroyed, [eventThread=_eventThread]() {
+    eventThread->tryPut(EventThread::Event{ });
+  });
   _eventThread->start();
 }
 
