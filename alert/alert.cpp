@@ -238,9 +238,9 @@ static RadixTree<std::function<QVariant(const Alert&, const QVariant &)>>
  } },
 };
 
-QVariant AlertPseudoParamsProvider::paramValue(
-    QString key, const ParamsProvider *context, QVariant defaultValue,
-    QSet<QString> alreadyEvaluated) const {
+const QVariant AlertPseudoParamsProvider::paramValue(
+  const QString &key, const ParamsProvider *context,
+  const QVariant &defaultValue, QSet<QString> *alreadyEvaluated) const {
   auto value = _pseudoParams.value(key)(_alert, QVariant());
   if (value.isValid())
     return value;
@@ -248,7 +248,7 @@ QVariant AlertPseudoParamsProvider::paramValue(
       .paramValue(key, context, defaultValue, alreadyEvaluated);
 }
 
-QSet<QString> AlertPseudoParamsProvider::keys() const {
+const QSet<QString> AlertPseudoParamsProvider::keys() const {
   QSet<QString> keys = _pseudoParams.keys();
   keys += _alert.subscription().params().keys();
   return keys;

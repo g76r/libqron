@@ -496,16 +496,17 @@ QStringList TaskInstance::varsAsHeadersKeys() const {
   return keys;
 }
 
-QVariant TaskInstancePseudoParamsProvider::paramValue(
-    QString key, const ParamsProvider *context, QVariant defaultValue,
-    QSet<QString> alreadyEvaluated) const {
+const QVariant TaskInstancePseudoParamsProvider::paramValue(
+  const QString &key, const ParamsProvider *context,
+  const QVariant &defaultValue, QSet<QString> *alreadyEvaluated) const {
   auto pseudoParam = _pseudoParams.value(key);
   if (pseudoParam)
     return pseudoParam(_taskInstance, key);
-  return _taskPseudoParams.paramValue(key, context, defaultValue, alreadyEvaluated);
+  return _taskPseudoParams.paramValue(key, context, defaultValue,
+                                      alreadyEvaluated);
 }
 
-QSet<QString> TaskInstancePseudoParamsProvider::keys() const {
+const QSet<QString> TaskInstancePseudoParamsProvider::keys() const {
   return _taskPseudoParams.keys()+_pseudoParams.keys();
 }
 

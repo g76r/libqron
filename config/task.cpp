@@ -478,14 +478,14 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
 }, true },
 };
 
-QVariant TaskPseudoParamsProvider::paramValue(
-    QString key, const ParamsProvider *context, QVariant defaultValue, QSet<QString>) const {
-  Q_UNUSED(context)
+const QVariant TaskPseudoParamsProvider::paramValue(
+  const QString &key, const ParamsProvider *, const QVariant &defaultValue,
+  QSet<QString> *) const {
   // the following is fail-safe thanks to the catch-all prefix in the radix tree
   return _pseudoParams.value(key)(_task, defaultValue);
 }
 
-QSet<QString> TaskPseudoParamsProvider::keys() const {
+const QSet<QString> TaskPseudoParamsProvider::keys() const {
   return _pseudoParams.keys();
 }
 
