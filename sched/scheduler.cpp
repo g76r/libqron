@@ -225,9 +225,10 @@ void Scheduler::planOrRequestCommonPostProcess(
   auto params = instance.params();
   auto instanceparams = instance.task().instanceparams();
   auto ppp = instance.pseudoParams();
+  auto ipm = ParamsProviderMerger(instanceparams)(&ppp);
   for (auto key: instanceparams.keys()) {
     auto rawvalue = instanceparams.rawValue(key);
-    auto value = params.evaluate(rawvalue, &ppp);
+    auto value = params.evaluate(rawvalue, &ipm);
     instance.setParam(key, ParamSet::escape(value));
   }
   for (auto key: overridingParams.keys()) {
