@@ -1,4 +1,4 @@
-/* Copyright 2012-2022 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -425,6 +425,11 @@ static RadixTree<std::function<QVariant(
 }},
 { "!currenttry", [](const TaskInstance &instance, const QString &) {
    return instance.currentTry();
+}},
+{ "!deduplicatecriterion", [](const TaskInstance &instance, const QString &) {
+   auto ppp = instance.pseudoParams();
+   auto params = instance.params();
+   return params.evaluate(instance.task().deduplicateCriterion(), &ppp);
 }},
 };
 
