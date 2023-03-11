@@ -34,6 +34,7 @@
 #include "util/regexpparamsprovider.h"
 #include "pf/pfparser.h"
 #include "pf/pfdomhandler.h"
+#include "thread/blockingtimer.h"
 
 #define PROCESS_OUTPUT_CHUNK_SIZE 16384
 #define DEFAULT_STATUS_POLLING_INTERVAL 5000
@@ -79,7 +80,7 @@ Executor::~Executor() {
 void Executor::execute(TaskInstance instance) {
   QMetaObject::invokeMethod(this, [this,instance]() {
     _instance = instance;
-    _aborting = false;
+    _aborting = _retrying = false;
     long long maxDurationBeforeAbort = _instance.task().maxDurationBeforeAbort();
     if (maxDurationBeforeAbort <= INT_MAX)
       _abortTimer->start((int)maxDurationBeforeAbort);
@@ -829,7 +830,7 @@ void Executor::abort() {
                "ssh.disablepty is set to true";
       else
         Log::warning(_instance.task().id(), _instance.idAsLong())
-            << "cannot abort task";
+            << "cannot abort task because it's not abortable";
       return;
     }
     _aborting = true;
@@ -876,15 +877,32 @@ void Executor::abort() {
 }
 
 void Executor::stopOrRetry(bool success, int returnCode) {
+  if (_retrying)
+    return; // avoid being called when calling QCoreApplication::processEvents()
   _outputSubsInitialized = false;
   _stdoutSubs.clear();
   _stderrSubs.clear();
   if (!success && _instance.remainingTries() && !_aborting) {
-    auto ms = _instance.task().millisBetweenTries();
-    QThread::msleep(ms); // FIXME wait asynchonously, at less if > 1s
-    _alerter->emitAlert("task.retry."+_instance.task().id());
-    executeOneTry();
-    return;
+    if (_process) {
+      _process->deleteLater();
+      _process = 0;
+    }
+    if (_reply) {
+      _reply->deleteLater();
+      _reply = 0;
+    }
+    quint32 ms = _instance.task().millisBetweenTries();
+    if (ms > 0) {
+      Log::warning(_instance.task().id(), _instance.idAsLong())
+        << "waiting " << ms/1000.0 << " seconds before retrying";
+      BlockingTimer t { ms, [this]() -> bool { return _aborting; } };
+      t.wait();
+    }
+    if (!_aborting) {
+      _alerter->emitAlert("task.retry."+_instance.task().id());
+      executeOneTry();
+      return;
+    }
   }
   _abortTimer->stop();
   _statusPollingTimer->stop();

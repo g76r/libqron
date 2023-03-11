@@ -49,7 +49,7 @@ class LIBQRONSHARED_EXPORT Executor : public QObject {
   QList<EventSubscription> _stdoutSubs, _stderrSubs;
   enum BackgroundStatus { Starting, Started, Aborting };
   BackgroundStatus _backgroundStatus;
-  bool _aborting;
+  bool _aborting, _retrying;
 
 public:
   explicit Executor(Scheduler *scheduler);
