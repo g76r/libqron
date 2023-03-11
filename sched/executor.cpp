@@ -1,4 +1,4 @@
-/* Copyright 2012-2022 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -436,7 +436,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
         << (success ? "successfully" : "in failure") << " with return code "
         << exitCode << " on host '" << _instance.target().hostname()
         << "' after running " << _instance.runningMillis()
-        << " ms (duration including queue: " << _instance.liveDurationMillis()
+        << " ms (duration including queue: " << _instance.durationMillis()
         << " ms)";
       break;
     case Task::Background:
@@ -448,7 +448,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
             Log::warning(_instance.task().id(), _instance.idAsLong())
               << "background task '" << _instance.task().id()
               << "' failed, starting command finished with return code "
-              << exitCode << " after "<< _instance.liveDurationMillis()
+              << exitCode << " after "<< _instance.durationMillis()
               << " ms of main task duration : " << _process->errorString();
             stopping = true;
             success = false;
@@ -457,14 +457,14 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
           Log::info(_instance.task().id(), _instance.idAsLong())
             << "background task '" << _instance.task().id() << "' started, "
             << "starting command finished with return code " << exitCode
-            << " after "<< _instance.liveDurationMillis()
+            << " after "<< _instance.durationMillis()
             << " ms of main task duration";
           break;
         case Started:
           Log::debug(_instance.task().id(), _instance.idAsLong())
             << "background task '" << _instance.task().id() << "' running, "
             << "status command finished with return code " << exitCode
-            << " after "<< _instance.liveDurationMillis()
+            << " after "<< _instance.durationMillis()
             << " ms of main task duration";
           if (exitCode == 0) // 0: still running
             break;
@@ -478,14 +478,14 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
             << exitCode << " on host '" << _instance.target().hostname()
             << "' after running " << _instance.runningMillis()
             << " ms (duration including queue: "
-            << _instance.liveDurationMillis() << " ms)";
+            << _instance.durationMillis() << " ms)";
           break;
         case Aborting:
           _backgroundStatus = Started;
           Log::info(_instance.task().id(), _instance.idAsLong())
             << "background task '" << _instance.task().id() << "' aborting, "
             << "aborting command finished with return code " << exitCode
-            << " after "<< _instance.liveDurationMillis()
+            << " after "<< _instance.durationMillis()
             << " ms of main task duration";
           QMetaObject::invokeMethod(this, &Executor::pollStatus,
                                     Qt::QueuedConnection);
@@ -738,7 +738,8 @@ void Executor::replyHasFinished(QNetworkReply *reply,
       << "task '" << taskId << "' stopped "
       << (success ? "successfully" : "in failure") << " with return code "
       << status << " (" << reason << ") on host '"
-      << _instance.target().hostname() << "' in " << _instance.runningMillis()
+      << _instance.target().hostname() << "' in "
+      << _instance.runningMillis()
       << " ms, with network error '" << networkErrorAsString(error)
       << "' (QNetworkReply::NetworkError code " << error << ")";
   reply->deleteLater();

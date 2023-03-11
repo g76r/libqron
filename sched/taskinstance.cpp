@@ -133,21 +133,46 @@ public:
   void inline setFinishDatetime(QDateTime datetime) const {
     _finish = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
   qint64 inline plannedMillis() const {
-    return _creationDateTime.msecsTo(queueDatetime()); }
+    auto creation = _creationDateTime.toMSecsSinceEpoch();
+    if (_queue == LLONG_MIN) { // not queued : taking live value so far
+      if (_finish != LLONG_MIN) // canceled
+        return _finish - creation;
+      else  // not queued : taking live value so far
+        return QDateTime::currentMSecsSinceEpoch() - creation;
+    }
+    return _queue - creation;
+  }
   qint64 inline queuedMillis() const {
-    return _queue != LLONG_MIN && _start != LLONG_MIN ? _start - _queue : 0; }
-  qint64 inline runningMillis() const {
-    return _start != LLONG_MIN && _stop != LLONG_MIN ? _stop - _start : 0; }
-  qint64 inline waitingMillis() const {
-    return _stop != LLONG_MIN && _finish != LLONG_MIN ? _finish - _stop : 0; }
-  qint64 inline durationMillis() const {
-    return _queue != LLONG_MIN && _finish != LLONG_MIN ? _finish - _queue : 0; }
-  qint64 inline liveDurationMillis() const {
     if (_queue == LLONG_MIN) // still planned
+      return 0;
+    if (_start == LLONG_MIN) {
+      if (_finish != LLONG_MIN) // canceled
+        return _finish - _queue;
+      else  // not started : taking live value so far
+        return QDateTime::currentMSecsSinceEpoch() - _queue;
+    }
+    return _start - _queue;
+  }
+  qint64 inline runningMillis() const {
+    if (_start == LLONG_MIN) // not started
+      return 0;
+    if (_finish == LLONG_MIN) // not finished : taking live value so far
+      return QDateTime::currentMSecsSinceEpoch() - _start;
+    return _finish - _start;
+  }
+  qint64 inline waitingMillis() const {
+    if (_stop == LLONG_MIN) // still running (or before, or canceled)
       return 0;
     if (_finish == LLONG_MIN) // not finished : taking live value so far
       return QDateTime::currentMSecsSinceEpoch() - _queue;
-    return _finish - _queue; // regular durationMillis()
+    return _finish - _stop;
+  }
+  qint64 inline durationMillis() const {
+    if (_queue == LLONG_MIN) // still planned (or canceled)
+      return 0;
+    if (_finish == LLONG_MIN) // not finished : taking live value so far
+      return QDateTime::currentMSecsSinceEpoch() - _queue;
+    return _finish - _queue;
   }
   TaskInstance::TaskInstanceStatus inline status() const {
     if (_finish != LLONG_MIN) {
@@ -298,11 +323,6 @@ qint64 TaskInstance::waitingMillis() const {
 qint64 TaskInstance::durationMillis() const {
   const TaskInstanceData *d = data();
   return d ? d->durationMillis() : 0;
-}
-
-qint64 TaskInstance::liveDurationMillis() const {
-  const TaskInstanceData *d = data();
-  return d ? d->liveDurationMillis() : 0;
 }
 
 TaskInstance::TaskInstanceStatus TaskInstance::status() const {
