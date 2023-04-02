@@ -1,4 +1,4 @@
-/* Copyright 2013-2017 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -54,7 +54,7 @@ LogFile::LogFile(PfNode node) {
     LogFileData *d = new LogFileData;
     d->_pathPattern = pathPattern;
     d->_minimumSeverity = Log::severityFromString(
-          node.attribute(QStringLiteral("level")));
+          node.attribute(QStringLiteral("level")).toUtf8());
     d->_buffered = !node.hasChild(QStringLiteral("unbuffered"));
     setData(d);
   }

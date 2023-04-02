@@ -1,4 +1,4 @@
-/* Copyright 2013-2022 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -47,7 +47,8 @@ public:
 LogAction::LogAction(Scheduler *scheduler, PfNode node)
   : Action(new LogActionData(
              node.contentAsString(),
-             Log::severityFromString(node.attribute("severity", "info")))) {
+             Log::severityFromString(
+               node.attribute("severity", "info").toUtf8()))) {
   Q_UNUSED(scheduler)
 }
 
