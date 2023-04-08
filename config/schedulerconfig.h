@@ -1,4 +1,4 @@
-/* Copyright 2014-2022 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,12 +57,12 @@ public:
   ParamSet vars() const { return tasksRoot().vars(); }
   ParamSet instanceparams() const { return tasksRoot().instanceparams(); }
   TasksRoot tasksRoot() const;
-  QHash<QString,TaskGroup> taskgroups() const;
-  QHash<QString,TaskTemplate> tasktemplates() const;
-  QHash<QString,Task> tasks() const;
-  QHash<QString,Cluster> clusters() const;
-  QHash<QString,Host> hosts() const;
-  QHash<QString,Calendar> namedCalendars() const;
+  QHash<QByteArray,TaskGroup> taskgroups() const;
+  QHash<QByteArray,TaskTemplate> tasktemplates() const;
+  QHash<QByteArray,Task> tasks() const;
+  QHash<QByteArray,Cluster> clusters() const;
+  QHash<QByteArray,Host> hosts() const;
+  QHash<QByteArray, Calendar> namedCalendars() const;
   QList<EventSubscription> onstart() const;
   QList<EventSubscription> onsuccess() const;
   QList<EventSubscription> onfailure() const;
@@ -82,17 +82,17 @@ public:
   /** Originaly parsed PF tree, if SchedulerConfig was constructed from a PF
    * tree, usefull for a configuration repository in a running scheduler. */
   PfNode originalPfNode() const;
-  void copyLiveAttributesFromOldTasks(QHash<QString,Task> oldTasks);
+  void copyLiveAttributesFromOldTasks(QHash<QByteArray,Task> oldTasks);
   void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
-                  QString idQualifier);
-  void changeParams(ParamSet newParams, ParamSet oldParams, QString setId);
+                  QByteArray idQualifier);
+  void changeParams(ParamSet newParams, ParamSet oldParams, QByteArray setId);
   void applyLogConfig() const;
 
 private:
   SchedulerConfigData *data();
   const SchedulerConfigData *data() const {
     return specializedData<SchedulerConfigData>(); }
-  QString recomputeId() const;
+  QByteArray recomputeId() const;
 };
 
 Q_DECLARE_METATYPE(SchedulerConfig)

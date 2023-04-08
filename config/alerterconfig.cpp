@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,7 +26,7 @@
 #define DEFAULT_MIN_DELAY_BETWEEN_SEND 600000 /* 600" = 10' */
 #define DEFAULT_DELAY_BEFORE_FIRST_SEND 30000 /* 30" */
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Params",
   "Rise Delay",
@@ -46,7 +46,7 @@ static QSet<QString> excludedDescendantsForComments {
 
 class AlerterConfigData : public SharedUiItemData {
 public:
-  QString _id;
+  QByteArray _id;
   ParamSet _params;
   QList<AlertSubscription> _alertSubscriptions;
   QList<AlertSettings> _alertSettings;
@@ -54,7 +54,8 @@ public:
   _minDelayBetweenSend, _delayBeforeFirstSend, _remindPeriod;
   QStringList _channelNames, _commentsList;
   QList<Gridboard> _gridboards;
-  AlerterConfigData() : _id(QString::number(_sequence.fetchAndAddOrdered(1))),
+  AlerterConfigData()
+    : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))),
     _riseDelay(DEFAULT_RISE_DELAY),
     _mayriseDelay(DEFAULT_MAYRISE_DELAY), _dropDelay(DEFAULT_DROP_DELAY),
     _duplicateEmitDelay(DEFAULT_DUPLICATE_EMIT_DELAY),
@@ -63,8 +64,8 @@ public:
     _remindPeriod(DEFAULT_REMIND_PERIOD) {
   }
   AlerterConfigData(PfNode root);
-  QString id() const { return _id; }
-  QString idQualifier() const { return QStringLiteral("alerterconfig"); }
+  QByteArray id() const { return _id; }
+  QByteArray idQualifier() const { return "alerterconfig"_ba; }
   int uiSectionCount() const {
     return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
   QVariant uiData(int section, int role) const;

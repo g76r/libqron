@@ -1,4 +1,4 @@
-/* Copyright 2015-2021 Hallowyn and others.
+/* Copyright 2015-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -36,29 +36,30 @@ public:
    * config() is thread-safe again */
   void setConfig(SchedulerConfig newConfig, QMutexLocker<QMutex> *locker = 0);
   using SharedUiItemDocumentManager::itemById;
-  SharedUiItem itemById(QString idQualifier, QString id) const override;
+  SharedUiItem itemById(QByteArray idQualifier, QByteArray id) const override;
   using SharedUiItemDocumentManager::itemsByIdQualifier;
   SharedUiItemList<SharedUiItem> itemsByIdQualifier(
-      QString idQualifier) const override;
-  QHash<QString,Calendar> namedCalendars() const {
+      QByteArray idQualifier) const override;
+  QHash<QByteArray,Calendar> namedCalendars() const {
     return _config.namedCalendars(); }
   int tasksCount() const { return _config.tasks().count(); }
   int taskGroupsCount() const { return _config.taskgroups().count(); }
   int maxtotaltaskinstances() const { return _config.maxtotaltaskinstances(); }
   int maxqueuedrequests() const { return _config.maxqueuedrequests(); }
-  Calendar calendarByName(QString name) const {
+  Calendar calendarByName(QByteArray name) const {
     return _config.namedCalendars().value(name); }
   ParamSet globalParams() const { return _config.params(); }
   ParamSet globalVars() const { return _config.vars(); }
   /** This method is threadsafe */
-  bool taskExists(QString taskId) { return _config.tasks().contains(taskId); }
+  bool taskExists(QByteArray taskId) {
+    return _config.tasks().contains(taskId); }
   /** This method is threadsafe */
-  Task task(QString taskId) { return _config.tasks().value(taskId); }
-  void changeParams(ParamSet newParams, ParamSet oldParams, QString setId);
+  Task task(QByteArray taskId) { return _config.tasks().value(taskId); }
+  void changeParams(ParamSet newParams, ParamSet oldParams, QByteArray setId);
 
 signals:
   void logConfigurationChanged(SharedUiItemList<> logfiles);
-  void paramsChanged(ParamSet newParams, ParamSet oldParams, QString setId);
+  void paramsChanged(ParamSet newParams, ParamSet oldParams, QByteArray setId);
   void accessControlConfigurationChanged(bool enabled);
   void globalEventSubscriptionsChanged(
       QList<EventSubscription> onstart, QList<EventSubscription> onsuccess,
@@ -70,15 +71,16 @@ signals:
 protected:
   bool prepareChangeItem(
       SharedUiItemDocumentTransaction *transaction, SharedUiItem newItem,
-      SharedUiItem oldItem, QString idQualifier, QString *errorString) override;
+      SharedUiItem oldItem, QByteArray idQualifier,
+      QString *errorString) override;
   void commitChangeItem(SharedUiItem newItem, SharedUiItem oldItem,
-                        QString idQualifier) override;
+                        QByteArray idQualifier) override;
 
 private:
   template<class T>
   void inline emitSignalForItemTypeChanges(
-      QHash<QString,T> newItems, QHash<QString,T> oldItems,
-      QString idQualifier);
+      QHash<QByteArray,T> newItems, QHash<QByteArray,T> oldItems,
+      QByteArray idQualifier);
 };
 
 #endif // QRONCONFIGDOCUMENTMANAGER_H

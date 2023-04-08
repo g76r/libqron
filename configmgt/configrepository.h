@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,26 +32,26 @@ class LIBQRONSHARED_EXPORT ConfigRepository : public QObject {
 
 public:
   ConfigRepository(QObject *parent, Scheduler *scheduler);
-  virtual QStringList availlableConfigIds() = 0;
+  virtual QByteArrayList availlableConfigIds() = 0;
   /** Return id of active config according to repository, which is not
    * always the same currently than active config. */
-  virtual QString activeConfigId() = 0;
+  virtual QByteArray activeConfigId() = 0;
   /** Syntaxic sugar for config(activeConfigId()) */
   SchedulerConfig activeConfig() { return config(activeConfigId()); }
-  virtual SchedulerConfig config(QString id) = 0;
+  virtual SchedulerConfig config(QByteArray id) = 0;
   /** Add a config to the repository if does not already exist, and return
    * its id. */
-  virtual QString addConfig(SchedulerConfig config) = 0;
+  virtual QByteArray addConfig(SchedulerConfig config) = 0;
   /** Activate an already loaded config
    * @return fals if id not found */
-  virtual bool activateConfig(QString id) = 0;
+  virtual bool activateConfig(QByteArray id) = 0;
   /** Syntaxic sugar for activate(addConfig(config)) */
-  QString addAndActivate(SchedulerConfig config) {
-    QString id = addConfig(config);
+  QByteArray addAndActivate(SchedulerConfig config) {
+    auto id = addConfig(config);
     activateConfig(id);
     return id; }
   /** Syntaxic sugar for addConfig(parseConfig(source)) */
-  QString addConfig(QIODevice *source, bool applyLogConfig) {
+  QByteArray addConfig(QIODevice *source, bool applyLogConfig) {
     return addConfig(parseConfig(source, applyLogConfig)); }
   /** Build a SchedulerConfig object from external format, without adding it
    * to the repository.
@@ -59,12 +59,12 @@ public:
   SchedulerConfig parseConfig(QIODevice *source, bool applyLogConfig);
   /** Remove a non-active config from the repository.
    * @return false if id not found or active */
-  virtual bool removeConfig(QString id) = 0;
+  virtual bool removeConfig(QByteArray id) = 0;
 
 signals:
   void configActivated(SchedulerConfig config);
-  void configAdded(QString id, SchedulerConfig config);
-  void configRemoved(QString id);
+  void configAdded(QByteArray id, SchedulerConfig config);
+  void configRemoved(QByteArray id);
   void historyReset(QList<ConfigHistoryEntry> history);
   void historyEntryAppended(ConfigHistoryEntry historyEntry);
 };

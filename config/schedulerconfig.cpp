@@ -1,4 +1,4 @@
-/* Copyright 2014-2022 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -58,22 +58,22 @@ public:
 
 class SchedulerConfigData : public SharedUiItemData{
 public:
-  QHash<QString,TaskGroup> _taskgroups;
-  QHash<QString,TaskTemplate> _tasktemplates;
-  QHash<QString,Task> _tasks;
-  QHash<QString,Cluster> _clusters;
-  QHash<QString,Host> _hosts;
+  QHash<QByteArray,TaskGroup> _taskgroups;
+  QHash<QByteArray,TaskTemplate> _tasktemplates;
+  QHash<QByteArray,Task> _tasks;
+  QHash<QByteArray,Cluster> _clusters;
+  QHash<QByteArray,Host> _hosts;
   TasksRoot _tasksRoot;
   QList<EventSubscription> _onlog, _onnotice, _onschedulerstart, _onconfigload;
   qint32 _maxtotaltaskinstances, _maxqueuedrequests;
-  QHash<QString,Calendar> _namedCalendars;
+  QHash<QByteArray,Calendar> _namedCalendars;
   AlerterConfig _alerterConfig;
   AccessControlConfig _accessControlConfig;
   QList<LogFile> _logfiles;
   QDateTime _lastLoadTime;
   QStringList _commentsList;
   mutable QMutex _mutex;
-  mutable QString _id;
+  mutable QByteArray _id;
   PfNode _originalPfNode;
   SchedulerConfigData() : _maxtotaltaskinstances(0), _maxqueuedrequests(0) { }
   SchedulerConfigData(PfNode root, Scheduler *scheduler, bool applyLogConfig);
@@ -95,8 +95,8 @@ public:
   QVariant uiData(int section, int role) const;
   QVariant uiHeaderData(int section, int role) const;
   int uiSectionCount() const;
-  QString id() const { return _id; }
-  QString idQualifier() const { return "config"; }
+  QByteArray id() const { return _id; }
+  QByteArray idQualifier() const { return "config"_ba; }
   void applyLogConfig() const;
 };
 
@@ -155,7 +155,7 @@ SchedulerConfigData::SchedulerConfigData(
   _tasksRoot = TasksRoot(root, scheduler);
   _namedCalendars.clear();
   foreach (PfNode node, root.childrenByName("calendar")) {
-    QString name = node.contentAsString();
+    auto name = node.contentAsUtf8();
     Calendar calendar(node);
     if (name.isEmpty())
       Log::error() << "ignoring anonymous calendar: " << node.toPf();
@@ -181,7 +181,7 @@ SchedulerConfigData::SchedulerConfigData(
   foreach (PfNode node, root.childrenByName("cluster")) {
     Cluster cluster(node);
     foreach (PfNode child, node.childrenByName("hosts")) {
-      foreach (const QString &hostId, child.contentAsStringList()) {
+      for (auto hostId: child.contentAsUtf8List()) {
         Host host = _hosts.value(hostId);
         if (!host.isNull())
           cluster.appendHost(host);
@@ -205,13 +205,13 @@ SchedulerConfigData::SchedulerConfigData(
   QList<PfNode> taskGroupNodes = root.childrenByName("taskgroup");
   std::sort(taskGroupNodes.begin(), taskGroupNodes.end());
   for (auto node: taskGroupNodes) {
-    QString id = ConfigUtils::sanitizeId(
-          node.contentAsString(), ConfigUtils::FullyQualifiedId);
+    QByteArray id = ConfigUtils::sanitizeId(
+          node.contentAsString(), ConfigUtils::FullyQualifiedId).toUtf8();
     if (_taskgroups.contains(id)) {
       Log::error() << "ignoring duplicate taskgroup: " << id;
       continue;
     }
-    QString parentId = TaskGroup::parentGroupId(id);
+    QByteArray parentId = TaskGroup::parentGroupId(id);
     SharedUiItem parent = _taskgroups.value(parentId);
     if (parent.isNull())
       parent = _tasksRoot;
@@ -240,10 +240,10 @@ SchedulerConfigData::SchedulerConfigData(
     _tasktemplates.insert(tmpl.id(), tmpl);
 ignore_tasktemplate:;
   }
-  QHash<QString,Task> oldTasks = _tasks;
+  auto oldTasks = _tasks;
   _tasks.clear();
   foreach (PfNode node, root.childrenByName("task")) {
-    QString taskGroupId = node.attribute("taskgroup");
+    auto taskGroupId = node.utf8Attribute("taskgroup");
     TaskGroup taskGroup = _taskgroups.value(taskGroupId);
     Task task(node, scheduler, taskGroup, _namedCalendars, _tasktemplates);
     if (taskGroupId.isEmpty() || taskGroup.isNull()) {
@@ -331,8 +331,8 @@ ignore_task:;
         &requestTaskActionLinks, "*");
   // LATER onschedulershutdown
   foreach (const RequestTaskActionLink &link, requestTaskActionLinks) {
-    QString targetName = link._action.targetName();
-    QString taskId = link._contextTask.id();
+    auto targetName = link._action.targetName().toUtf8();
+    auto taskId = link._contextTask.id();
     if (!link._contextTask.isNull() && !targetName.contains('.')) { // id to group
       targetName = taskId.left(taskId.lastIndexOf('.')+1)+targetName;
     }
@@ -373,34 +373,34 @@ TasksRoot SchedulerConfig::tasksRoot() const {
   return d ? d->_tasksRoot : TasksRoot();
 }
 
-QHash<QString,TaskGroup> SchedulerConfig::taskgroups() const {
+QHash<QByteArray, TaskGroup> SchedulerConfig::taskgroups() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_taskgroups : QHash<QString,TaskGroup>();
+  return d ? d->_taskgroups : QHash<QByteArray,TaskGroup>();
 }
 
-QHash<QString,TaskTemplate> SchedulerConfig::tasktemplates() const {
+QHash<QByteArray,TaskTemplate> SchedulerConfig::tasktemplates() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_tasktemplates : QHash<QString,TaskTemplate>();
+  return d ? d->_tasktemplates : QHash<QByteArray,TaskTemplate>();
 }
 
-QHash<QString,Task> SchedulerConfig::tasks() const {
+QHash<QByteArray,Task> SchedulerConfig::tasks() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_tasks : QHash<QString,Task>();
+  return d ? d->_tasks : QHash<QByteArray,Task>();
 }
 
-QHash<QString,Cluster> SchedulerConfig::clusters() const {
+QHash<QByteArray,Cluster> SchedulerConfig::clusters() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_clusters : QHash<QString,Cluster>();
+  return d ? d->_clusters : QHash<QByteArray,Cluster>();
 }
 
-QHash<QString,Host> SchedulerConfig::hosts() const {
+QHash<QByteArray,Host> SchedulerConfig::hosts() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_hosts : QHash<QString,Host>();
+  return d ? d->_hosts : QHash<QByteArray,Host>();
 }
 
-QHash<QString,Calendar> SchedulerConfig::namedCalendars() const {
+QHash<QByteArray,Calendar> SchedulerConfig::namedCalendars() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_namedCalendars : QHash<QString,Calendar>();
+  return d ? d->_namedCalendars : QHash<QByteArray,Calendar>();
 }
 
 QList<EventSubscription> SchedulerConfig::onstart() const {
@@ -471,7 +471,7 @@ QList<LogFile> SchedulerConfig::logfiles() const {
 }
 
 void SchedulerConfig::changeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QString idQualifier) {
+    SharedUiItem newItem, SharedUiItem oldItem, QByteArray idQualifier) {
   SchedulerConfigData *d = data();
   if (!d)
     setData(d = new SchedulerConfigData());
@@ -506,7 +506,7 @@ void SchedulerConfig::changeItem(
 }
 
 /*void SchedulerConfig::changeParams(
-    ParamSet newParams, ParamSet oldParams, QString setId) {
+    ParamSet newParams, ParamSet oldParams, QByteArray setId) {
   Q_UNUSED(oldParams)
   SchedulerConfigData *d = data();
   if (!d)
@@ -522,10 +522,10 @@ void SchedulerConfig::changeItem(
   recomputeId();
 }*/
 
-QString SchedulerConfig::recomputeId() const {
+QByteArray SchedulerConfig::recomputeId() const {
   const SchedulerConfigData *d = data();
   if (!d)
-    return QString();
+    return {};
   QMutexLocker locker(&d->_mutex);
   QCryptographicHash hash(QCryptographicHash::Sha1);
   QByteArray data;
@@ -542,7 +542,7 @@ QString SchedulerConfig::recomputeId() const {
 }
 
 void SchedulerConfig::copyLiveAttributesFromOldTasks(
-    QHash<QString,Task> oldTasks) {
+    QHash<QByteArray, Task> oldTasks) {
   SchedulerConfigData *d = data();
   if (!d)
     return;
@@ -607,9 +607,9 @@ PfNode SchedulerConfig::toPfNode() const {
   //qSort(namedCalendars);
   //foreach (const Calendar &calendar, namedCalendars)
   //  node.appendChild(calendar.toPfNode());
-  QStringList calendarNames = d->_namedCalendars.keys();
+  QByteArrayList calendarNames = d->_namedCalendars.keys();
   std::sort(calendarNames.begin(), calendarNames.end());
-  foreach (const QString &calendarName, calendarNames)
+  foreach (auto calendarName, calendarNames)
     node.appendChild(d->_namedCalendars.value(calendarName).toPfNode());
   node.appendChild(d->_alerterConfig.toPfNode());
   if (!d->_accessControlConfig.isEmpty())

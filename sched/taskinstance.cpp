@@ -21,7 +21,7 @@
 #include "thread/atomicvalue.h"
 #include "condition/disjunctioncondition.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Instance Id", // 0
   "Task Id",
   "Status",
@@ -40,7 +40,8 @@ static QString _uiHeaderNames[] = {
   "Queue date", // 15
   "Time planned",
   "Queue when",
-  "Cancel when", // 18
+  "Cancel when",
+  "Deduplicate criterion", // 19
 };
 
 static QAtomicInt _sequence;
@@ -48,7 +49,7 @@ static QAtomicInt _sequence;
 class TaskInstanceData : public SharedUiItemData {
 public:
   quint64 _id, _herdid, _groupId;
-  QString _idAsString;
+  QByteArray _idAsString;
   Task _task;
   mutable AtomicValue<ParamSet> _params;
   QDateTime _creationDateTime;
@@ -80,7 +81,7 @@ public:
                    Condition cancelwhen = Condition())
     : _id(newId()), _herdid(herdid == 0 ? _id : herdid),
       _groupId(groupId ? groupId : _id),
-      _idAsString(QString::number(_id)),
+      _idAsString(QByteArray::number(_id)),
       _task(task), _params(params),
       _creationDateTime(QDateTime::currentDateTime()), _force(force),
       _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
@@ -110,8 +111,8 @@ private:
   }
 
 public:
-  QString id() const override { return _idAsString; }
-  QString idQualifier() const override { return "taskinstance"; }
+  QByteArray id() const override { return _idAsString; }
+  QByteArray idQualifier() const override { return "taskinstance"_ba; }
   int uiSectionCount() const override;
   QVariant uiData(int section, int role) const override;
   QVariant uiHeaderData(int section, int role) const override;
@@ -407,7 +408,7 @@ static RadixTree<std::function<QVariant(
   return taskInstance.durationMillis()/1000;
 } },
 { "!returncode", [](const TaskInstance &taskInstance, const QString&) {
-  return QString::number(taskInstance.returnCode());
+  return QByteArray::number(taskInstance.returnCode());
 } },
 { "!status", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.statusAsString();
@@ -447,9 +448,7 @@ static RadixTree<std::function<QVariant(
    return instance.currentTry();
 }},
 { "!deduplicatecriterion", [](const TaskInstance &instance, const QString &) {
-   auto ppp = instance.pseudoParams();
-   auto params = instance.params();
-   return params.evaluate(instance.task().deduplicateCriterion(), &ppp);
+   return instance.params().evaluate(instance.task().deduplicateCriterion());
 }},
 };
 
@@ -687,12 +686,14 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
       return _queuewhen.toString();
     case 18:
       return _cancelwhen.toString();
+    case 19:
+      return _params.data().evaluate(_task.deduplicateCriterion());
     }
     break;
   default:
     ;
   }
-  return QVariant();
+  return QVariant{};
 }
 
 TaskInstanceData *TaskInstance::data() {

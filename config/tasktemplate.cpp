@@ -23,10 +23,10 @@ TaskTemplate::TaskTemplate(const TaskTemplate&other) : SharedUiItem(other) {
 
 TaskTemplate::TaskTemplate(
     PfNode node, Scheduler *scheduler, SharedUiItem parent,
-    QHash<QString,Calendar> namedCalendars) {
+    QHash<QByteArray,Calendar> namedCalendars) {
   TaskTemplateData *d = new TaskTemplateData;
-  d->_id =
-      ConfigUtils::sanitizeId(node.contentAsString(), ConfigUtils::LocalId);
+  d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
+                                   ConfigUtils::LocalId).toUtf8();
   if (!d->TaskOrTemplateData::loadConfig(node, scheduler, parent,
                                          namedCalendars)) {
     delete d;
@@ -37,7 +37,7 @@ TaskTemplate::TaskTemplate(
 
 bool TaskOrTemplateData::loadConfig(
     PfNode node, Scheduler *scheduler, SharedUiItem parent,
-    QHash<QString,Calendar> namedCalendars) {
+    QHash<QByteArray,Calendar> namedCalendars) {
   if (parent.idQualifier() != "tasksroot"
       && parent.idQualifier() != "taskgroup") [[unlikely]] {
     Log::error() << "internal error in TaskOrGroupData::loadConfig";

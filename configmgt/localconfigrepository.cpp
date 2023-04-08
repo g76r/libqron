@@ -28,7 +28,7 @@ LocalConfigRepository::LocalConfigRepository(
 void LocalConfigRepository::openRepository(QString basePath) {
   QMutexLocker locker(&_mutex);
   _basePath = QString();
-  _activeConfigId = QString();
+  _activeConfigId = {};
   _configs.clear();
   // create repository subdirectories if needed
   QDir configsDir(basePath+"/configs");
@@ -39,12 +39,10 @@ void LocalConfigRepository::openRepository(QString basePath) {
     Log::error() << "cannot access or create directory " << errorsDir.path();
   // read active config id
   QFile activeFile(basePath+"/active");
-  QString activeConfigId;
+  QByteArray activeConfigId;
   if (activeFile.open(QIODevice::ReadOnly)) {
-    if (activeFile.size() < 1024) { // arbitrary limit
-      QByteArray hash = activeFile.readAll().trimmed();
-      activeConfigId = QString::fromUtf8(hash);
-    }
+    if (activeFile.size() < 1024) // arbitrary limit
+      activeConfigId = activeFile.readAll().trimmed();
     activeFile.close();
   }
   if (activeConfigId.isEmpty()) {
@@ -77,7 +75,7 @@ void LocalConfigRepository::openRepository(QString basePath) {
                           "subdir: " << fi.fileName();
         continue; // ignore incorrect config files
       }
-      QString configId = config.id();
+      auto configId = config.id();
       if (configId != fi.baseName()) { // filename must be fixed to match id
         QString rightPath = fi.path()+"/"+configId;
         Log::warning() << "renaming config file because id mismatch: "
@@ -131,8 +129,8 @@ void LocalConfigRepository::openRepository(QString basePath) {
         continue;
       }
       QDateTime ts = QDateTime::fromString(row[0], Qt::ISODate);
-      history.append(ConfigHistoryEntry(QString::number(i), ts, row[1],
-                     row[2]));
+      history.append(ConfigHistoryEntry(QByteArray::number(i), ts, row[1],
+                     row[2].toUtf8()));
     }
     emit historyReset(history);
   } else {
@@ -149,24 +147,24 @@ void LocalConfigRepository::openRepository(QString basePath) {
   }
 }
 
-QStringList LocalConfigRepository::availlableConfigIds() {
+QByteArrayList LocalConfigRepository::availlableConfigIds() {
   QMutexLocker locker(&_mutex);
   return _configs.keys();
 }
 
-QString LocalConfigRepository::activeConfigId() {
+QByteArray LocalConfigRepository::activeConfigId() {
   QMutexLocker locker(&_mutex);
   return _activeConfigId;
 }
 
-SchedulerConfig LocalConfigRepository::config(QString id) {
+SchedulerConfig LocalConfigRepository::config(QByteArray id) {
   QMutexLocker locker(&_mutex);
   return _configs.value(id);
 }
 
-QString LocalConfigRepository::addConfig(SchedulerConfig config) {
+QByteArray LocalConfigRepository::addConfig(SchedulerConfig config) {
   QMutexLocker locker(&_mutex);
-  QString id = config.id();
+  auto id = config.id();
   if (!id.isNull()) {
     /*if (_configs.contains(id)) {
       Log::info() << "requested to add an already known config: do "
@@ -184,7 +182,7 @@ QString LocalConfigRepository::addConfig(SchedulerConfig config) {
         Log::error() << "error writing config in repository: " << f.fileName()
                      << ((f.error() == QFileDevice::NoError)
                          ? "" : " : "+f.errorString());
-        return QString();
+        return {};
       }
     }
     recordInHistory("addConfig", id);
@@ -195,7 +193,7 @@ QString LocalConfigRepository::addConfig(SchedulerConfig config) {
   return id;
 }
 
-bool LocalConfigRepository::activateConfig(QString id) {
+bool LocalConfigRepository::activateConfig(QByteArray id) {
   QMutexLocker locker(&_mutex);
   //qDebug() << "activateConfig" << id << _activeConfigId;
   SchedulerConfig config = _configs.value(id);
@@ -212,7 +210,7 @@ bool LocalConfigRepository::activateConfig(QString id) {
   if (!_basePath.isEmpty()) {
     QSaveFile f(_basePath+"/active");
     if (!f.open(QIODevice::WriteOnly|QIODevice::Truncate)
-        || f.write(id.toUtf8().append('\n')) < 0
+        || f.write(id+'\n') < 0
         || !f.commit()) {
       Log::error() << "error writing config in repository: " << f.fileName()
                    << ((f.error() == QFileDevice::NoError)
@@ -227,7 +225,7 @@ bool LocalConfigRepository::activateConfig(QString id) {
   return true;
 }
 
-bool LocalConfigRepository::removeConfig(QString id) {
+bool LocalConfigRepository::removeConfig(QByteArray id) {
   QMutexLocker locker(&_mutex);
   SchedulerConfig config = _configs.value(id);
   if (config.isNull()) {
@@ -255,12 +253,12 @@ bool LocalConfigRepository::removeConfig(QString id) {
 }
 
 void LocalConfigRepository::recordInHistory(
-    QString event, QString configId) {
+    QString event, QByteArray configId) {
   QDateTime now = QDateTime::currentDateTime();
-  ConfigHistoryEntry entry(QString::number(_historyLog->rowCount()), now, event,
-                           configId);
+  ConfigHistoryEntry entry(
+        QByteArray::number(_historyLog->rowCount()), now, event, configId);
   if (_historyLog->isOpen()) {
-    QStringList row(now.toString(Qt::ISODate));
+    QStringList row { now.toString(Qt::ISODate) };
     row.append(event);
     row.append(configId);
     _historyLog->appendRow(row);

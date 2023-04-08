@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,7 +13,7 @@
  */
 #include "confighistoryentry.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "History Entry Id", // 0
   "Timestamp",
   "Event",
@@ -23,19 +23,20 @@ static QString _uiHeaderNames[] = {
 
 class ConfigHistoryEntryData : public SharedUiItemData {
 public:
-  QString _id;
+  QByteArray _id;
   QDateTime _timestamp;
-  QString _event, _configId;
+  QString _event;
+  QByteArray _configId;
   ConfigHistoryEntryData(
-      QString id, QDateTime timestamp, QString event, QString configId)
+      QByteArray id, QDateTime timestamp, QString event, QByteArray configId)
     : _id(id), _timestamp(timestamp), _event(event), _configId(configId) {
   }
   QVariant uiData(int section, int role) const;
   QVariant uiHeaderData(int section, int role) const;
   int uiSectionCount() const;
-  QString id() const { return _id; }
-  void setId(QString id) { _id = id; }
-  QString idQualifier() const { return "confighistoryentry"; }
+  QByteArray id() const { return _id; }
+  void setId(QByteArray id) { _id = id; }
+  QByteArray idQualifier() const { return "confighistoryentry"_ba; }
 };
 
 ConfigHistoryEntry::ConfigHistoryEntry()
@@ -47,7 +48,7 @@ ConfigHistoryEntry::ConfigHistoryEntry(const ConfigHistoryEntry &other)
 }
 
 ConfigHistoryEntry::ConfigHistoryEntry(
-    QString id, QDateTime timestamp, QString event, QString configId)
+    QByteArray id, QDateTime timestamp, QString event, QByteArray configId)
   : SharedUiItem(new ConfigHistoryEntryData(id, timestamp, event, configId)) {
 }
 

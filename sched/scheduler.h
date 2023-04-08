@@ -1,4 +1,4 @@
-/* Copyright 2012-2022 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -85,16 +85,25 @@ public slots:
    * @return isEmpty() if task cannot be queued
    * @see RequestFormField */
   TaskInstanceList requestTask(
-    QString taskId, ParamSet overridingParams, bool force = false,
+    QByteArray taskId, ParamSet overridingParams, bool force = false,
     quint64 herdid = 0);
+  TaskInstanceList requestTask(
+    QString taskId, ParamSet overridingParams, bool force = false,
+      quint64 herdid = 0) {
+    return requestTask(taskId.toUtf8(), overridingParams, force, herdid); }
   /** Plan task execution with conditions that must be met to queue it or
    * cancel it.
    * This method is thread-safe.
    * This method will block current thread until the request is either
    * queued either denied by Scheduler thread. */
-  TaskInstanceList planTask(QString taskId, ParamSet overridingParams,
+  TaskInstanceList planTask(QByteArray taskId, ParamSet overridingParams,
                             bool force, quint64 herdid,
                             Condition queuewhen, Condition cancelwhen);
+  TaskInstanceList planTask(QString taskId, ParamSet overridingParams,
+                            bool force, quint64 herdid,
+                            Condition queuewhen, Condition cancelwhen) {
+    return planTask(taskId.toUtf8(), overridingParams, force, herdid, queuewhen,
+                    cancelwhen); }
   /** Cancel a planned or queued request.
    * @return TaskInstance.isNull() iff error (e.g. request not found or no
    * longer queued) */
@@ -102,10 +111,10 @@ public slots:
   TaskInstance cancelTaskInstance(TaskInstance instance) {
     return cancelTaskInstance(instance.idAsLong()); }
   /** Cancel all planned or queued requests of a given task. */
-  TaskInstanceList cancelTaskInstancesByTaskId(QString taskId);
-  /** @see cancelRequestsByTaskId(QString) */
-  TaskInstanceList cancelTaskInstancesByTaskId(Task task) {
-    return cancelTaskInstancesByTaskId(task.id()); }
+  TaskInstanceList cancelTaskInstancesByTaskId(QByteArray taskId);
+  /** @see cancelRequestsByTaskId(QByteArray) */
+  TaskInstanceList cancelTaskInstancesByTaskId(QString taskId) {
+    return cancelTaskInstancesByTaskId(taskId.toUtf8()); }
   /** Abort a running task instance.
    * For local tasks aborting means killing, for ssh tasks aborting means
    * killing ssh client hence most of time killing actual task, for http tasks
@@ -124,14 +133,16 @@ public slots:
    * Same limitations than abortTask().
    * @see abortTask(quint64)
    */
-  TaskInstanceList abortTaskInstanceByTaskId(QString taskId);
-  /** @see abortTaskInstancesByTaskId(QString) */
-  TaskInstanceList abortTaskInstanceByTaskId(Task task) {
-    return abortTaskInstanceByTaskId(task.id()); }
+  TaskInstanceList abortTaskInstanceByTaskId(QByteArray taskId);
+  /** @see abortTaskInstancesByTaskId(QByteArray) */
+  TaskInstanceList abortTaskInstanceByTaskId(QString taskId) {
+    return abortTaskInstanceByTaskId(taskId.toUtf8()); }
   /** Post a notice.
    * This method is thread-safe.
    * If params has no parent it will be set global params as parent */
-  void postNotice(QString notice, ParamSet params);
+  void postNotice(QByteArray notice, ParamSet params);
+  void postNotice(QString notice, ParamSet params) {
+    postNotice(notice.toUtf8(), params); }
   /** Ask for queued requests to be reevaluated during next event loop
     * iteration.
     * This method must be called every time something occurs that could make a
@@ -141,7 +152,9 @@ public slots:
   void reevaluateQueuedTaskInstances();
   /** Enable or disable a task.
     * This method is threadsafe */
-  bool enableTask(QString taskId, bool enable);
+  bool enableTask(QByteArray taskId, bool enable);
+  bool enableTask(QString taskId, bool enable) {
+    return enableTask(taskId.toUtf8(), enable); }
   /** Enable or disable all tasks at once.
     * This method is threadsafe */
   void enableAllTasks(bool enable);
@@ -170,7 +183,7 @@ public:
 signals:
   void hostsResourcesAvailabilityChanged(
       QString host, QHash<QString,qint64> resources);
-  void noticePosted(QString notice, ParamSet params);
+  void noticePosted(QByteArray notice, ParamSet params);
 
 private:
   void taskInstanceStoppedOrCanceled(TaskInstance instance, Executor *executor,
@@ -179,7 +192,7 @@ private:
       TaskInstance instance, bool processCanceledAsFailure);
   void periodicChecks();
   /** Fire expired triggers for a given task. */
-  void checkTriggersForTask(QVariant taskId);
+  void checkTriggersForTask(QByteArray taskId);
   /** Fire expired triggers for all tasks. */
   void checkTriggersForAllTasks();
   void reloadAccessControlConfig();
@@ -194,13 +207,13 @@ private:
    * even create a new (temporary) executor thread if needed. */
   void startTaskInstance(TaskInstance instance);
   /** @return true iff the triggers fires a task request */
-  bool checkTrigger(CronTrigger trigger, Task task, QString taskId);
+  bool checkTrigger(CronTrigger trigger, Task task, QByteArray taskId);
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
                               = QDateTime::currentDateTime());
   TaskInstanceList doRequestTask(
-      QString taskId, ParamSet overridingParams, bool force, quint64 herdid);
+      QByteArray taskId, ParamSet overridingParams, bool force, quint64 herdid);
   TaskInstanceList doPlanTask(
-      QString taskId, ParamSet overridingParams, bool force, quint64 herdid,
+      QByteArray taskId, ParamSet overridingParams, bool force, quint64 herdid,
       Condition queuewhen, Condition cancelwhen);
   TaskInstance enqueueTaskInstance(TaskInstance request);
   TaskInstance doCancelTaskInstance(
@@ -208,8 +221,8 @@ private:
   TaskInstance doCancelTaskInstance(
       TaskInstance instance, bool warning, QString reason) {
     return doCancelTaskInstance(instance, warning, reason.toUtf8().constData()); }
-  TaskInstanceList doCancelTaskInstancesByTaskId(QString taskId);
-  TaskInstanceList doAbortTaskInstanceByTaskId(QString taskId);
+  TaskInstanceList doCancelTaskInstancesByTaskId(QByteArray taskId);
+  TaskInstanceList doAbortTaskInstanceByTaskId(QByteArray taskId);
   TaskInstance doAbortTaskInstance(quint64 id);
   void propagateTaskInstanceChange(TaskInstance instance);
   QMap<quint64,TaskInstance> detachedUnfinishedTaskInstances();

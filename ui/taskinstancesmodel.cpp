@@ -1,4 +1,4 @@
-/* Copyright 2013-2021 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ QVariant TaskInstancesModel::data(const QModelIndex &index, int role) const {
       if (!_customActions.isEmpty()) {
         SharedUiItem sui = itemAt(index.row());
         //qDebug() << "TaskInstancesModel::data(8, DisplayRole)" << index.row() << sui.qualifiedId();
-        if (sui.idQualifier() == QStringLiteral("taskinstance")) {
+        if (sui.idQualifier() == "taskinstance"_ba) {
           TaskInstance &ti = reinterpret_cast<TaskInstance&>(sui);
           TaskInstancePseudoParamsProvider ppp = ti.pseudoParams();
           return ti.params().evaluate(_customActions, &ppp);
@@ -44,9 +44,9 @@ QVariant TaskInstancesModel::data(const QModelIndex &index, int role) const {
 }
 
 void TaskInstancesModel::changeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QString idQualifier) {
+    SharedUiItem newItem, SharedUiItem oldItem, QByteArray idQualifier) {
   //qDebug() << "TaskInstancesModel::changeItem" << newItem.qualifiedId() << oldItem.qualifiedId();
-  if (! _keepFinished && idQualifier == QStringLiteral("taskinstance")) {
+  if (! _keepFinished && idQualifier == "taskinstance"_ba) {
     TaskInstance &newTaskInstance = reinterpret_cast<TaskInstance&>(newItem);
     if (newTaskInstance.isFinished())
       newItem = SharedUiItem();

@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,7 +19,7 @@
 #include "alert/alert.h"
 #include "configutils.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Pattern",
   "Channel",
@@ -39,18 +39,19 @@ static QAtomicInt _sequence;
 
 class AlertSubscriptionData : public SharedUiItemData {
 public:
-  QString _id, _channelName, _pattern;
+  QByteArray _id, _channelName;
+  QString _pattern;
   QRegularExpression _patternRegexp;
   QString _address, _emitMessage, _cancelMessage, _reminderMessage;
   bool _notifyEmit, _notifyCancel, _notifyReminder;
   ParamSet _params;
   QStringList _commentsList;
   AlertSubscriptionData()
-    : _id(QString::number(_sequence.fetchAndAddOrdered(1))), _notifyEmit(false),
-      _notifyCancel(false), _notifyReminder(false) {
+    : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))),
+      _notifyEmit(false), _notifyCancel(false), _notifyReminder(false) {
   }
-  QString id() const { return _id; }
-  QString idQualifier() const { return QStringLiteral("alertsubscription"); }
+  QByteArray id() const { return _id; }
+  QByteArray idQualifier() const { return "alertsubscription"_ba; }
   int uiSectionCount() const {
     return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
   QVariant uiData(int section, int role) const;
@@ -71,7 +72,7 @@ AlertSubscription::AlertSubscription(const AlertSubscription &other)
 AlertSubscription::AlertSubscription(
     PfNode subscriptionnode, PfNode channelnode, ParamSet parentParams) {
   AlertSubscriptionData *d = new AlertSubscriptionData;
-  d->_channelName = channelnode.name();
+  d->_channelName = channelnode.utf8Name();
   d->_pattern = subscriptionnode.attribute(QStringLiteral("pattern"),
                                            QStringLiteral("**"));
   d->_patternRegexp = ConfigUtils::readDotHierarchicalFilter(d->_pattern);
@@ -132,9 +133,9 @@ QRegularExpression AlertSubscription::patternRegexp() const {
   return d ? d->_patternRegexp : QRegularExpression();
 }
 
-QString AlertSubscription::channelName() const {
+QByteArray AlertSubscription::channelName() const {
   const AlertSubscriptionData *d = data();
-  return d ? d->_channelName : QString();
+  return d ? d->_channelName : QByteArray();
 }
 
 QString AlertSubscription::rawAddress() const {
@@ -248,5 +249,5 @@ QVariant AlertSubscriptionData::uiData(int section, int role) const {
   default:
     ;
   }
-  return QVariant();
+  return QVariant{};
 }

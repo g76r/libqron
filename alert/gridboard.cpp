@@ -1,4 +1,4 @@
-/* Copyright 2015-2022 Hallowyn and others.
+/* Copyright 2015-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@
 
 namespace {
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Label",
   "Pattern",
@@ -104,9 +104,10 @@ public:
 
 class DimensionData : public SharedUiItemData {
   friend class Dimension;
-  QString _id, _rawValue, _label;
-  QString id() const { return _id; }
-  QString idQualifier() const { return QStringLiteral("gridboarddimension"); }
+  QByteArray _id;
+  QString _rawValue, _label;
+  QByteArray id() const { return _id; }
+  QByteArray idQualifier() const { return "gridboarddimension"_ba; }
 };
 
 class Dimension : public SharedUiItem {
@@ -115,7 +116,7 @@ public:
     DimensionData *d = new DimensionData;
     QStringList idAndValue = node.contentAsTwoStringsList();
     d->_id = ConfigUtils::sanitizeId(
-          idAndValue.value(0), ConfigUtils::AlphanumId);
+          idAndValue.value(0), ConfigUtils::AlphanumId).toUtf8();
     if (d->_id.isEmpty()) {
       delete d;
       return;
@@ -123,7 +124,7 @@ public:
     d->_rawValue = idAndValue.value(1);
     if (d->_rawValue.isEmpty())
       d->_rawValue = "%"+d->_id;
-    d->_label = node.attribute(QStringLiteral("label"));
+    d->_label = node.attribute("label"_ba);
     setData(d);
   }
   PfNode toPfNode() const {
@@ -132,9 +133,9 @@ public:
       return PfNode();
     QString idAndValue;
     idAndValue = d->_id+' '+d->_rawValue;
-    PfNode node(QStringLiteral("dimension"), idAndValue);
+    PfNode node("dimension"_ba, idAndValue);
     if (!d->_label.isEmpty())
-      node.setAttribute(QStringLiteral("label"), d->_label);
+      node.setAttribute("label"_ba, d->_label);
     return node;
   }
   const DimensionData *data() const { return specializedData<DimensionData>(); }
@@ -175,7 +176,8 @@ static void mergeComponents(
 
 class GridboardData : public SharedUiItemData {
 public:
-  QString _id, _label, _pattern, _info;
+  QByteArray _id;
+  QString _label, _pattern, _info;
   QRegularExpression _patternRegexp;
   QList<Dimension> _dimensions;
   ParamSet _params;
@@ -211,8 +213,8 @@ public:
   GridboardData() : _warningDelay(DEFAULT_WARNING_DELAY),
     _updatesCounter(0), _currentComponentsCount(0), _currentItemsCount(0) { }
   ~GridboardData() { }
-  QString id() const { return _id; }
-  QString idQualifier() const { return QStringLiteral("gridboard"); }
+  QByteArray id() const { return _id; }
+  QByteArray idQualifier() const { return "gridboard"_ba; }
   int uiSectionCount() const {
     return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
   QVariant uiData(int section, int role) const;
@@ -227,15 +229,15 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
                      ParamSet parentParams) {
   Q_UNUSED(oldGridboard)
   GridboardData *d = new GridboardData;
-  d->_id = node.contentAsString();
+  d->_id = node.contentAsUtf8();
   if (d->_id.isEmpty()) {
     Log::warning() << "gridboard with empty id: " << node.toString();
     delete d;
     return;
   }
-  d->_label = node.attribute(QStringLiteral("label"));
-  d->_info = node.attribute(QStringLiteral("info"));
-  d->_pattern = node.attribute(QStringLiteral("pattern"));
+  d->_label = node.attribute("label"_ba);
+  d->_info = node.attribute("info"_ba);
+  d->_pattern = node.attribute("pattern"_ba);
   d->_patternRegexp = QRegularExpression(d->_pattern);
   if (!d->_patternRegexp.isValid())
     Log::warning() << "gridboard with invalid pattern: " << node.toString();
@@ -271,9 +273,9 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
   for (int i = 0; i < d->_dimensions.size(); ++i)
     d->_dataIndexesByDimension.append(QHash<QString,TreeItem*>());
   d->_warningDelay = node.doubleAttribute(
-        QStringLiteral("warningdelay"), DEFAULT_WARNING_DELAY/1e3)*1e3;
+        "warningdelay"_ba, DEFAULT_WARNING_DELAY/1e3)*1e3;
   d->_params.setParent(parentParams);
-  d->_params = ParamSet(node, "param");
+  d->_params = ParamSet(node, "param"_ba);
   ConfigUtils::loadComments(node, &d->_commentsList);
   // LATER load old state
   // LATER load initvalues
@@ -307,19 +309,19 @@ PfNode Gridboard::toPfNode() const {
   const GridboardData *d = data();
   if (!d)
     return PfNode();
-  PfNode node(QStringLiteral("gridboard"), d->_id);
+  PfNode node("gridboard"_ba, d->_id);
   ConfigUtils::writeComments(&node, d->_commentsList);
   if (!d->_label.isEmpty() && d->_label != d->_id)
-    node.setAttribute(QStringLiteral("label"), d->_label);
+    node.setAttribute("label"_ba, d->_label);
   if (!d->_info.isEmpty())
-    node.setAttribute(QStringLiteral("info"), d->_info);
-  node.setAttribute(QStringLiteral("pattern"), d->_pattern);
+    node.setAttribute("info"_ba, d->_info);
+  node.setAttribute("pattern"_ba, d->_pattern);
   foreach (const Dimension &dimension, d->_dimensions)
     node.appendChild(dimension.toPfNode());
   // LATER initvalues
-  ConfigUtils::writeParamSet(&node, d->_params, QStringLiteral("param"));
+  ConfigUtils::writeParamSet(&node, d->_params, u"param"_s);
   if (d->_warningDelay != DEFAULT_WARNING_DELAY)
-    node.setAttribute(QStringLiteral("warningdelay"), d->_warningDelay/1e3);
+    node.setAttribute("warningdelay"_ba, d->_warningDelay/1e3);
   return node;
 }
 
@@ -346,7 +348,7 @@ void Gridboard::update(QRegularExpressionMatch match, Alert alert) {
     QString dimensionValue =
         d->_params.evaluate(d->_dimensions[i].rawValue(), &rempp);
     if (dimensionValue.isEmpty())
-      dimensionValue = QStringLiteral("(none)");
+      dimensionValue = u"(none)"_s;
     dimensionValues.append(dimensionValue);
     TreeItem *componentRoot =
         d->_dataIndexesByDimension[i].value(dimensionValue);
@@ -499,7 +501,7 @@ QString Gridboard::toHtml() const {
         s = s+"<td class=\""+tdClass+"\">"
             +(item ? statusToHtmlHumanReadableString(status)
                      +"<br/>"+item->_timestamp.toString(
-                       QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"))
+                       u"yyyy-MM-dd hh:mm:ss,zzz"_s)
                    : "")+"</td>";
       }
     }

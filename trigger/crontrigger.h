@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,8 +25,8 @@ class CronTriggerData;
 /** Time trigger defined with a cron-like expression */
 class LIBQRONSHARED_EXPORT CronTrigger : public Trigger {
 public:
-  explicit CronTrigger(const QString expression = QString());
-  CronTrigger(PfNode node, QHash<QString,Calendar> namedCalendars);
+  explicit CronTrigger(const QString expression = {});
+  CronTrigger(PfNode node, QHash<QByteArray,Calendar> namedCalendars);
   CronTrigger(const CronTrigger &other);
   ~CronTrigger();
   CronTrigger &operator=(const CronTrigger &other);

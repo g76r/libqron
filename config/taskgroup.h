@@ -1,4 +1,4 @@
-/* Copyright 2012-2022 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -36,13 +36,13 @@ public:
   TaskGroup(const TaskGroup &other);
   TaskGroup(PfNode node, SharedUiItem parent, Scheduler *scheduler);
   /** pseudo constructor for models */
-  TaskGroup(QString id);
+  TaskGroup(QByteArray id);
   TaskGroup &operator=(const TaskGroup &other) {
     SharedUiItem::operator=(other); return *this; }
-  /** return "foo.bar" for group "foo.bar.baz" and QString() for group "foo". */
-  QString parentGroupId() const { return parentGroupId(id()); }
-  /** return "foo.bar" for group "foo.bar.baz" and QString() for group "foo". */
-  static QString parentGroupId(QString groupId);
+  /** return "foo.bar" for group "foo.bar.baz" and {} for group "foo". */
+  QByteArray parentGroupId() const { return parentGroupId(id()); }
+  /** return "foo.bar" for group "foo.bar.baz" and {} for group "foo". */
+  static QByteArray parentGroupId(QByteArray groupId);
   QString label() const;
   ParamSet params() const;
   QList<EventSubscription> onplan() const;

@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@
 #include "ui/qronuiutils.h"
 #include "modelview/shareduiitemdocumentmanager.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Hostname",
   "Resources",
@@ -30,15 +30,16 @@ static QString _uiHeaderNames[] = {
 
 class HostData : public SharedUiItemData {
 public:
-  QString _id, _label, _hostname;
+  QByteArray _id;
+  QString _label, _hostname;
   QHash<QString,qint64> _resources; // configured max resources available
   QStringList _commentsList;
   QVariant uiData(int section, int role) const;
   QVariant uiHeaderData(int section, int role) const;
   int uiSectionCount() const;
-  QString id() const { return _id; }
-  void setId(QString id) { _id = id; }
-  QString idQualifier() const { return "host"; }
+  QByteArray id() const { return _id; }
+  void setId(QByteArray id) { _id = id; }
+  QByteArray idQualifier() const { return "host"; }
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
   Qt::ItemFlags uiFlags(int section) const;
@@ -52,8 +53,8 @@ Host::Host(const Host &other) : SharedUiItem(other) {
 
 Host::Host(PfNode node, ParamSet globalParams) {
   HostData *d = new HostData;
-  d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
-                                    ConfigUtils::FullyQualifiedId);
+  d->_id = ConfigUtils::sanitizeId(
+        node.contentAsString(), ConfigUtils::FullyQualifiedId).toUtf8();
   d->_label = globalParams.evaluate(node.attribute("label"));
   d->_hostname = ConfigUtils::sanitizeId(
         globalParams.evaluate(node.attribute("hostname")),
@@ -118,7 +119,7 @@ bool HostData::setUiData(
   switch(section) {
   case 0:
     s = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId);
-    _id = s;
+    _id = s.toUtf8();
     return true;
   case 1:
     _hostname = ConfigUtils::sanitizeId(s, ConfigUtils::Hostname);

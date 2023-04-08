@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2023 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,9 +26,9 @@ public:
   DisjunctionCondition _queuewhen, _cancelwhen;
 
   PlanTaskActionData(
-      Scheduler *scheduler, QString id, ParamSet params, bool force, bool lone,
-      QHash<QString,QString> paramappend, DisjunctionCondition queuewhen,
-      DisjunctionCondition cancelwhen)
+      Scheduler *scheduler, QString id, ParamSet params, bool force,
+      bool lone, QHash<QString,QString> paramappend,
+      DisjunctionCondition queuewhen, DisjunctionCondition cancelwhen)
       : ActionData(scheduler), _id(id), _overridingParams(params),
         _force(force), _lone(lone), _paramappend(paramappend),
         _queuewhen(queuewhen), _cancelwhen(cancelwhen) { }
@@ -36,11 +36,10 @@ public:
                TaskInstance parentInstance) const override {
     if (!_scheduler)
       return;
-    QString id;
-    id = ParamSet().evaluate(_id, context);
+    QString id = ParamSet().evaluate(_id, context);
     if (!parentInstance.isNull()) {
       QString idIfLocalToGroup = parentInstance.task().taskGroup().id()+"."+id;
-      if (_scheduler->taskExists(idIfLocalToGroup))
+      if (_scheduler->taskExists(idIfLocalToGroup.toUtf8()))
         id = idIfLocalToGroup;
     }
     quint64 herdid = _lone ? 0 : parentInstance.herdid();
@@ -119,7 +118,7 @@ PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
           )) {
 }
 
-PlanTaskAction::PlanTaskAction(Scheduler *scheduler, QString taskId)
+PlanTaskAction::PlanTaskAction(Scheduler *scheduler, QByteArray taskId)
     : Action(new PlanTaskActionData(
           scheduler, taskId, ParamSet(), false, false,
           QHash<QString,QString>(), DisjunctionCondition(),

@@ -41,7 +41,6 @@
 
 static QString _localDefaultShell;
 static const QRegularExpression _asciiControlCharsSeqRE("[\\0-\\x1f]+");
-static const QRegularExpression _unallowedDockerNameFirstChar{"^[^A-Za-z0-9]"};
 static const QRegularExpression _whitespace { "\\s+" };
 
 static int staticInit() {
@@ -50,6 +49,10 @@ static int staticInit() {
   return 0;
 }
 Q_CONSTRUCTOR_FUNCTION(staticInit)
+
+static inline QByteArray dockerNameCleanedUp(QByteArray input) {
+  return input.isEmpty() || ::isalnum(input.at(0)) ? input : input.sliced(1);
+}
 
 Executor::Executor(Scheduler *scheduler) : QObject(0), _isTemporary(false),
   _thread(new QThread),
@@ -321,9 +324,8 @@ void Executor::dockerMean() {
   for (auto key: vars.keys())
     cmdline += "-e " + key + "='" + vars.value(key).remove('\'') + "' ";
   dockerParam(&cmdline, "name", &ppp, params,
-              _instance.task().id().remove(_unallowedDockerNameFirstChar)
-                +"_"+_instance.id()+"_"
-                +QString::number(_instance.currentTry()));
+              dockerNameCleanedUp(_instance.task().id())+"_"+_instance.id()+"_"
+              +QByteArray::number(_instance.currentTry()));
   dockerArrayParam(&cmdline, "mount", &ppp, params);
   dockerArrayParam(&cmdline, "tmpfs", &ppp, params);
   dockerArrayParam(&cmdline, "volume", &ppp, params);
@@ -773,7 +775,7 @@ void Executor::scatterMean() {
       ppm.prepend(&rpp);
     else
       ppm.overrideParamValue("0", input); // %0 will be available anyway
-    auto taskid = ParamSet().evaluate(command, &ppm);
+    auto taskid = ParamSet().evaluate(command, &ppm).toUtf8();
     const auto idIfLocalToGroup = _instance.task().taskGroup().id()+"."+taskid;
     if (_scheduler->taskExists(idIfLocalToGroup))
       taskid = idIfLocalToGroup;

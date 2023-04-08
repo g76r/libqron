@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -122,22 +122,23 @@ public:
   bool _isValid;
   mutable qint64 _lastTriggered, _nextTriggering;
 
-  explicit CronTriggerData(const QString cronExpression = QString())
+  explicit CronTriggerData(const QString cronExpression = {})
     : _seconds(0, 59), _minutes(0, 59), _hours(0, 23), _days(1,31),
       _months(1, 12), _daysofweek(0, 6), _isValid(false), _lastTriggered(-1),
       _nextTriggering(-1) {
     parseCronExpression(cronExpression);
   }
   QString canonicalExpression() const override {
-    return QString("%1 %2 %3 %4 %5 %6")
+    return u"%1 %2 %3 %4 %5 %6"_s
         .arg(_seconds, _minutes, _hours, _days, _months,_daysofweek);
   }
   QString expression() const override { return _cronExpression; }
-  QString humanReadableExpression() const override { return "("+_cronExpression+")"; }
+  QString humanReadableExpression() const override {
+    return "("+_cronExpression+")"; }
   QDateTime nextTriggering(QDateTime max) const;
   bool isTriggering(QDateTime timestamp) const;
   bool isValid() const override { return _isValid; }
-  QString triggerType() const override { return "cron"; }
+  QString triggerType() const override { return u"cron"_s; }
 
 private:
   void parseCronExpression(QString cronExpression);
@@ -147,7 +148,8 @@ CronTrigger::CronTrigger(const QString cronExpression)
   : Trigger(new CronTriggerData(cronExpression)) {
 }
 
-CronTrigger::CronTrigger(PfNode node, QHash<QString,Calendar> namedCalendars)
+CronTrigger::CronTrigger(PfNode node, QHash<QByteArray,
+                         Calendar> namedCalendars)
   : Trigger(new CronTriggerData(node.contentAsString())) {
   loadConfig(node, namedCalendars);
 }

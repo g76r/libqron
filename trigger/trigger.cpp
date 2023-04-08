@@ -1,4 +1,4 @@
-/* Copyright 2013-2022 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -91,18 +91,19 @@ ParamSet Trigger::overridingParams() const {
   return d ? d->_overridingParams : ParamSet();
 }
 
-bool Trigger::loadConfig(PfNode node, QHash<QString,Calendar> namedCalendars) {
+bool Trigger::loadConfig(
+    PfNode node, QHash<QByteArray,Calendar> namedCalendars) {
   ConfigUtils::loadComments(node, &d->_commentsList,
                             excludedDescendantsForComments);
-  QList<PfNode> list = node.childrenByName(QStringLiteral("calendar"));
+  QList<PfNode> list = node.childrenByName("calendar"_ba);
   if (list.size() > 1)
     Log::error() << "ignoring multiple calendar definition: "
                  << node.toPf();
   else if (list.size() == 1) {
     PfNode child = list.first();
-    QString content = child.contentAsString();
+    auto content = child.contentAsString();
     if (!content.isEmpty()) {
-      Calendar calendar = namedCalendars.value(content);
+      Calendar calendar = namedCalendars.value(content.toUtf8());
       if (calendar.isNull())
         Log::error() << "ignoring undefined calendar '" << content
                      << "': " << child.toPf();
@@ -128,13 +129,13 @@ bool Trigger::loadConfig(PfNode node, QHash<QString,Calendar> namedCalendars) {
 }
 
 QString TriggerData::triggerType() const {
-  return QStringLiteral("unknown");
+  return u"unknown"_s;
 }
 
 PfNode TriggerData::toPfNode() const {
   PfNode node(triggerType(), expression());
   ConfigUtils::writeComments(&node, _commentsList);
-  ConfigUtils::writeParamSet(&node, _overridingParams, QStringLiteral("param"));
+  ConfigUtils::writeParamSet(&node, _overridingParams, u"param"_s);
   if (!_calendar.isNull())
     node.appendChild(_calendar.toPfNode(true));
   return node;

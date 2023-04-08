@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,8 +15,7 @@
 
 ConfigHistoryModel::ConfigHistoryModel(QObject *parent)
   : SharedUiItemsTableModel(parent) {
-  setHeaderDataFromTemplate(
-        ConfigHistoryEntry(QString(), QDateTime(), QString(), QString()));
+  setHeaderDataFromTemplate(ConfigHistoryEntry({}, {}, {}, {}));
 }
 
 void ConfigHistoryModel::historyReset(QList<ConfigHistoryEntry> history) {

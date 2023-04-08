@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -29,24 +29,25 @@ class CsvFile;
 class LIBQRONSHARED_EXPORT LocalConfigRepository : public ConfigRepository {
   Q_OBJECT
   Q_DISABLE_COPY(LocalConfigRepository)
-  QString _activeConfigId, _basePath;
-  QHash<QString,SchedulerConfig> _configs;
+  QByteArray _activeConfigId;
+  QString _basePath;
+  QHash<QByteArray,SchedulerConfig> _configs;
   CsvFile *_historyLog;
   QMutex _mutex;
 
 public:
   LocalConfigRepository(QObject *parent, Scheduler *scheduler,
-                        QString basePath = QString());
-  QStringList availlableConfigIds();
-  QString activeConfigId();
-  SchedulerConfig config(QString id);
-  QString addConfig(SchedulerConfig config);
-  bool activateConfig(QString id);
-  bool removeConfig(QString id);
+                        QString basePath = {});
+  QByteArrayList availlableConfigIds() override;
+  QByteArray activeConfigId() override;
+  SchedulerConfig config(QByteArray id) override;
+  QByteArray addConfig(SchedulerConfig config) override;
+  bool activateConfig(QByteArray id) override;
+  bool removeConfig(QByteArray id) override;
   void openRepository(QString basePath);
 
 private:
-  inline void recordInHistory(QString event, QString configId);
+  inline void recordInHistory(QString event, QByteArray configId);
 };
 
 #endif // LOCALCONFIGREPOSITORY_H

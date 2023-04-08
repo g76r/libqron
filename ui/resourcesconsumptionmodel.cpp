@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,9 +20,9 @@ ResourcesConsumptionModel::ResourcesConsumptionModel(QObject *parent)
 #define MINIMUM_CAPTION "Theorical lowest availability for host"
 
 void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
-  QList<Task> tasks = config.tasks().values();
-  QHash<QString,Cluster> clusters = config.clusters();
-  QList<Host> hosts = config.hosts().values();
+  auto tasks = config.tasks().values();
+  auto clusters = config.clusters();
+  auto hosts = config.hosts().values();
   QHash<QString,QHash<QString,qint64> > configured;
   foreach (const Host &host, config.hosts())
     configured.insert(host.id(), host.resources());
@@ -33,8 +33,8 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
     setCellValue(MINIMUM_CAPTION, host.id(), QString());
   foreach (const Task &task, tasks) {
     QStringList targets;
-    if (clusters.contains(task.target()))
-      foreach (const Host &host, clusters.value(task.target()).hosts())
+    if (clusters.contains(task.target().toUtf8()))
+      foreach (const Host &host, clusters.value(task.target().toUtf8()).hosts())
         targets.append(host.id());
     else
       targets.append(task.target());

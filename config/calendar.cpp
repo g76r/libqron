@@ -1,4 +1,4 @@
-/* Copyright 2013-2021 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,7 +23,7 @@ static QAtomicInteger<qint32> sequence = 1;
 static const QRegularExpression
 _dateRE("(([0-9]+)-([0-9]+)-([0-9]+))?(..)?(([0-9]+)-([0-9]+)-([0-9]+))?");
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Name",
   "Date Rules"
@@ -42,22 +42,22 @@ public:
     bool isExcludeAll() const {
       return !_include && _begin.isNull() && _end.isNull(); }
   };
-  QString _id;
+  QByteArray _id;
   QString _name;
   QList<Rule> _rules;
   QStringList _commentsList;
-  CalendarData(QString name = QString())
-    : _id(QString::number(sequence.fetchAndAddOrdered(1))),
+  CalendarData(QString name = {})
+    : _id(QByteArray::number(sequence.fetchAndAddOrdered(1))),
       _name(name.isEmpty() ? QString() : name) { }
-  QString id() const override { return _id; }
-  QString idQualifier() const override { return QStringLiteral("calendar"); }
+  QByteArray id() const override { return _id; }
+  QByteArray idQualifier() const override { return "calendar"_ba; }
   int uiSectionCount() const override {
     return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
   QVariant uiData(int section, int role) const override;
   QVariant uiHeaderData(int section, int role) const override {
     return role == Qt::DisplayRole && section >= 0
         && (unsigned)section < sizeof _uiHeaderNames
-        ? _uiHeaderNames[section] : QVariant();
+        ? _uiHeaderNames[section] : QVariant{};
   }
   QString toCommaSeparatedRulesString() const;
   inline CalendarData &append(QDate begin, QDate end, bool include);
@@ -167,16 +167,16 @@ QString CalendarData::toCommaSeparatedRulesString() const {
     if (!r._begin.isNull() || !r._end.isNull())
       s.append(" ");
     if (!r._begin.isNull())
-      s.append(r._begin.toString(QStringLiteral("yyyy-MM-dd")));
+      s.append(r._begin.toString(u"yyyy-MM-dd"_s));
     if (r._begin != r._end) {
       s.append("..");
       if (!r._end.isNull())
-        s.append(r._end.toString(QStringLiteral("yyyy-MM-dd")));
+        s.append(r._end.toString(u"yyyy-MM-dd"_s));
     }
     s.append(", ");
   }
   if (_rules.isEmpty())
-    return QStringLiteral("include");
+    return u"include"_s;
   s.chop(2);
   return s;
 }
@@ -206,5 +206,5 @@ QVariant CalendarData::uiData(int section, int role) const {
       ;
     }
   }
-  return QVariant();
+  return {};
 }

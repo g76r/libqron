@@ -32,8 +32,11 @@ public:
                      Canceled };
 
   Alert();
-  explicit Alert(QString id,
+  explicit Alert(QByteArray id,
                  QDateTime riseDate = QDateTime::currentDateTime());
+  explicit Alert(QString id,
+                 QDateTime riseDate = QDateTime::currentDateTime())
+    : Alert(id.toUtf8(), riseDate) { }
   Alert(const Alert&other);
   Alert &operator=(const Alert &other) {
     SharedUiItem::operator=(other); return *this; }

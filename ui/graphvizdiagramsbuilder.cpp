@@ -1,4 +1,4 @@
-/* Copyright 2014-2022 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -51,9 +51,9 @@ static QString actionEdgeStyle(
 
 QHash<QString,QString> GraphvizDiagramsBuilder
 ::configDiagrams(SchedulerConfig config) {
-  QHash<QString,Task> tasks = config.tasks();
-  QHash<QString,Cluster> clusters = config.clusters();
-  QHash<QString,Host> hosts = config.hosts();
+  auto tasks = config.tasks();
+  auto clusters = config.clusters();
+  auto hosts = config.hosts();
   QList<EventSubscription> schedulerEventsSubscriptions,
       rootEventsSubscriptions;
   for (auto sub: config.allEventsSubscriptions()) {

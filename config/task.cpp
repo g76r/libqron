@@ -27,7 +27,7 @@
 
 class TaskData : public TaskOrTemplateData {
 public:
-  QString _localId;
+  QByteArray _localId;
   TaskGroup _group;
   SharedUiItemList<TaskTemplate> _appliedTemplates;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
@@ -50,7 +50,7 @@ public:
                  SharedUiItemDocumentTransaction *transaction,
                  int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
-  QString idQualifier() const override { return "task"; }
+  QByteArray idQualifier() const override { return "task"_ba; }
   PfNode toPfNode() const;
   void setTaskGroup(TaskGroup taskGroup);
 };
@@ -63,16 +63,16 @@ Task::Task(const Task &other) : SharedUiItem(other) {
 
 Task::Task(
     PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-    QHash<QString,Calendar> namedCalendars,
-    QHash<QString, TaskTemplate> taskTemplates) {
+    QHash<QByteArray,Calendar> namedCalendars,
+    QHash<QByteArray, TaskTemplate> taskTemplates) {
   TaskData *d = new TaskData;
-  d->_localId =
-      ConfigUtils::sanitizeId(node.contentAsString(), ConfigUtils::LocalId);
+  d->_localId = ConfigUtils::sanitizeId(node.contentAsString(),
+                                        ConfigUtils::LocalId).toUtf8();
   d->_id = taskGroup.id()+"."+d->_localId;
   d->_group = taskGroup;
   for (auto child: node.childrenByName("apply")) {
     for (auto name: child.contentAsStringList()) {
-      auto tmpl = taskTemplates.value(name);
+      auto tmpl = taskTemplates.value(name.toUtf8());
       if (tmpl.isNull()) {
         Log::warning() << "tasktemplate" << name << "not found while requested "
                           "in task definition: " << node.toString();
@@ -126,12 +126,12 @@ void Task::copyLiveAttributesFromOldTask(Task oldTask) {
   d->_lastTaskInstanceId = oldTask.lastTaskInstanceId();
   d->_enabled = oldTask.enabled();
   // keep last triggered timestamp from previously defined trigger
-  QHash<QString,CronTrigger> oldCronTriggers;
+  QHash<QByteArray,CronTrigger> oldCronTriggers;
   for (auto trigger: oldTask.data()->_cronTriggers)
-    oldCronTriggers.insert(trigger.canonicalExpression(), trigger);
+    oldCronTriggers.insert(trigger.canonicalExpression().toUtf8(), trigger);
   for (auto trigger: d->_cronTriggers) {
     CronTrigger oldTrigger =
-        oldCronTriggers.value(trigger.canonicalExpression());
+        oldCronTriggers.value(trigger.canonicalExpression().toUtf8());
     if (oldTrigger.isValid())
       trigger.setLastTriggered(oldTrigger.lastTriggered());
   }
@@ -151,8 +151,8 @@ QList<NoticeTrigger> Task::noticeTriggers() const {
   return !isNull() ? data()->_noticeTriggers : QList<NoticeTrigger>();
 }
 
-QString Task::localId() const {
-  return !isNull() ? data()->_localId : QString();
+QByteArray Task::localId() const {
+  return !isNull() ? data()->_localId : QByteArray{};
 }
 
 QString Task::label() const {
@@ -531,36 +531,34 @@ QVariant TaskData::uiData(int section, int role) const {
         return _label == _localId ? QVariant() : _label;
       return _label.isEmpty() ? _localId : _label;
     case 9:
-      return lastExecution().toString(
-            QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+      return lastExecution().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
     case 10:
-      return nextScheduledExecution().toString(
-            QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+      return nextScheduledExecution().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
     case 13:
       return _runningCount.loadRelaxed();
     case 17:
-      return QString::number(_runningCount.loadRelaxed())+" / "
-          +QString::number(_maxInstances);
+      return QByteArray::number(_runningCount.loadRelaxed())+" / "
+          +QByteArray::number(_maxInstances);
     case 19: {
       QDateTime dt = lastExecution();
       if (dt.isNull())
         return QVariant();
-      QString returnCode = QString::number(_lastReturnCode);
-      QString returnCodeLabel =
-          _params.value("return.code."+returnCode+".label");
-      QString s = dt.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"))
-          .append(_lastSuccessful ? " success" : " failure")
-          .append(" (code ").append(returnCode);
+      auto returnCode = QByteArray::number(_lastReturnCode);
+      auto returnCodeLabel = _params.value("return.code."+returnCode+".label");
+      QByteArray s = dt.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s).toUtf8()
+          + (_lastSuccessful ? " success"_ba : " failure"_ba)
+          +" (code "_ba + returnCode;
       if (!returnCodeLabel.isEmpty())
-        s.append(" : ").append(returnCodeLabel);
-      return s.append(')');
+        s = s + " : "_ba + returnCodeLabel.toUtf8();
+      s += ')';
+      return s;
     }
     case 20:
       return _appliedTemplates.join(' ');
     case 26:
-      return _lastDurationMillis >= 0 ? _lastDurationMillis/1000.0 : QVariant();
+      return _lastDurationMillis >= 0 ? _lastDurationMillis/1000.0 : QVariant{};
     case 32:
-      return _lastTaskInstanceId > 0 ? _lastTaskInstanceId : QVariant();
+      return _lastTaskInstanceId > 0 ? _lastTaskInstanceId : QVariant{};
     case 34:
       return _executionsCount.loadRelaxed();
     }
@@ -584,16 +582,16 @@ bool TaskData::setUiData(
     SharedUiItemDocumentTransaction *transaction, int role) {
   Q_ASSERT(transaction != 0);
   Q_ASSERT(errorString != 0);
-  QString s = value.toString().trimmed(), s2;
+  QByteArray s = value.toString().trimmed().toUtf8(), s2;
   switch(section) {
   case 0:
-    s = ConfigUtils::sanitizeId(s, ConfigUtils::LocalId);
+    s = ConfigUtils::sanitizeId(s, ConfigUtils::LocalId).toUtf8();
     s2 = _group.id()+"."+s;
     _localId = s;
     _id = s2;
     return true;
   case 1: {
-    s = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId);
+    s = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId).toUtf8();
     SharedUiItem group = transaction->itemById("taskgroup", s);
     if (group.isNull()) {
       *errorString = "No group with such id: \""+s+"\"";
@@ -605,7 +603,7 @@ bool TaskData::setUiData(
   case 2:
     _label = value.toString().trimmed();
     if (_label == _localId)
-      _label = QString();
+      _label = {};
     return true;
   }
   return TaskOrTemplateData::setUiData(

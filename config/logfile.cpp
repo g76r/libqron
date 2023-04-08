@@ -15,7 +15,7 @@
 #include <QSharedData>
 #include "pf/pfnode.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Path Pattern",
   "Minimum Severity",
@@ -26,16 +26,17 @@ static QAtomicInt _sequence;
 
 class LogFileData : public SharedUiItemData {
 public:
-  QString _id, _pathPattern;
+  QByteArray _id;
+  QString _pathPattern;
   Log::Severity _minimumSeverity;
   bool _buffered;
-  LogFileData() : _id(QString::number(_sequence.fetchAndAddOrdered(1))),
+  LogFileData() : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))),
     _minimumSeverity(Log::Debug), _buffered(true) { }
   QVariant uiData(int section, int role) const override;
   QVariant uiHeaderData(int section, int role) const override;
   int uiSectionCount() const override;
-  QString id() const override { return _id; }
-  QString idQualifier() const override { return "logfile"; }
+  QByteArray id() const override { return _id; }
+  QByteArray idQualifier() const override { return "logfile"_ba; }
   /*bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction,
                  int role) override;

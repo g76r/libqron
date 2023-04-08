@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -133,7 +133,7 @@ void Alerter::doSetConfig(AlerterConfig config) {
   _config = config;
   auto newboards = config.gridboards();
   auto gridboards = _gridboards.lockedData();
-  QSet<QString> ids;
+  QSet<QByteArray> ids;
   for (auto id: (*gridboards).keys()) {
     auto &g = (*gridboards)[id];
     bool found = false;
@@ -157,37 +157,37 @@ void Alerter::doSetConfig(AlerterConfig config) {
   emit configChanged(_config);
 }
 
-void Alerter::emitAlert(QString alertId) {
+void Alerter::emitAlert(QByteArray alertId) {
   QMetaObject::invokeMethod(this, [this,alertId]() {
     doEmitAlert(alertId);
   });
 }
 
-void Alerter::raiseAlert(QString alertId) {
+void Alerter::raiseAlert(QByteArray alertId) {
   QMetaObject::invokeMethod(this, [this,alertId]() {
     doRaiseAlert(alertId, false);
   });
 }
 
-void Alerter::raiseAlertImmediately(QString alertId) {
+void Alerter::raiseAlertImmediately(QByteArray alertId) {
   QMetaObject::invokeMethod(this, [this,alertId]() {
     doRaiseAlert(alertId, true);
   });
 }
 
-void Alerter::cancelAlert(QString alertId) {
+void Alerter::cancelAlert(QByteArray alertId) {
   QMetaObject::invokeMethod(this, [this,alertId]() {
     doCancelAlert(alertId, false);
   });
 }
 
-void Alerter::cancelAlertImmediately(QString alertId) {
+void Alerter::cancelAlertImmediately(QByteArray alertId) {
   QMetaObject::invokeMethod(this, [this,alertId]() {
     doCancelAlert(alertId, true);
   });
 }
 
-void Alerter::doRaiseAlert(QString alertId, bool immediately) {
+void Alerter::doRaiseAlert(QByteArray alertId, bool immediately) {
   Alert oldAlert = _statefulAlerts.value(alertId);
   Alert newAlert = oldAlert.isNull() ? Alert(alertId) : oldAlert;
   QDateTime now = QDateTime::currentDateTime();
@@ -247,7 +247,7 @@ nothing_changed:
  notifyGridboards(newAlert);
 }
 
-void Alerter::doCancelAlert(QString alertId, bool immediately) {
+void Alerter::doCancelAlert(QByteArray alertId, bool immediately) {
   Alert oldAlert = _statefulAlerts.value(alertId), newAlert = oldAlert;
   ++_cancelRequestsCounter;
 //  if (alertId.startsWith("task.maxinstancesreached")
@@ -297,7 +297,7 @@ nothing_changed:
   notifyGridboards(newAlert);
 }
 
-void Alerter::doEmitAlert(QString alertId) {
+void Alerter::doEmitAlert(QByteArray alertId) {
   ++_emitRequestsCounter;
   Alert alert = _oneshotAlerts.value(alertId);
   QDateTime now = QDateTime::currentDateTime();
@@ -474,16 +474,16 @@ void Alerter::commitChange(Alert *newAlert, Alert *oldAlert) {
 //      || oldAlert->id().startsWith("task.maxinstancesreached")) {
 //    qDebug() << "commitChange:" << newAlert->id() << newAlert->statusToString() << oldAlert->statusToString();
 //  }
-  emit statefulAlertChanged(*newAlert, *oldAlert, QStringLiteral("alert"));
+  emit statefulAlertChanged(*newAlert, *oldAlert, "alert"_ba);
 }
 
-QList<AlertSubscription> Alerter::alertSubscriptions(QString alertId) {
+QList<AlertSubscription> Alerter::alertSubscriptions(QByteArray alertId) {
   if (!_alertSubscriptionsCache.contains(alertId)) {
     QList<AlertSubscription> list;
     foreach (const AlertSubscription &sub, _config.alertSubscriptions()) {
       if (sub.patternRegexp().match(alertId).hasMatch()) {
-        QString channelName = sub.channelName();
-        if (channelName == QStringLiteral("stop"))
+        auto channelName = sub.channelName();
+        if (channelName == "stop"_ba)
           break;
         if (!_channels.contains(channelName)) // should never happen
           continue;
@@ -495,7 +495,7 @@ QList<AlertSubscription> Alerter::alertSubscriptions(QString alertId) {
   return _alertSubscriptionsCache.value(alertId);
 }
 
-AlertSettings Alerter::alertSettings(QString alertId) {
+AlertSettings Alerter::alertSettings(QByteArray alertId) {
   if (!_alertSettingsCache.contains(alertId)) {
     foreach (const AlertSettings &settings, _config.alertSettings()) {
       if (settings.patternRegexp().match(alertId).hasMatch()) {
@@ -511,34 +511,34 @@ found:;
   return _alertSettingsCache.value(alertId);
 }
 
-qint64 Alerter::riseDelay(QString alertId) {
+qint64 Alerter::riseDelay(QByteArray alertId) {
   qint64 delay = alertSettings(alertId).riseDelay();
   return delay > 0 ? delay : _config.riseDelay();
 }
 
-qint64 Alerter::mayriseDelay(QString alertId) {
+qint64 Alerter::mayriseDelay(QByteArray alertId) {
   qint64 delay = alertSettings(alertId).mayriseDelay();
   return delay > 0 ? delay : _config.mayriseDelay();
 }
 
-qint64 Alerter::dropDelay(QString alertId) {
+qint64 Alerter::dropDelay(QByteArray alertId) {
   qint64 delay = alertSettings(alertId).dropDelay();
   return delay > 0 ? delay : _config.dropDelay();
 }
 
-qint64 Alerter::duplicateEmitDelay(QString alertId) {
+qint64 Alerter::duplicateEmitDelay(QByteArray alertId) {
   qint64 delay = alertSettings(alertId).duplicateEmitDelay();
   return delay > 0 ? delay : _config.duplicateEmitDelay();
 }
 
-Gridboard Alerter::gridboard(QString gridboardId) {
+Gridboard Alerter::gridboard(QByteArray gridboardId) {
   auto gridboards = _gridboards.lockedData();
   auto g = (*gridboards).value(gridboardId);
   g.detach();
   return g;
 }
 
-void Alerter::clearGridboard(QString gridboardId) {
+void Alerter::clearGridboard(QByteArray gridboardId) {
   auto gridboards = _gridboards.lockedData();
   if ((*gridboards).contains(gridboardId))
     (*gridboards)[gridboardId].clear();
@@ -553,7 +553,7 @@ qint64 Alerter::gridboardsUpdatesCounter() const {
 }
 
 QDateTime Alerter::windowCorrectedVisibilityDate(
-    QString alertId, QDateTime uncorrectedVisibilityDate) {
+    QByteArray alertId, QDateTime uncorrectedVisibilityDate) {
   QDateTime visibilityDate = uncorrectedVisibilityDate;
   CronTrigger window = alertSettings(alertId).visibilityWindow();
   if (window.isValid()) {

@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -124,18 +124,18 @@ class LIBQRONSHARED_EXPORT Alerter : public QObject {
   QThread *_alerterThread;
   GridboardThread *_gridboardThread;
   AlerterConfig _config;
-  QHash<QString,AlertChannel*> _channels;
-  QHash<QString,Alert> _statefulAlerts;
-  QHash<QString,Alert> _oneshotAlerts;
-  QHash<QString, QList<AlertSubscription> > _alertSubscriptionsCache;
-  QHash<QString, AlertSettings> _alertSettingsCache;
+  QHash<QByteArray,AlertChannel*> _channels;
+  QHash<QByteArray,Alert> _statefulAlerts;
+  QHash<QByteArray,Alert> _oneshotAlerts;
+  QHash<QByteArray,QList<AlertSubscription>> _alertSubscriptionsCache;
+  QHash<QByteArray,AlertSettings> _alertSettingsCache;
   qint64 _emitRequestsCounter, _raiseRequestsCounter, _cancelRequestsCounter,
   _raiseImmediateRequestsCounter, _cancelImmediateRequestsCounter;
   qint64 _emitNotificationsCounter, _raiseNotificationsCounter,
   _cancelNotificationsCounter, _totalChannelsNotificationsCounter;
   int _rulesCacheSize, _rulesCacheHwm, _deduplicatingAlertsCount,
   _deduplicatingAlertsHwm;
-  AtomicValue<QHash<QString,Gridboard>> _gridboards;
+  AtomicValue<QHash<QByteArray,Gridboard>> _gridboards;
 
 public:
   explicit Alerter();
@@ -146,7 +146,9 @@ public:
    *
    * This method is threadsafe.
    * @see raiseAlert() */
-  void emitAlert(QString alertId);
+  void emitAlert(QByteArray alertId);
+  void emitAlert(QString alertId) {
+    emitAlert(alertId.toUtf8()); }
   /** Raise an alert and emit it after a rise delay if it is not already raised.
    *
    * This is the prefered way to report an alert, along with cancelAlert().
@@ -154,7 +156,9 @@ public:
    * cancel grace period, the cancellation is unscheduled.
    * If the alert is already raised and not canceled, this method does nothing.
    * This method is threadsafe. */
-  void raiseAlert(QString alertId);
+  void raiseAlert(QByteArray alertId);
+  void raiseAlert(QString alertId) {
+    raiseAlert(alertId.toUtf8()); }
   /** Tell the Alerter that an alert should no longer be raised.
    *
    * This is the prefered way to report the end of an alert.
@@ -168,7 +172,9 @@ public:
    * alerts is raised and cancel several time within the same time interval
    * between alerts send).
    * This method is threadsafe. */
-  void cancelAlert(QString alertId);
+  void cancelAlert(QByteArray alertId);
+  void cancelAlert(QString alertId) {
+    cancelAlert(alertId.toUtf8()); }
   /** Immediatly cancel an alert, ignoring grace delay.
    *
    * In most cases it is strongly recommanded to call cancelAlert() instead.
@@ -178,13 +184,17 @@ public:
    * (e.g. mails) are sent again.
    * This method is threadsafe.
    * @see cancelAlert() */
-  void cancelAlertImmediately(QString alertId);
+  void cancelAlertImmediately(QByteArray alertId);
+  void cancelAlertImmediately(QString alertId) {
+    cancelAlertImmediately(alertId.toUtf8()); }
   /** Immediatly raise an alert, ignoring rise delay.
    *
    * In most cases it is strongly recommanded to call raiseAlert() instead.
    * This method is threadsafe.
    * @see cancelAlert() */
-  void raiseAlertImmediately(QString alertId);
+  void raiseAlertImmediately(QByteArray alertId);
+  void raiseAlertImmediately(QString alertId) {
+    raiseAlertImmediately(alertId.toUtf8()); }
   /** Count of emitAlert() requests since startup. */
   qint64 emitRequestsCounter() const { return _emitRequestsCounter; }
   /** Count of raiseAlert() and raiseAlertImmediately() requests since startup,
@@ -237,17 +247,17 @@ public:
   qint64 gridboardsUpdatesCounter() const;
   /** Provide a gridboard given its id.
    * This method is thread-safe. */
-  Gridboard gridboard(QString gridboardId);
+  Gridboard gridboard(QByteArray gridboardId);
   /** Remove any current data from a gridboard given its id.
    * This method is thread-safe. */
-  void clearGridboard(QString gridboardId);
+  void clearGridboard(QByteArray gridboardId);
 
 signals:
   /** A stateful alert (i.e. an alert handled through raiseAlert()/cancelAlert()
    * calls, not through emitAlert()) has been created or destroyed or modified.
    * Can be connected to a SharedUiItemsModel. */
   void statefulAlertChanged(Alert newAlert, Alert oldAlert,
-                            QString idQualifier);
+                            QByteArray idQualifier);
   /** An alert is emited through alert channels.
    * This occurs for stateful alerts when raising an alert that is not
    * already raised (through raiseAlert()) or when canceling a raised alert
@@ -259,7 +269,7 @@ signals:
   /** Config parameters changed.
    * Convenience signal emited just before configChanged(). */
   // LATER remove and use lambdas instead of convenience signals
-  void paramsChanged(ParamSet newParams, ParamSet oldParams, QString setId);
+  void paramsChanged(ParamSet newParams, ParamSet oldParams, QByteArray setId);
   /** Configuration has changed. */
   void configChanged(AlerterConfig config);
 
@@ -268,31 +278,31 @@ private slots:
 
 private:
   Q_INVOKABLE void doSetConfig(AlerterConfig config);
-  Q_INVOKABLE void doRaiseAlert(QString alertId, bool immediately);
-  Q_INVOKABLE void doCancelAlert(QString alertId, bool immediately);
-  Q_INVOKABLE void doEmitAlert(QString alertId);
+  Q_INVOKABLE void doRaiseAlert(QByteArray alertId, bool immediately);
+  Q_INVOKABLE void doCancelAlert(QByteArray alertId, bool immediately);
+  Q_INVOKABLE void doEmitAlert(QByteArray alertId);
   inline void actionRaise(Alert *newAlert);
   inline void actionCancel(Alert *newAlert);
   inline void actionNoLongerCancel(Alert *newAlert);
   inline void notifyChannels(Alert newAlert);
   inline void notifyGridboards(Alert newAlert);
   inline void commitChange(Alert *newAlert, Alert *oldAlert);
-  inline QList<AlertSubscription> alertSubscriptions(QString alertId);
-  inline AlertSettings alertSettings(QString alertId);
+  inline QList<AlertSubscription> alertSubscriptions(QByteArray alertId);
+  inline AlertSettings alertSettings(QByteArray alertId);
   /** Delay according to (settings) or by default AlertConfig-level delay,
    * in ms. */
-  inline qint64 riseDelay(QString alertId);
+  inline qint64 riseDelay(QByteArray alertId);
   /** Delay according to (settings) or by default AlertConfig-level delay,
    * in ms. */
-  inline qint64 mayriseDelay(QString alertId);
+  inline qint64 mayriseDelay(QByteArray alertId);
   /** Delay according to (settings) or by default AlertConfig-level delay,
    * in ms. */
-  inline qint64 dropDelay(QString alertId);
+  inline qint64 dropDelay(QByteArray alertId);
   /** Delay according to (settings) or by default AlertConfig-level delay,
    * in ms. */
-  inline qint64 duplicateEmitDelay(QString alertId);
+  inline qint64 duplicateEmitDelay(QByteArray alertId);
   inline QDateTime windowCorrectedVisibilityDate(
-      QString alertId, QDateTime uncorrectedVisibilityDate);
+      QByteArray alertId, QDateTime uncorrectedVisibilityDate);
 };
 
 #endif // ALERTER_H

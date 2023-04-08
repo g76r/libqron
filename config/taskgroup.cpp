@@ -1,4 +1,4 @@
-/* Copyright 2012-2022 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -20,11 +20,11 @@
 
 class TaskGroupData : public TaskOrGroupData {
 public:
-  QVariant uiData(int section, int role) const;
-  QString idQualifier() const { return "taskgroup"; }
+  QVariant uiData(int section, int role) const override;
+  QByteArray idQualifier() const override { return "taskgroup"_ba; }
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
-  Qt::ItemFlags uiFlags(int section) const;
+  Qt::ItemFlags uiFlags(int section) const override;
   PfNode toPfNode() const;
   bool loadConfig(PfNode node, SharedUiItem parentGroup, Scheduler *scheduler);
 };
@@ -38,7 +38,7 @@ TaskGroup::TaskGroup(const TaskGroup &other) : SharedUiItem(other) {
 TaskGroup::TaskGroup(PfNode node, SharedUiItem parent, Scheduler *scheduler) {
   TaskGroupData *d = new TaskGroupData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
-                                   ConfigUtils::FullyQualifiedId);
+                                   ConfigUtils::FullyQualifiedId).toUtf8();
   if (d->loadConfig(node, parent, scheduler))
     setData(d);
 }
@@ -68,15 +68,15 @@ bool TaskOrGroupData::loadConfig(
   return true;
 }
 
-TaskGroup::TaskGroup(QString id) {
+TaskGroup::TaskGroup(QByteArray id) {
   TaskGroupData *d = new TaskGroupData;
-  d->_id = ConfigUtils::sanitizeId(id, ConfigUtils::FullyQualifiedId);
+  d->_id = ConfigUtils::sanitizeId(id, ConfigUtils::FullyQualifiedId).toUtf8();
   setData(d);
 }
 
-QString TaskGroup::parentGroupId(QString groupId) {
+QByteArray TaskGroup::parentGroupId(QByteArray groupId) {
   int i = groupId.lastIndexOf('.');
-  return (i >= 0) ? groupId.left(i) : QString();
+  return (i >= 0) ? groupId.left(i) : QByteArray{};
 }
 
 QString TaskGroup::label() const {
@@ -215,16 +215,16 @@ bool TaskOrGroupData::setUiData(
     SharedUiItemDocumentTransaction *transaction, int role) {
   Q_ASSERT(transaction != 0);
   Q_ASSERT(errorString != 0);
-  QString s = value.toString().trimmed(), s2;
+  QString s = value.toString().trimmed();
   switch(section) {
   case 0:
   case 11:
-    _id = ConfigUtils::sanitizeId(s, ConfigUtils::LocalId);
+    _id = ConfigUtils::sanitizeId(s, ConfigUtils::LocalId).toUtf8();
     return true;
   case 2:
     _label = value.toString().trimmed();
     if (_label == _id)
-      _label = QString();
+      _label = {};
     return true;
   }
   return TasksRootData::setUiData(
@@ -243,7 +243,7 @@ bool TaskGroupData::setUiData(
       s = s+_id.mid(_id.lastIndexOf('.'));
     else
       s = s+"."+_id;
-    _id = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId);
+    _id = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId).toUtf8();
     return true;
   }
   return TaskOrGroupData::setUiData(

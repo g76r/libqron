@@ -1,4 +1,4 @@
-/* Copyright 2012-2022 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
 #include "config/alertsubscription.h"
 #include "util/radixtree.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Status",
   "Rise Date",
@@ -29,21 +29,21 @@ static QString _uiHeaderNames[] = {
 
 class AlertData : public SharedUiItemData {
 public:
-  QString _id;
+  QByteArray _id;
   Alert::AlertStatus _status;
   QDateTime _riseDate, _visibilityDate, _cancellationDate, _lastReminderDate;
   AlertSubscription _subscription;
   int _count;
-  AlertData(const QString id = QString(),
+  AlertData(const QByteArray id = {},
             QDateTime riseDate = QDateTime::currentDateTime())
     : _id(id), _status(Alert::Nonexistent), _riseDate(riseDate), _count(1) { }
-  QString id() const { return _id; }
-  QString idQualifier() const { return QStringLiteral("alert"); }
+  QByteArray id() const { return _id; }
+  QByteArray idQualifier() const { return "alert"_ba; }
   int uiSectionCount() const;
   QVariant uiData(int section, int role) const;
   QVariant uiHeaderData(int section, int role) const;
   QString idWithCount() const {
-    return _count > 1 ? _id+" x "+QString::number(_count) : _id; }
+    return _count > 1 ? _id+" x "+QByteArray::number(_count) : _id; }
 };
 
 int AlertData::uiSectionCount() const {
@@ -66,14 +66,14 @@ QVariant AlertData::uiData(int section, int role) const {
     case 1:
       return Alert::statusAsString(_status);
     case 2:
-      return _riseDate.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+      return _riseDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
     case 3:
       return _status == Alert::Rising || _status == Alert::MayRise
-          ? _visibilityDate.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"))
+          ? _visibilityDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s)
           : QVariant();
     case 4:
       return _status == Alert::MayRise || _status == Alert::Dropping
-          ? _cancellationDate.toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"))
+          ? _cancellationDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s)
           : QVariant();
     case 5:
       break; // actions
@@ -88,13 +88,13 @@ QVariant AlertData::uiData(int section, int role) const {
   default:
     ;
   }
-  return QVariant();
+  return {};
 }
 
 Alert::Alert() : SharedUiItem() {
 }
 
-Alert::Alert(QString id, QDateTime datetime)
+Alert::Alert(QByteArray id, QDateTime datetime)
   : SharedUiItem(new AlertData(id, datetime)) {
 }
 
@@ -223,15 +223,15 @@ static RadixTree<std::function<QVariant(const Alert&, const QVariant &)>>
  } },
 { "!risedate" , [](const Alert &alert, const QVariant &) {
    return alert.riseDate()
-       .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+       .toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
  } },
 { "!cancellationdate" , [](const Alert &alert, const QVariant &) {
    return alert.cancellationDate()
-       .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+       .toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
  } },
 { "!visibilitydate" , [](const Alert &alert, const QVariant &) {
    return alert.visibilityDate()
-       .toString(QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+       .toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
  } },
 { "!alertstatus" , [](const Alert &alert, const QVariant &) {
    return alert.statusAsString();

@@ -1,4 +1,4 @@
-/* Copyright 2013 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,7 +28,7 @@ NoticeTrigger::NoticeTrigger() {
 }
 
 NoticeTrigger::NoticeTrigger(PfNode node,
-                             QHash<QString,Calendar> namedCalendars)
+                             QHash<QByteArray, Calendar> namedCalendars)
   : Trigger(new NoticeTriggerData(node.contentAsString())){
   loadConfig(node, namedCalendars);
 }

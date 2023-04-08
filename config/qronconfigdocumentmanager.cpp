@@ -1,4 +1,4 @@
-/* Copyright 2015-2022 Hallowyn and others.
+/* Copyright 2015-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,14 +26,15 @@ Q_CONSTRUCTOR_FUNCTION(staticInit)
 QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   : SharedUiItemDocumentManager(parent) {
   registerItemType(
-        "taskgroup", &TaskGroup::setUiData, [this](QString id) -> SharedUiItem {
+        "taskgroup", &TaskGroup::setUiData,
+        [this](QByteArray id) -> SharedUiItem {
     return TaskGroup(PfNode("taskgroup", id), _config.tasksRoot(), 0);
   });
   addChangeItemTrigger(
         "taskgroup", AfterUpdate,
         [](SharedUiItemDocumentTransaction *transaction,
         SharedUiItem *newItem, SharedUiItem oldItem,
-        QString idQualifier, QString *errorString) {
+        QByteArray idQualifier, QString *errorString) {
     Q_UNUSED(oldItem)
     Q_UNUSED(idQualifier)
     TaskGroup *newGroup = static_cast<TaskGroup*>(newItem);
@@ -52,7 +53,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   });
   registerItemType(
         "task", &Task::setUiData,
-        [](SharedUiItemDocumentTransaction *transaction, QString id,
+        [](SharedUiItemDocumentTransaction *transaction, QByteArray id,
         QString *errorString) -> SharedUiItem {
     Q_UNUSED(transaction)
     Q_UNUSED(id)
@@ -62,13 +63,13 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addForeignKey("task", 1, "taskgroup", 0, NoAction, Cascade);
   registerItemType(
         "host", &Host::setUiData,
-        [this](QString id) -> SharedUiItem {
+        [this](QByteArray id) -> SharedUiItem {
     return Host(PfNode("host", id), _config.params());
   });
   addChangeItemTrigger(
         "host", BeforeUpdate|BeforeCreate,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QString idQualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
     Q_UNUSED(oldItem)
     Q_UNUSED(idQualifier)
     if (!transaction->itemById("cluster", newItem->id()).isNull()) {
@@ -80,7 +81,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "host", AfterUpdate|AfterDelete,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QString idQualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
     Q_UNUSED(idQualifier)
     // cannot be a fk because target can reference either a host or a cluster
     foreach (const SharedUiItem &oldTaskItem,
@@ -114,13 +115,13 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
     return true;
   });
   registerItemType(
-        "cluster", &Cluster::setUiData, [](QString id) -> SharedUiItem {
+        "cluster", &Cluster::setUiData, [](QByteArray id) -> SharedUiItem {
     return Cluster(PfNode("cluster", id));
   });
   addChangeItemTrigger(
         "cluster", BeforeUpdate|BeforeCreate,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QString idQualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
     Q_UNUSED(oldItem)
     Q_UNUSED(idQualifier)
     if (!transaction->itemById("host", newItem->id()).isNull()) {
@@ -132,7 +133,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "cluster", AfterUpdate|AfterDelete,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QString idQualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
     Q_UNUSED(oldItem)
     Q_UNUSED(idQualifier)
     // cannot be a fk because target can reference either a host or a cluster
@@ -150,7 +151,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
 }
 
 SharedUiItem QronConfigDocumentManager::itemById(
-    QString idQualifier, QString id) const {
+    QByteArray idQualifier, QByteArray id) const {
   // TODO also implement for other items
   if (idQualifier == "task") {
     return _config.tasks().value(id);
@@ -165,7 +166,7 @@ SharedUiItem QronConfigDocumentManager::itemById(
 }
 
 SharedUiItemList<SharedUiItem> QronConfigDocumentManager
-::itemsByIdQualifier(QString idQualifier) const {
+::itemsByIdQualifier(QByteArray idQualifier) const {
   // TODO also implement for other items
   if (idQualifier == "task") {
     return SharedUiItemList<Task>(_config.tasks().values());
@@ -186,7 +187,8 @@ static SharedUiItem nullItem;
 
 template<class T>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges(
-    QHash<QString,T> newItems, QHash<QString,T> oldItems, QString idQualifier) {
+    QHash<QByteArray, T> newItems, QHash<QByteArray, T> oldItems,
+    QByteArray idQualifier) {
   foreach (const T &oldItem, oldItems)
     if (!newItems.contains(oldItem.id()))
       emit itemChanged(nullItem, oldItem, idQualifier);
@@ -196,8 +198,8 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges(
 
 template<>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<Task>(
-    QHash<QString,Task> newItems, QHash<QString,Task> oldItems,
-    QString idQualifier) {
+    QHash<QByteArray,Task> newItems, QHash<QByteArray,Task> oldItems,
+    QByteArray idQualifier) {
   foreach (const Task &oldItem, oldItems) {
     if (!newItems.contains(oldItem.id())) {
       emit itemChanged(nullItem, oldItem, idQualifier);
@@ -217,24 +219,20 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
   _config = newConfig;
   if (locker)
     locker->unlock();
-  emit paramsChanged(newConfig.params(), oldConfig.params(),
-                     QStringLiteral("globalparams"));
-  emit paramsChanged(newConfig.vars(), oldConfig.vars(),
-                     QStringLiteral("globalvars"));
+  emit paramsChanged(newConfig.params(), oldConfig.params(), "globalparams"_ba);
+  emit paramsChanged(newConfig.vars(), oldConfig.vars(), "globalvars"_ba);
   emit accessControlConfigurationChanged(
         !newConfig.accessControlConfig().isEmpty());
   emitSignalForItemTypeChanges(
-        newConfig.hosts(), oldConfig.hosts(), QStringLiteral("host"));
+        newConfig.hosts(), oldConfig.hosts(), "host"_ba);
   emitSignalForItemTypeChanges(
-        newConfig.clusters(), oldConfig.clusters(), QStringLiteral("cluster"));
+        newConfig.clusters(), oldConfig.clusters(), "cluster"_ba);
   emitSignalForItemTypeChanges(
-        newConfig.namedCalendars(), oldConfig.namedCalendars(),
-        QStringLiteral("calendar"));
+        newConfig.namedCalendars(), oldConfig.namedCalendars(), "calendar"_ba);
   emitSignalForItemTypeChanges(
-        newConfig.taskgroups(), oldConfig.taskgroups(),
-        QStringLiteral("taskgroup"));
+        newConfig.taskgroups(), oldConfig.taskgroups(), "taskgroup"_ba);
   emitSignalForItemTypeChanges(
-        newConfig.tasks(), oldConfig.tasks(), QStringLiteral("task"));
+        newConfig.tasks(), oldConfig.tasks(), "task"_ba);
   // TODO also implement for other items
   emit globalEventSubscriptionsChanged(
         newConfig.onstart(), newConfig.onsuccess(), newConfig.onfailure(),
@@ -244,8 +242,9 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
 
 bool QronConfigDocumentManager::prepareChangeItem(
     SharedUiItemDocumentTransaction *transaction, SharedUiItem newItem,
-    SharedUiItem oldItem, QString idQualifier, QString *errorString) {
-  QString oldId = oldItem.id(), newId = newItem.id(), reason;
+    SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
+  QByteArray oldId = oldItem.id(), newId = newItem.id();
+  QString reason;
   if (idQualifier == "taskgroup") {
     // currently nothing to do
   } else if (idQualifier == "task") {
@@ -274,7 +273,7 @@ bool QronConfigDocumentManager::prepareChangeItem(
 }
 
 void QronConfigDocumentManager::commitChangeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QString idQualifier) {
+    SharedUiItem newItem, SharedUiItem oldItem, QByteArray idQualifier) {
   _config.changeItem(newItem, oldItem, idQualifier);
   //qDebug() << "QronConfigDocumentManager::commitChangeItem done"
   //         << newItem.qualifiedId() << oldItem.qualifiedId();
@@ -282,7 +281,7 @@ void QronConfigDocumentManager::commitChangeItem(
 }
 
 void QronConfigDocumentManager::changeParams(
-    ParamSet newParams, ParamSet oldParams, QString setId) {
+    ParamSet newParams, ParamSet oldParams, QByteArray setId) {
   Q_UNUSED(newParams)
   Q_UNUSED(oldParams)
   Q_UNUSED(setId)

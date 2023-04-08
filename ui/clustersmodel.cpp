@@ -1,4 +1,4 @@
-/* Copyright 2012-2018 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,19 +22,19 @@
 class HostReference : public SharedUiItem {
   class HostReferenceData : public SharedUiItemData {
   public:
-    QString _id, _cluster, _host;
+    QByteArray _id;
+    QString _cluster, _host;
 
     HostReferenceData() { }
     HostReferenceData(QString cluster, QString host)
-      : _id(cluster+"~"+host), _cluster(cluster), _host(host) { }
-    QString id() const { return _id; }
-    QString idQualifier() const { return QStringLiteral("hostreference"); }
+      : _id((cluster+"~"+host).toUtf8()), _cluster(cluster), _host(host) { }
+    QByteArray id() const { return _id; }
+    QByteArray idQualifier() const { return "hostreference"_ba; }
     int uiSectionCount() const { return 1; }
     QVariant uiData(int section, int role) const {
-      return section == 0 && role == Qt::DisplayRole ? _host : QVariant(); }
+      return section == 0 && role == Qt::DisplayRole ? _host : QVariant{}; }
     QVariant uiHeaderData(int section, int role) const {
-      return section == 0 && role == Qt::DisplayRole
-          ? QStringLiteral("Host") : QVariant(); }
+      return section == 0 && role == Qt::DisplayRole ? "Host"_ba : QVariant{}; }
   };
 
 public:
@@ -60,8 +60,8 @@ ClustersModel::ClustersModel(QObject *parent)
 }
 
 void ClustersModel::changeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QString idQualifier) {
-  if (idQualifier == QStringLiteral("cluster")) {
+    SharedUiItem newItem, SharedUiItem oldItem, QByteArray idQualifier) {
+  if (idQualifier == "cluster"_ba) {
     // remove host references rows
     QModelIndex oldIndex = indexOf(oldItem);
     if (oldIndex.isValid())
@@ -76,7 +76,7 @@ void ClustersModel::changeItem(
       foreach (const Host &host, cluster.hosts()) {
         SharedUiItemsTreeModel::changeItem(
               HostReference(cluster.id(), host.id()), nullItem,
-              QStringLiteral("hostreference"));
+              "hostreference"_ba);
       }
     }
   } else {
@@ -87,9 +87,9 @@ void ClustersModel::changeItem(
 void ClustersModel::determineItemPlaceInTree(
     SharedUiItem newItem, QModelIndex *parent, int *row) {
   Q_UNUSED(row)
-  if (newItem.idQualifier() == "hostreference") {
+  if (newItem.idQualifier() == "hostreference"_ba) {
     HostReference &hf = reinterpret_cast<HostReference&>(newItem);
-    *parent = indexOf("cluster:"+hf.cluster());
+    *parent = indexOf("cluster:"_ba+hf.cluster().toUtf8());
   }
 }
 
@@ -110,8 +110,8 @@ bool ClustersModel::canDropMimeData(
   foreach (const QByteArray &qualifiedId, idsArrays) {
     QString idQualifier = QString::fromUtf8(
           qualifiedId.left(qualifiedId.indexOf(':')));
-    if (idQualifier != QStringLiteral("host")
-        && idQualifier != QStringLiteral("hostreference"))
+    if (idQualifier != "host"_ba
+        && idQualifier != "hostreference"_ba)
       return false; // can only drop hosts
   }
   return true;
@@ -172,14 +172,12 @@ bool ClustersModel::dropMimeData(
   // update actual data item
   QList<Host> newHosts;
   foreach (const QString &id, newHostsIds) {
-    SharedUiItem hostSui =
-        documentManager()->itemById(QStringLiteral("host"), id);
+    SharedUiItem hostSui = documentManager()->itemById("host"_ba, id.toUtf8());
     Host &host = static_cast<Host&>(hostSui);
     newHosts << host;
   }
   Cluster newCluster = oldCluster;
   newCluster.setHosts(newHosts);
-  documentManager()->changeItem(newCluster, oldCluster,
-                                QStringLiteral("cluster"));
+  documentManager()->changeItem(newCluster, oldCluster, "cluster"_ba);
   return true;
 }

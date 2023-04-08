@@ -49,8 +49,8 @@ public:
   Task();
   Task(const Task &other);
   Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-       QHash<QString, Calendar> namedCalendars,
-       QHash<QString,TaskTemplate> taskTemplates);
+       QHash<QByteArray, Calendar> namedCalendars,
+       QHash<QByteArray, TaskTemplate> taskTemplates);
   /** Should only be used by SharedUiItemsModels to get size and headers from
    * a non-null item. */
   static Task dummyTask();
@@ -59,7 +59,7 @@ public:
   ParamSet params() const;
   void setParentParams(ParamSet parentParams);
   /** local id within group */
-  QString localId() const;
+  QByteArray localId() const;
   QString label() const;
   Task::Mean mean() const;
   static Task::Mean meanFromString(QString mean);

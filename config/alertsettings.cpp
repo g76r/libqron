@@ -1,4 +1,4 @@
-/* Copyright 2015-2016 Hallowyn and others.
+/* Copyright 2015-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
 #include "config/configutils.h"
 #include "log/log.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Pattern",
   "Options",
@@ -32,7 +32,8 @@ static QAtomicInt _sequence;
 
 class AlertSettingsData : public SharedUiItemData {
 public:
-  QString _id, _pattern;
+  QByteArray _id;
+  QString _pattern;
   QRegularExpression _patternRegexp;
   qint64 _riseDelay, _mayriseDelay, _dropDelay, _duplicateEmitDelay;
   QStringList _commentsList;
@@ -40,10 +41,10 @@ public:
   // MAYDO add params
 
   AlertSettingsData()
-    : _id(QString::number(_sequence.fetchAndAddOrdered(1))), _riseDelay(0),
+    : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))), _riseDelay(0),
       _mayriseDelay(0), _dropDelay(0), _duplicateEmitDelay(0) { }
-  QString id() const { return _id; }
-  QString idQualifier() const { return QStringLiteral("alertsettings"); }
+  QByteArray id() const { return _id; }
+  QByteArray idQualifier() const { return "alertsettings"_ba; }
   int uiSectionCount() const {
     return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
   QVariant uiData(int section, int role) const;
@@ -67,15 +68,15 @@ AlertSettings::AlertSettings(PfNode node) {
   if (d->_pattern.isEmpty() || !d->_patternRegexp.isValid())
     Log::warning() << "unsupported alert settings match pattern '"
                    << d->_pattern << "': " << node.toString();
-  d->_riseDelay = node.doubleAttribute(QStringLiteral("risedelay"), 0)*1e3;
-  d->_mayriseDelay = node.doubleAttribute(
-        QStringLiteral("mayrisedelay"), 0)*1e3;
-  d->_dropDelay = node.doubleAttribute(QStringLiteral("dropdelay"), 0)*1e3;
-  d->_duplicateEmitDelay = node.doubleAttribute(
-        QStringLiteral("duplicateemitdelay"), 0)*1e3;
+  d->_riseDelay = node.doubleAttribute("risedelay"_ba, 0)*1e3;
+  d->_mayriseDelay = node.doubleAttribute("mayrisedelay"_ba, 0)*1e3;
+  d->_dropDelay = node.doubleAttribute("dropdelay"_ba, 0)*1e3;
+  d->_duplicateEmitDelay = node.doubleAttribute("duplicateemitdelay"_ba, 0)*1e3;
   ConfigUtils::loadComments(node, &d->_commentsList);
-  d->_visibilityWindow = CronTrigger(node.attribute("visibilitywindow"));
-  d->_acceptabilityWindow = CronTrigger(node.attribute("acceptabilitywindow"));
+  d->_visibilityWindow = CronTrigger(
+        node.attribute("visibilitywindow"_ba));
+  d->_acceptabilityWindow = CronTrigger(
+        node.attribute("acceptabilitywindow"_ba));
   setData(d);
 }
 
@@ -83,30 +84,28 @@ PfNode AlertSettings::toPfNode() const {
   const AlertSettingsData *d = data();
   if (!d)
     return PfNode();
-  PfNode node(QStringLiteral("settings"));
+  PfNode node("settings"_ba);
   ConfigUtils::writeComments(&node, d->_commentsList);
-  node.setAttribute(QStringLiteral("pattern"), d->_pattern);
+  node.setAttribute("pattern"_ba, d->_pattern);
   if (d->_riseDelay > 0)
-    node.setAttribute(QStringLiteral("risedelay"), d->_riseDelay/1e3);
+    node.setAttribute("risedelay"_ba, d->_riseDelay/1e3);
   if (d->_mayriseDelay > 0)
-    node.setAttribute(QStringLiteral("mayrisedelay"), d->_mayriseDelay/1e3);
+    node.setAttribute("mayrisedelay"_ba, d->_mayriseDelay/1e3);
   if (d->_dropDelay > 0)
-    node.setAttribute(QStringLiteral("dropdelay"), d->_dropDelay/1e3);
+    node.setAttribute("dropdelay"_ba, d->_dropDelay/1e3);
   if (d->_duplicateEmitDelay > 0)
-    node.setAttribute(QStringLiteral("duplicateemitdelay"),
-                      d->_duplicateEmitDelay/1e3);
+    node.setAttribute("duplicateemitdelay"_ba, d->_duplicateEmitDelay/1e3);
   if (d->_visibilityWindow.isValid())
-    node.setAttribute(QStringLiteral("visibilitywindow"),
-                      d->_visibilityWindow.expression());
+    node.setAttribute("visibilitywindow"_ba, d->_visibilityWindow.expression());
   if (d->_acceptabilityWindow.isValid())
-    node.setAttribute(QStringLiteral("acceptabilitywindow"),
+    node.setAttribute("acceptabilitywindow"_ba,
                       d->_acceptabilityWindow.expression());
   return node;
 }
 
 QString AlertSettings::pattern() const {
   const AlertSettingsData *d = data();
-  return d ? d->_pattern : QString();
+  return d ? d->_pattern : QString{};
 }
 
 QRegularExpression AlertSettings::patternRegexp() const {

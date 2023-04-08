@@ -23,7 +23,7 @@
 #include "pf/pfnode.h"
 #include "ui/qronuiutils.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Local Id", // 0
   "Parent Group",
   "Label",
@@ -92,8 +92,8 @@ public:
   QVariant uiData(int section, int role) const override;
   QVariant uiHeaderData(int section, int role) const override;
   int uiSectionCount() const override;
-  QString idQualifier() const override { return "tasksroot"; }
-  QString id() const override { return TASKSROOTID; }
+  QByteArray idQualifier() const override { return "tasksroot"_ba; }
+  QByteArray id() const override { return TASKSROOTID; }
   bool setUiData(
       int section, const QVariant &value, QString *errorString,
       SharedUiItemDocumentTransaction *transaction, int role) override;
@@ -104,11 +104,12 @@ public:
 
 class TaskOrGroupData : public TasksRootData {
 public:
-  QString _id, _label;
+  QByteArray _id;
+  QString _label;
 
   QVariant uiData(int section, int role) const override;
-  QString idQualifier() const override = 0;
-  QString id() const override { return _id; }
+  QByteArray idQualifier() const override = 0;
+  QByteArray id() const override { return _id; }
   bool setUiData(
       int section, const QVariant &value, QString *errorString,
       SharedUiItemDocumentTransaction *transaction, int role) override;
@@ -146,16 +147,16 @@ public:
                  SharedUiItemDocumentTransaction *transaction,
                  int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
-  void setId(QString id) { _id = id; }
+  void setId(QByteArray id) { _id = id; }
   bool loadConfig(PfNode node, Scheduler *scheduler, SharedUiItem parent,
-                  QHash<QString,Calendar> namedCalendars);
+                  QHash<QByteArray, Calendar> namedCalendars);
   void fillPfNode(PfNode &node) const;
 };
 
 class TaskTemplateData : public TaskOrTemplateData {
 public:
   TaskTemplateData() { }
-  QString idQualifier() const override { return "tasktemplate"; }
+  QByteArray idQualifier() const override { return "tasktemplate"_ba; }
   PfNode toPfNode() const;
 };
 

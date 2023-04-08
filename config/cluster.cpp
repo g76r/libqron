@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,7 @@
 #include "modelview/shareduiitemdocumentmanager.h"
 #include "util/containerutils.h"
 
-static QString _uiHeaderNames[] = {
+static QByteArray _uiHeaderNames[] = {
   "Id", // 0
   "Hosts",
   "Balancing Method",
@@ -31,15 +31,16 @@ static QString _uiHeaderNames[] = {
 
 class ClusterData : public SharedUiItemData {
 public:
-  QString _id, _label;
+  QByteArray _id;
+  QString _label;
   Cluster::Balancing _balancing;
   QList<Host> _hosts;
   QStringList _commentsList;
   QVariant uiData(int section, int role) const;
   QVariant uiHeaderData(int section, int role) const;
   int uiSectionCount() const;
-  QString id() const { return _id; }
-  QString idQualifier() const { return "cluster"; }
+  QByteArray id() const { return _id; }
+  QByteArray idQualifier() const { return "cluster"_ba; }
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
   Qt::ItemFlags uiFlags(int section) const;
@@ -54,7 +55,7 @@ Cluster::Cluster(const Cluster &other) : SharedUiItem(other) {
 Cluster::Cluster(PfNode node) {
   ClusterData *d = new ClusterData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
-                                     ConfigUtils::FullyQualifiedId);
+                                   ConfigUtils::FullyQualifiedId).toUtf8();
   d->_label = node.attribute("label");
   d->_balancing = balancingFromString(node.attribute("balancing", "roundrobin")
                                       .trimmed().toLower());
@@ -82,7 +83,7 @@ Cluster::Balancing Cluster::balancing() const {
   return !isNull() ? data()->_balancing : UnknownBalancing;
 }
 
-void Cluster::setId(QString id) {
+void Cluster::setId(QByteArray id) {
   if (!isNull())
     data()->_id = id;
 }
@@ -123,7 +124,7 @@ bool ClusterData::setUiData(
   switch(section) {
   case 0:
     s = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId);
-    _id = s;
+    _id = s.toUtf8();
     return true;
     //case 1:
     // LATER host list: parse
