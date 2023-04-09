@@ -1,4 +1,4 @@
-/* Copyright 2014-2022 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
 #include "log/log.h"
 #include <QtDebug>
 
-#define DEFAULT_REQUEST_CONTENT_TYPE "text/plain"
+#define DEFAULT_REQUEST_CONTENT_TYPE "text/plain"_ba
 
 const QSet<QString> ParametrizedNetworkRequest::supportedParamNames {
   "method", "user", "password", "proto", "port", "payload", "content-type",
@@ -47,18 +47,20 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
   qurl.setPassword(QString());
   setUrl(qurl);
   _method = HttpRequest::methodFromText(
-        params.value("method", "GET", paramsEvaluationContext).toUpper());
-  QString contentType = params.value("content-type", paramsEvaluationContext);
+        params.paramUtf8("method"_ba, "GET"_ba,
+                         paramsEvaluationContext).toUpper());
+  auto contentType = params.paramUtf8(
+        "content-type"_ba, paramsEvaluationContext);
   if (contentType.isNull()
       && (_method == HttpRequest::POST || _method == HttpRequest::PUT))
     contentType = DEFAULT_REQUEST_CONTENT_TYPE;
   if (!contentType.isNull())
     setHeader(QNetworkRequest::ContentTypeHeader, contentType);
-  _rawPayloadFromParams = params.rawValue("payload");
-  bool followRedirect = params.valueAsBool("follow-redirect", false,
-                                           paramsEvaluationContext);
-  int redirectMax = params.valueAsInt("redirect-max", -1,
-                                      paramsEvaluationContext);
+  _rawPayloadFromParams = params.rawParamUtf8("payload"_ba);
+  bool followRedirect = params.valueAsBool(
+        "follow-redirect"_ba, false, paramsEvaluationContext);
+  int redirectMax = params.valueAsInt(
+        "redirect-max", -1, paramsEvaluationContext);
   if (redirectMax > 0)
     followRedirect = true;
   setAttribute(QNetworkRequest::RedirectPolicyAttribute,
