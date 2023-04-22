@@ -35,6 +35,7 @@
 #include "pf/pfparser.h"
 #include "pf/pfdomhandler.h"
 #include "thread/blockingtimer.h"
+#include "condition/disjunctioncondition.h"
 
 #define PROCESS_OUTPUT_CHUNK_SIZE 16384
 #define DEFAULT_STATUS_POLLING_INTERVAL 5000
@@ -756,21 +757,28 @@ void Executor::scatterMean() {
   const auto params = _instance.params();
   const auto vars = _instance.task().vars();
   auto ppm = ParamsProviderMerger(params)(&ppp);
-  const auto inputs = params.value("scatter.input", &ppp).split(_whitespace);
-  const auto regexp = QRegularExpression(params.value("scatter.regexp", ".*"));
-  const auto paramappend = params.rawValue("scatter.paramappend").trimmed();
-  const auto force = params.valueAsBool("scatter.force", false, true, &ppp);
-  const auto lone = params.valueAsBool("scatter.lone", false, true, &ppp);
-  const auto herdid = lone ? 0 : _instance.herdid();
+  const auto inputs = params.value("scatter.input"_ba, &ppm).split(_whitespace);
+  const auto regexp = QRegularExpression(
+        params.value("scatter.regexp"_ba, ".*"_ba));
+  const auto tiiparam = params.rawValue(
+        "scatter.tiiparam"_ba, "scatter_children_tii_"+_instance.id())
+      .trimmed();
+  const auto force = params.valueAsBool("scatter.force"_ba, false, true, &ppm);
+  const auto lone = params.valueAsBool("scatter.lone"_ba, false, true, &ppm);
+  const auto onlast = params.value("scatter.onlast"_ba, &ppm);
+  const auto onlast_condition = params.value(
+        "scatter.onlast.condition"_ba, "allfinished"_ba, &ppm);
   // LATER const auto mean = params.value("scatter.mean", "plantask", &ppm);
   // LATER queuewhen ?
   TaskInstanceList instances;
 
   emit taskInstanceStarted(_instance);
+  int rank = -1;
   for (auto input: inputs) {
+    ++rank;
+    const auto ppmr = ParamsProviderMergerRestorer(ppm);
     const auto match = regexp.match(input);
     const auto rpp = RegexpParamsProvider(match);
-    const auto ppmr = ParamsProviderMergerRestorer(ppm);
     if (match.hasMatch())
       ppm.prepend(&rpp);
     else
@@ -785,24 +793,45 @@ void Executor::scatterMean() {
       overridingParams.setValue(key, ParamSet::escape(value));
     }
     auto instance = _scheduler->planTask(
-        taskid, overridingParams, force, herdid, Condition(), Condition())
+        taskid, overridingParams, force, lone ? 0 : _instance.herdid(),
+          Condition(), Condition())
         .value(0);
     if (instance.isNull()) {
       Log::error(_instance.task().id(), _instance.idAsLong())
           << "scatter failed to plan task : " << taskid << overridingParams
-          << force << instance.herdid();
+          << force;
       continue;
     }
-    int i = paramappend.indexOf(' ');
-    if (i > 0) {
-      const auto key = paramappend.left(i);
-      const auto rawvalue = paramappend.mid(i+1);
-      const auto ppp = instance.pseudoParams();
-      ppm.prepend(instance.params()).prepend(&ppp);
-      auto value = ParamSet().evaluate(rawvalue, &ppm);
-      _scheduler->taskInstanceParamAppend(herdid, key, value);
-    }
+    const auto ppp = instance.pseudoParams();
+    ppm.prepend(instance.params()).prepend(&ppp);
+    _scheduler->taskInstanceParamAppend(
+          lone ? instance.herdid() : _instance.herdid(), tiiparam,
+          instance.id());
     instances << instance;
+    if (rank == inputs.size()-1 && !onlast.isEmpty()) {
+      auto taskid = ppm.evaluate(onlast).toUtf8();
+      const auto idIfLocalToGroup = _instance.task().taskGroup().id()+"."
+          +taskid;
+      if (_scheduler->taskExists(idIfLocalToGroup))
+        taskid = idIfLocalToGroup;
+      ParamSet overridingParams;
+      for (auto key: vars.keys()) {
+        auto value = ppm.evaluate(vars.rawValue(key));
+        overridingParams.setValue(key, ParamSet::escape(value));
+      }
+      auto onlastinstance = _scheduler->planTask(
+            taskid, overridingParams, force,
+            lone ? instance.herdid() : _instance.herdid(),
+            DisjunctionCondition({PfNode(onlast_condition, "%"+tiiparam)}),
+            Condition()).value(0);
+      if (onlastinstance.isNull()) {
+        Log::error(_instance.task().id(), _instance.idAsLong())
+            << "scatter failed to plan onlast task : " << taskid
+            << overridingParams << force;
+        continue;
+      }
+      instances << onlastinstance;
+    }
   }
   Log::debug(_instance.task().id(), _instance.idAsLong())
       << "scatter planned " << instances.size() << " tasks : "
