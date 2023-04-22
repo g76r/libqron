@@ -1323,7 +1323,10 @@ void Scheduler::doTaskInstanceParamAppend(
   quint64 taskinstanceid, QString key, QString value) {
   if (!_unfinishedTasks.contains(taskinstanceid))
     return;
-  _unfinishedTasks[taskinstanceid].paramAppend(key, value);
+  TaskInstance &t = _unfinishedTasks[taskinstanceid];
+  t.paramAppend(key, value);
+  Log::debug(t.task().id(), t.id()) << "appending to param: " << key << " "
+                                    << value;
 }
 
 Authenticator *Scheduler::authenticator() {
