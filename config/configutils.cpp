@@ -31,7 +31,7 @@ void ConfigUtils::loadResourcesSet(
         parentnode.stringLongPairChildrenByName(attrname));
   while (it.hasNext()) {
     const QPair<QString,qint64> &p(it.next());
-    if (p.second <= 0)
+    if (p.second < 0)
       Log::warning() << "ignoring resource of kind " << p.first
                      << "with incorrect quantity " << parentnode.toString();
     else
