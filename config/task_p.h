@@ -69,6 +69,7 @@ static QByteArray _uiHeaderNames[] = {
   "Abort command",
   "Max tries",
   "Pause between tries",
+  "Deduplicate strategy", // 45
 };
 
 static QSet<QString> excludedDescendantsForComments {
@@ -128,7 +129,7 @@ public:
   long long _millisBetweenTries;
   QList<CronTrigger> _cronTriggers;
   long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
-  QString _maxQueuedInstances, _deduplicateCriterion;
+  QString _maxQueuedInstances, _deduplicateCriterion, _deduplicateStrategy;
   Task::HerdingPolicy _herdingPolicy;
   QList<RequestFormField> _requestFormFields;
   QStringList _otherTriggers; // guessed indirect triggers resulting from events

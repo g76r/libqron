@@ -126,6 +126,7 @@ public:
   ParamSet instanceparams() const;
   QString maxQueuedInstances() const;
   QString deduplicateCriterion() const;
+  QString deduplicateStrategy() const;
   HerdingPolicy herdingPolicy() const;
   inline QString herdingPolicyAsString() const {
     return herdingPolicyAsString(herdingPolicy()); }

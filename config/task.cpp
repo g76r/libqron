@@ -377,6 +377,11 @@ QString Task::deduplicateCriterion() const {
   return d ? d->_deduplicateCriterion : QString();
 }
 
+QString Task::deduplicateStrategy() const {
+  auto d = data();
+  return d ? d->_deduplicateStrategy : QString{};
+}
+
 static QHash<Task::HerdingPolicy,QString> _herdingPolicyAsString {
   { Task::AllSuccess, "allsuccess" },
   { Task::NoFailure, "nofailure" },
@@ -478,6 +483,9 @@ static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudo
 }, true },
 { "!rawdeduplicatecriterion", [](const Task &task, const QVariant &) {
    return task.deduplicateCriterion();
+}},
+{ "!deduplicatestrategy", [](const Task &task, const QVariant &) {
+   return task.deduplicateStrategy();
 }},
 };
 

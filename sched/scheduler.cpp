@@ -418,20 +418,22 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
   if (_shutingDown) {
     Log::warning(taskId, instance.idAsLong())
         << "cannot queue task because scheduler is shuting down";
-    return TaskInstance();
+    return {};
   }
   if (!instance.force()) {
     if (!task.enabled()) {
       doCancelTaskInstance(instance, false,
                            "canceling task because it is disabled : "
                                + instance.idSlashId());
-      return TaskInstance();
+      return {};
     }
-    auto mqi = params.evaluate(task.maxQueuedInstances(), &ppp).toInt();
-    if (mqi > 0) {
+    auto max_queued_instances =
+        params.evaluate(task.maxQueuedInstances(), &ppp).toInt();
+    if (max_queued_instances > 0) {
       auto criterion = task.deduplicateCriterion();
-      auto newcrit = params.evaluate(criterion);
-      QList<TaskInstance> others;
+      auto strategy = task.deduplicateStrategy();
+      auto self_crit = params.evaluate(criterion);
+      TaskInstanceList duplicates;
       for (auto other: _unfinishedTasks) {
         if (other.status() != TaskInstance::Queued)
           continue;
@@ -441,19 +443,37 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
           continue;
         auto ppp = other.pseudoParams();
         auto params = other.params();
-        auto othercrit = params.evaluate(criterion);
-        if (othercrit == newcrit)
-          others.append(other);
+        auto other_crit = params.evaluate(criterion);
+        if (other_crit == self_crit)
+          duplicates.append(other);
       }
+      duplicates.append(instance);
       int canceled = 0;
-      while (others.size() > mqi-1) {
-        auto other = others.takeLast();
-        doCancelTaskInstance(
-            other, true,
-            "canceling task because another instance of the same task is "
-            "queued : " + instance.idSlashId()
-            + " with same deduplicate criterion : " + newcrit);
+      bool self_canceled = false;
+      while (duplicates.size() > max_queued_instances) {
+        TaskInstance duplicate;
+        if (strategy == "keeplast")
+          duplicate = duplicates.takeFirst();
+        else
+          duplicate = duplicates.takeLast();
+        if (duplicate == instance) {
+          self_canceled = true;
+          doCancelTaskInstance(
+              duplicate, true,
+              "canceling task because another instance of the same task is "
+              "queued with same deduplicate criterion : " + self_crit);
+        } else {
+          doCancelTaskInstance(
+                duplicate, true,
+                "canceling task because another instance of the same task is "
+                "queued : with same deduplicate criterion : " + self_crit
+                + " : " + instance.idSlashId());
+        }
         ++canceled;
+      }
+      if (self_canceled) {
+        reevaluateQueuedTaskInstances();
+        return {};
       }
     }
   }
@@ -466,7 +486,7 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
         << "cannot queue task because maxqueuedrequests is already reached ("
         << config().maxqueuedrequests() << ")";
     _alerter->raiseAlert("scheduler.maxqueuedrequests.reached"_ba);
-    return TaskInstance();
+    return {};
   }
   instance.setQueueDatetime();
   _unfinishedTasks.insert(instance.idAsLong(), instance);

@@ -151,6 +151,9 @@ bool TaskOrTemplateData::loadConfig(
   ConfigUtils::loadAttribute(node, "deduplicatecriterion",
                              &_deduplicateCriterion);
   _deduplicateCriterion.remove("!deduplicatecriterion"); // prevent recursivity
+  ConfigUtils::loadAttribute(node, "deduplicatestrategy",
+                             &_deduplicateStrategy);
+  _deduplicateStrategy.remove("!deduplicatestrategy"); // prevent recursivity
   if (!ConfigUtils::loadAttribute<Task::HerdingPolicy>(
         node, "herdingpolicy", &_herdingPolicy,
         [](QString value) { return Task::herdingPolicyFromString(value); },
@@ -303,6 +306,8 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
       return _maxTries;
     case 44:
       return _millisBetweenTries*.001;
+    case 45:
+      return _deduplicateStrategy;
     }
     break;
   default:
@@ -409,6 +414,8 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
     node.setAttribute("maxqueuedinstances", _maxQueuedInstances);
   if (!_deduplicateCriterion.isEmpty())
     node.setAttribute("deduplicatecriterion", _deduplicateCriterion);
+  if (!_deduplicateStrategy.isEmpty())
+    node.setAttribute("deduplicatestrategy", _deduplicateStrategy);
   if (_herdingPolicy != Task::AllSuccess)
     node.appendChild(
           PfNode("herdingpolicy",
