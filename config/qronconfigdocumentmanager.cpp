@@ -183,26 +183,44 @@ SharedUiItemList<SharedUiItem> QronConfigDocumentManager
   return SharedUiItemList<SharedUiItem>();
 }
 
-static SharedUiItem nullItem;
+static const SharedUiItem _nullItem;
 
 template<class T>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges(
-    QHash<QByteArray, T> newItems, QHash<QByteArray, T> oldItems,
+    QMap<QByteArray, T> newItems, QMap<QByteArray, T> oldItems,
     QByteArray idQualifier) {
   foreach (const T &oldItem, oldItems)
     if (!newItems.contains(oldItem.id()))
-      emit itemChanged(nullItem, oldItem, idQualifier);
+      emit itemChanged(_nullItem, oldItem, idQualifier);
   foreach (const T &newItem, newItems)
     emit itemChanged(newItem, oldItems.value(newItem.id()), idQualifier);
 }
 
 template<>
+void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<PfNode>(
+    QMap<QByteArray, PfNode> newItems, QMap<QByteArray, PfNode> oldItems,
+    QByteArray idQualifier) {
+  for (auto oldItem: oldItems) {
+    auto name = oldItem.utf8Name();
+    if (!newItems.contains(name))
+      emit itemChanged(
+          _nullItem, GenericSharedUiItem(idQualifier, name), idQualifier);
+  }
+  for (auto newItem: newItems) {
+    auto name = newItem.utf8Name();
+    auto item = GenericSharedUiItem(idQualifier, name);
+    emit itemChanged(
+          item, oldItems.contains(name) ? item : _nullItem, idQualifier);
+  }
+}
+
+template<>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<Task>(
-    QHash<QByteArray,Task> newItems, QHash<QByteArray,Task> oldItems,
+    QMap<QByteArray,Task> newItems, QMap<QByteArray,Task> oldItems,
     QByteArray idQualifier) {
   foreach (const Task &oldItem, oldItems) {
     if (!newItems.contains(oldItem.id())) {
-      emit itemChanged(nullItem, oldItem, idQualifier);
+      emit itemChanged(_nullItem, oldItem, idQualifier);
     }
   }
   QList<Task> newList = newItems.values();

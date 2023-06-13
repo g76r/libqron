@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ public:
               AllocatedOverConfigured, LowWaterMark, LwmOverConfigured };
 private:
   Mode _mode;
-  QHash<QString,QHash<QString,qint64> > _configured, _lwm;
+  QMap<QString,QMap<QString,qint64> > _configured, _lwm;
 
 public:
   explicit HostsResourcesAvailabilityModel(
@@ -39,7 +39,7 @@ public:
   void changeItem(
       SharedUiItem newItem, SharedUiItem oldItem, QString idQualifier);
   void hostsResourcesAvailabilityChanged(
-      QString host, QHash<QString,qint64> resources);
+      QString host, QMap<QString, qint64> resources);
 };
 
 #endif // HOSTSRESOURCESAVAILABILITYMODEL_H

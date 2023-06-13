@@ -1,4 +1,4 @@
-/* Copyright 2014-2022 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
 #include <QRegularExpression>
 #include <QtDebug>
 
-QString QronUiUtils::resourcesAsString(QHash<QString,qint64> resources) {
+QString QronUiUtils::resourcesAsString(QMap<QString,qint64> resources) {
   QString s;
   bool first = true;
   foreach(QString key, resources.keys()) {
@@ -33,7 +33,7 @@ static QRegularExpression keyEqualNumberRE(
       "\\s*([_a-zA-Z][_a-zA-Z0-9]*)\\s*=\\s*([0-9xXa-fA-F]+)\\s*");
 
 bool QronUiUtils::resourcesFromString(
-    QString text, QHash<QString,qint64> *resources, QString *errorString) {
+    QString text, QMap<QString,qint64> *resources, QString *errorString) {
   //qDebug() << "QronUiUtils::resourcesFromString" << text << resources
   //         << errorString;
   if (!resources) {

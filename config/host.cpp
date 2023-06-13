@@ -14,7 +14,7 @@
 #include "host.h"
 #include <QSharedData>
 #include <QString>
-#include <QHash>
+#include <QMap>
 #include "pf/pfnode.h"
 #include "log/log.h"
 #include "configutils.h"
@@ -32,7 +32,7 @@ class HostData : public SharedUiItemData {
 public:
   QByteArray _id;
   QString _label, _hostname;
-  QHash<QString,qint64> _resources; // configured max resources available
+  QMap<QString,qint64> _resources; // configured max resources available
   QStringList _commentsList;
   QVariant uiData(int section, int role) const;
   QVariant uiHeaderData(int section, int role) const;
@@ -73,8 +73,8 @@ QString Host::hostname() const {
            : QString();
 }
 
-QHash<QString,qint64> Host::resources() const {
-  return !isNull() ? data()->_resources : QHash<QString,qint64>();
+QMap<QString,qint64> Host::resources() const {
+  return !isNull() ? data()->_resources : QMap<QString,qint64>{};
 }
 
 QVariant HostData::uiData(int section, int role) const {
@@ -125,7 +125,7 @@ bool HostData::setUiData(
     _hostname = ConfigUtils::sanitizeId(s, ConfigUtils::Hostname);
     return true;
   case 2: {
-    QHash<QString,qint64> resources;
+    QMap<QString,qint64> resources;
     if (QronUiUtils::resourcesFromString(value.toString(), &resources,
                                          errorString)) {
       _resources = resources;

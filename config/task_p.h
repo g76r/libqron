@@ -1,4 +1,4 @@
-/* Copyright 2014-2022 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -124,7 +124,7 @@ public:
   QString _command, _statuscommand, _abortcommand, _target, _info;
   Task::Mean _mean;
   QList<NoticeTrigger> _noticeTriggers;
-  QHash<QString,qint64> _resources;
+  QMap<QString,qint64> _resources;
   int _maxInstances, _maxTries;
   long long _millisBetweenTries;
   QList<CronTrigger> _cronTriggers;
@@ -150,7 +150,7 @@ public:
   Qt::ItemFlags uiFlags(int section) const override;
   void setId(QByteArray id) { _id = id; }
   bool loadConfig(PfNode node, Scheduler *scheduler, SharedUiItem parent,
-                  QHash<QByteArray, Calendar> namedCalendars);
+                  QMap<QByteArray, Calendar> namedCalendars);
   void fillPfNode(PfNode &node) const;
 };
 

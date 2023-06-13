@@ -21,7 +21,7 @@ class NoticeTriggerData;
 class LIBQRONSHARED_EXPORT NoticeTrigger : public Trigger {
 public:
   NoticeTrigger();
-  NoticeTrigger(PfNode node, QHash<QByteArray,Calendar> namedCalendars);
+  NoticeTrigger(PfNode node, QMap<QByteArray,Calendar> namedCalendars);
   NoticeTrigger(const NoticeTrigger &);
   NoticeTrigger &operator=(const NoticeTrigger &);
   ~NoticeTrigger();

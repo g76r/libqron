@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,10 +19,10 @@ HostsResourcesAvailabilityModel::HostsResourcesAvailabilityModel(
 }
 
 void HostsResourcesAvailabilityModel::hostsResourcesAvailabilityChanged(
-    QString host, QHash<QString, qint64> resources) {
+    QString host, QMap<QString, qint64> resources) {
   if (_mode != Configured) {
-    QHash<QString,qint64> hostConfigured = _configured.value(host);
-    QHash<QString,qint64> hostLwm = _lwm.value(host);
+    auto hostConfigured = _configured.value(host);
+    auto hostLwm = _lwm.value(host);
     foreach (QString kind, resources.keys()) {
       qint64 configured = hostConfigured.value(kind);
       qint64 free = resources.value(kind);
@@ -74,7 +74,7 @@ void HostsResourcesAvailabilityModel::changeItem(
     }
     if (!newItem.isNull()) {
       auto &newHost = static_cast<const Host&>(newItem);
-      QHash<QString,qint64> hostResources = newHost.resources();
+      auto hostResources = newHost.resources();
       _configured.insert(newId, hostResources);
       foreach (QString kind, hostResources.keys()) {
         QString configured = QString::number(hostResources.value(kind));
@@ -95,7 +95,7 @@ void HostsResourcesAvailabilityModel::changeItem(
           setCellValue(newId, kind, "0 / "+configured);
           break;
         }
-        QHash<QString,qint64> &resources = _lwm[newId];
+        QMap<QString,qint64> &resources = _lwm[newId];
         qint64 i = configured.toLongLong();
         if (!resources.contains(kind) || resources.value(kind) > i)
           resources.insert(kind, i);

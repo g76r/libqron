@@ -52,7 +52,7 @@ protected:
   Trigger(TriggerData *data);
   /** Load config element common to all trigger types
    * @return false on error */
-  bool loadConfig(PfNode node, QHash<QByteArray, Calendar> namedCalendars);
+  bool loadConfig(PfNode node, QMap<QByteArray, Calendar> namedCalendars);
 };
 
 Q_DECLARE_TYPEINFO(Trigger, Q_MOVABLE_TYPE);

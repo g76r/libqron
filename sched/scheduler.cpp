@@ -134,9 +134,8 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
     checkTriggersForAllTasks();
   }, Qt::QueuedConnection);
   foreach (const QString &host, _consumedResources.keys()) {
-    const QHash<QString,qint64> &hostConsumedResources
-        = _consumedResources[host];
-    QHash<QString,qint64> hostAvailableResources
+    auto hostConsumedResources = _consumedResources[host];
+    auto hostAvailableResources
         = newConfig.hosts().value(host.toUtf8()).resources();
     foreach (const QString &kind, hostConsumedResources.keys())
       hostAvailableResources.insert(kind, hostAvailableResources.value(kind)
@@ -942,13 +941,12 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
     return;
   }
   // LATER implement best effort resource check for forced requests
-  QHash<QString,qint64> taskResources = task.resources();
+  auto taskResources = task.resources();
   foreach (Host h, hosts) {
     // LATER skip hosts currently down or disabled
     if (!taskResources.isEmpty()) {
-      QHash<QString,qint64> hostConsumedResources
-          = _consumedResources.value(h.id());
-      QHash<QString,qint64> hostAvailableResources
+      auto hostConsumedResources = _consumedResources.value(h.id());
+      auto hostAvailableResources
           = config().hosts().value(h.id()).resources();
       if (!instance.force()) {
         foreach (QString kind, taskResources.keys()) {
@@ -1118,10 +1116,10 @@ void Scheduler::taskInstanceFinishedOrCanceled(
     auto herdedTasks = this->herdedTasks(instance.idAsLong());
     recomputeHerderSuccess(instance, herdedTasks);
     configuredTask.fetchAndAddRunningCount(-1);
-    QHash<QString,qint64> taskResources = requestedTask.resources();
-    QHash<QString,qint64> hostConsumedResources =
+    auto taskResources = requestedTask.resources();
+    auto hostConsumedResources =
         _consumedResources.value(instance.target().id());
-    QHash<QString,qint64> hostAvailableResources =
+    auto hostAvailableResources =
         config().hosts().value(instance.target().id()).resources();
     foreach (QString kind, taskResources.keys()) {
       qint64 qty = hostConsumedResources.value(kind)-taskResources.value(kind);
@@ -1221,7 +1219,7 @@ void Scheduler::periodicChecks() {
 }
 
 void Scheduler::propagateTaskInstanceChange(TaskInstance instance) {
-  emit itemChanged(instance, nullItem, "taskinstance"_ba);
+  emit itemChanged(instance, _nullItem, "taskinstance"_ba);
 }
 
 QMap<quint64,TaskInstance> Scheduler::unfinishedTaskInstances() {

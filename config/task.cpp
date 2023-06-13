@@ -63,8 +63,8 @@ Task::Task(const Task &other) : SharedUiItem(other) {
 
 Task::Task(
     PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-    QHash<QByteArray,Calendar> namedCalendars,
-    QHash<QByteArray, TaskTemplate> taskTemplates) {
+    QMap<QByteArray,Calendar> namedCalendars,
+    QMap<QByteArray, TaskTemplate> taskTemplates) {
   TaskData *d = new TaskData;
   d->_localId = ConfigUtils::sanitizeId(node.contentAsString(),
                                         ConfigUtils::LocalId).toUtf8();
@@ -126,7 +126,7 @@ void Task::copyLiveAttributesFromOldTask(Task oldTask) {
   d->_lastTaskInstanceId = oldTask.lastTaskInstanceId();
   d->_enabled = oldTask.enabled();
   // keep last triggered timestamp from previously defined trigger
-  QHash<QByteArray,CronTrigger> oldCronTriggers;
+  QMap<QByteArray,CronTrigger> oldCronTriggers;
   for (auto trigger: oldTask.data()->_cronTriggers)
     oldCronTriggers.insert(trigger.canonicalExpression().toUtf8(), trigger);
   for (auto trigger: d->_cronTriggers) {
@@ -204,8 +204,8 @@ void TaskData::setTaskGroup(TaskGroup taskGroup) {
   _id = _group.id()+"."+_localId;
 }
 
-QHash<QString, qint64> Task::resources() const {
-  return !isNull() ? data()->_resources : QHash<QString,qint64>();
+QMap<QString, qint64> Task::resources() const {
+  return !isNull() ? data()->_resources : QMap<QString,qint64>{};
 }
 
 QDateTime Task::lastExecution() const {

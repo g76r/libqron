@@ -1,4 +1,4 @@
-/* Copyright 2012-2016 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,7 +33,7 @@ public:
     SharedUiItem::operator=(other); return *this; }
   QString hostname() const;
   /** Configured max resources available. */
-  QHash<QString, qint64> resources() const;
+  QMap<QString, qint64> resources() const;
   void detach();
   PfNode toPfNode() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,

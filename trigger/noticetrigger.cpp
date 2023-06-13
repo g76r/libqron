@@ -28,7 +28,7 @@ NoticeTrigger::NoticeTrigger() {
 }
 
 NoticeTrigger::NoticeTrigger(PfNode node,
-                             QHash<QByteArray, Calendar> namedCalendars)
+                             QMap<QByteArray, Calendar> namedCalendars)
   : Trigger(new NoticeTriggerData(node.contentAsString())){
   loadConfig(node, namedCalendars);
 }

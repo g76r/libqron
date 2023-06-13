@@ -26,7 +26,7 @@ class CronTriggerData;
 class LIBQRONSHARED_EXPORT CronTrigger : public Trigger {
 public:
   explicit CronTrigger(const QString expression = {});
-  CronTrigger(PfNode node, QHash<QByteArray,Calendar> namedCalendars);
+  CronTrigger(PfNode node, QMap<QByteArray,Calendar> namedCalendars);
   CronTrigger(const CronTrigger &other);
   ~CronTrigger();
   CronTrigger &operator=(const CronTrigger &other);

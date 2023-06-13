@@ -16,7 +16,7 @@
 
 #include "libqron_global.h"
 #include <QSharedDataPointer>
-#include <QHash>
+#include <QMap>
 #include <QString>
 #include "pf/pfnode.h"
 #include "tasktemplate.h"
@@ -57,12 +57,13 @@ public:
   ParamSet vars() const { return tasksRoot().vars(); }
   ParamSet instanceparams() const { return tasksRoot().instanceparams(); }
   TasksRoot tasksRoot() const;
-  QHash<QByteArray,TaskGroup> taskgroups() const;
-  QHash<QByteArray,TaskTemplate> tasktemplates() const;
-  QHash<QByteArray,Task> tasks() const;
-  QHash<QByteArray,Cluster> clusters() const;
-  QHash<QByteArray,Host> hosts() const;
-  QHash<QByteArray, Calendar> namedCalendars() const;
+  QMap<QByteArray,TaskGroup> taskgroups() const;
+  QMap<QByteArray,TaskTemplate> tasktemplates() const;
+  QMap<QByteArray,Task> tasks() const;
+  QMap<QByteArray,Cluster> clusters() const;
+  QMap<QByteArray,Host> hosts() const;
+  QMap<QByteArray, Calendar> namedCalendars() const;
+  QMap<QByteArray, PfNode> externalParams() const;
   QList<EventSubscription> onstart() const;
   QList<EventSubscription> onsuccess() const;
   QList<EventSubscription> onfailure() const;
@@ -82,7 +83,7 @@ public:
   /** Originaly parsed PF tree, if SchedulerConfig was constructed from a PF
    * tree, usefull for a configuration repository in a running scheduler. */
   PfNode originalPfNode() const;
-  void copyLiveAttributesFromOldTasks(QHash<QByteArray,Task> oldTasks);
+  void copyLiveAttributesFromOldTasks(QMap<QByteArray,Task> oldTasks);
   void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
                   QByteArray idQualifier);
   void changeParams(ParamSet newParams, ParamSet oldParams, QByteArray setId);

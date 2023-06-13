@@ -1,4 +1,4 @@
-/* Copyright 2013-2022 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,10 +35,10 @@ public:
     Hostname // used for hostnames; disallows _ but allows - : [ ] and .
   };
   static void loadResourcesSet(
-      PfNode parentnode, QHash<QString,qint64> *resources, QString attrname);
-  inline static QHash<QString,qint64> loadResourcesSet(
+      PfNode parentnode, QMap<QString,qint64> *resources, QString attrname);
+  inline static QMap<QString,qint64> loadResourcesSet(
       PfNode parentnode, QString attrname) {
-    QHash<QString,qint64> resources;
+    QMap<QString,qint64> resources;
     loadResourcesSet(parentnode, &resources, attrname);
     return resources; }
   /** For identifier, with or without dot. Cannot contain ParamSet interpreted

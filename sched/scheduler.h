@@ -40,7 +40,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   QMap<quint64,TaskInstance> _unfinishedTasks; // task instances repository
   QMap<quint64,QSet<quint64>> _unfinishedHerds; // herders -> herded tasks
   QMap<quint64,QSet<quint64>> _awaitedTasks; // herders waiting lists
-  QHash<quint64,Executor*> _runningExecutors;
+  QMap<quint64,Executor*> _runningExecutors;
   QSet<quint64> _dirtyHerds; // for which planned tasks must be reevaluated
   QList<Executor*> _availableExecutors;
   Alerter *_alerter;
@@ -51,7 +51,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   qint64 _execCount, _runningTasksHwm, _queuedTasksHwm;
   QFileSystemWatcher *_accessControlFilesWatcher;
   PfNode _accessControlNode;
-  QHash<QString, QHash<QString,qint64>> _consumedResources; // <host,<resource,quantity>>
+  QMap<QString,QMap<QString,qint64>> _consumedResources; // <host,<resource,quantity>>
   std::random_device _randomDevice;
   std::mt19937 _uniformRandomNumberGenerator;
   QMutex _configGuard;
@@ -182,7 +182,7 @@ public:
 
 signals:
   void hostsResourcesAvailabilityChanged(
-      QString host, QHash<QString,qint64> resources);
+      QString host, QMap<QString,qint64> resources);
   void noticePosted(QByteArray notice, ParamSet params);
 
 private:

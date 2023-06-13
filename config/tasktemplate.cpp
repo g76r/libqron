@@ -21,9 +21,8 @@ TaskTemplate::TaskTemplate() {
 TaskTemplate::TaskTemplate(const TaskTemplate&other) : SharedUiItem(other) {
 }
 
-TaskTemplate::TaskTemplate(
-    PfNode node, Scheduler *scheduler, SharedUiItem parent,
-    QHash<QByteArray,Calendar> namedCalendars) {
+TaskTemplate::TaskTemplate(PfNode node, Scheduler *scheduler, SharedUiItem parent,
+    QMap<QByteArray, Calendar> namedCalendars) {
   TaskTemplateData *d = new TaskTemplateData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
                                    ConfigUtils::LocalId).toUtf8();
@@ -37,7 +36,7 @@ TaskTemplate::TaskTemplate(
 
 bool TaskOrTemplateData::loadConfig(
     PfNode node, Scheduler *scheduler, SharedUiItem parent,
-    QHash<QByteArray,Calendar> namedCalendars) {
+    QMap<QByteArray,Calendar> namedCalendars) {
   if (parent.idQualifier() != "tasksroot"
       && parent.idQualifier() != "taskgroup") [[unlikely]] {
     Log::error() << "internal error in TaskOrGroupData::loadConfig";
@@ -339,7 +338,7 @@ bool TaskOrTemplateData::setUiData(
           value.toString(), ConfigUtils::FullyQualifiedId);
     return true;
   case 8: {
-    QHash<QString,qint64> resources;
+    QMap<QString,qint64> resources;
     if (QronUiUtils::resourcesFromString(value.toString(), &resources,
                                             errorString)) {
       _resources = resources;

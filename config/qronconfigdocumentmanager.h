@@ -40,8 +40,10 @@ public:
   using SharedUiItemDocumentManager::itemsByIdQualifier;
   SharedUiItemList<SharedUiItem> itemsByIdQualifier(
       QByteArray idQualifier) const override;
-  QHash<QByteArray,Calendar> namedCalendars() const {
+  QMap<QByteArray,Calendar> namedCalendars() const {
     return _config.namedCalendars(); }
+  QMap<QByteArray,PfNode> externalParams() const {
+    return _config.externalParams(); }
   int tasksCount() const { return _config.tasks().count(); }
   int taskGroupsCount() const { return _config.taskgroups().count(); }
   int maxtotaltaskinstances() const { return _config.maxtotaltaskinstances(); }
@@ -79,8 +81,13 @@ protected:
 private:
   template<class T>
   void inline emitSignalForItemTypeChanges(
-      QHash<QByteArray,T> newItems, QHash<QByteArray,T> oldItems,
+      QMap<QByteArray,T> newItems, QMap<QByteArray,T> oldItems,
       QByteArray idQualifier);
+  /*template<>
+  void inline emitSignalForItemTypeChanges(
+      QMap<QByteArray,T> newItems, QMap<QByteArray,T> oldItems,
+      QByteArray idQualifier);
+  */
 };
 
 #endif // QRONCONFIGDOCUMENTMANAGER_H

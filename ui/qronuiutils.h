@@ -1,4 +1,4 @@
-/* Copyright 2014-2022 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,7 +15,7 @@
 #define QRONUIUTILS_H
 
 #include <QString>
-#include <QHash>
+#include <QMap>
 #include "util/paramset.h"
 #include "libqron_global.h"
 
@@ -24,11 +24,10 @@ class LIBQRONSHARED_EXPORT QronUiUtils {
   QronUiUtils() { }
 
 public:
-  static QString resourcesAsString(QHash<QString,qint64> resources);
+  static QString resourcesAsString(QMap<QString,qint64> resources);
   /** Parse a string of the form "memory=512 semaphore=1"
    * @return false on error */
-  static bool resourcesFromString(
-      QString text, QHash<QString,qint64> *resources, QString *errorString);
+  static bool resourcesFromString(QString text, QMap<QString, qint64> *resources, QString *errorString);
 };
 
 #endif // QRONUIUTILS_H

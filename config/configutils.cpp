@@ -1,4 +1,4 @@
-/* Copyright 2013-2022 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,7 @@ ConfigUtils::ConfigUtils() {
 static QRegularExpression whitespace("\\s");
 
 void ConfigUtils::loadResourcesSet(
-    PfNode parentnode, QHash<QString,qint64> *resources, QString attrname) {
+    PfNode parentnode, QMap<QString,qint64> *resources, QString attrname) {
   if (!resources)
     return;
   QListIterator<QPair<QString,qint64> > it(

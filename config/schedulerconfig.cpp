@@ -58,15 +58,16 @@ public:
 
 class SchedulerConfigData : public SharedUiItemData{
 public:
-  QHash<QByteArray,TaskGroup> _taskgroups;
-  QHash<QByteArray,TaskTemplate> _tasktemplates;
-  QHash<QByteArray,Task> _tasks;
-  QHash<QByteArray,Cluster> _clusters;
-  QHash<QByteArray,Host> _hosts;
+  QMap<QByteArray,TaskGroup> _taskgroups;
+  QMap<QByteArray,TaskTemplate> _tasktemplates;
+  QMap<QByteArray,Task> _tasks;
+  QMap<QByteArray,Cluster> _clusters;
+  QMap<QByteArray,Host> _hosts;
   TasksRoot _tasksRoot;
   QList<EventSubscription> _onlog, _onnotice, _onschedulerstart, _onconfigload;
   qint32 _maxtotaltaskinstances, _maxqueuedrequests;
-  QHash<QByteArray,Calendar> _namedCalendars;
+  QMap<QByteArray,Calendar> _namedCalendars;
+  QMap<QByteArray,PfNode> _externalParams;
   AlerterConfig _alerterConfig;
   AccessControlConfig _accessControlConfig;
   QList<LogFile> _logfiles;
@@ -373,34 +374,39 @@ TasksRoot SchedulerConfig::tasksRoot() const {
   return d ? d->_tasksRoot : TasksRoot();
 }
 
-QHash<QByteArray, TaskGroup> SchedulerConfig::taskgroups() const {
+QMap<QByteArray, TaskGroup> SchedulerConfig::taskgroups() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_taskgroups : QHash<QByteArray,TaskGroup>();
+  return d ? d->_taskgroups : QMap<QByteArray,TaskGroup>();
 }
 
-QHash<QByteArray,TaskTemplate> SchedulerConfig::tasktemplates() const {
+QMap<QByteArray,TaskTemplate> SchedulerConfig::tasktemplates() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_tasktemplates : QHash<QByteArray,TaskTemplate>();
+  return d ? d->_tasktemplates : QMap<QByteArray,TaskTemplate>();
 }
 
-QHash<QByteArray,Task> SchedulerConfig::tasks() const {
+QMap<QByteArray,Task> SchedulerConfig::tasks() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_tasks : QHash<QByteArray,Task>();
+  return d ? d->_tasks : QMap<QByteArray,Task>();
 }
 
-QHash<QByteArray,Cluster> SchedulerConfig::clusters() const {
+QMap<QByteArray,Cluster> SchedulerConfig::clusters() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_clusters : QHash<QByteArray,Cluster>();
+  return d ? d->_clusters : QMap<QByteArray,Cluster>{};
 }
 
-QHash<QByteArray,Host> SchedulerConfig::hosts() const {
+QMap<QByteArray,Host> SchedulerConfig::hosts() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_hosts : QHash<QByteArray,Host>();
+  return d ? d->_hosts : QMap<QByteArray,Host>{};
 }
 
-QHash<QByteArray,Calendar> SchedulerConfig::namedCalendars() const {
+QMap<QByteArray,Calendar> SchedulerConfig::namedCalendars() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_namedCalendars : QHash<QByteArray,Calendar>();
+  return d ? d->_namedCalendars : QMap<QByteArray,Calendar>{};
+}
+
+QMap<QByteArray,PfNode> SchedulerConfig::externalParams() const {
+  auto d = data();
+  return d ? d->_externalParams : QMap<QByteArray,PfNode>{};
 }
 
 QList<EventSubscription> SchedulerConfig::onstart() const {
@@ -542,7 +548,7 @@ QByteArray SchedulerConfig::recomputeId() const {
 }
 
 void SchedulerConfig::copyLiveAttributesFromOldTasks(
-    QHash<QByteArray, Task> oldTasks) {
+    QMap<QByteArray, Task> oldTasks) {
   SchedulerConfigData *d = data();
   if (!d)
     return;
