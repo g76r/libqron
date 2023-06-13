@@ -43,7 +43,7 @@
 #define REEVALUATE_PLANNED_INSTANCES_EVENT (QEvent::Type(QEvent::User+2))
 #define PERIODIC_CHECKS_INTERVAL_MS 60000
 
-static SharedUiItem nullItem;
+static SharedUiItem _nullItem;
 
 static int staticInit() {
   qMetaTypeId<TaskInstance>();
@@ -124,6 +124,19 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   } else {
     Log::debug() << "keep maxtotaltaskinstances of "
                  << newConfig.maxtotaltaskinstances();
+  }
+  ParamSet::clearExternalParams();
+  for (auto node: newConfig.externalParams()) {
+    auto name = node.contentAsUtf8();
+    auto file_name = node.utf8Attribute("file");
+    // FIXME it's not the right way to split a command line, see executor
+    auto cmdline = node.childrenByName("command").value(0).contentAsStringList();
+    if (!file_name.isEmpty())
+      ParamSet::registerExternalParams(
+            name, ParamSet::fromFile(file_name)); // TODO support options
+    else if (cmdline.size())
+      ParamSet::registerExternalParams(
+            name, ParamSet::fromCommandOutput(cmdline)); // TODO support options
   }
   newConfig.copyLiveAttributesFromOldTasks(oldConfig.tasks());
   QMutexLocker ml(&_configGuard);

@@ -14,6 +14,7 @@
 #include "qronconfigdocumentmanager.h"
 #include <QtDebug>
 #include "task.h"
+#include "modelview/genericshareduiitem.h"
 
 static int staticInit() {
   qMetaTypeId<QList<EventSubscription>>();
@@ -247,6 +248,9 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
         newConfig.clusters(), oldConfig.clusters(), "cluster"_ba);
   emitSignalForItemTypeChanges(
         newConfig.namedCalendars(), oldConfig.namedCalendars(), "calendar"_ba);
+  emitSignalForItemTypeChanges(
+        newConfig.externalParams(), oldConfig.externalParams(),
+        "externalparams"_ba);
   emitSignalForItemTypeChanges(
         newConfig.taskgroups(), oldConfig.taskgroups(), "taskgroup"_ba);
   emitSignalForItemTypeChanges(

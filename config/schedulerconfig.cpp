@@ -88,6 +88,7 @@ public:
       _maxtotaltaskinstances(other._maxtotaltaskinstances),
       _maxqueuedrequests(other._maxqueuedrequests),
       _namedCalendars(other._namedCalendars),
+      _externalParams(other._externalParams),
       _alerterConfig(other._alerterConfig),
       _accessControlConfig(other._accessControlConfig),
       _logfiles(other._logfiles),
@@ -164,6 +165,14 @@ SchedulerConfigData::SchedulerConfigData(
       Log::error() << "ignoring empty calendar: " << node.toPf();
     else
       _namedCalendars.insert(name, calendar);
+  }
+  _externalParams.clear();
+  for (auto node: root.childrenByName("externalparams")) {
+    auto name = node.contentAsUtf8();
+    if (name.isEmpty() || (!node.hasChild("file") && !node.hasChild("command")))
+      Log::error() << "ignoring invalid externalparams: " << node.toPf();
+    else
+      _externalParams.insert(name, node);
   }
   _hosts.clear();
   foreach (PfNode node, root.childrenByName("host")) {
@@ -617,6 +626,8 @@ PfNode SchedulerConfig::toPfNode() const {
   std::sort(calendarNames.begin(), calendarNames.end());
   foreach (auto calendarName, calendarNames)
     node.appendChild(d->_namedCalendars.value(calendarName).toPfNode());
+  for (auto node: d->_externalParams)
+    node.appendChild(node);
   node.appendChild(d->_alerterConfig.toPfNode());
   if (!d->_accessControlConfig.isEmpty())
     node.appendChild(d->_accessControlConfig.toPfNode());
