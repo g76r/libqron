@@ -1,4 +1,4 @@
-/* Copyright 2014-2021 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,15 +14,6 @@
 #include "configrepository.h"
 #include "pf/pfdomhandler.h"
 #include <QThread>
-
-static int staticInit() {
-  qMetaTypeId<ConfigHistoryEntry>();
-  qMetaTypeId<QList<ConfigHistoryEntry>>();
-  qMetaTypeId<SchedulerConfig>();
-  qMetaTypeId<PfNode>();
-  return 0;
-}
-Q_CONSTRUCTOR_FUNCTION(staticInit)
 
 ConfigRepository::ConfigRepository(QObject *parent, Scheduler *scheduler)
   : QObject(parent), _scheduler(scheduler) {

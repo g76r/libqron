@@ -45,16 +45,6 @@
 
 static SharedUiItem _nullItem;
 
-static int staticInit() {
-  qMetaTypeId<TaskInstance>();
-  qMetaTypeId<TaskInstanceList>();
-  qMetaTypeId<QList<TaskInstance>>(); // TODO remove, it is probably no longer used
-  qRegisterMetaType<QHash<QString,qint64>>("QHash<QString,qint64>");
-  qMetaTypeId<ParamSet>();
-  return 0;
-}
-Q_CONSTRUCTOR_FUNCTION(staticInit)
-
 Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
   _alerter(new Alerter), _authenticator(new InMemoryAuthenticator(this)),
   _usersDatabase(new InMemoryUsersDatabase(this)),

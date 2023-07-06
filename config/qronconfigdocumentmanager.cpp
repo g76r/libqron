@@ -16,14 +16,6 @@
 #include "task.h"
 #include "modelview/genericshareduiitem.h"
 
-static int staticInit() {
-  qMetaTypeId<QList<EventSubscription>>();
-  qMetaTypeId<SchedulerConfig>();
-  qMetaTypeId<ParamSet>();
-  return 0;
-}
-Q_CONSTRUCTOR_FUNCTION(staticInit)
-
 QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   : SharedUiItemDocumentManager(parent) {
   registerItemType(

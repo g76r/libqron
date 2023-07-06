@@ -30,17 +30,6 @@
 // taking into account that it must be at less as precise as visibilitywindow
 #define ASYNC_PROCESSING_INTERVAL 10000
 
-static int staticInit() {
-  qMetaTypeId<QList<AlertSubscription>>();
-  qMetaTypeId<AlertSubscription>();
-  qMetaTypeId<AlertSettings>();
-  qMetaTypeId<Alert>();
-  qMetaTypeId<AlerterConfig>();
-  qMetaTypeId<ParamSet>();
-  return 0;
-}
-Q_CONSTRUCTOR_FUNCTION(staticInit)
-
 class GridboardThread : public QThread {
   friend class Alerter;
   Q_DISABLE_COPY(GridboardThread)
