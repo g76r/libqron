@@ -407,6 +407,13 @@ static RadixTree<std::function<QVariant(
 { "!durations", [](const TaskInstance &taskInstance, const QString&) {
   return taskInstance.durationMillis()/1000;
 } },
+// total[m]s: backward compatiblity with qron < 1.12
+{ "!totalms", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.durationMillis();
+} },
+{ "!totals", [](const TaskInstance &taskInstance, const QString&) {
+  return taskInstance.durationMillis()/1000;
+} },
 { "!returncode", [](const TaskInstance &taskInstance, const QString&) {
   return QByteArray::number(taskInstance.returnCode());
 } },
