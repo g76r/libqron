@@ -6,8 +6,6 @@ build:
   image: g76r/qt6-builder:20230708
   script:
     - cd ..
-    - git clone https://gitlab.com/g76r/libqtpf.git
-    - (cd libqtpf && qmake && make)
     - git clone https://gitlab.com/g76r/libp6core.git
     - (cd libp6core && qmake && make)
     - cd -

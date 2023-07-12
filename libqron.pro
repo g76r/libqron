@@ -57,11 +57,10 @@ DESTDIR = ../build-$$TARGET-$$TARGET_OS/$$BUILD_TYPE
 #PRE_TARGETDEPS += $$autodoc.target
 
 # dependency libs
-INCLUDEPATH += ../libqtpf ../libp6core
+INCLUDEPATH += ../libp6core
 LIBS += \
-  -L../build-qtpf-$$TARGET_OS/$$BUILD_TYPE \
   -L../build-p6core-$$TARGET_OS/$$BUILD_TYPE
-LIBS += -lqtpf -lp6core
+LIBS += -lp6core
 
 SOURCES += \
     action/donothingaction.cpp \
