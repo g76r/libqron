@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -53,7 +53,7 @@ public:
   QList<User> _users;
   QStringList _commentsList;
   AccessControlConfigData() {}
-  explicit AccessControlConfigData(PfNode node);
+  AccessControlConfigData(ParamsProvider *context, PfNode node);
 };
 
 AccessControlConfig::AccessControlConfig() : d(new AccessControlConfigData) {
@@ -63,8 +63,8 @@ AccessControlConfig::AccessControlConfig(const AccessControlConfig &rhs)
   : d(rhs.d) {
 }
 
-AccessControlConfig::AccessControlConfig(PfNode node)
-  : d(new AccessControlConfigData(node)) {
+AccessControlConfig::AccessControlConfig(ParamsProvider *context, PfNode node)
+  : d(new AccessControlConfigData(context, node)) {
 }
 
 AccessControlConfig &AccessControlConfig::operator=(
@@ -77,12 +77,13 @@ AccessControlConfig &AccessControlConfig::operator=(
 AccessControlConfig::~AccessControlConfig() {
 }
 
-AccessControlConfigData::AccessControlConfigData(PfNode node) {
+AccessControlConfigData::AccessControlConfigData(
+    ParamsProvider *context, PfNode node) {
   foreach (PfNode child, node.childrenByName("user-file")) {
     QString path = child.contentAsString().trimmed();
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
-          child.attribute(QStringLiteral("cipher"), QStringLiteral("plain")));
+          context->evaluate(child.attribute("cipher"_ba, "plain"_ba)));
     if (path.isEmpty())
       Log::error() << "access control user file with empty path: "
                    << child.toString();
@@ -96,14 +97,13 @@ AccessControlConfigData::AccessControlConfigData(PfNode node) {
       _userFiles.append(userFile);
     }
   }
-  foreach (PfNode child, node.childrenByName("user")) {
-    QString userId = child.contentAsString().trimmed();
-    QString encodedPassword = child.attribute(QStringLiteral("password"));
+  foreach (PfNode child, node.childrenByName("user"_ba)) {
+    QString userId = context->evaluate(child.contentAsString()).trimmed();
+    QString encodedPassword = context->evaluate(child.attribute("password"_ba));
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
-          child.attribute(QStringLiteral("cipher"),
-                          QStringLiteral("plain")));
-    auto rolelist = child.stringListAttribute(QStringLiteral("roles"));
+          context->evaluate(child.attribute("cipher"_ba, "plain"_ba)));
+    auto rolelist = child.stringListAttribute("roles"_ba);
     auto roles = QSet<QString>(rolelist.begin(), rolelist.end());
     if (userId.isEmpty())
       Log::error() << "access control user with no id: " << child.toString();
