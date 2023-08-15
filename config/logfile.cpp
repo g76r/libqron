@@ -12,8 +12,6 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "logfile.h"
-#include <QSharedData>
-#include "pf/pfnode.h"
 
 static QByteArray _uiHeaderNames[] = {
   "Id", // 0

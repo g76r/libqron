@@ -12,13 +12,6 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "taskinstance.h"
-#include <QSharedData>
-#include <QDateTime>
-#include <QAtomicInt>
-#include "format/timeformats.h"
-#include <functional>
-#include "util/radixtree.h"
-#include "thread/atomicvalue.h"
 #include "condition/disjunctioncondition.h"
 
 static QByteArray _uiHeaderNames[] = {

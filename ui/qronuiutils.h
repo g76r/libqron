@@ -14,9 +14,6 @@
 #ifndef QRONUIUTILS_H
 #define QRONUIUTILS_H
 
-#include <QString>
-#include <QMap>
-#include "util/paramset.h"
 #include "libqron_global.h"
 
 class LIBQRONSHARED_EXPORT QronUiUtils {

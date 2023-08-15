@@ -14,16 +14,10 @@
 #ifndef ALERTER_H
 #define ALERTER_H
 
-#include <QObject>
-#include "util/paramset.h"
 #include "config/alertsubscription.h"
 #include "alertchannel.h"
-#include <QHash>
-#include <QString>
-#include <QDateTime>
 #include "config/alerterconfig.h"
 #include "gridboard.h"
-#include "thread/atomicvalue.h"
 
 class QThread;
 class PfNode;

@@ -13,9 +13,6 @@
  */
 #include "crontrigger.h"
 #include "trigger_p.h"
-#include <QRegularExpression>
-#include <QStringList>
-#include "log/log.h"
 
 // MAYDO support for more complex cron expression such as those of Quartz
 // e.g. 0#3 = third sunday, 0L = last sunday, W = working day, etc.

@@ -12,10 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "alertsubscription.h"
-#include <QSharedData>
 #include "alert/alertchannel.h"
-#include "pf/pfnode.h"
-#include "util/paramset.h"
 #include "alert/alert.h"
 #include "configutils.h"
 

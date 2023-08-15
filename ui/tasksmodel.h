@@ -1,4 +1,4 @@
-/* Copyright 2013-2015 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,14 +14,10 @@
 #ifndef TASKSMODEL_H
 #define TASKSMODEL_H
 
-#include <QAbstractTableModel>
-#include <QList>
-#include <QHash>
 #include "config/task.h"
 #include "config/taskgroup.h"
 #include "sched/taskinstance.h"
 #include "config/schedulerconfig.h"
-#include "modelview/shareduiitemstablemodel.h"
 
 /** Model holding tasks along with their attributes, one task per line, in
  * task id alphabetical order. */

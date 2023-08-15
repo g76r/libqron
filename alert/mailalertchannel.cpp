@@ -1,4 +1,4 @@
-/* Copyright 2012-2021 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,13 +12,8 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "mailalertchannel.h"
-#include "log/log.h"
-#include <QDateTime>
 #include "mail/mailsender.h"
-#include <QThread>
 #include "alerter.h"
-#include <QSet>
-#include <QTimer>
 #include "mail/mailaddress.h"
 
 // LATER replace this 60" ugly batch with _remindFrequency and make reminding no longer drift

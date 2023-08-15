@@ -14,7 +14,6 @@
 #ifndef CONFIGHISTORYENTRY_H
 #define CONFIGHISTORYENTRY_H
 
-#include "modelview/shareduiitem.h"
 #include "config/schedulerconfig.h"
 
 class ConfigHistoryEntryData;

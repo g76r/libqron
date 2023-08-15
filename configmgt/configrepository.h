@@ -14,8 +14,6 @@
 #ifndef CONFIGREPOSITORY_H
 #define CONFIGREPOSITORY_H
 
-#include <QObject>
-#include <QStringList>
 #include "config/schedulerconfig.h"
 #include "sched/scheduler.h"
 #include "confighistoryentry.h"

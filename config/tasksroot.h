@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2023 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,10 +15,6 @@
 #define TASKSROOT_H
 
 #include "libqron_global.h"
-#include <QSharedData>
-#include <QList>
-#include "util/paramset.h"
-#include "modelview/shareduiitem.h"
 
 class TasksRootData;
 class PfNode;

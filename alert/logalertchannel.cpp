@@ -12,8 +12,6 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "logalertchannel.h"
-#include "log/log.h"
-#include <QThread>
 
 LogAlertChannel::LogAlertChannel(Alerter *alerter)
   : AlertChannel(alerter) {

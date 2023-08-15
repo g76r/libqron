@@ -12,11 +12,8 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "accesscontrolconfig.h"
-#include <QSharedData>
 #include "auth/inmemoryauthenticator.h"
 #include "auth/inmemoryusersdatabase.h"
-#include <QFile>
-#include <QFileSystemWatcher>
 #include "config/configutils.h"
 
 static QSet<QString> excludedDescendantsForComments { "user-file", "user" };

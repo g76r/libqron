@@ -14,10 +14,8 @@
 #ifndef QRONCONFIGDOCUMENTMANAGER_H
 #define QRONCONFIGDOCUMENTMANAGER_H
 
-#include "modelview/shareduiitemdocumentmanager.h"
 #include "config/schedulerconfig.h"
 #include "eventsubscription.h"
-#include <QMutexLocker>
 
 /** Document manager for scheduler config
  * @see SharedUiItemDocumentManager

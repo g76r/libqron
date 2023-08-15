@@ -1,4 +1,4 @@
-/* Copyright 2014-2022 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -11,13 +11,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
-#ifndef PARAMETRIZEDHTTPREQUEST_H
-#define PARAMETRIZEDHTTPREQUEST_H
+#ifndef PARAMETRIZEDNETWORKREQUEST_H
+#define PARAMETRIZEDNETWORKREQUEST_H
 
-#include <QNetworkRequest>
-#include <QNetworkAccessManager>
-#include "util/paramset.h"
-#include "httpd/httprequest.h"
+#include "libqron_global.h"
 
 /** Class extending QNetworkRequest to give easy ways to parametrize the
  * request using ParamSet parameters.
@@ -35,7 +32,7 @@
  * - "redirect-max" if > 0 allows following redirect, using choosen max
  *       see QNetworkRequest::setMaximumRedirectsAllowed()
  */
-class ParametrizedNetworkRequest : public QNetworkRequest {
+class LIBQRONSHARED_EXPORT ParametrizedNetworkRequest : public QNetworkRequest {
   QString _logTask, _logExecId;
   HttpRequest::HttpMethod _method;
   QString _rawPayloadFromParams;
@@ -58,4 +55,4 @@ public:
   const static QSet<QString> supportedParamNames;
 };
 
-#endif // PARAMETRIZEDHTTPREQUEST_H
+#endif // PARAMETRIZEDNETWORKREQUEST_H

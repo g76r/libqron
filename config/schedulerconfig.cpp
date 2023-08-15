@@ -14,11 +14,7 @@
 #include "schedulerconfig.h"
 #include "eventsubscription.h"
 #include "action/action.h"
-#include "log/log.h"
-#include "log/filelogger.h"
 #include "configutils.h"
-#include <QCryptographicHash>
-#include <QMutex>
 #include "tasksroot.h"
 
 #define DEFAULT_MAXTOTALTASKINSTANCES 16

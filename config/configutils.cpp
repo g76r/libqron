@@ -14,7 +14,6 @@
 #include "configutils.h"
 #include "eventsubscription.h"
 #include "action/action.h"
-#include <QRegularExpression>
 #include "condition/disjunctioncondition.h"
 #include "condition/taskwaitcondition.h"
 

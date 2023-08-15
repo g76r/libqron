@@ -1,4 +1,4 @@
-/* Copyright 2013-2016 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,10 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "tasksmodel.h"
-#include <QDateTime>
 #include "config/eventsubscription.h"
-#include <QUrl>
-#include <QTimer>
 
 // 60,000 ms = 1'
 // should stay below HtmlTaskItemDelegate's SOON_EXECUTION_MILLIS

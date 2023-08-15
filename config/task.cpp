@@ -13,17 +13,9 @@
  */
 #include "task_p.h"
 #include "taskgroup.h"
-#include "log/log.h"
-#include <QAtomicInt>
-#include <QPointer>
 #include "sched/scheduler.h"
-#include "format/stringutils.h"
 #include "action/action.h"
 #include "ui/graphvizdiagramsbuilder.h"
-#include "modelview/shareduiitemdocumentmanager.h"
-#include "util/radixtree.h"
-#include <functional>
-#include "util/containerutils.h"
 
 class TaskData : public TaskOrTemplateData {
 public:

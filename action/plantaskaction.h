@@ -15,7 +15,6 @@
 #define PLANTASKACTION_H
 
 #include "action.h"
-#include "util/paramset.h"
 
 class PlanTaskActionData;
 class Scheduler;

@@ -16,9 +16,6 @@
 
 #include "configrepository.h"
 #include "config/schedulerconfig.h"
-#include <QDir>
-#include <QHash>
-#include <QMutex>
 
 class CsvFile;
 

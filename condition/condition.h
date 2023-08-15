@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2023 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,8 +15,6 @@
 #define CONDITION_H
 
 #include "libqron_global.h"
-#include "util/paramset.h"
-#include "pf/pfnode.h"
 
 class ConditionData;
 class TaskInstance;

@@ -14,10 +14,7 @@
 #ifndef TRIGGER_H
 #define TRIGGER_H
 
-#include "libqron_global.h"
-#include <QSharedDataPointer>
 #include "config/calendar.h"
-#include "util/paramset.h"
 
 class TriggerData;
 

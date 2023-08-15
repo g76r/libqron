@@ -13,8 +13,6 @@
  */
 #include "logaction.h"
 #include "action_p.h"
-#include "util/paramset.h"
-#include "util/paramsprovidermerger.h"
 
 class LogActionData : public ActionData {
 public:

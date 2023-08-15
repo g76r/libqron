@@ -12,7 +12,6 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "alerterconfig.h"
-#include <QSharedData>
 #include "configutils.h"
 #include "alert/gridboard.h"
 

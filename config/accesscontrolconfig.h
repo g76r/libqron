@@ -15,9 +15,6 @@
 #define ACCESSCONTROLCONFIG_H
 
 #include "libqron_global.h"
-#include <QSharedDataPointer>
-#include "pf/pfnode.h"
-#include "util/paramsprovider.h"
 
 class AccessControlConfigData;
 class InMemoryAuthenticator;

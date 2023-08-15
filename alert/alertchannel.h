@@ -1,4 +1,4 @@
-/* Copyright 2012-2015 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,7 +14,6 @@
 #ifndef ALERTCHANNEL_H
 #define ALERTCHANNEL_H
 
-#include <QObject>
 #include "alert.h"
 #include "config/alerterconfig.h"
 

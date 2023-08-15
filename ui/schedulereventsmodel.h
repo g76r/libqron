@@ -1,4 +1,4 @@
-/* Copyright 2013-2014 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,9 +14,7 @@
 #ifndef SCHEDULEREVENTSMODEL_H
 #define SCHEDULEREVENTSMODEL_H
 
-#include <QAbstractTableModel>
 #include "config/eventsubscription.h"
-#include <QList>
 #include "config/schedulerconfig.h"
 
 /** One-line table holding all Scheduler's events lists. */

@@ -12,29 +12,11 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "executor.h"
-#include <QThread>
-#include <QtDebug>
-#include <QMetaObject>
-#include "log/log.h"
-#include <QNetworkAccessManager>
-#include <QUrl>
-#include <QBuffer>
-#include <QNetworkReply>
-#include "log/qterrorcodes.h"
 #include "alert/alerter.h"
 #include "config/eventsubscription.h"
 #include "trigger/crontrigger.h"
 #include "sysutil/parametrizednetworkrequest.h"
-#ifdef Q_OS_UNIX
-#include <sys/types.h>
-#include <unistd.h>
-#endif
 #include "scheduler.h"
-#include "util/paramsprovidermerger.h"
-#include "util/regexpparamsprovider.h"
-#include "pf/pfparser.h"
-#include "pf/pfdomhandler.h"
-#include "thread/blockingtimer.h"
 #include "condition/disjunctioncondition.h"
 
 #define PROCESS_OUTPUT_CHUNK_SIZE 16384

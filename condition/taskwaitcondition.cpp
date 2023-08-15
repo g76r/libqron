@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2023 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,8 +13,6 @@
  */
 #include "taskwaitcondition.h"
 #include "condition_p.h"
-#include "util/containerutils.h"
-#include "util/paramsprovidermerger.h"
 
 static QHash<TaskWaitOperator,QString> _operatorsAsString {
   { AllFinished, "allfinished" },

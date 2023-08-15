@@ -14,9 +14,6 @@
 #ifndef CLUSTER_H
 #define CLUSTER_H
 
-#include "libqron_global.h"
-#include <QSharedDataPointer>
-#include <QList>
 #include "host.h"
 
 class ClusterData;

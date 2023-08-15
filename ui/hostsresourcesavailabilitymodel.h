@@ -14,7 +14,6 @@
 #ifndef HOSTSRESOURCESAVAILABILITYMODEL_H
 #define HOSTSRESOURCESAVAILABILITYMODEL_H
 
-#include "modelview/textmatrixmodel.h"
 #include "config/schedulerconfig.h"
 
 /** Model holding resources allocation matrix, one resource kind per column and

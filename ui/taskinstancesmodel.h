@@ -14,13 +14,8 @@
 #ifndef TASKINSTANCESMODEL_H
 #define TASKINSTANCESMODEL_H
 
-#include <QAbstractTableModel>
-#include <QString>
-#include <QDateTime>
 #include "sched/taskinstance.h"
 #include "config/host.h"
-#include <QList>
-#include "modelview/shareduiitemstablemodel.h"
 
 /** Model holding tasks instances along with their attributes, one instance per
  * line, in reverse request order. */

@@ -1,4 +1,4 @@
-/* Copyright 2014-2017 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,9 +16,6 @@
 #include "sysutil/parametrizedudpsender.h"
 #include "alerter.h"
 #include "config/alerterconfig.h"
-#include <QNetworkAccessManager>
-#include <QThread>
-#include <QNetworkReply>
 
 UrlAlertChannel::UrlAlertChannel(Alerter *alerter)
   : AlertChannel(alerter), _nam(0) {

@@ -12,32 +12,19 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "scheduler.h"
-#include <QtDebug>
-#include <QCoreApplication>
-#include <QEvent>
 #include "pf/pfparser.h"
 #include "pf/pfdomhandler.h"
 #include "config/host.h"
 #include "config/cluster.h"
-#include <QMetaObject>
-#include "log/log.h"
-#include "log/filelogger.h"
-#include <QFile>
-#include <QThread>
 #include "config/configutils.h"
 #include "config/requestformfield.h"
 #include "trigger/crontrigger.h"
 #include "trigger/noticetrigger.h"
-#include "thread/blockingtimer.h"
 #include "condition/taskwaitcondition.h"
 #include "condition/disjunctioncondition.h"
-#include "util/paramsprovidermerger.h"
 #include "action/action.h"
 #include "executor.h"
-#include <QFileSystemWatcher>
 #include "alert/alerter.h"
-#include "auth/inmemoryauthenticator.h"
-#include "auth/inmemoryusersdatabase.h"
 
 #define REEVALUATE_QUEUED_INSTANCES_EVENT (QEvent::Type(QEvent::User+1))
 #define REEVALUATE_PLANNED_INSTANCES_EVENT (QEvent::Type(QEvent::User+2))

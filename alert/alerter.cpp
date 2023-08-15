@@ -12,19 +12,11 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "alerter.h"
-#include <QThread>
-#include <QtDebug>
-#include <QMetaObject>
-#include "log/log.h"
-#include "pf/pfnode.h"
 #include "logalertchannel.h"
 #include "urlalertchannel.h"
 #include "mailalertchannel.h"
-#include <QTimer>
-#include <QCoreApplication>
 #include "config/configutils.h"
 #include "alert.h"
-#include "thread/circularbuffer.h"
 
 // LATER replace this 10" ugly batch with predictive timer (min(timestamps))
 // taking into account that it must be at less as precise as visibilitywindow

@@ -1,4 +1,4 @@
-/* Copyright 2017 Hallowyn and others.
+/* Copyright 2017-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,8 +14,7 @@
 #ifndef PARAMETRIZEDFILEWRITER_H
 #define PARAMETRIZEDFILEWRITER_H
 
-#include <QFile>
-#include "util/paramset.h"
+#include "libqron_global.h"
 
 // MAYDO support a "sync" parameter (it is not directly supported by Qt)
 
@@ -32,7 +31,7 @@
  * - "payload" to set the request data to write (ignored if performWrite()
  *   is called with a non-null payload)
  */
-class ParametrizedFileWriter : public QFile {
+class LIBQRONSHARED_EXPORT ParametrizedFileWriter : public QFile {
   Q_OBJECT
   QString _rawPayloadFromParams;
   ParamSet _params;

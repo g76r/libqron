@@ -12,8 +12,6 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "qronuiutils.h"
-#include <QRegularExpression>
-#include <QtDebug>
 
 QString QronUiUtils::resourcesAsString(QMap<QString,qint64> resources) {
   QString s;

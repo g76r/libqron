@@ -12,9 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "qronconfigdocumentmanager.h"
-#include <QtDebug>
 #include "task.h"
-#include "modelview/genericshareduiitem.h"
 
 QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   : SharedUiItemDocumentManager(parent) {

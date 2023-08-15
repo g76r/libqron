@@ -14,18 +14,12 @@
 #ifndef SCHEDULERCONFIG_H
 #define SCHEDULERCONFIG_H
 
-#include "libqron_global.h"
-#include <QSharedDataPointer>
-#include <QMap>
-#include <QString>
-#include "pf/pfnode.h"
 #include "tasktemplate.h"
 #include "cluster.h"
 #include "calendar.h"
 #include "alerterconfig.h"
 #include "accesscontrolconfig.h"
 #include "logfile.h"
-#include "modelview/shareduiitem.h"
 #include "tasksroot.h"
 
 class SchedulerConfigData;

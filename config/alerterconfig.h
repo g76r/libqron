@@ -1,4 +1,4 @@
-/* Copyright 2014-2016 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,12 +15,8 @@
 #define ALERTERCONFIG_H
 
 #include "libqron_global.h"
-#include <QSharedDataPointer>
-#include "pf/pfnode.h"
-#include "util/paramset.h"
 #include "alertsubscription.h"
 #include "alertsettings.h"
-#include "modelview/shareduiitem.h"
 
 class AlerterConfigData;
 class Gridboard;

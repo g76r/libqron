@@ -13,7 +13,6 @@
  */
 #include "tasksroot.h"
 #include "task_p.h"
-#include <QtDebug>
 
 TasksRoot::TasksRoot() {
 }

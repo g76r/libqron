@@ -1,4 +1,4 @@
-/* Copyright 2013-2021 Hallowyn and others.
+/* Copyright 2013-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,16 +12,8 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "requestformfield.h"
-#include <QSharedData>
-#include <QRegularExpression>
-#include <QPair>
-#include "pf/pfnode.h"
-#include "log/log.h"
 #include "sched/taskinstance.h"
 #include "configutils.h"
-#include "format/stringutils.h"
-#include "csv/csvfile.h"
-#include "pf/pfarray.h"
 
 static QStringList _allowedValuesCsvHeaders { "value", "label", "flags" };
 

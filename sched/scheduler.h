@@ -16,9 +16,6 @@
 
 #include "config/qronconfigdocumentmanager.h"
 #include "taskinstance.h"
-#include "pf/pfnode.h"
-#include <random>
-#include <QDeadlineTimer>
 #include "condition/condition.h"
 
 class QThread;

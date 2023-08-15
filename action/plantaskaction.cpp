@@ -14,7 +14,6 @@
 #include "plantaskaction.h"
 #include "action_p.h"
 #include "config/configutils.h"
-#include "util/paramsprovidermerger.h"
 #include "condition/disjunctioncondition.h"
 
 class PlanTaskActionData : public ActionData {

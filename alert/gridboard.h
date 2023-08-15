@@ -1,4 +1,4 @@
-/* Copyright 2015-2016 Hallowyn and others.
+/* Copyright 2015-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,11 +14,7 @@
 #ifndef GRIDBOARD_H
 #define GRIDBOARD_H
 
-#include "modelview/shareduiitem.h"
 #include "alert.h"
-#include <QRegularExpression>
-#include "pf/pfnode.h"
-#include "util/paramset.h"
 
 class GridboardData;
 

@@ -12,12 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "calendar.h"
-#include <QList>
-#include <QDate>
-#include <QStringList>
-#include "log/log.h"
 #include "configutils.h"
-#include <QAtomicInteger>
 
 static QAtomicInteger<qint32> sequence = 1;
 static const QRegularExpression

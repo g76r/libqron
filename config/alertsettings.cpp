@@ -12,9 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "alertsettings.h"
-#include <QRegularExpression>
 #include "config/configutils.h"
-#include "log/log.h"
 
 static QByteArray _uiHeaderNames[] = {
   "Id", // 0

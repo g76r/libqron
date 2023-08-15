@@ -14,12 +14,8 @@
 #ifndef TASKINSTANCE_H
 #define TASKINSTANCE_H
 
-#include <QSharedDataPointer>
 #include "config/task.h"
-#include <QDateTime>
 #include "config/host.h"
-#include "util/paramset.h"
-#include "modelview/shareduiitemlist.h"
 #include "condition/condition.h"
 
 class TaskInstanceData;

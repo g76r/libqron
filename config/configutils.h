@@ -15,10 +15,6 @@
 #define CONFIGUTILS_H
 
 #include "libqron_global.h"
-#include "pf/pfnode.h"
-#include "util/paramset.h"
-#include <QRegularExpression>
-#include <functional>
 
 class EventSubscription;
 class Scheduler;

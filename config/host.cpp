@@ -12,14 +12,8 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "host.h"
-#include <QSharedData>
-#include <QString>
-#include <QMap>
-#include "pf/pfnode.h"
-#include "log/log.h"
 #include "configutils.h"
 #include "ui/qronuiutils.h"
-#include "modelview/shareduiitemdocumentmanager.h"
 
 static QByteArray _uiHeaderNames[] = {
   "Id", // 0

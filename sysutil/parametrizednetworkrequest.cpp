@@ -12,8 +12,6 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "parametrizednetworkrequest.h"
-#include "log/log.h"
-#include <QtDebug>
 
 #define DEFAULT_REQUEST_CONTENT_TYPE "text/plain"_ba
 

@@ -15,11 +15,6 @@
 #define ALERTSUBSCRIPTION_H
 
 #include "libqron_global.h"
-#include <QSharedDataPointer>
-#include <QString>
-#include <QRegularExpression>
-#include "util/paramset.h"
-#include "modelview/shareduiitem.h"
 
 class AlertSubscriptionData;
 class PfNode;

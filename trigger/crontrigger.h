@@ -14,10 +14,6 @@
 #ifndef CRONTRIGGER_H
 #define CRONTRIGGER_H
 
-#include <QSharedData>
-#include <QString>
-#include <QDateTime>
-#include <QMetaType>
 #include "trigger.h"
 
 class CronTriggerData;

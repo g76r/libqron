@@ -13,7 +13,6 @@
  */
 #include "alert.h"
 #include "config/alertsubscription.h"
-#include "util/radixtree.h"
 
 static QByteArray _uiHeaderNames[] = {
   "Id", // 0

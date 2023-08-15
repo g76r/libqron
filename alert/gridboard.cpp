@@ -13,9 +13,6 @@
  */
 #include "gridboard.h"
 #include "config/configutils.h"
-#include "util/regexpparamsprovider.h"
-#include <QSharedPointer>
-#include "util/stringsparamsprovider.h"
 
 #define DEFAULT_WARNING_DELAY 0 /* 0 means disabled */
 
@@ -403,7 +400,7 @@ void Gridboard::detach() {
 }
 
 inline static QString formatted(QString text, QString key, ParamSet params) {
-  StringsParamsProvider slpp(text);
+  Utf8StringList slpp(text);
   return params.value(key, text, true, &slpp);
 }
 

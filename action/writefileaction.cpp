@@ -1,4 +1,4 @@
-/* Copyright 2017-2022 Hallowyn and others.
+/* Copyright 2017-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,10 +13,8 @@
  */
 #include "writefileaction.h"
 #include "action_p.h"
-#include "log/log.h"
 #include "config/configutils.h"
 #include "sysutil/parametrizedfilewriter.h"
-#include "util/paramsprovidermerger.h"
 
 class LIBQRONSHARED_EXPORT WriteFileActionData : public ActionData {
 public:

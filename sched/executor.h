@@ -1,4 +1,4 @@
-/* Copyright 2012-2022 Hallowyn and others.
+/* Copyright 2012-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,12 +14,8 @@
 #ifndef EXECUTOR_H
 #define EXECUTOR_H
 
-#include <QObject>
 #include "taskinstance.h"
 #include "config/host.h"
-#include <QProcess>
-#include <QNetworkReply>
-#include <QTimer>
 #include "eventthread.h"
 
 class QThread;

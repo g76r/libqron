@@ -12,15 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "cluster.h"
-#include <QSharedData>
-#include <QString>
-#include "host.h"
-#include <QList>
-#include "pf/pfnode.h"
-#include "log/log.h"
 #include "configutils.h"
-#include "modelview/shareduiitemdocumentmanager.h"
-#include "util/containerutils.h"
 
 static QByteArray _uiHeaderNames[] = {
   "Id", // 0

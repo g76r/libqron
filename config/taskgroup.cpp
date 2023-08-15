@@ -12,10 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "task_p.h"
-#include <QtDebug>
-#include <QPointer>
 #include "sched/taskinstance.h"
-#include "modelview/shareduiitemdocumentmanager.h"
 #include "tasksroot.h"
 
 class TaskGroupData : public TaskOrGroupData {

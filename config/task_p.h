@@ -20,7 +20,6 @@
 #include "trigger/crontrigger.h"
 #include "eventsubscription.h"
 #include "requestformfield.h"
-#include "pf/pfnode.h"
 #include "ui/qronuiutils.h"
 
 static QByteArray _uiHeaderNames[] = {

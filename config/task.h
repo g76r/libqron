@@ -14,10 +14,7 @@
 #ifndef TASK_H
 #define TASK_H
 
-#include "libqron_global.h"
-#include "util/paramset.h"
 #include "taskgroup.h"
-#include "modelview/shareduiitemlist.h"
 
 class TaskData;
 class TaskOrTemplateData;

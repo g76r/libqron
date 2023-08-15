@@ -1,4 +1,4 @@
-/* Copyright 2014-2015 Hallowyn and others.
+/* Copyright 2014-2023 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -14,10 +14,9 @@
 #ifndef PARAMETRIZEDUDPSENDER_H
 #define PARAMETRIZEDUDPSENDER_H
 
-#include <QUdpSocket>
-#include "util/paramset.h"
+#include "libqron_global.h"
 
-class ParametrizedUdpSender : public QUdpSocket {
+class LIBQRONSHARED_EXPORT ParametrizedUdpSender : public QUdpSocket {
   Q_OBJECT
   Q_DISABLE_COPY(ParametrizedUdpSender)
   QString _host;

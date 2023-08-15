@@ -11,10 +11,10 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with qron.  If not, see <http://www.gnu.org/licenses/>.
 
-QT       += network
+QT       += network sql
 QT       -= gui
 
-CONFIG += largefile c++17 c++20 force_debug_info
+CONFIG += largefile c++17 c++20 precompile_header force_debug_info
 CONFIG -= app_bundle
 
 TEMPLATE = lib
@@ -62,7 +62,10 @@ LIBS += \
   -L../build-p6core-$$TARGET_OS/$$BUILD_TYPE
 LIBS += -lp6core
 
-SOURCES += \
+PRECOMPILED_HEADER *= \
+    libqron_stable.h
+
+SOURCES *= \
     action/donothingaction.cpp \
     action/execaction.cpp \
     action/overrideparamaction.cpp \
@@ -130,7 +133,7 @@ SOURCES += \
     sysutil/parametrizedfilewriter.cpp \
     action/writefileaction.cpp
 
-HEADERS += \
+HEADERS *= \
     action/donothingaction.h \
     action/execaction.h \
     action/overrideparamaction.h \
@@ -144,6 +147,7 @@ HEADERS += \
     config/taskgroup.h \
     config/tasksroot.h \
     config/tasktemplate.h \
+    libqron_stable.h \
     sched/eventthread.h \
     sched/scheduler.h \
     trigger/crontrigger.h \
