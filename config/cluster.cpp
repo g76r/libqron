@@ -13,29 +13,24 @@
  */
 #include "cluster.h"
 #include "configutils.h"
+#include "modelview/templatedshareduiitemdata.h"
 
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Hosts",
-  "Balancing Method",
-  "Label",
-};
-
-class ClusterData : public SharedUiItemData {
+class ClusterData : public SharedUiItemDataBase<ClusterData> {
 public:
-  QByteArray _id;
-  QString _label;
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  Utf8String _id;
+  Utf8String _label;
   Cluster::Balancing _balancing;
   QList<Host> _hosts;
   QStringList _commentsList;
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const;
-  int uiSectionCount() const;
-  QByteArray id() const { return _id; }
-  QByteArray idQualifier() const { return "cluster"_ba; }
-  bool setUiData(int section, const QVariant &value, QString *errorString,
-                 SharedUiItemDocumentTransaction *transaction, int role);
-  Qt::ItemFlags uiFlags(int section) const;
+  QVariant uiData(int section, int role) const override;
+  Utf8String id() const override { return _id; }
+  bool setUiData(
+      int section, const QVariant &value, QString *errorString,
+      SharedUiItemDocumentTransaction *transaction, int role) override;
+  Qt::ItemFlags uiFlags(int section) const override;
 };
 
 Cluster::Cluster() {
@@ -97,7 +92,7 @@ QVariant ClusterData::uiData(int section, int role) const {
       return Cluster::balancingAsString(_balancing);
     case 3:
       if (role == Qt::EditRole)
-        return _label == _id ? QVariant() : _label;
+        return _label == _id ? Utf8String{} : _label;
       return _label.isEmpty() ? _id : _label;
     }
     break;
@@ -159,16 +154,6 @@ bool Cluster::setUiData(
       ->setUiData(section, value, errorString, transaction, role);
 }
 
-QVariant ClusterData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
-
-int ClusterData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
-}
-
 ClusterData *Cluster::data() {
   return detachedData<ClusterData>();
 }
@@ -213,3 +198,19 @@ QString Cluster::balancingAsString(Cluster::Balancing balancing) {
 Cluster::Balancing Cluster::balancingFromString(QString balancing) {
   return _balancingFromText.value(balancing, UnknownBalancing);
 }
+
+static const Utf8String _idQualifier = "cluster";
+
+static const Utf8StringList _sectionNames {
+  "clusterid", // 0
+  "hosts",
+  "balancing_method",
+  "label",
+};
+
+static const Utf8StringList _headerNames {
+  "Id", // 0
+  "Hosts",
+  "Balancing Method",
+  "Label",
+};

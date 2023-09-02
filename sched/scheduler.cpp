@@ -191,9 +191,9 @@ static bool planOrRequestCommonPreProcess(
   bool fieldsValidated = true;
   for (auto field: task.requestFormFields()) {
     auto name = field.id();
-    if (!overridingParams.contains(name))
+    if (!overridingParams.paramContains(name))
       continue;
-    auto value = overridingParams.value(name);
+    auto value = overridingParams.paramUtf8(name);
     if (!field.validate(value)) {
       Log::error() << "task " << taskId
                    << " requested with an invalid parameter override: '"
@@ -211,19 +211,15 @@ static bool planOrRequestCommonPreProcess(
 void Scheduler::planOrRequestCommonPostProcess(
     TaskInstance instance, TaskInstance herder,
     ParamSet overridingParams) {
-  auto params = instance.params();
   auto instanceparams = instance.task().instanceparams();
-  auto ppp = instance.pseudoParams();
-  auto ipm = ParamsProviderMerger(instanceparams)(&ppp);
-  for (auto key: instanceparams.keys()) {
-    auto rawvalue = instanceparams.rawValue(key);
-    auto value = params.evaluate(rawvalue, &ipm);
-    instance.setParam(key, ParamSet::escape(value));
+  auto ipm = ParamsProviderMerger(&instance)(instanceparams);
+  for (auto key: instanceparams.paramKeys()) {
+    auto value = instanceparams.paramValue(key, &ipm);
+    instance.setParam(key, PercentEvaluator::escape(value));
   }
-  for (auto key: overridingParams.keys()) {
-    auto rawvalue = overridingParams.rawValue(key);
-    auto value = params.evaluate(rawvalue, &ppp);
-    instance.setParam(key, ParamSet::escape(value));
+  for (auto key: overridingParams.paramKeys()) {
+    auto value = overridingParams.paramValue(key, &instance);
+    instance.setParam(key, PercentEvaluator::escape(value));
   }
   if (herder.isNull() || herder == instance)
     return;
@@ -402,8 +398,6 @@ TaskInstanceList Scheduler::doPlanTask(
 TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
   auto task = instance.task();
   auto taskId = task.id();
-  auto params = instance.params();
-  auto ppp = instance.pseudoParams();
   if (_shutingDown) {
     Log::warning(taskId, instance.idAsLong())
         << "cannot queue task because scheduler is shuting down";
@@ -417,11 +411,11 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
       return {};
     }
     auto max_queued_instances =
-        params.evaluate(task.maxQueuedInstances(), &ppp).toInt();
+        PercentEvaluator::eval_number<int>(task.maxQueuedInstances(),&instance);
     if (max_queued_instances > 0) {
       auto criterion = task.deduplicateCriterion();
       auto strategy = task.deduplicateStrategy();
-      auto self_crit = params.evaluate(criterion);
+      auto self_crit = PercentEvaluator::eval_utf16(criterion, &instance);
       TaskInstanceList duplicates;
       for (auto other: _unfinishedTasks) {
         if (other.status() != TaskInstance::Queued)
@@ -430,9 +424,7 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
           continue;
         if (other.groupId() == instance.groupId())
           continue;
-        auto ppp = other.pseudoParams();
-        auto params = other.params();
-        auto other_crit = params.evaluate(criterion);
+        auto other_crit = PercentEvaluator::eval_utf16(criterion, &other);
         if (other_crit == self_crit)
           duplicates.append(other);
       }
@@ -684,12 +676,12 @@ bool Scheduler::checkTrigger(
   if (next <= now) {
     // requestTask if trigger reached
     ParamSet overridingParams;
-    // FIXME globalParams context evaluation is probably buggy, see what is done
-    // for notices and fix this
-    foreach (QString key, trigger.overridingParams().keys())
-      overridingParams
-          .setValue(key, config().params()
-                    .value(trigger.overridingParams().rawValue(key)));
+    // FIXME check calendar ?
+    for (auto key: trigger.overridingParams().paramKeys()) {
+      overridingParams.setValue(
+            key, PercentEvaluator::escape(
+              trigger.overridingParams().paramUtf8(key, &task)));
+    }
     TaskInstanceList instances = requestTask(taskId, overridingParams);
     if (!instances.isEmpty())
       for (auto ti : instances)
@@ -733,27 +725,27 @@ bool Scheduler::checkTrigger(
   return fired;
 }
 
-void Scheduler::postNotice(QByteArray notice, ParamSet params) {
+void Scheduler::postNotice(QByteArray notice, ParamSet noticeParams) {
   if (notice.isNull()) {
     Log::warning() << "cannot post a null/empty notice";
     return;
   }
   auto tasks = config().tasks();
-  params.setValue("!notice"_ba, notice);
-  Log::info() << "posting notice " << notice << " with params " << params;
-  foreach (Task task, tasks.values()) {
-    foreach (NoticeTrigger trigger, task.noticeTriggers()) {
+  noticeParams.setValue("!notice"_u8, notice);
+  Log::info() << "posting notice " << notice << " with params " << noticeParams;
+  for (auto task: tasks.values()) {
+    auto ppm = ParamsProviderMerger(&noticeParams)(&task);
+    for (auto trigger: task.noticeTriggers()) {
       // LATER implement regexp patterns for notice triggers
       if (trigger.expression() == notice) {
         Log::info() << "notice " << trigger.humanReadableExpression()
                     << " triggered task " << task.id();
-        // FIXME check calendar
         ParamSet overridingParams;
-        foreach (QString key, trigger.overridingParams().keys()) {
+        // FIXME check calendar
+        for (auto key: trigger.overridingParams().paramKeys()) {
           overridingParams.setValue(
-                key,
-                ParamSet::escape(
-                  trigger.overridingParams().value(key, &params)));
+                key, PercentEvaluator::escape(
+                  trigger.overridingParams().paramUtf8(key, &ppm)));
         }
         TaskInstanceList instances = requestTask(task.id(), overridingParams);
         if (!instances.isEmpty())
@@ -768,9 +760,9 @@ void Scheduler::postNotice(QByteArray notice, ParamSet params) {
       }
     }
   }
-  emit noticePosted(notice, params);
+  emit noticePosted(notice, noticeParams);
   // TODO filter onnotice events
-  ParamsProviderMerger ppm(params);
+  ParamsProviderMerger ppm(noticeParams);
   for (auto sub: config().onnotice())
     if (sub.triggerActions(&ppm, TaskInstance()))
       break;
@@ -1281,8 +1273,7 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
 }
 
 void Scheduler::triggerPlanActions(TaskInstance instance) {
-  auto ppp = instance.pseudoParams();
-  auto ppm = ParamsProviderMerger(&ppp)(instance.params());
+  auto ppm = ParamsProviderMerger(&instance);
   for (auto subs: config().tasksRoot().onplan()
        + instance.task().taskGroup().onplan()
        + instance.task().onplan())
@@ -1291,8 +1282,7 @@ void Scheduler::triggerPlanActions(TaskInstance instance) {
 }
 
 void Scheduler::triggerStartActions(TaskInstance instance) {
-  auto ppp = instance.pseudoParams();
-  auto ppm = ParamsProviderMerger(&ppp)(instance.params());
+  auto ppm = ParamsProviderMerger(&instance);
   for (auto subs: config().tasksRoot().onstart()
        + instance.task().taskGroup().onstart()
        + instance.task().onstart())
@@ -1311,8 +1301,7 @@ void Scheduler::triggerFinishActions(
     subs = config().tasksRoot().onfailure()
         + instance.task().taskGroup().onfailure()
         + instance.task().onfailure();
-  auto ppp = instance.pseudoParams();
-  auto ppm = ParamsProviderMerger(&ppp)(instance.params());
+  auto ppm = ParamsProviderMerger(&instance);
   for (auto es: subs)
     if (es.triggerActions(&ppm, instance, filter))
       break;

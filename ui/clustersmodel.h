@@ -17,6 +17,7 @@
 #include "config/cluster.h"
 #include "config/host.h"
 #include "config/schedulerconfig.h"
+#include "modelview/shareduiitemstreemodel.h"
 
 /** Model holding list of configured clusters, one per root row, along with its
  * configuration attributes, with associated hosts as children. */

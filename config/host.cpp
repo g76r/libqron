@@ -28,15 +28,19 @@ public:
   QString _label, _hostname;
   QMap<QString,qint64> _resources; // configured max resources available
   QStringList _commentsList;
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const;
-  int uiSectionCount() const;
-  QByteArray id() const { return _id; }
-  void setId(QByteArray id) { _id = id; }
-  QByteArray idQualifier() const { return "host"; }
-  bool setUiData(int section, const QVariant &value, QString *errorString,
-                 SharedUiItemDocumentTransaction *transaction, int role);
-  Qt::ItemFlags uiFlags(int section) const;
+  QVariant uiData(int section, int role) const override;
+  QVariant uiHeaderData(int section, int role) const override;
+  Utf8String uiSectionName(int section) const override;
+  int uiSectionByName(Utf8String sectionName) const override;
+
+  int uiSectionCount() const override;
+  Utf8String id() const override { return _id; }
+  void setId(Utf8String id) { _id = id; }
+  Utf8String idQualifier() const override { return "host"; }
+  bool setUiData(
+      int section, const QVariant &value, QString *errorString,
+      SharedUiItemDocumentTransaction *transaction, int role) override;
+  Qt::ItemFlags uiFlags(int section) const override;
 };
 
 Host::Host() {

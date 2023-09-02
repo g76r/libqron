@@ -15,6 +15,8 @@
 #define EVENTSUBSCRIPTION_H
 
 #include "libqron_global.h"
+#include <QSharedDataPointer>
+#include "util/paramsprovidermerger.h"
 
 class EventSubscriptionData;
 class TaskInstance;

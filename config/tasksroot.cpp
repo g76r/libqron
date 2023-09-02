@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2023 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -100,18 +100,8 @@ QList<EventSubscription> TasksRoot::allEventSubscriptions() const {
                    : QList<EventSubscription>();
 }
 
-QVariant TasksRootData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-                 && (unsigned)section < sizeof _uiHeaderNames
-             ? _uiHeaderNames[section] : QVariant();
-}
-
 bool TasksRoot::mergeStderrIntoStdout() const {
   return !isNull() ? data()->_mergeStderrIntoStdout : false;
-}
-
-int TasksRootData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
 }
 
 QVariant TasksRootData::uiData(int section, int role) const {

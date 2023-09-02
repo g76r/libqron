@@ -49,6 +49,7 @@
 #include "log/qterrorcodes.h"
 #include "modelview/shareduiitemdocumentmanager.h"
 #include "modelview/genericshareduiitem.h"
+#include "modelview/templatedshareduiitemdata.h"
 #include "modelview/shareduiitemlist.h"
 #include "modelview/textmatrixmodel.h"
 #include "thread/atomicvalue.h"

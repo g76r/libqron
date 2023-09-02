@@ -15,6 +15,7 @@
 #define CLUSTER_H
 
 #include "host.h"
+#include "modelview/shareduiitem.h"
 
 class ClusterData;
 class PfNode;

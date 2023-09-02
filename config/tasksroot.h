@@ -15,6 +15,7 @@
 #define TASKSROOT_H
 
 #include "libqron_global.h"
+#include "modelview/shareduiitem.h"
 
 class TasksRootData;
 class PfNode;

@@ -19,7 +19,6 @@
 #include "condition/condition.h"
 
 class TaskInstanceData;
-class TaskInstancePseudoParamsProvider;
 class TaskInstanceList;
 
 /** Instance of a task created when the execution is requested and used to track
@@ -45,7 +44,7 @@ public:
   ParamSet params() const;
   quint64 idAsLong() const;
   /** @return string of the form "taskid/taskinstanceid" */
-  QString idSlashId() const { return task().id()+'/'+id(); }
+  QString idSlashId() const { return task().id()+"/"+id(); }
   quint64 groupId() const;
   QDateTime creationDatetime() const;
   QDateTime queueDatetime() const;
@@ -74,9 +73,6 @@ public:
     * queued. */
   Host target() const;
   void setTarget(Host target) const;
-  /** Create a ParamsProvider wrapper object to give access to ! pseudo params,
-   * not to task params. */
-  inline TaskInstancePseudoParamsProvider pseudoParams() const;
   void setTask(Task task);
   bool force() const;
   TaskInstanceStatus status() const;
@@ -119,18 +115,18 @@ public:
    * warning: since the keys are modified they can be used to lookup into
    * varsAsEnv() but no longer in task().vars() (at less not always)
    */
-  QStringList varsAsEnvKeys() const;
+  //QStringList varsAsEnvKeys() const;
   /** vars(), evaluated and protected to respect internet headers rules
    * (rfc5322, internet message format, including http, i.e. no ':' in name,
    * no end-of-line in value)
    */
-  QMap<QString,QString> varsAsHeaders() const;
+  //QMap<QString,QString> varsAsHeaders() const;
   /** vars() keys protected to respect internet headers rules
    * (rfc5322, internet message format, including http, i.e. no ':')
    * warning: since the keys are modified they can be used to lookup into
    * varsAsHeaders() but no longer in task().vars() (at less not always)
    */
-  QStringList varsAsHeadersKeys() const;
+  //QStringList varsAsHeadersKeys() const;
 
 private:
   TaskInstanceData *data();
@@ -140,28 +136,6 @@ private:
 
 Q_DECLARE_METATYPE(TaskInstance)
 Q_DECLARE_TYPEINFO(TaskInstance, Q_MOVABLE_TYPE);
-
-/** ParamsProvider wrapper for pseudo params. */
-class LIBQRONSHARED_EXPORT TaskInstancePseudoParamsProvider
-    : public ParamsProvider {
-  TaskInstance _taskInstance;
-  TaskPseudoParamsProvider _taskPseudoParams;
-
-public:
-  inline TaskInstancePseudoParamsProvider(TaskInstance taskInstance)
-    : _taskInstance(taskInstance),
-      _taskPseudoParams(taskInstance.task().pseudoParams()) { }
-  using ParamsProvider::paramValue;
-  const QVariant paramValue(
-    const QString &key, const ParamsProvider *context,
-    const QVariant &defaultValue,
-    QSet<QString> *alreadyEvaluated) const override;
-  const QSet<QString> keys() const override;
-};
-
-inline TaskInstancePseudoParamsProvider TaskInstance::pseudoParams() const {
-  return TaskInstancePseudoParamsProvider(*this);
-}
 
 class LIBQRONSHARED_EXPORT TaskInstanceList
     : public SharedUiItemList<TaskInstance> {

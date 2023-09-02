@@ -18,7 +18,6 @@
 
 class TaskData;
 class TaskOrTemplateData;
-class TaskPseudoParamsProvider;
 class QDebug;
 class PfNode;
 class Trigger;
@@ -131,9 +130,6 @@ public:
   static HerdingPolicy herdingPolicyFromString(QString v);
   QList<RequestFormField> requestFormFields() const;
   QString requestFormFieldsAsHtmlDescription() const;
-  /** Create a ParamsProvider wrapper object to give access to ! pseudo params,
-   * not to task params. */
-  inline TaskPseudoParamsProvider pseudoParams() const;
   /** Cron triggers */
   QList<CronTrigger> cronTriggers() const;
   /** Notice triggers */
@@ -159,24 +155,6 @@ private:
   TaskData *data();
   const TaskData *data() const { return specializedData<TaskData>(); }
 };
-
-/** ParamsProvider wrapper for pseudo params. */
-class LIBQRONSHARED_EXPORT TaskPseudoParamsProvider : public ParamsProvider {
-  Task _task;
-
-public:
-  inline TaskPseudoParamsProvider(Task task) : _task(task) { }
-  using ParamsProvider::paramValue;
-  const QVariant paramValue(
-    const QString &key, const ParamsProvider *context,
-    const QVariant &defaultValue,
-    QSet<QString> *alreadyEvaluated) const override;
-  const QSet<QString> keys() const override;
-};
-
-inline TaskPseudoParamsProvider Task::pseudoParams() const {
-  return TaskPseudoParamsProvider(*this);
-}
 
 Q_DECLARE_TYPEINFO(Task, Q_MOVABLE_TYPE);
 

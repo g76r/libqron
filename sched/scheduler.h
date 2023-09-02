@@ -57,7 +57,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
 public:
   Scheduler();
   ~Scheduler();
-  void customEvent(QEvent *event);
+  void customEvent(QEvent *event) override;
   Alerter *alerter() { return _alerter; }
   Authenticator *authenticator();
   UsersDatabase *usersDatabase();

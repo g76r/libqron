@@ -42,7 +42,7 @@ public:
                  SharedUiItemDocumentTransaction *transaction,
                  int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
-  QByteArray idQualifier() const override { return "task"_ba; }
+  Utf8String idQualifier() const override { return "task"_u8; }
   PfNode toPfNode() const;
   void setTaskGroup(TaskGroup taskGroup);
 };
@@ -413,84 +413,142 @@ QString Task::requestFormFieldsAsHtmlDescription() const {
   return v;
 }
 
-static RadixTree<std::function<QVariant(const Task&, const QVariant &)>> _pseudoParams {
-{ "!tasklocalid" , [](const Task &task, const QVariant &) {
-  return task.localId();
-} },
-{ "!taskid" , [](const Task &task, const QVariant &) {
-  return task.id();
-} },
-{ "!taskgroupid" , [](const Task &task, const QVariant &) {
-  return task.taskGroup().id();
-} },
-{ "!target" , [](const Task &task, const QVariant &) {
-  return task.target();
-} },
-{ "!minexpectedms" , [](const Task &task, const QVariant &) {
-  return task.minExpectedDuration();
-} },
-{ "!minexpecteds" , [](const Task &task, const QVariant &) {
-  return (double)task.minExpectedDuration()/1000.0;
-} },
-{ "!maxexpectedms" , [](const Task &task, const QVariant &defaultValue) {
-  long long ms = task.maxExpectedDuration();
-  return (ms == LLONG_MAX) ? defaultValue : ms;
-} },
-{ "!maxexpecteds" , [](const Task &task, const QVariant &defaultValue) {
-  long long ms = task.maxExpectedDuration();
-  return (ms == LLONG_MAX) ? defaultValue : (double)ms/1000.0;
-} },
-{ "!maxbeforeabortms" , [](const Task &task, const QVariant &defaultValue) {
-  long long ms = task.maxDurationBeforeAbort();
-  return (ms == LLONG_MAX) ? defaultValue : ms;
-} },
-{ "!maxbeforeaborts", [](const Task &task, const QVariant &defaultValue) {
-  long long ms = task.maxDurationBeforeAbort();
-  return (ms == LLONG_MAX) ? defaultValue : (double)ms/1000.0;
-} },
-{ "!maxexpectedms0", [](const Task &task, const QVariant &) {
-  long long ms = task.maxExpectedDuration();
-  return (ms == LLONG_MAX) ? 0 : ms;
-} },
-{ "!maxexpecteds0", [](const Task &task, const QVariant &) {
-  long long ms = task.maxExpectedDuration();
-  return (ms == LLONG_MAX) ? 0.0 : (double)ms/1000.0;
-} },
-{ "!maxbeforeabortms0", [](const Task &task, const QVariant &) {
-  long long ms = task.maxDurationBeforeAbort();
-  return (ms == LLONG_MAX) ? 0 : ms;
-} },
-{ "!maxbeforeaborts0", [](const Task &task, const QVariant &) {
-  long long ms = task.maxDurationBeforeAbort();
-  return (ms == LLONG_MAX) ? 0.0 : (double)ms/1000.0;
-} },
-{ "!maxinstances", [](const Task &task, const QVariant &) {
-  return task.maxInstances();
-} },
-{ "!maxtries", [](const Task &task, const QVariant &) {
-   return task.maxTries();
-} },
-{ "", [](const Task &, const QVariant &defaultValue) {
-  return defaultValue;
-}, true },
-{ "!rawdeduplicatecriterion", [](const Task &task, const QVariant &) {
-   return task.deduplicateCriterion();
-}},
-{ "!deduplicatestrategy", [](const Task &task, const QVariant &) {
-   return task.deduplicateStrategy();
-}},
+const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
+  { "!tasklocalid", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_localId;
+    } },
+  { "!taskid", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TasksRootData*>(data);
+      if (!td)
+        return {};
+      return td->_id;
+    } },
+  { "!taskgroupid", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_group.id();
+    } },
+  { "!target", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_target;
+    } },
+  { "!minexpectedms", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_minExpectedDuration;
+    } },
+  { "!minexpecteds", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_minExpectedDuration/1e3;
+    } },
+  { "!maxexpectedms", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      auto ms = td->_maxExpectedDuration;
+      return (ms == LLONG_MAX) ? QVariant{} : QVariant(ms);
+    } },
+  { "!maxexpecteds", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      auto ms = td->_maxExpectedDuration;
+      return (ms == LLONG_MAX) ? QVariant{} : QVariant(ms/1e3);
+    } },
+  { "!maxbeforeabortms", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      auto ms = td->_maxDurationBeforeAbort;
+      return (ms == LLONG_MAX) ? QVariant{} : QVariant(ms);
+    } },
+  { "!maxbeforeaborts", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      auto ms = td->_maxDurationBeforeAbort;
+      return (ms == LLONG_MAX) ? QVariant{} : QVariant(ms/1e3);
+    } },
+  { "!maxexpectedms0", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      auto ms = td->_maxExpectedDuration;
+      return (ms == LLONG_MAX) ? QVariant(0) : QVariant(ms);
+    } },
+  { "!maxexpecteds0", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      auto ms = td->_maxExpectedDuration;
+      return (ms == LLONG_MAX) ? QVariant(0.0) : QVariant(ms/1e3);
+    } },
+  { "!maxbeforeabortms0", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      auto ms = td->_maxDurationBeforeAbort;
+      return (ms == LLONG_MAX) ? QVariant(0) : QVariant(ms);
+    } },
+  { "!maxbeforeaborts0", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      auto ms = td->_maxDurationBeforeAbort;
+      return (ms == LLONG_MAX) ? QVariant(0.0) : QVariant(ms/1e3);
+    } },
+  { "!maxinstances", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_maxInstances;
+    } },
+  { "!maxtries", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_maxTries;
+    } },
+  { "!rawdeduplicatecriterion", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_deduplicateCriterion;
+    } },
+  { "!deduplicatestrategy", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_deduplicateStrategy;
+    } },
 };
-
-const QVariant TaskPseudoParamsProvider::paramValue(
-  const QString &key, const ParamsProvider *, const QVariant &defaultValue,
-  QSet<QString> *) const {
-  // the following is fail-safe thanks to the catch-all prefix in the radix tree
-  return _pseudoParams.value(key)(_task, defaultValue);
-}
-
-const QSet<QString> TaskPseudoParamsProvider::keys() const {
-  return _pseudoParams.keys();
-}
 
 QList<CronTrigger> Task::cronTriggers() const {
   return !isNull() ? data()->_cronTriggers : QList<CronTrigger>();
@@ -544,12 +602,13 @@ QVariant TaskData::uiData(int section, int role) const {
       if (dt.isNull())
         return QVariant();
       auto returnCode = QByteArray::number(_lastReturnCode);
-      auto returnCodeLabel = _params.value("return.code."+returnCode+".label");
-      QByteArray s = dt.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s).toUtf8()
+      auto returnCodeLabel = _params.paramUtf8("return.code."+returnCode
+                                               +".label");
+      Utf8String s = dt.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s).toUtf8()
           + (_lastSuccessful ? " success"_ba : " failure"_ba)
           +" (code "_ba + returnCode;
       if (!returnCodeLabel.isEmpty())
-        s = s + " : "_ba + returnCodeLabel.toUtf8();
+        s = s + " : "_u8 + returnCodeLabel;
       s += ')';
       return s;
     }

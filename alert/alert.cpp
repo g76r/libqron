@@ -13,22 +13,15 @@
  */
 #include "alert.h"
 #include "config/alertsubscription.h"
+#include "modelview/templatedshareduiitemdata.h"
 
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Status",
-  "Rise Date",
-  "Visibility Date",
-  "Cancellation Date",
-  "Actions", // 5
-  "Count",
-  "Id With Count",
-  "Status"
-};
-
-class AlertData : public SharedUiItemData {
+class AlertData : public SharedUiItemDataWithFunctions<AlertData> {
 public:
-  QByteArray _id;
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  static const SharedUiItemDataFunctions _paramFunctions;
+  Utf8String _id;
   Alert::AlertStatus _status;
   QDateTime _riseDate, _visibilityDate, _cancellationDate, _lastReminderDate;
   AlertSubscription _subscription;
@@ -36,24 +29,11 @@ public:
   AlertData(const QByteArray id = {},
             QDateTime riseDate = QDateTime::currentDateTime())
     : _id(id), _status(Alert::Nonexistent), _riseDate(riseDate), _count(1) { }
-  QByteArray id() const { return _id; }
-  QByteArray idQualifier() const { return "alert"_ba; }
-  int uiSectionCount() const;
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const;
-  QString idWithCount() const {
-    return _count > 1 ? _id+" x "+QByteArray::number(_count) : _id; }
+  Utf8String id() const override { return _id; }
+  QVariant uiData(int section, int role) const override;
+  Utf8String idWithCount() const {
+    return _count > 1 ? _id+" x "+Utf8String::number(_count) : _id; }
 };
-
-int AlertData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
-}
-
-QVariant AlertData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
 
 QVariant AlertData::uiData(int section, int role) const {
   switch(role) {
@@ -209,50 +189,6 @@ QString Alert::statusAsString(Alert::AlertStatus status) {
   return nonexistentStatus;
 }
 
-static RadixTree<std::function<QVariant(const Alert&, const QVariant &)>>
-    _pseudoParams {
-{ "!alertid" , [](const Alert &alert, const QVariant &) {
-   return alert.id();
-} },
-{ "!alertidwithcount" , [](const Alert &alert, const QVariant &) {
-   return alert.idWithCount();
- } },
-{ "!alertcount" , [](const Alert &alert, const QVariant &) {
-   return alert.count();
- } },
-{ "!risedate" , [](const Alert &alert, const QVariant &) {
-   return alert.riseDate()
-       .toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
- } },
-{ "!cancellationdate" , [](const Alert &alert, const QVariant &) {
-   return alert.cancellationDate()
-       .toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
- } },
-{ "!visibilitydate" , [](const Alert &alert, const QVariant &) {
-   return alert.visibilityDate()
-       .toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
- } },
-{ "!alertstatus" , [](const Alert &alert, const QVariant &) {
-   return alert.statusAsString();
- } },
-};
-
-const QVariant AlertPseudoParamsProvider::paramValue(
-  const QString &key, const ParamsProvider *context,
-  const QVariant &defaultValue, QSet<QString> *alreadyEvaluated) const {
-  auto value = _pseudoParams.value(key)(_alert, QVariant());
-  if (value.isValid())
-    return value;
-  return _alert.subscription().params()
-      .paramValue(key, context, defaultValue, alreadyEvaluated);
-}
-
-const QSet<QString> AlertPseudoParamsProvider::keys() const {
-  QSet<QString> keys = _pseudoParams.keys();
-  keys += _alert.subscription().params().keys();
-  return keys;
-}
-
 int Alert::count() const {
   const AlertData *d = data();
   return d ? d->_count : 0;
@@ -269,7 +205,68 @@ void Alert::resetCount() {
     d->_count = 0;
 }
 
-QString Alert::idWithCount() const {
+Utf8String Alert::idWithCount() const {
   const AlertData *d = data();
-  return d ? d->idWithCount() : QString();
+  return d ? d->idWithCount() : Utf8String();
 }
+
+static const SharedUiItemDataFunctions _paramFunctions = {
+  { "!alertid", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const AlertData*>(data)->_id;
+    } },
+  { "!alertidwithcount", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const AlertData*>(data)->idWithCount();
+    } },
+  { "!alertcount", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const AlertData*>(data)->_count;
+    } },
+  { "!risedate", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const AlertData*>(data)
+      ->_riseDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
+    } },
+  { "!cancellationdate", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const AlertData*>(data)
+      ->_cancellationDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
+    } },
+  { "!visibilitydate", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const AlertData*>(data)
+      ->_visibilityDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
+    } },
+  { "!alertstatus", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      return Alert::statusAsString(
+      reinterpret_cast<const AlertData*>(data)->_status);
+    } },
+};
+
+static const Utf8String _idQualifier = "alert";
+
+static const Utf8StringList _sectionNames {
+  "alertid", // 0
+  "alertstatus",
+  "rise_date",
+  "visibility_date",
+  "cancellation_date",
+  "actions", // 5
+  "count",
+  "id_with_count",
+  "alertstatus"
+};
+
+static const Utf8StringList _headerNames {
+  "Id", // 0
+  "Status",
+  "Rise Date",
+  "Visibility Date",
+  "Cancellation Date",
+  "Actions", // 5
+  "Count",
+  "Id With Count",
+  "Status"
+};

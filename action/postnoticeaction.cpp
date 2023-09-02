@@ -33,9 +33,9 @@ public:
     if (!_scheduler)
       return;
     ParamSet noticeParams;
-    for (auto key: _noticeParams.keys())
-      noticeParams.setValue(key, ParamSet().value(key, context));
-    _scheduler->postNotice(ParamSet().evaluate(_notice, context),
+    for (auto key: _noticeParams.paramKeys())
+      noticeParams.setValue(key, _noticeParams.paramValue(key, context));
+    _scheduler->postNotice(PercentEvaluator::eval_utf8(_notice, context),
                            noticeParams);
   }
   QString targetName() const override {

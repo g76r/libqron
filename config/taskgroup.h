@@ -15,6 +15,7 @@
 #define TASKGROUP_H
 
 #include "libqron_global.h"
+#include "modelview/shareduiitem.h"
 
 class TaskGroupData;
 class Task;

@@ -15,6 +15,7 @@
 #define ALERTSUBSCRIPTION_H
 
 #include "libqron_global.h"
+#include "modelview/shareduiitem.h"
 
 class AlertSubscriptionData;
 class PfNode;

@@ -18,9 +18,10 @@
 class TaskGroupData : public TaskOrGroupData {
 public:
   QVariant uiData(int section, int role) const override;
-  QByteArray idQualifier() const override { return "taskgroup"_ba; }
-  bool setUiData(int section, const QVariant &value, QString *errorString,
-                 SharedUiItemDocumentTransaction *transaction, int role);
+  Utf8String idQualifier() const override { return "taskgroup"_u8; }
+  bool setUiData(
+      int section, const QVariant &value, QString *errorString,
+      SharedUiItemDocumentTransaction *transaction, int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
   PfNode toPfNode() const;
   bool loadConfig(PfNode node, SharedUiItem parentGroup, Scheduler *scheduler);
@@ -78,7 +79,7 @@ QByteArray TaskGroup::parentGroupId(QByteArray groupId) {
 
 QString TaskGroup::label() const {
   return !isNull() ? (data()->_label.isNull() ? data()->_id : data()->_label)
-                   : QString();
+                   : Utf8String();
 }
 
 ParamSet TaskGroup::params() const {
@@ -135,7 +136,7 @@ QVariant TaskOrGroupData::uiData(int section, int role) const {
       return _id;
     case 2:
       if (role == Qt::EditRole)
-        return _label == _id ? QVariant() : _label;
+        return _label == _id ? Utf8String() : _label;
       return _label.isEmpty() ? _id : _label;
     }
     break;
@@ -233,7 +234,7 @@ bool TaskGroupData::setUiData(
     SharedUiItemDocumentTransaction *transaction, int role) {
   Q_ASSERT(transaction != 0);
   Q_ASSERT(errorString != 0);
-  QString s = value.toString().trimmed();
+  Utf8String s = value.toString().trimmed();
   switch(section) {
   case 1: // changing parent group id is changing the begining of id itself
     if (_id.contains('.'))

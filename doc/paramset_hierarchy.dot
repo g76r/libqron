@@ -34,7 +34,6 @@ edge [dir=back,arrowtail=onormal,color=navy,fontcolor=navy]
 global -- taskgroup -- taskgroup -- task
 task -- taskinstance
 global -- event
-global -- notice
 global -- alerts -- alertsub
 alerts -- gridboard
 //global -- webconsole
@@ -56,8 +55,9 @@ notice -- noticetrigger [style=dashed]
 
 // context for parameters evaluation
 edge [dir=forward,arrowhead=dot,color=orange4,fontcolor=orange4]
-notice -- noticetrigger
-global -- crontrigger
+notice -- noticetrigger [headlabel=1]
+task -- noticetrigger [headlabel=2]
+task -- crontrigger
 // note: taskinstance -- xxxaction edges make only sense when the event occurs
 //       within a task
 // note: taskinstance -- xxxaction edges only give visibility taskinstance %!

@@ -238,10 +238,8 @@ QString TaskWaitCondition::expr() const {
 QSet<quint64> TaskWaitConditionData::evaluateIds(
   TaskInstance instance, TaskInstance herder) const {
   QSet<quint64> ids;
-  auto ipp = instance.pseudoParams();
-  auto hpp = herder.pseudoParams();
-  auto ppm = ParamsProviderMerger(&hpp)(herder.params())(&ipp)(instance.params());
-  auto value = ParamSet().evaluate(_expr, &ppm);
+  auto ppm = ParamsProviderMerger(&herder)(&instance);
+  auto value = PercentEvaluator::eval_utf8(_expr, &ppm);
   auto list = value.split(' ', Qt::SkipEmptyParts);
   for (auto item: list) {
     bool ok;

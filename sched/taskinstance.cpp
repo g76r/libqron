@@ -13,34 +13,19 @@
  */
 #include "taskinstance.h"
 #include "condition/disjunctioncondition.h"
-
-static QByteArray _uiHeaderNames[] = {
-  "Instance Id", // 0
-  "Task Id",
-  "Status",
-  "Creation Date",
-  "Start Date",
-  "Stop Date", // 5
-  "Time queued",
-  "Time running",
-  "Actions",
-  "Abortable",
-  "Herd Id", // 10
-  "Herded Task Instances",
-  "Finish Date",
-  "Time waiting",
-  "Duration",
-  "Queue date", // 15
-  "Time planned",
-  "Queue when",
-  "Cancel when",
-  "Deduplicate criterion", // 19
-};
+#include "modelview/templatedshareduiitemdata.h"
+#include "util/paramsprovidermerger.h"
+#include "format/timeformats.h"
 
 static QAtomicInt _sequence;
 
-class TaskInstanceData : public SharedUiItemData {
+class TaskInstanceData
+    : public SharedUiItemDataWithMutableParams<TaskInstanceData> {
 public:
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  static const SharedUiItemDataFunctions _paramFunctions;
   quint64 _id, _herdid, _groupId;
   QByteArray _idAsString;
   Task _task;
@@ -72,10 +57,10 @@ public:
                    quint64 herdid, quint64 groupId = 0,
                    Condition queuewhen = Condition(),
                    Condition cancelwhen = Condition())
-    : _id(newId()), _herdid(herdid == 0 ? _id : herdid),
+    : SharedUiItemDataWithMutableParams<TaskInstanceData>(params),
+      _id(newId()), _herdid(herdid == 0 ? _id : herdid),
       _groupId(groupId ? groupId : _id),
-      _idAsString(QByteArray::number(_id)),
-      _task(task), _params(params),
+      _idAsString(QByteArray::number(_id)), _task(task),
       _creationDateTime(QDateTime::currentDateTime()), _force(force),
       _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
       _finish(LLONG_MIN),
@@ -104,11 +89,8 @@ private:
   }
 
 public:
-  QByteArray id() const override { return _idAsString; }
-  QByteArray idQualifier() const override { return "taskinstance"_ba; }
-  int uiSectionCount() const override;
+  Utf8String id() const override { return _idAsString; }
   QVariant uiData(int section, int role) const override;
-  QVariant uiHeaderData(int section, int role) const override;
   QDateTime inline creationDatetime() const { return _creationDateTime; }
   QDateTime inline queueDatetime() const { return _queue != LLONG_MIN
         ? QDateTime::fromMSecsSinceEpoch(_queue) : QDateTime(); }
@@ -223,11 +205,11 @@ void TaskInstance::paramAppend(QString key, QString value) const {
   if (!d)
     return;
   auto params = d->_params.lockedData();
-  auto current = params->rawValue(key);
-  if (current.isEmpty())
+  auto current = params->paramRawValue(key);
+  if (!current.isValid())
     params->setValue(key, value);
   else
-    params->setValue(key, current+' '+value);
+    params->setValue(key, current.toString()+' '+value);
 }
 
 ParamSet TaskInstance::params() const {
@@ -359,103 +341,10 @@ void TaskInstance::setTarget(Host target) const {
   }
 }
 
-static RadixTree<std::function<QVariant(
-    const TaskInstance&, const QString&)>> _pseudoParams {
-{ "!taskinstanceid" , [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.id();
-} },
-{ "!herdid", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.herdid();
-} },
-{ "!taskinstancegroupid", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.groupId();
-} },
-{ "!runningms", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.runningMillis();
-} },
-{ "!runnings", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.runningMillis()/1000;
-} },
-{ "!waitingms", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.waitingMillis();
-} },
-{ "!waitings", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.waitingMillis()/1000;
-} },
-{ "!plannedms", [](const TaskInstance &taskInstance, const QString&) {
-   return taskInstance.plannedMillis();
- } },
-{ "!planneds", [](const TaskInstance &taskInstance, const QString&) {
-   return taskInstance.plannedMillis()/1000;
- } },
-{ "!queuedms", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.queuedMillis();
-} },
-{ "!queueds", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.queuedMillis()/1000;
-} },
-{ "!durationms", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.durationMillis();
-} },
-{ "!durations", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.durationMillis()/1000;
-} },
-// total[m]s: backward compatiblity with qron < 1.12
-{ "!totalms", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.durationMillis();
-} },
-{ "!totals", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.durationMillis()/1000;
-} },
-{ "!returncode", [](const TaskInstance &taskInstance, const QString&) {
-  return QByteArray::number(taskInstance.returnCode());
-} },
-{ "!status", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.statusAsString();
-} },
-{ "!target", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.target().id();
-} },
-{ "!targethostname", [](const TaskInstance &taskInstance, const QString&) {
-  return taskInstance.target().hostname();
-} },
-{ "!requestdate", [](const TaskInstance &taskInstance, const QString &key) {
-  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.creationDatetime(), key.mid(15));
-}, true },
-{ "!startdate", [](const TaskInstance &taskInstance, const QString &key) {
-  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.startDatetime(), key.mid(10));
-}, true },
-{ "!stopdate", [](const TaskInstance &taskInstance, const QString &key) {
-  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.stopDatetime(), key.mid(9));
-}, true },
-{ "!finishdate", [](const TaskInstance &taskInstance, const QString &key) {
-  return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
-        taskInstance.finishDatetime(), key.mid(11));
-}, true },
-{ "!envvars", [](const TaskInstance &instance, const QString &) {
- return instance.varsAsEnvKeys().join(' ');
-}},
-{ "!headervars", [](const TaskInstance &instance, const QString &) {
-   return instance.varsAsHeadersKeys().join(' ');
-}},
-{ "!remainingtries", [](const TaskInstance &instance, const QString &) {
-   return instance.remainingTries();
-}},
-{ "!currenttry", [](const TaskInstance &instance, const QString &) {
-   return instance.currentTry();
-}},
-{ "!deduplicatecriterion", [](const TaskInstance &instance, const QString &) {
-   return instance.params().evaluate(instance.task().deduplicateCriterion());
-}},
-};
-
 static const QRegularExpression _notIdentifierRE{"[^a-zA-Z0-9_]+"};
-static const QRegularExpression _notHeaderNameRE{"[^\\x21-\\x39\\x3b-\\x7e]+"};
+//static const QRegularExpression _notHeaderNameRE{"[^\\x21-\\x39\\x3b-\\x7e]+"};
 // rfc5322 states that a header may contain any ascii printable char but : (3a)
-static const QRegularExpression _notHeaderValueRE{"[\\0d\\0a]+"};
+//static const QRegularExpression _notHeaderValueRE{"[\\0d\\0a]+"};
 
 static QString makeItAnIdentifier(QString key) {
   key.replace(_notIdentifierRE, "_");
@@ -464,75 +353,59 @@ static QString makeItAnIdentifier(QString key) {
   return key;
 }
 
-static QString makeItAHeaderName(QString key) {
-  if (key.endsWith(":")) // ignoring : at end of header name
-    key.chop(1);
-  key.replace(_notHeaderNameRE, "_");
-  if (key[0] >= '0' && key[0] <= '9' )
-    key.insert(0, '_');
-  return key;
-}
+//static QString makeItAHeaderName(QString key) {
+//  if (key.endsWith(":")) // ignoring : at end of header name
+//    key.chop(1);
+//  key.replace(_notHeaderNameRE, "_");
+//  if (key[0] >= '0' && key[0] <= '9' )
+//    key.insert(0, '_');
+//  return key;
+//}
 
 QMap<QString,QString> TaskInstance::varsAsEnv() const {
   QMap<QString,QString> env;
   auto vars = task().vars();
-  for (QString key: vars.keys()) {
+  for (auto key: vars.paramKeys()) {
     if (key.isEmpty())
       continue;
-    const auto ppp = pseudoParams();
-    const QString value = params().evaluate(vars.rawValue(key), &ppp);
+    auto value = PercentEvaluator::eval_utf16(vars.paramRawUtf8(key), this);
     env.insert(makeItAnIdentifier(key), value);
   }
   return env;
 }
 
-QStringList TaskInstance::varsAsEnvKeys() const {
-  QStringList keys;
-  for (QString key: task().vars().keys()) {
-    if (key.isEmpty())
-      continue;
-    keys << makeItAnIdentifier(key);
-  }
-  return keys;
-}
+//QStringList TaskInstance::varsAsEnvKeys() const {
+//  QStringList keys;
+//  for (QString key: task().vars().paramKeys()) {
+//    if (key.isEmpty())
+//      continue;
+//    keys << makeItAnIdentifier(key);
+//  }
+//  return keys;
+//}
 
-QMap<QString,QString> TaskInstance::varsAsHeaders() const {
-  QMap<QString,QString> env;
-  auto vars = task().vars();
-  for (QString key: vars.keys()) {
-    if (key.isEmpty())
-      continue;
-    const auto ppp = pseudoParams();
-    auto value = params().evaluate(vars.rawValue(key), &ppp);
-    value.replace(_notHeaderValueRE, " ");
-    env.insert(makeItAHeaderName(key), value);
-  }
-  return env;
-}
+//QMap<QString,QString> TaskInstance::varsAsHeaders() const {
+//  QMap<QString,QString> env;
+//  auto vars = task().vars();
+//  for (QString key: vars.paramKeys()) {
+//    if (key.isEmpty())
+//      continue;
+//    auto value = PercentEvaluator::eval_utf16(vars.paramRawUtf8(key),this);
+//    value.replace(_notHeaderValueRE, " ");
+//    env.insert(makeItAHeaderName(key), value);
+//  }
+//  return env;
+//}
 
-QStringList TaskInstance::varsAsHeadersKeys() const {
-  QStringList keys;
-  for (QString key: task().vars().keys()) {
-    if (key.isEmpty())
-      continue;
-    keys << makeItAHeaderName(key);
-  }
-  return keys;
-}
-
-const QVariant TaskInstancePseudoParamsProvider::paramValue(
-  const QString &key, const ParamsProvider *context,
-  const QVariant &defaultValue, QSet<QString> *alreadyEvaluated) const {
-  auto pseudoParam = _pseudoParams.value(key);
-  if (pseudoParam)
-    return pseudoParam(_taskInstance, key);
-  return _taskPseudoParams.paramValue(key, context, defaultValue,
-                                      alreadyEvaluated);
-}
-
-const QSet<QString> TaskInstancePseudoParamsProvider::keys() const {
-  return _taskPseudoParams.keys()+_pseudoParams.keys();
-}
+//QStringList TaskInstance::varsAsHeadersKeys() const {
+//  QStringList keys;
+//  for (QString key: task().vars().paramKeys()) {
+//    if (key.isEmpty())
+//      continue;
+//    keys << makeItAHeaderName(key);
+//  }
+//  return keys;
+//}
 
 void TaskInstance::setTask(Task task) {
   TaskInstanceData *d = data();
@@ -586,6 +459,7 @@ int TaskInstance::remainingTries() const {
 
 int TaskInstance::currentTry() const {
   const TaskInstanceData *d = data();
+  // FIXME not sure it works well if task.maxTries change meanwhile
   return d ? d->_task.maxTries() - d->_remainingTries.data() : 0;
 }
 
@@ -624,74 +498,68 @@ void TaskInstance::setAbortable(bool abortable) const {
     d->_abortable = abortable;
 }
 
-QVariant TaskInstanceData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
-
-int TaskInstanceData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
-}
-
 QVariant TaskInstanceData::uiData(int section, int role) const {
   switch(role) {
-  case Qt::DisplayRole:
-    switch(section) {
-    case 0:
-      return _idAsString;
-    case 1:
-      return _task.id();
-    case 2:
-      return TaskInstance::statusAsString(status());
-    case 3:
-      return creationDatetime().toString(
-            QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    case 4:
-      return startDatetime().toString(
-            QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    case 5:
-      return stopDatetime().toString(
-            QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    case 6:
-      return startDatetime().isNull() || queueDatetime().isNull()
-          ? QVariant() : QString::number(queuedMillis()/1000.0);
-    case 7:
-      return stopDatetime().isNull() || startDatetime().isNull()
-          ? QVariant() : QString::number(runningMillis()/1000.0);
-    case 8:
-      return QVariant(); // custom actions, handled by the model, if needed
-    case 9:
-      return _abortable;
-    case 10:
-      return _herdid;
-    case 11:
-      return _herdedTasksCaption.detachedData();
-    case 12:
-      return finishDatetime().toString(
-            QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    case 13:
-      return finishDatetime().isNull() || stopDatetime().isNull()
-          ? QVariant() : QString::number(waitingMillis()/1000.0);
-    case 14:
-      return finishDatetime().isNull() || queueDatetime().isNull()
-          ? QVariant() : QString::number(durationMillis()/1000.0);
-    case 15:
-      return queueDatetime().toString(
-          QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
-    case 16:
-      return queueDatetime().isNull() || creationDatetime().isNull()
-                 ? QVariant() : QString::number(plannedMillis()/1000.0);
-    case 17:
-      return _queuewhen.toString();
-    case 18:
-      return _cancelwhen.toString();
-    case 19:
-      return _params.data().evaluate(_task.deduplicateCriterion());
-    }
-    break;
-  default:
-    ;
+    case Qt::DisplayRole:
+    case Qt::EditRole:
+    case SharedUiItem::ExternalDataRole:
+      switch(section) {
+        case 0:
+          return _idAsString;
+        case 1:
+          return _task.id();
+        case 2:
+          return TaskInstance::statusAsString(status());
+        case 3:
+          return creationDatetime().toString(
+                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+        case 4:
+          return startDatetime().toString(
+                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+        case 5:
+          return stopDatetime().toString(
+                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+        case 6:
+          return startDatetime().isNull() || queueDatetime().isNull()
+              ? QVariant() : QString::number(queuedMillis()/1000.0);
+        case 7:
+          return stopDatetime().isNull() || startDatetime().isNull()
+              ? QVariant() : QString::number(runningMillis()/1000.0);
+        case 8:
+          return QVariant(); // custom actions, handled by the model, if needed
+        case 9:
+          return _abortable;
+        case 10:
+          return _herdid;
+        case 11:
+          return _herdedTasksCaption.detachedData();
+        case 12:
+          return finishDatetime().toString(
+                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+        case 13:
+          return finishDatetime().isNull() || stopDatetime().isNull()
+              ? QVariant() : QString::number(waitingMillis()/1000.0);
+        case 14:
+          return finishDatetime().isNull() || queueDatetime().isNull()
+              ? QVariant() : QString::number(durationMillis()/1000.0);
+        case 15:
+          return queueDatetime().toString(
+                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+        case 16:
+          return queueDatetime().isNull() || creationDatetime().isNull()
+              ? QVariant() : QString::number(plannedMillis()/1000.0);
+        case 17:
+          return _queuewhen.toString();
+        case 18:
+          return _cancelwhen.toString();
+        case 19: {
+          auto pp = _params.lockedData();
+          return PercentEvaluator::eval(_task.deduplicateCriterion(), &*pp);
+        }
+      }
+      break;
+    default:
+      ;
   }
   return QVariant{};
 }
@@ -699,3 +567,187 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
 TaskInstanceData *TaskInstance::data() {
   return detachedData<TaskInstanceData>();
 }
+
+const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
+  { "!taskinstanceid", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)->_idAsString;
+    } },
+  { "!herdid", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)->_herdid;
+    } },
+  { "!taskinstancegroupid", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)->_groupId;
+    } },
+  { "!runningms", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)->runningMillis();
+    } },
+  { "!runnings", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->runningMillis()/1e3;
+    } },
+  { "!waitingms", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->waitingMillis();
+    } },
+  { "!waitings", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->waitingMillis()/1e3;
+    } },
+  { "!plannedms", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->plannedMillis();
+    } },
+  { "!planneds", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->plannedMillis()/1e3;
+    } },
+  { "!queuedms", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->queuedMillis();
+    } },
+  { "!queueds", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->queuedMillis()/1e3;
+    } },
+  { "!durationms", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->durationMillis();
+    } },
+  { "!durations", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->durationMillis()/1e3;
+    } },
+  // total[m]s: backward compatiblity with qron < 1.12
+  { "!totalms", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->durationMillis();
+    } },
+  { "!totals", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->durationMillis()/1e3;
+    } },
+  { "!returncode", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->_returnCode;
+    } },
+  { "!status", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return TaskInstance::statusAsString(
+            reinterpret_cast<const TaskInstanceData*>(data)->status());
+    } },
+  { "!target", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->_target.id();
+    } },
+  { "!targethostname", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->_target.hostname();
+    } },
+  { "!requestdate", [](const SharedUiItemData *data, const Utf8String &key,
+        const PercentEvaluator::EvalContext context, int ml) -> QVariant {
+      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+            reinterpret_cast<const TaskInstanceData*>(data)->creationDatetime(),
+            key.mid(ml), context);
+    } },
+  { "!startdate", [](const SharedUiItemData *data, const Utf8String &key,
+        const PercentEvaluator::EvalContext context, int ml) -> QVariant {
+      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+            reinterpret_cast<const TaskInstanceData*>(data)->startDatetime(),
+            key.mid(ml), context);
+    } },
+  { "!stopdate", [](const SharedUiItemData *data, const Utf8String &key,
+        const PercentEvaluator::EvalContext context, int ml) -> QVariant {
+      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+            reinterpret_cast<const TaskInstanceData*>(data)->stopDatetime(),
+            key.mid(ml), context);
+    } },
+  { "!finishdate", [](const SharedUiItemData *data, const Utf8String &key,
+        const PercentEvaluator::EvalContext context, int ml) -> QVariant {
+      return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
+            reinterpret_cast<const TaskInstanceData*>(data)->finishDatetime(),
+            key.mid(ml), context);
+    } },
+  { "!remainingtries", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->_remainingTries.data();
+    } },
+  { "!currenttry", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto tid = reinterpret_cast<const TaskInstanceData*>(data);
+       // FIXME not sure it works well if task.maxTries change meanwhile
+      return tid->_task.maxTries() - tid->_remainingTries.data();
+    } },
+  { "!deduplicatecriterion", [](const SharedUiItemData *data, const Utf8String&,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto tid = reinterpret_cast<const TaskInstanceData*>(data);
+      return PercentEvaluator::eval_utf8(
+            tid->_task.deduplicateCriterion(), tid);
+    } },
+};
+
+const Utf8String TaskInstanceData::_idQualifier = "taskinstance"_u8;
+
+const Utf8StringList TaskInstanceData::_sectionNames {
+  "taskinstanceid", // 0
+  "taskid",
+  "status",
+  "creation_date",
+  "start_ate",
+  "stop_date", // 5
+  "time_queued",
+  "time_running",
+  "actions",
+  "abortable",
+  "herdid", // 10
+  "herded_task_instances",
+  "finish_date",
+  "time_waiting",
+  "duration",
+  "queue_date", // 15
+  "Time planned",
+  "queue_when",
+  "cancel_when",
+  "deduplicate_criterion", // 19
+};
+
+const Utf8StringList TaskInstanceData::_headerNames {
+  "Instance Id", // 0
+  "Task Id",
+  "Status",
+  "Creation Date",
+  "Start Date",
+  "Stop Date", // 5
+  "Time queued",
+  "Time running",
+  "Actions",
+  "Abortable",
+  "Herd Id", // 10
+  "Herded Task Instances",
+  "Finish Date",
+  "Time waiting",
+  "Duration",
+  "Queue date", // 15
+  "Time planned",
+  "Queue when",
+  "Cancel when",
+  "Deduplicate criterion", // 19
+};

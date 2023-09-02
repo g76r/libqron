@@ -15,6 +15,9 @@
 #define ACTION_H
 
 #include "libqron_global.h"
+#include <QSharedDataPointer>
+#include "util/paramset.h"
+#include "pf/pfnode.h"
 
 class ActionData;
 class EventSubscription;

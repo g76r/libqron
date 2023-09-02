@@ -23,6 +23,7 @@
 
 #define CRON_STEP_RE "(?:(?:(?:([0-9]*)(?:-([0-9]+))?)|\\*)(?:/([0-9]+))?)"
 #define CRON_FIELD_RE "\\s*(" CRON_STEP_RE "(?:\\s*,\\s*" CRON_STEP_RE ")*)\\s+"
+// FIXME there is probably issues with spaces in these regexps
 
 static const QRegularExpression _cronExpressionRE("^(?:" CRON_FIELD_RE "){6}$"),
 _cronFieldRE(CRON_FIELD_RE), _cronStepRE(CRON_STEP_RE "\\s*,\\s*");

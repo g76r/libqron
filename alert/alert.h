@@ -15,9 +15,9 @@
 #define ALERT_H
 
 #include "libqron_global.h"
+#include "modelview/shareduiitem.h"
 
 class AlertData;
-class AlertPseudoParamsProvider;
 class AlertSubscription;
 
 /** Class used to represent alert data during emission, in or between Alerter
@@ -53,7 +53,6 @@ public:
    * Applicable to rising and may_rise status. */
   QDateTime visibilityDate() const;
   void setVisibilityDate(QDateTime visibilityDate);
-  AlertPseudoParamsProvider pseudoParams() const;
   /** Timestamp a raised alert was last reminded.
    * Only set by channels which handle reminders, not by Alerter. */
   QDateTime lastRemindedDate() const;
@@ -70,31 +69,13 @@ public:
   /** Return a string of the form id()+" x "+count() if count() != 1, and only
    * id() otherwise. This is convenient to display aggregated alerts almost the
    * same way than other alerts in a human readable way. */
-  QString idWithCount() const;
+  Utf8String idWithCount() const;
 
 private:
   AlertData *data();
   const AlertData *data() const {
     return reinterpret_cast<const AlertData*>(SharedUiItem::data()); }
 };
-
-/** ParamsProvider wrapper for pseudo params. */
-class LIBQRONSHARED_EXPORT AlertPseudoParamsProvider : public ParamsProvider {
-  Alert _alert;
-
-public:
-  inline AlertPseudoParamsProvider(Alert alert) : _alert(alert) { }
-  using ParamsProvider::paramValue;
-  const QVariant paramValue(
-    const QString &key, const ParamsProvider *context,
-    const QVariant &defaultValue,
-    QSet<QString> *alreadyEvaluated) const override;
-  const QSet<QString> keys() const override;
-};
-
-inline AlertPseudoParamsProvider Alert::pseudoParams() const {
-  return AlertPseudoParamsProvider(*this);
-}
 
 Q_DECLARE_METATYPE(Alert)
 Q_DECLARE_TYPEINFO(Alert, Q_MOVABLE_TYPE);
