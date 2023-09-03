@@ -3,12 +3,13 @@ graph g {
 // configuration objects carrying params
 node [shape=box,style=filled,color=powderblue]
 global [label="Global Params"]
-{ rank=min; global } // sticked at the top
+external [label="External Params",style=dashed,color=""]
+{ rank=min; global; external; } // sticked at the top
 taskgroup [label="Task Group Params"]
 task [label="Task Params"]
 noticetrigger [label="Notice Trigger\nOverriding Params"]
 crontrigger [label="Cron Trigger\nOverriding Params"]
-requesttaskaction [label="RequestTask Action Params"]
+plantaskaction [label="PlantTask Action Params"]
 postnoticeaction [label="PostNotice Action"]
 otheraction [label="Other Action Params\n(RequestUrl, RaiseAlert...)"]
 alerts [label="Alerts Params"]
@@ -18,7 +19,7 @@ gridboard [label="Gridboard Params"]
 
 // runtime objects carrying params
 node [shape=ellipse]
-taskinstance [label="Task Instance Params\n(as overriden on request)"]
+taskinstance [label="Task Instance Params\n(as overriden on plan)"]
 event [label="Event Params"]
 notice [label="Notice Params"]
 { rank=same; event; taskinstance } // hint to avoid layouts with notice above event
@@ -33,21 +34,20 @@ time [label="time"]
 edge [dir=back,arrowtail=onormal,color=navy,fontcolor=navy]
 global -- taskgroup -- taskgroup -- task
 task -- taskinstance
-global -- event
 global -- alerts -- alertsub
 alerts -- gridboard
 //global -- webconsole
 
 // parameter injection at runtime
 edge [dir=forward,arrowhead=vee,color=black,fontcolor=black]
-crontrigger -- taskinstance [headlabel=1]
-noticetrigger -- taskinstance [headlabel=1]
+crontrigger -- taskinstance
+noticetrigger -- taskinstance
 notice -- event [label="onnotice\nevent"]
 restapi [label="rest api"]
 restapi -- notice [label="postnotice\ncall"]
-requesttaskaction -- taskinstance [headlabel=1]
+plantaskaction -- taskinstance
 postnoticeaction -- notice
-restapi -- taskinstance [label="requesttask\ncall",headlabel=1]
+restapi -- taskinstance [label="requesttask\ncall"]
 
 // triggering w/o params
 time -- crontrigger [style=dashed]
@@ -62,10 +62,11 @@ task -- crontrigger
 //       within a task
 // note: taskinstance -- xxxaction edges only give visibility taskinstance %!
 //        params, not taskinstance's params being them overriden or not
-event -- requesttaskaction [headlabel=1]
-taskinstance -- requesttaskaction [taillabel="%!",headlabel=2]
+event -- plantaskaction [headlabel=1]
+taskinstance -- plantaskaction [taillabel="%!",headlabel=2]
 event -- postnoticeaction [headlabel=1]
 taskinstance -- postnoticeaction [taillabel="%!",headlabel=2]
 event -- otheraction [headlabel=1]
 taskinstance -- otheraction [taillabel="%!",headlabel=2]
+external -- global [label="%=ext"]
 }
