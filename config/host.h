@@ -15,6 +15,7 @@
 #define HOST_H
 
 #include "libqron_global.h"
+#include "modelview/shareduiitem.h"
 
 class HostData;
 class PfNode;
@@ -29,9 +30,9 @@ public:
   ~Host();
   Host &operator=(const Host &other) {
     SharedUiItem::operator=(other); return *this; }
-  QString hostname() const;
+  Utf8String hostname() const;
   /** Configured max resources available. */
-  QMap<QString, qint64> resources() const;
+  QMap<Utf8String, qint64> resources() const;
   void detach();
   PfNode toPfNode() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,

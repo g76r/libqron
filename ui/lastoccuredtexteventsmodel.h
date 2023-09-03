@@ -15,6 +15,7 @@
 #define LASTOCCUREDTEXTEVENTSMODEL_H
 
 #include "libqron_global.h"
+#include <QAbstractTableModel>
 
 // LATER move to libp6core
 /** Model holding generic text events along with the date their occured, one
@@ -45,10 +46,11 @@ protected:
 public:
   // LATER limit last emited alerts by age
   explicit LastOccuredTextEventsModel(QObject *parent = 0, int maxrows = 100);
-  int rowCount(const QModelIndex &parent) const;
-  int columnCount(const QModelIndex &parent) const;
-  QVariant data(const QModelIndex &index, int role) const;
-  QVariant headerData(int section, Qt::Orientation orientation, int role) const;
+  int rowCount(const QModelIndex &parent) const override;
+  int columnCount(const QModelIndex &parent) const override;
+  QVariant data(const QModelIndex &index, int role) const override;
+  QVariant headerData(int section, Qt::Orientation orientation,
+                      int role) const override;
   LastOccuredTextEventsModel *setEventName(QString eventName) {
     _eventName = eventName; return this; }
   LastOccuredTextEventsModel *setMaxrows(int maxrows) {

@@ -16,6 +16,7 @@
 
 #include "sched/taskinstance.h"
 #include "config/host.h"
+#include "modelview/shareduiitemstablemodel.h"
 
 /** Model holding tasks instances along with their attributes, one instance per
  * line, in reverse request order. */

@@ -36,7 +36,7 @@ public:
           _payload(payload) { }
     Event(QList<EventSubscription> subs, const ParamsProviderMerger *context,
           TaskInstance instance, QString payload)
-        : Event(subs, context->snapshot(), instance, payload) { }
+        : Event(subs, context->paramSnapshot(), instance, payload) { }
     bool isNull() { return _instance.isNull(); }
   };
 
@@ -47,7 +47,7 @@ public:
   /** @param sizePowerOf2 size of buffer (e.g. 10 means 1024 slots) */
   EventThread(unsigned sizePowerOf2 = 10, QObject *parent = 0);
   ~EventThread();
-  void run();
+  void run() override;
   bool tryPut(EventThread::Event event) { return _buffer.tryPut(event); }
 };
 

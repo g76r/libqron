@@ -13,10 +13,11 @@
  */
 #include "tasksmodel.h"
 #include "config/eventsubscription.h"
+#include <QTimer>
 
 // 60,000 ms = 1'
 // should stay below HtmlTaskItemDelegate's SOON_EXECUTION_MILLIS
-#define PERIODIC_REFRESH_INTERVAL 60000
+#define PERIODIC_REFRESH_INTERVAL 60'000
 
 TasksModel::TasksModel(QObject *parent)
   : SharedUiItemsTableModel(parent) {
@@ -35,8 +36,7 @@ QVariant TasksModel::data(const QModelIndex &index, int role) const {
       // TODO support for action columns larger than HtmlItemDelegate::maxCellContentLength
       if (!_customActions.isEmpty()) {
         Task t = _tasks.value(index.row());
-        TaskPseudoParamsProvider ppp = t.pseudoParams();
-        return t.params().evaluate(_customActions, &ppp);
+        return PercentEvaluator::eval_utf16(_customActions, &t);
       }
       break;
     }

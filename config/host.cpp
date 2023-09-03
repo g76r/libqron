@@ -14,29 +14,19 @@
 #include "host.h"
 #include "configutils.h"
 #include "ui/qronuiutils.h"
+#include "modelview/templatedshareduiitemdata.h"
 
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Hostname",
-  "Resources",
-  "Label",
-};
-
-class HostData : public SharedUiItemData {
+class HostData : public SharedUiItemDataBase<HostData> {
 public:
-  QByteArray _id;
-  QString _label, _hostname;
-  QMap<QString,qint64> _resources; // configured max resources available
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  Utf8String _id, _label, _hostname;
+  QMap<Utf8String,qint64> _resources; // configured max resources available
   QStringList _commentsList;
   QVariant uiData(int section, int role) const override;
-  QVariant uiHeaderData(int section, int role) const override;
-  Utf8String uiSectionName(int section) const override;
-  int uiSectionByName(Utf8String sectionName) const override;
-
-  int uiSectionCount() const override;
   Utf8String id() const override { return _id; }
   void setId(Utf8String id) { _id = id; }
-  Utf8String idQualifier() const override { return "host"; }
   bool setUiData(
       int section, const QVariant &value, QString *errorString,
       SharedUiItemDocumentTransaction *transaction, int role) override;
@@ -52,10 +42,11 @@ Host::Host(const Host &other) : SharedUiItem(other) {
 Host::Host(PfNode node, ParamSet globalParams) {
   HostData *d = new HostData;
   d->_id = ConfigUtils::sanitizeId(
-        node.contentAsString(), ConfigUtils::FullyQualifiedId).toUtf8();
-  d->_label = globalParams.evaluate(node.attribute("label"));
+        node.contentAsUtf16(), ConfigUtils::FullyQualifiedId).toUtf8();
+  d->_label = PercentEvaluator::eval_utf8(node.utf16attribute("label"),
+                                          &globalParams);
   d->_hostname = ConfigUtils::sanitizeId(
-        globalParams.evaluate(node.attribute("hostname")),
+        PercentEvaluator::eval_utf8(node.utf16attribute("hostname"), &globalParams),
         ConfigUtils::Hostname);
   ConfigUtils::loadResourcesSet(node, &d->_resources, "resource");
   ConfigUtils::loadComments(node, &d->_commentsList);
@@ -65,14 +56,14 @@ Host::Host(PfNode node, ParamSet globalParams) {
 Host::~Host() {
 }
 
-QString Host::hostname() const {
+Utf8String Host::hostname() const {
   const HostData *d = data();
   return d ? (d->_hostname.isEmpty() ? d->_id : d->_hostname)
-           : QString();
+           : Utf8String();
 }
 
-QMap<QString,qint64> Host::resources() const {
-  return !isNull() ? data()->_resources : QMap<QString,qint64>{};
+QMap<Utf8String,qint64> Host::resources() const {
+  return !isNull() ? data()->_resources : QMap<Utf8String,qint64>{};
 }
 
 QVariant HostData::uiData(int section, int role) const {
@@ -113,18 +104,18 @@ bool HostData::setUiData(
     SharedUiItemDocumentTransaction *transaction, int role) {
   Q_ASSERT(transaction != 0);
   Q_ASSERT(errorString != 0);
-  QString s = value.toString().trimmed();
+  auto s = Utf8String(value).trimmed();
   switch(section) {
   case 0:
     s = ConfigUtils::sanitizeId(s, ConfigUtils::FullyQualifiedId);
-    _id = s.toUtf8();
+    _id = s;
     return true;
   case 1:
     _hostname = ConfigUtils::sanitizeId(s, ConfigUtils::Hostname);
     return true;
   case 2: {
-    QMap<QString,qint64> resources;
-    if (QronUiUtils::resourcesFromString(value.toString(), &resources,
+    QMap<Utf8String,qint64> resources;
+    if (QronUiUtils::resourcesFromString(Utf8String(value), &resources,
                                          errorString)) {
       _resources = resources;
       return true;
@@ -132,7 +123,7 @@ bool HostData::setUiData(
     return false;
   }
   case 3:
-    _label = s.trimmed();
+    _label = s;
     return true;
   }
   return SharedUiItemData::setUiData(section, value, errorString, transaction,
@@ -149,16 +140,6 @@ Qt::ItemFlags HostData::uiFlags(int section) const {
     flags |= Qt::ItemIsEditable;
   }
   return flags;
-}
-
-QVariant HostData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
-
-int HostData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
 }
 
 HostData *Host::data() {
@@ -185,3 +166,19 @@ PfNode Host::toPfNode() const {
                  key+" "+QString::number(d->_resources.value(key))));
   return node;
 }
+
+static const Utf8String _idQualifier = "host";
+
+static const Utf8StringList _sectionNames {
+  "hostid", // 0
+  "hostname",
+  "resources",
+  "label",
+};
+
+static const Utf8StringList _headerNames {
+  "Id", // 0
+  "Hostname",
+  "Resources",
+  "Label",
+};

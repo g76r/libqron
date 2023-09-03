@@ -30,10 +30,9 @@ QVariant TaskInstancesModel::data(const QModelIndex &index, int role) const {
       if (!_customActions.isEmpty()) {
         SharedUiItem sui = itemAt(index.row());
         //qDebug() << "TaskInstancesModel::data(8, DisplayRole)" << index.row() << sui.qualifiedId();
-        if (sui.idQualifier() == "taskinstance"_ba) {
+        if (sui.idQualifier() == "taskinstance"_u8) {
           TaskInstance &ti = reinterpret_cast<TaskInstance&>(sui);
-          TaskInstancePseudoParamsProvider ppp = ti.pseudoParams();
-          return ti.params().evaluate(_customActions, &ppp);
+          return PercentEvaluator::eval_utf16(_customActions, &ti);
         }
         break;
       }
@@ -46,7 +45,7 @@ QVariant TaskInstancesModel::data(const QModelIndex &index, int role) const {
 void TaskInstancesModel::changeItem(
     SharedUiItem newItem, SharedUiItem oldItem, QByteArray idQualifier) {
   //qDebug() << "TaskInstancesModel::changeItem" << newItem.qualifiedId() << oldItem.qualifiedId();
-  if (! _keepFinished && idQualifier == "taskinstance"_ba) {
+  if (! _keepFinished && idQualifier == "taskinstance"_u8) {
     TaskInstance &newTaskInstance = reinterpret_cast<TaskInstance&>(newItem);
     if (newTaskInstance.isFinished())
       newItem = SharedUiItem();
