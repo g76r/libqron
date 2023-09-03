@@ -61,7 +61,7 @@ AlertSettings::AlertSettings(const AlertSettings &other) : SharedUiItem(other) {
 
 AlertSettings::AlertSettings(PfNode node) {
   AlertSettingsData *d = new AlertSettingsData;
-  d->_pattern = node.attribute("pattern", "**");
+  d->_pattern = node.utf16attribute("pattern", "**");
   d->_patternRegexp = ConfigUtils::readDotHierarchicalFilter(d->_pattern);
   if (d->_pattern.isEmpty() || !d->_patternRegexp.isValid())
     Log::warning() << "unsupported alert settings match pattern '"
@@ -72,9 +72,9 @@ AlertSettings::AlertSettings(PfNode node) {
   d->_duplicateEmitDelay = node.doubleAttribute("duplicateemitdelay"_ba, 0)*1e3;
   ConfigUtils::loadComments(node, &d->_commentsList);
   d->_visibilityWindow = CronTrigger(
-        node.attribute("visibilitywindow"_ba));
+        node.utf16attribute("visibilitywindow"_ba));
   d->_acceptabilityWindow = CronTrigger(
-        node.attribute("acceptabilitywindow"_ba));
+        node.utf16attribute("acceptabilitywindow"_ba));
   setData(d);
 }
 

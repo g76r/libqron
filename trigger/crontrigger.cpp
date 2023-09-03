@@ -147,7 +147,7 @@ CronTrigger::CronTrigger(const QString cronExpression)
 }
 
 CronTrigger::CronTrigger(PfNode node, QMap<QByteArray, Calendar> namedCalendars)
-  : Trigger(new CronTriggerData(node.contentAsString())) {
+  : Trigger(new CronTriggerData(node.contentAsUtf16())) {
   loadConfig(node, namedCalendars);
 }
 

@@ -108,7 +108,7 @@ public:
 
 PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
     : Action(new PlanTaskActionData(
-          scheduler, node.contentAsString(),
+          scheduler, node.contentAsUtf16(),
           ParamSet(node, "param"), node.hasChild("force"),
           node.hasChild("lone"),
           ParamSet(node, "paramappend").toHash(),

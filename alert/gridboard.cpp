@@ -121,7 +121,7 @@ public:
     d->_rawValue = idAndValue.value(1);
     if (d->_rawValue.isEmpty())
       d->_rawValue = "%"+d->_id;
-    d->_label = node.attribute("label"_ba);
+    d->_label = node.utf16attribute("label"_ba);
     setData(d);
   }
   PfNode toPfNode() const {
@@ -232,9 +232,9 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
     delete d;
     return;
   }
-  d->_label = node.attribute("label"_ba);
-  d->_info = node.attribute("info"_ba);
-  d->_pattern = node.attribute("pattern"_ba);
+  d->_label = node.utf16attribute("label"_ba);
+  d->_info = node.utf16attribute("info"_ba);
+  d->_pattern = node.utf16attribute("pattern"_ba);
   d->_patternRegexp = QRegularExpression(d->_pattern);
   if (!d->_patternRegexp.isValid())
     Log::warning() << "gridboard with invalid pattern: " << node.toString();

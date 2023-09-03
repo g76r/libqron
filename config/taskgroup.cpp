@@ -35,7 +35,7 @@ TaskGroup::TaskGroup(const TaskGroup &other) : SharedUiItem(other) {
 
 TaskGroup::TaskGroup(PfNode node, SharedUiItem parent, Scheduler *scheduler) {
   TaskGroupData *d = new TaskGroupData;
-  d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
+  d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
                                    ConfigUtils::FullyQualifiedId).toUtf8();
   if (d->loadConfig(node, parent, scheduler))
     setData(d);

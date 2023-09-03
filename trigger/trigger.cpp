@@ -101,7 +101,7 @@ bool Trigger::loadConfig(
                  << node.toPf();
   else if (list.size() == 1) {
     PfNode child = list.first();
-    auto content = child.contentAsString();
+    auto content = child.contentAsUtf16();
     if (!content.isEmpty()) {
       Calendar calendar = namedCalendars.value(content.toUtf8());
       if (calendar.isNull())

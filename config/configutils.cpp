@@ -23,13 +23,11 @@ ConfigUtils::ConfigUtils() {
 static QRegularExpression whitespace("\\s");
 
 void ConfigUtils::loadResourcesSet(
-    PfNode parentnode, QMap<QString,qint64> *resources, QString attrname) {
+    const PfNode &parentnode, QMap<Utf8String,qint64> *resources,
+    const Utf8String &attrname) {
   if (!resources)
     return;
-  QListIterator<QPair<QString,qint64> > it(
-        parentnode.stringLongPairChildrenByName(attrname));
-  while (it.hasNext()) {
-    const QPair<QString,qint64> &p(it.next());
+  for (auto p: parentnode.utf8LongPairChildrenByName(attrname))
     if (p.second < 0)
       Log::warning() << "ignoring resource of kind " << p.first
                      << "with incorrect quantity " << parentnode.toString();
@@ -159,7 +157,7 @@ void ConfigUtils::loadComments(
   int newMaxDepth = maxDepth < 0 ? maxDepth : (maxDepth-1);
   foreach (const PfNode &child, node.children()) {
     if (child.isComment())
-      commentsList->append(child.contentAsString());
+      commentsList->append(child.contentAsUtf16());
     if (maxDepth && !excludedDescendants.contains(child.name()))
       loadComments(child, commentsList, newMaxDepth);
   }

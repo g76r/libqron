@@ -35,16 +35,16 @@ RequestFormField::RequestFormField(const RequestFormField &rhs) : d(rhs.d) {
 
 RequestFormField::RequestFormField(PfNode node) {
   RequestFormFieldData *d = new RequestFormFieldData;
-  QString id = node.contentAsString();
+  QString id = node.contentAsUtf16();
   if (id.isEmpty()) {
     Log::error() << "request form field without id "
                  << node.toString();
     return;
   }
   d->_id = ConfigUtils::sanitizeId(id, ConfigUtils::LocalId);
-  d->_label = node.attribute("label", d->_id);
-  d->_placeholder = node.attribute("placeholder", d->_label);
-  d->_suggestion = node.attribute("suggestion");
+  d->_label = node.utf16attribute("label", d->_id);
+  d->_placeholder = node.utf16attribute("placeholder", d->_label);
+  d->_suggestion = node.utf16attribute("suggestion");
   d->_mandatory = node.hasChild("mandatory");
   QList<PfNode> nodes = node.childrenByName("allowedvalues");
   if (!nodes.isEmpty()) {
@@ -53,11 +53,11 @@ RequestFormField::RequestFormField(PfNode node) {
     if (av.isArray()) {
       d->_allowedValues = av.contentAsArray().rows();
     } else {
-      d->_allowedValuesSource = av.contentAsString();
+      d->_allowedValuesSource = av.contentAsUtf16();
     }
   }
   // LATER remove duplicates in allowedvalues ?
-  QString format = node.attribute("format");
+  QString format = node.utf16attribute("format");
   if (!d->_allowedValues.isEmpty() || !d->_allowedValuesSource.isEmpty()) {
     // allowedvalues is set, therefore format must be generated from allowed
     // values, and ignored if found in config

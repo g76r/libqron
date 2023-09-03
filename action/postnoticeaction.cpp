@@ -52,7 +52,7 @@ public:
 };
 
 PostNoticeAction::PostNoticeAction(Scheduler *scheduler, PfNode node)
-  : Action(new PostNoticeActionData(scheduler, node.contentAsString(),
+  : Action(new PostNoticeActionData(scheduler, node.contentAsUtf16(),
                                     ParamSet(node, "param"))) {
 }
 

@@ -15,6 +15,7 @@
 #define CONFIGUTILS_H
 
 #include "libqron_global.h"
+#include "pf/pfnode.h"
 
 class EventSubscription;
 class Scheduler;
@@ -31,10 +32,11 @@ public:
     Hostname // used for hostnames; disallows _ but allows - : [ ] and .
   };
   static void loadResourcesSet(
-      PfNode parentnode, QMap<QString,qint64> *resources, QString attrname);
-  inline static QMap<QString,qint64> loadResourcesSet(
-      PfNode parentnode, QString attrname) {
-    QMap<QString,qint64> resources;
+      const PfNode &parentnode, QMap<Utf8String, qint64> *resources,
+      const Utf8String &attrname);
+  inline static QMap<Utf8String,qint64> loadResourcesSet(
+      const PfNode &parentnode, const Utf8String &attrname) {
+    QMap<Utf8String,qint64> resources;
     loadResourcesSet(parentnode, &resources, attrname);
     return resources; }
   /** For identifier, with or without dot. Cannot contain ParamSet interpreted
@@ -75,7 +77,7 @@ public:
       = [](T) { return true; }) {
     if (!node.hasChild(attributeName))
       return true;
-    auto v = node.attribute(attributeName);
+    auto v = node.utf16attribute(attributeName);
     T t = convert(v);
     if (!isValid(t))
       return false;
@@ -93,7 +95,7 @@ public:
   static bool loadBoolean(PfNode node, QString attributeName, bool *field) {
     if (!node.hasChild(attributeName))
       return true;
-    auto v = node.attribute(attributeName).trimmed().toLower();
+    auto v = node.utf16attribute(attributeName).trimmed().toLower();
     bool ok;
     auto i = v.toLongLong(&ok);
     if (!ok) {

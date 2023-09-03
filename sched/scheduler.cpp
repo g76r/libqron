@@ -105,7 +105,7 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   ParamSet::clearExternalParams();
   for (auto node: newConfig.externalParams()) {
     auto name = node.contentAsUtf8();
-    auto file_name = node.utf8Attribute("file");
+    auto file_name = node.utf16attribute("file");
     // FIXME it's not the right way to split a command line, see executor
     auto cmdline = node.childrenByName("command").value(0).contentAsStringList();
     if (!file_name.isEmpty())

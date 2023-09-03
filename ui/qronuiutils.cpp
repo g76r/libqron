@@ -12,17 +12,19 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "qronuiutils.h"
+#include <QRegularExpressionMatchIterator>
 
-QString QronUiUtils::resourcesAsString(QMap<QString,qint64> resources) {
-  QString s;
+Utf8String QronUiUtils::resourcesAsString(
+    const QMap<Utf8String, qint64> &resources) {
+  Utf8String s;
   bool first = true;
-  foreach(QString key, resources.keys()) {
+  for(auto key: resources.keys()) {
     if (first)
       first = false;
     else
       s.append(' ');
     s.append(key).append('=')
-        .append(QString::number(resources.value(key)));
+        .append(Utf8String::number(resources.value(key)));
   }
   return s;
 }
@@ -31,7 +33,8 @@ static QRegularExpression keyEqualNumberRE(
       "\\s*([_a-zA-Z][_a-zA-Z0-9]*)\\s*=\\s*([0-9xXa-fA-F]+)\\s*");
 
 bool QronUiUtils::resourcesFromString(
-    QString text, QMap<QString,qint64> *resources, QString *errorString) {
+    const Utf8String &text, QMap<Utf8String, qint64> *resources,
+    QString *errorString) {
   //qDebug() << "QronUiUtils::resourcesFromString" << text << resources
   //         << errorString;
   if (!resources) {
@@ -42,9 +45,9 @@ bool QronUiUtils::resourcesFromString(
   QRegularExpressionMatchIterator i = keyEqualNumberRE.globalMatch(text);
   while (i.hasNext()) {
     QRegularExpressionMatch match = i.next();
-    QString key = match.captured(1);
+    Utf8String key = match.captured(1);
     bool ok = false;
-    qint64 value = match.captured(2).toLongLong(&ok, 0);
+    qint64 value = Utf8String(match.captured(2)).toLongLong(&ok, 0);
     //qDebug() << "   match:" << key << value << ok;
     if (!ok) {
       if (errorString)

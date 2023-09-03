@@ -77,10 +77,10 @@ AccessControlConfig::~AccessControlConfig() {
 AccessControlConfigData::AccessControlConfigData(
     ParamsProvider *context, PfNode node) {
   foreach (PfNode child, node.childrenByName("user-file")) {
-    QString path = child.contentAsString().trimmed();
+    QString path = child.contentAsUtf16().trimmed();
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
-          context->evaluate(child.attribute("cipher"_ba, "plain"_ba)));
+          context->evaluate(child.utf16attribute("cipher"_ba, "plain"_ba)));
     if (path.isEmpty())
       Log::error() << "access control user file with empty path: "
                    << child.toString();
@@ -95,11 +95,11 @@ AccessControlConfigData::AccessControlConfigData(
     }
   }
   foreach (PfNode child, node.childrenByName("user"_ba)) {
-    QString userId = context->evaluate(child.contentAsString()).trimmed();
-    QString encodedPassword = context->evaluate(child.attribute("password"_ba));
+    QString userId = context->evaluate(child.contentAsUtf16()).trimmed();
+    QString encodedPassword = context->evaluate(child.utf16attribute("password"_ba));
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
-          context->evaluate(child.attribute("cipher"_ba, "plain"_ba)));
+          context->evaluate(child.utf16attribute("cipher"_ba, "plain"_ba)));
     auto rolelist = child.stringListAttribute("roles"_ba);
     auto roles = QSet<QString>(rolelist.begin(), rolelist.end());
     if (userId.isEmpty())

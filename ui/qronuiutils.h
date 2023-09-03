@@ -15,16 +15,19 @@
 #define QRONUIUTILS_H
 
 #include "libqron_global.h"
+#include "util/utf8string.h"
 
 class LIBQRONSHARED_EXPORT QronUiUtils {
   Q_DISABLE_COPY(QronUiUtils)
   QronUiUtils() { }
 
 public:
-  static QString resourcesAsString(QMap<QString,qint64> resources);
+  static Utf8String resourcesAsString(const QMap<Utf8String,qint64> &resources);
   /** Parse a string of the form "memory=512 semaphore=1"
    * @return false on error */
-  static bool resourcesFromString(QString text, QMap<QString, qint64> *resources, QString *errorString);
+  static bool resourcesFromString(
+      const Utf8String &text, QMap<Utf8String, qint64> *resources,
+      QString *errorString);
 };
 
 #endif // QRONUIUTILS_H

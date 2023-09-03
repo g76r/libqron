@@ -58,7 +58,7 @@ Task::Task(
     QMap<QByteArray,Calendar> namedCalendars,
     QMap<QByteArray, TaskTemplate> taskTemplates) {
   TaskData *d = new TaskData;
-  d->_localId = ConfigUtils::sanitizeId(node.contentAsString(),
+  d->_localId = ConfigUtils::sanitizeId(node.contentAsUtf16(),
                                         ConfigUtils::LocalId).toUtf8();
   d->_id = taskGroup.id()+"."+d->_localId;
   d->_group = taskGroup;

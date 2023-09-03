@@ -43,7 +43,7 @@ public:
 };
 
 EmitAlertAction::EmitAlertAction(Scheduler *scheduler, PfNode node)
-  : Action(new EmitAlertActionData(scheduler, node.contentAsString())) {
+  : Action(new EmitAlertActionData(scheduler, node.contentAsUtf16())) {
 }
 
 EmitAlertAction::EmitAlertAction(const EmitAlertAction &rhs) : Action(rhs) {

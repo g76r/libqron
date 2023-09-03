@@ -213,7 +213,7 @@ SchedulerConfigData::SchedulerConfigData(
   std::sort(taskGroupNodes.begin(), taskGroupNodes.end());
   for (auto node: taskGroupNodes) {
     QByteArray id = ConfigUtils::sanitizeId(
-          node.contentAsString(), ConfigUtils::FullyQualifiedId).toUtf8();
+          node.contentAsUtf16(), ConfigUtils::FullyQualifiedId).toUtf8();
     if (_taskgroups.contains(id)) {
       Log::error() << "ignoring duplicate taskgroup: " << id;
       continue;
@@ -250,7 +250,7 @@ ignore_tasktemplate:;
   auto oldTasks = _tasks;
   _tasks.clear();
   foreach (PfNode node, root.childrenByName("task")) {
-    auto taskGroupId = node.utf8Attribute("taskgroup");
+    auto taskGroupId = node.utf16attribute("taskgroup");
     TaskGroup taskGroup = _taskgroups.value(taskGroupId);
     Task task(node, scheduler, taskGroup, _namedCalendars, _tasktemplates);
     if (taskGroupId.isEmpty() || taskGroup.isNull()) {
@@ -281,7 +281,7 @@ ignore_task:;
   }
   int maxtotaltaskinstances = 0;
   foreach (PfNode node, root.childrenByName("maxtotaltaskinstances")) {
-    int n = node.contentAsString().toInt(0, 0);
+    int n = node.contentAsUtf16().toInt(0, 0);
     if (n > 0) {
       if (maxtotaltaskinstances > 0)
         Log::error() << "overriding maxtotaltaskinstances "
@@ -299,7 +299,7 @@ ignore_task:;
   _maxtotaltaskinstances = maxtotaltaskinstances;
   int maxqueuedrequests = 0;
   foreach (PfNode node, root.childrenByName("maxqueuedrequests")) {
-    int n = node.contentAsString().toInt(0, 0);
+    int n = node.contentAsUtf16().toInt(0, 0);
     if (n > 0) {
       if (maxqueuedrequests > 0) {
         Log::warning() << "overriding maxqueuedrequests "

@@ -76,7 +76,7 @@ public:
   QString _command, _statuscommand, _abortcommand, _target, _info;
   Task::Mean _mean;
   QList<NoticeTrigger> _noticeTriggers;
-  QMap<QString,qint64> _resources;
+  QMap<Utf8String,qint64> _resources;
   int _maxInstances, _maxTries;
   long long _millisBetweenTries;
   QList<CronTrigger> _cronTriggers;

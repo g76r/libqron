@@ -44,9 +44,9 @@ public:
 
 LogAction::LogAction(Scheduler *scheduler, PfNode node)
   : Action(new LogActionData(
-             node.contentAsString(),
+             node.contentAsUtf16(),
              Log::severityFromString(
-               node.attribute("severity", "info").toUtf8()))) {
+               node.utf16attribute("severity", "info").toUtf8()))) {
   Q_UNUSED(scheduler)
 }
 

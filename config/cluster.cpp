@@ -41,10 +41,10 @@ Cluster::Cluster(const Cluster &other) : SharedUiItem(other) {
 
 Cluster::Cluster(PfNode node) {
   ClusterData *d = new ClusterData;
-  d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
+  d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
                                    ConfigUtils::FullyQualifiedId).toUtf8();
-  d->_label = node.attribute("label");
-  d->_balancing = balancingFromString(node.attribute("balancing", "roundrobin")
+  d->_label = node.utf16attribute("label");
+  d->_balancing = balancingFromString(node.utf16attribute("balancing", "roundrobin")
                                       .trimmed().toLower());
   if (d->_balancing == UnknownBalancing) {
     Log::error() << "invalid cluster balancing method: " << node.toString();

@@ -40,7 +40,7 @@ EventSubscription::EventSubscription(
     QStringList ignoredChildren)
   : d(new EventSubscriptionData(subscriberName)) {
   d->_eventName = node.name();
-  d->_filter = QRegularExpression(node.contentAsString());
+  d->_filter = QRegularExpression(node.contentAsUtf16());
   if (scheduler)
     d->_globalParams = scheduler->globalParams();
   foreach (PfNode child, node.children()) {

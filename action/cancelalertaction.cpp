@@ -42,7 +42,7 @@ public:
 };
 
 CancelAlertAction::CancelAlertAction(Scheduler *scheduler, PfNode node)
-  : Action(new CancelAlertActionData(scheduler, node.contentAsString())) {
+  : Action(new CancelAlertActionData(scheduler, node.contentAsUtf16())) {
 }
 
 CancelAlertAction::CancelAlertAction(const CancelAlertAction &rhs) : Action(rhs) {

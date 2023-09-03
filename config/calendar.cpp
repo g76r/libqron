@@ -66,7 +66,7 @@ CalendarData &CalendarData::append(QDate begin, QDate end, bool include) {
 }
 
 Calendar::Calendar(PfNode node) {
-  CalendarData *d = new CalendarData(node.contentAsString());
+  CalendarData *d = new CalendarData(node.contentAsUtf16());
   bool atLessOneExclude = false;
   //qDebug() << "*** Calendar(PfNode): " << node.toPf();
   foreach(PfNode child, node.children()) {

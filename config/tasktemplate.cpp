@@ -24,7 +24,7 @@ TaskTemplate::TaskTemplate(const TaskTemplate&other) : SharedUiItem(other) {
 TaskTemplate::TaskTemplate(PfNode node, Scheduler *scheduler, SharedUiItem parent,
     QMap<QByteArray, Calendar> namedCalendars) {
   TaskTemplateData *d = new TaskTemplateData;
-  d->_id = ConfigUtils::sanitizeId(node.contentAsString(),
+  d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
                                    ConfigUtils::LocalId).toUtf8();
   if (!d->TaskOrTemplateData::loadConfig(node, scheduler, parent,
                                          namedCalendars)) {
@@ -113,7 +113,7 @@ bool TaskOrTemplateData::loadConfig(
       std::reverse(inheritedComments.begin(), inheritedComments.end());
       foreach (PfNode commentNode, inheritedComments)
         grandchild.prependChild(commentNode);
-      QString content = grandchild.contentAsString();
+      QString content = grandchild.contentAsUtf16();
       QString triggerType = grandchild.name();
       if (triggerType == "notice") {
         NoticeTrigger trigger(grandchild, namedCalendars);
@@ -320,7 +320,7 @@ bool TaskOrTemplateData::setUiData(
     SharedUiItemDocumentTransaction *transaction, int role) {
   Q_ASSERT(transaction != 0);
   Q_ASSERT(errorString != 0);
-  QString s = value.toString().trimmed(), s2;
+  //auto s = Utf8String(value).trimmed();
   switch(section) {
   case 3: {
     Task::Mean mean = Task::meanFromString(value.toString().toLower()
@@ -338,9 +338,9 @@ bool TaskOrTemplateData::setUiData(
           value.toString(), ConfigUtils::FullyQualifiedId);
     return true;
   case 8: {
-    QMap<QString,qint64> resources;
-    if (QronUiUtils::resourcesFromString(value.toString(), &resources,
-                                            errorString)) {
+    QMap<Utf8String,qint64> resources;
+    if (QronUiUtils::resourcesFromString(Utf8String(value), &resources,
+                                         errorString)) {
       _resources = resources;
       return true;
     }

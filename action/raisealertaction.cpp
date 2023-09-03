@@ -41,7 +41,7 @@ public:
 };
 
 RaiseAlertAction::RaiseAlertAction(Scheduler *scheduler, PfNode node)
-  : Action(new RaiseAlertActionData(scheduler, node.contentAsString())) {
+  : Action(new RaiseAlertActionData(scheduler, node.contentAsUtf16())) {
 }
 
 RaiseAlertAction::RaiseAlertAction(const RaiseAlertAction &rhs) : Action(rhs) {

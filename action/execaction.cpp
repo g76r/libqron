@@ -78,7 +78,7 @@ public:
 };
 
 ExecAction::ExecAction(Scheduler*, PfNode node)
-  : Action(new ExecActionData(node.contentAsString())) {
+  : Action(new ExecActionData(node.contentAsUtf16())) {
 }
 
 ExecAction::ExecAction(const ExecAction &rhs) : Action(rhs) {

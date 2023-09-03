@@ -15,6 +15,7 @@
 #define CRONTRIGGER_H
 
 #include "trigger.h"
+#include "pf/pfnode.h"
 
 class CronTriggerData;
 

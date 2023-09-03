@@ -70,16 +70,16 @@ AlertSubscription::AlertSubscription(
     PfNode subscriptionnode, PfNode channelnode, ParamSet parentParams) {
   AlertSubscriptionData *d = new AlertSubscriptionData;
   d->_channelName = channelnode.utf8Name();
-  d->_pattern = subscriptionnode.attribute(QStringLiteral("pattern"),
+  d->_pattern = subscriptionnode.utf16attribute(QStringLiteral("pattern"),
                                            QStringLiteral("**"));
   d->_patternRegexp = ConfigUtils::readDotHierarchicalFilter(d->_pattern);
   if (d->_pattern.isEmpty() || !d->_patternRegexp.isValid())
     Log::warning() << "unsupported alert subscription match pattern '"
                    << d->_pattern << "': " << subscriptionnode.toString();
-  d->_address = channelnode.attribute("address"); // LATER check uniqueness
-  d->_emitMessage = channelnode.attribute("emitmessage"); // LATER check uniqueness
-  d->_cancelMessage = channelnode.attribute("cancelmessage"); // LATER check uniqueness
-  d->_reminderMessage = channelnode.attribute("remindermessage"); // LATER check uniqueness
+  d->_address = channelnode.utf16attribute("address"); // LATER check uniqueness
+  d->_emitMessage = channelnode.utf16attribute("emitmessage"); // LATER check uniqueness
+  d->_cancelMessage = channelnode.utf16attribute("cancelmessage"); // LATER check uniqueness
+  d->_reminderMessage = channelnode.utf16attribute("remindermessage"); // LATER check uniqueness
   d->_notifyEmit = !channelnode.hasChild("noemitnotify");
   d->_notifyCancel = !channelnode.hasChild("nocancelnotify");
   d->_notifyReminder = d->_notifyEmit && !channelnode.hasChild("noremindernotify");
