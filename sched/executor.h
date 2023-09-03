@@ -94,11 +94,11 @@ private:
   void getReplyContent(QNetworkReply *reply, QString *replyContent,
                        QString maxsizeKey, QString maxwaitKey) const;
   void dockerParam(
-      QString *cmdline, QString paramName, const ParamsProvider *context,
-      ParamSet instanceParams, QString defaultValue = QString()) const;
+      QString *cmdline, const Utf8String &key, const ParamsProvider *context,
+      const ParamSet &params, const QString &def = {}) const;
   void dockerArrayParam(
-      QString *cmdline, QString paramName, const ParamsProvider *context,
-      ParamSet instanceParams, QString defaultValue = QString()) const;
+      QString *cmdline, const Utf8String &key, const ParamsProvider *context,
+      const ParamSet &params, const QString &def = {}) const;
 };
 
 #endif // EXECUTOR_H

@@ -27,7 +27,7 @@ class LIBQRONSHARED_EXPORT UrlAlertChannel : public AlertChannel {
 
 public:
   explicit UrlAlertChannel(Alerter *alerter);
-  void doNotifyAlert(Alert alert);
+  void doNotifyAlert(Alert alert) override;
 
 private slots:
   void replyFinished(QNetworkReply *reply);

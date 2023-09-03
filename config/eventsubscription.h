@@ -67,8 +67,8 @@ public:
       ParamsProviderMerger *context, TaskInstance instance) const;
   /** Syntaxic sugar */
   [[nodiscard]] bool triggerActions() const;
-  static QStringList toStringList(QList<EventSubscription> list);
-  QStringList toStringList() const;
+  static Utf8StringList toStringList(QList<EventSubscription> list);
+  Utf8StringList toStringList() const;
   PfNode toPfNode() const;
 };
 

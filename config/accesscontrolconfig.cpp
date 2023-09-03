@@ -24,7 +24,7 @@ public:
   public:
     QString _path;
     InMemoryAuthenticator::Encoding _cipher;
-    QStringList _commentsList;
+    Utf8StringList _commentsList;
     explicit UserFile(QString path = QString(),
                       InMemoryAuthenticator::Encoding cipher
                       = InMemoryAuthenticator::Unknown)
@@ -36,7 +36,7 @@ public:
     QString _userId, _encodedPassword;
     InMemoryAuthenticator::Encoding _cipher;
     QSet<QString> _roles;
-    QStringList _commentsList;
+    Utf8StringList _commentsList;
     explicit User(QString userId = QString(),
                   QString encodedPassword = QString(),
                   InMemoryAuthenticator::Encoding cipher
@@ -48,7 +48,7 @@ public:
 
   QList<UserFile> _userFiles;
   QList<User> _users;
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   AccessControlConfigData() {}
   AccessControlConfigData(ParamsProvider *context, PfNode node);
 };
@@ -80,7 +80,8 @@ AccessControlConfigData::AccessControlConfigData(
     QString path = child.contentAsUtf16().trimmed();
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
-          context->evaluate(child.utf16attribute("cipher"_ba, "plain"_ba)));
+            PercentEvaluator::eval_utf16(
+              child.utf16attribute("cipher", "plain"), context));
     if (path.isEmpty())
       Log::error() << "access control user file with empty path: "
                    << child.toString();
@@ -95,11 +96,15 @@ AccessControlConfigData::AccessControlConfigData(
     }
   }
   foreach (PfNode child, node.childrenByName("user"_ba)) {
-    QString userId = context->evaluate(child.contentAsUtf16()).trimmed();
-    QString encodedPassword = context->evaluate(child.utf16attribute("password"_ba));
+    QString userId =
+        PercentEvaluator::eval_utf16(child.contentAsUtf16(), context).trimmed();
+    QString encodedPassword =
+        PercentEvaluator::eval_utf16(child.utf16attribute("password"), context)
+        .trimmed();
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
-          context->evaluate(child.utf16attribute("cipher"_ba, "plain"_ba)));
+            PercentEvaluator::eval_utf16(
+              child.utf16attribute("cipher", "plain"), context).trimmed());
     auto rolelist = child.stringListAttribute("roles"_ba);
     auto roles = QSet<QString>(rolelist.begin(), rolelist.end());
     if (userId.isEmpty())

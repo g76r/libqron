@@ -21,16 +21,16 @@ class LIBQRONSHARED_EXPORT TriggerData : public QSharedData {
 public:
   ParamSet _overridingParams;
   Calendar _calendar;
-  QStringList _commentsList;
-  virtual QString expression() const;
+  Utf8StringList _commentsList;
+  virtual Utf8String expression() const;
   /** default: call expression() */
-  virtual QString canonicalExpression() const;
+  virtual Utf8String canonicalExpression() const;
   /** default: call expression() */
-  virtual QString humanReadableExpression() const;
+  virtual Utf8String humanReadableExpression() const;
   virtual bool isValid() const;
   virtual ~TriggerData();
   /** Type of trigger for programmatic test, e.g. "cron" */
-  virtual QString triggerType() const;
+  virtual Utf8String triggerType() const;
   PfNode toPfNode() const;
 };
 

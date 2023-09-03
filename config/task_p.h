@@ -43,7 +43,7 @@ public:
   ParamSet _vars, _instanceparams;
   QList<EventSubscription> _onstart, _onsuccess, _onfailure, _onplan, _onstderr,
       _onstdout;
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   PfNode _originalPfNode;
   bool _mergeStderrIntoStdout = false;
 

@@ -28,10 +28,10 @@ public:
   void trigger(EventSubscription, ParamsProviderMerger*,
                TaskInstance) const override {
   }
-  QString toString() const override {
+  Utf8String toString() const override {
     return _actionType;
   }
-  QString actionType() const override {
+  Utf8String actionType() const override {
     return _actionType;
   }
   PfNode toPfNode() const override {

@@ -13,44 +13,28 @@
  */
 #include "alertsettings.h"
 #include "config/configutils.h"
-
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Pattern",
-  "Options",
-  "Rise Delay",
-  "Mayrise Delay",
-  "Drop Delay", // 5
-  "Duplicate Emit Delay",
-  "Visibility Window",
-  "Acceptability Window"
-};
+#include "modelview/templatedshareduiitemdata.h"
 
 static QAtomicInt _sequence;
 
-class AlertSettingsData : public SharedUiItemData {
+class AlertSettingsData : public SharedUiItemDataBase<AlertSettingsData> {
 public:
-  QByteArray _id;
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  Utf8String _id;
   QString _pattern;
   QRegularExpression _patternRegexp;
   qint64 _riseDelay, _mayriseDelay, _dropDelay, _duplicateEmitDelay;
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   CronTrigger _visibilityWindow, _acceptabilityWindow;
   // MAYDO add params
 
   AlertSettingsData()
-    : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))), _riseDelay(0),
+    : _id(Utf8String::number(_sequence.fetchAndAddOrdered(1))), _riseDelay(0),
       _mayriseDelay(0), _dropDelay(0), _duplicateEmitDelay(0) { }
-  QByteArray id() const { return _id; }
-  QByteArray idQualifier() const { return "alertsettings"_ba; }
-  int uiSectionCount() const {
-    return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const {
-    return role == Qt::DisplayRole && section >= 0
-        && (unsigned)section < sizeof _uiHeaderNames
-        ? _uiHeaderNames[section] : QVariant();
-  }
+  Utf8String id() const override { return _id; }
+  QVariant uiData(int section, int role) const override;
 };
 
 AlertSettings::AlertSettings() {
@@ -189,3 +173,30 @@ QVariant AlertSettingsData::uiData(int section, int role) const {
   }
   return QVariant();
 }
+
+static const Utf8String _idQualifier = "alertsettings";
+
+static const Utf8StringList _sectionNames {
+  "id", // 0
+  "pattern",
+  "options",
+  "risedelay",
+  "mayrisedelay",
+  "dropdelay", // 5
+  "duplicateemitdelay",
+  "visibilitywindow",
+  "acceptabilitywindow"
+};
+
+static const Utf8StringList _headerNames {
+  "Id", // 0
+  "Pattern",
+  "Options",
+  "Rise Delay",
+  "Mayrise Delay",
+  "Drop Delay", // 5
+  "Duplicate Emit Delay",
+  "Visibility Window",
+  "Acceptability Window"
+};
+

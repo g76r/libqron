@@ -24,7 +24,8 @@ public:
   ConfigHistoryEntry();
   ConfigHistoryEntry(const ConfigHistoryEntry &other);
   ConfigHistoryEntry(
-      QByteArray id, QDateTime timestamp, QString event, QByteArray configId);
+      const Utf8String &id, const QDateTime &timestamp, const Utf8String &event,
+      const Utf8String &configId);
   ConfigHistoryEntry &operator=(const ConfigHistoryEntry &other) {
     SharedUiItem::operator=(other); return *this; }
 

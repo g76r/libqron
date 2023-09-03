@@ -12,31 +12,25 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "confighistoryentry.h"
+#include "modelview/templatedshareduiitemdata.h"
 
-static QByteArray _uiHeaderNames[] = {
-  "History Entry Id", // 0
-  "Timestamp",
-  "Event",
-  "Config Id",
-  "Actions"
-};
-
-class ConfigHistoryEntryData : public SharedUiItemData {
+class ConfigHistoryEntryData
+    : public SharedUiItemDataBase<ConfigHistoryEntryData> {
 public:
-  QByteArray _id;
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  Utf8String _id;
   QDateTime _timestamp;
-  QString _event;
-  QByteArray _configId;
+  Utf8String _event, _configId;
   ConfigHistoryEntryData(
-      QByteArray id, QDateTime timestamp, QString event, QByteArray configId)
+      const Utf8String &id, const QDateTime &timestamp, const Utf8String &event,
+      const Utf8String &configId)
     : _id(id), _timestamp(timestamp), _event(event), _configId(configId) {
   }
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const;
-  int uiSectionCount() const;
-  QByteArray id() const { return _id; }
-  void setId(QByteArray id) { _id = id; }
-  QByteArray idQualifier() const { return "confighistoryentry"_ba; }
+  QVariant uiData(int section, int role) const override;
+  Utf8String id() const override { return _id; }
+  void setId(const Utf8String &id) { _id = id; }
 };
 
 ConfigHistoryEntry::ConfigHistoryEntry()
@@ -48,7 +42,8 @@ ConfigHistoryEntry::ConfigHistoryEntry(const ConfigHistoryEntry &other)
 }
 
 ConfigHistoryEntry::ConfigHistoryEntry(
-    QByteArray id, QDateTime timestamp, QString event, QByteArray configId)
+    const Utf8String &id, const QDateTime &timestamp, const Utf8String &event,
+    const Utf8String &configId)
   : SharedUiItem(new ConfigHistoryEntryData(id, timestamp, event, configId)) {
 }
 
@@ -72,16 +67,24 @@ QVariant ConfigHistoryEntryData::uiData(int section, int role) const {
   return QVariant();
 }
 
-QVariant ConfigHistoryEntryData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
-
-int ConfigHistoryEntryData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
-}
-
 ConfigHistoryEntryData *ConfigHistoryEntry::data() {
   return detachedData<ConfigHistoryEntryData>();
 }
+
+static const Utf8String _idQualifier = "confighistoryentry";
+
+static const Utf8StringList _sectionNames {
+  "historyentryid", // 0
+  "timestamp",
+  "event",
+  "configid",
+  "actions"
+};
+
+static const Utf8StringList _headerNames {
+  "History Entry Id", // 0
+  "Timestamp",
+  "Event",
+  "Config Id",
+  "Actions"
+};

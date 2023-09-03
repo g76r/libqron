@@ -15,21 +15,22 @@
 #define CONFIGMODEL_H
 
 #include "config/schedulerconfig.h"
+#include "modelview/shareduiitemstablemodel.h"
 
 /** Model holding configs, one config per line, in insertion reverse order. */
 class LIBQRONSHARED_EXPORT ConfigsModel : public SharedUiItemsTableModel {
   Q_OBJECT
   Q_DISABLE_COPY(ConfigsModel)
-  QString _activeConfigId;
+  Utf8String _activeConfigId;
 
 public:
   explicit ConfigsModel(QObject *parent = 0);
   QVariant data(const QModelIndex &index, int role) const override;
 
 public slots:
-  void configAdded(QString id, SchedulerConfig config);
-  void configRemoved(QString id);
-  void configActivated(SchedulerConfig config);
+  void configAdded(const Utf8String &id, const SchedulerConfig &config);
+  void configRemoved(const Utf8String &id);
+  void configActivated(const SchedulerConfig &config);
 };
 
 #endif // CONFIGMODEL_H

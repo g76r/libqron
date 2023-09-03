@@ -23,7 +23,7 @@ public:
   static const Utf8StringList _headerNames;
   Utf8String _id, _label, _hostname;
   QMap<Utf8String,qint64> _resources; // configured max resources available
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   QVariant uiData(int section, int role) const override;
   Utf8String id() const override { return _id; }
   void setId(Utf8String id) { _id = id; }

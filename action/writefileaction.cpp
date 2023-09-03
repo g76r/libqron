@@ -35,11 +35,11 @@ public:
           path, _params, context, instance.task().id(), instance.idAsLong());
     writer.performWrite(_message, context);
   }
-  QString toString() const {
+  Utf8String toString() const {
     return "writefile{ "+_path+" }";
   }
-  QString actionType() const {
-    return QStringLiteral("writefile");
+  Utf8String actionType() const {
+    return "writefile"_u8;
   }
   PfNode toPfNode() const{
     PfNode node(actionType(), _message);

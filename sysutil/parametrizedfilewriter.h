@@ -15,6 +15,8 @@
 #define PARAMETRIZEDFILEWRITER_H
 
 #include "libqron_global.h"
+#include <QFile>
+#include "util/paramset.h"
 
 // MAYDO support a "sync" parameter (it is not directly supported by Qt)
 
@@ -33,23 +35,23 @@
  */
 class LIBQRONSHARED_EXPORT ParametrizedFileWriter : public QFile {
   Q_OBJECT
-  QString _rawPayloadFromParams;
+  Utf8String _rawPayloadFromParams;
   ParamSet _params;
   bool _truncate, _append, _unique, _temporary;
-  QString _logTask;
+  Utf8String _logTask;
   quint64 _logExecId;
 
 public:
   explicit ParametrizedFileWriter(
-      QString path, ParamSet params = ParamSet(),
-      ParamsProvider *paramsEvaluationContext = 0, QString logTask = QString(),
-      quint64 logExecId = 0);
+      const Utf8String &path, const ParamSet &params = {},
+      ParamsProvider *paramsEvaluationContext = 0,
+      const Utf8String &logTask = {}, quint64 logExecId = 0);
   ~ParametrizedFileWriter();
   /** @param payload if not set, use "payload" parameter content instead
    * @return bytes written, or -1 on error */
-  qint64 performWrite(QString payload = QString(),
+  qint64 performWrite(const Utf8String &payload = {},
                     ParamsProvider *payloadEvaluationContext = 0);
-  const static QSet<QString> supportedParamNames;
+  const static Utf8StringSet supportedParamNames;
 };
 
 #endif // PARAMETRIZEDFILEWRITER_H

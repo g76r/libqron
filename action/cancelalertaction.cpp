@@ -25,15 +25,16 @@ public:
                TaskInstance) const override {
     if (!_scheduler)
       return;
-    _scheduler->alerter()->cancelAlert(ParamSet().evaluate(_alert, context));
+    _scheduler->alerter()->cancelAlert(
+          PercentEvaluator::eval_utf8(_alert, context));
   }
-  QString toString() const override {
+  Utf8String toString() const override {
     return "!-"+_alert;
   }
-  QString actionType() const override {
-    return "cancelalert";
+  Utf8String actionType() const override {
+    return "cancelalert"_u8;
   }
-  QString targetName() const override {
+  Utf8String targetName() const override {
     return _alert;
   }
   PfNode toPfNode() const override {

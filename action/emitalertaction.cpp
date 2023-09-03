@@ -17,8 +17,8 @@
 
 class EmitAlertActionData : public ActionData {
 public:
-  QString _alert;
-  EmitAlertActionData(Scheduler *scheduler = 0, QString alert = QString())
+  Utf8String _alert;
+  EmitAlertActionData(Scheduler *scheduler = 0, const Utf8String &alert = {})
     : ActionData(scheduler), _alert(alert) { }
   void trigger(EventSubscription, ParamsProviderMerger *context,
                TaskInstance) const override {
@@ -26,15 +26,16 @@ public:
       return;
     if (_alert.isEmpty())
       return;
-    _scheduler->alerter()->emitAlert(ParamSet().evaluate(_alert, context));
+    _scheduler->alerter()->emitAlert(
+          PercentEvaluator::eval_utf8(_alert, context));
   }
-  QString toString() const override {
+  Utf8String toString() const override {
     return "!^"+_alert;
   }
-  QString actionType() const override {
-    return QStringLiteral("emitalert");
+  Utf8String actionType() const override {
+    return "emitalert"_u8;
   }
-  QString targetName() const override {
+  Utf8String targetName() const override {
     return _alert;
   }
   PfNode toPfNode() const override {

@@ -21,20 +21,20 @@
 class LIBQRONSHARED_EXPORT ActionData : public QSharedData {
 public:
   Scheduler *_scheduler;
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   explicit ActionData(Scheduler *scheduler = 0) : _scheduler(scheduler) { }
   virtual ~ActionData();
   /** Human readable description of action */
-  virtual QString toString() const;
+  virtual Utf8String toString() const;
   /** Type of action for programmatic test, e.g. "postnotice" */
-  virtual QString actionType() const;
+  virtual Utf8String actionType() const;
   /** Action can create task instances, e.g. "plantask" */
   virtual bool mayCreateTaskInstances() const;
   /** Default: do nothing */
   virtual void trigger(
       EventSubscription subscription, ParamsProviderMerger *context,
       TaskInstance instance) const;
-  virtual QString targetName() const;
+  virtual Utf8String targetName() const;
   virtual PfNode toPfNode() const;
   virtual ParamSet params() const;
 };

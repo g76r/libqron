@@ -95,7 +95,7 @@ void HostsResourcesAvailabilityModel::changeItem(
           setCellValue(newId, kind, "0 / "+configured);
           break;
         }
-        QMap<QString,qint64> &resources = _lwm[newId];
+        QMap<Utf8String,qint64> &resources = _lwm[newId];
         qint64 i = configured.toLongLong();
         if (!resources.contains(kind) || resources.value(kind) > i)
           resources.insert(kind, i);

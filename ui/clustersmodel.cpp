@@ -19,19 +19,24 @@
 class HostReference : public SharedUiItem {
   class HostReferenceData : public SharedUiItemData {
   public:
-    QByteArray _id;
+    Utf8String _id;
     QString _cluster, _host;
 
     HostReferenceData() { }
     HostReferenceData(QString cluster, QString host)
       : _id((cluster+"~"+host).toUtf8()), _cluster(cluster), _host(host) { }
-    QByteArray id() const { return _id; }
-    QByteArray idQualifier() const { return "hostreference"_ba; }
-    int uiSectionCount() const { return 1; }
-    QVariant uiData(int section, int role) const {
+    Utf8String id() const override { return _id; }
+    Utf8String idQualifier() const override { return "hostreference"_u8; }
+    int uiSectionCount() const override { return 1; }
+    QVariant uiData(int section, int role) const override {
       return section == 0 && role == Qt::DisplayRole ? _host : QVariant{}; }
-    QVariant uiHeaderData(int section, int role) const {
-      return section == 0 && role == Qt::DisplayRole ? "Host"_ba : QVariant{}; }
+    QVariant uiHeaderData(int section, int role) const override {
+      return section == 0 && role == Qt::DisplayRole
+          ? "Host"_u8 : QVariant{}; }
+    Utf8String uiSectionName(int section) const override {
+      return section == 0 ? "host"_u8 : Utf8String{}; }
+    int uiSectionByName(Utf8String sectionName) const override {
+      return sectionName == "host"_u8 ? 0 : -1; }
   };
 
 public:

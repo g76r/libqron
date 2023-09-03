@@ -18,13 +18,13 @@ ConfigsModel::ConfigsModel(QObject *parent)
   setHeaderDataFromTemplate(SchedulerConfig(PfNode("config"), 0, false));
 }
 
-void ConfigsModel::configAdded(QString id, SchedulerConfig config) {
-  Q_UNUSED(id)
+void ConfigsModel::configAdded(
+    const Utf8String &id, const SchedulerConfig &config) {
   configRemoved(id);
   insertItemAt(config, 0);
 }
 
-void ConfigsModel::configRemoved(QString id) {
+void ConfigsModel::configRemoved(const Utf8String &id) {
   int rowCount = this->rowCount();
   for (int i = 0; i < rowCount; ) {
     if (itemAt(index(i, 0)).id() == id) {
@@ -35,7 +35,7 @@ void ConfigsModel::configRemoved(QString id) {
   }
 }
 
-void ConfigsModel::configActivated(SchedulerConfig config) {
+void ConfigsModel::configActivated(const SchedulerConfig &config) {
   QSet<QString> ids { config.id(), _activeConfigId };
   _activeConfigId = config.id();
   for (int i = 0; i < rowCount(); ++i) {

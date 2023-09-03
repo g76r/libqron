@@ -54,12 +54,12 @@ void Action::trigger(
     d->trigger(subscription, context, instance);
 }
 
-QString ActionData::toString() const {
+Utf8String ActionData::toString() const {
   return "Action";
 }
 
-QString ActionData::actionType() const {
-  return "unknown";
+Utf8String ActionData::actionType() const {
+  return "unknown"_u8;
 }
 
 bool ActionData::mayCreateTaskInstances() const {
@@ -76,31 +76,31 @@ void ActionData::trigger(
                   << "|" << subscription.eventName();
 }
 
-QString Action::toString() const {
-  return d ? d->toString() : QString();
+Utf8String Action::toString() const {
+  return d ? d->toString() : Utf8String();
 }
 
-QString Action::actionType() const {
-  return d ? d->actionType() : QString();
+Utf8String Action::actionType() const {
+  return d ? d->actionType() : Utf8String();
 }
 
 bool Action::mayCreateTaskInstances() const {
   return d ? d->mayCreateTaskInstances() : false;
 }
 
-QStringList Action::toStringList(QList<Action> list) {
-  QStringList sl;
-  foreach (const Action e, list)
-    sl.append(e.toString());
+Utf8StringList Action::toStringList(QList<Action> list) {
+  Utf8StringList sl;
+  for (auto a: list)
+    sl.append(a.toString());
   return sl;
 }
 
-QString Action::targetName() const {
-  return d ? d->targetName() : QString();
+Utf8String Action::targetName() const {
+  return d ? d->targetName() : Utf8String();
 }
 
-QString ActionData::targetName() const {
-  return QString();
+Utf8String ActionData::targetName() const {
+  return {};
 }
 
 ParamSet Action::params() const {
@@ -155,7 +155,7 @@ static RadixTree<std::function<Action(PfNode,Scheduler*)>> _actionBuilders {
    return ExecAction(scheduler, node); } },
 };
 
-Action Action::createAction(PfNode node, Scheduler *scheduler) {
+Action Action::createAction(const PfNode &node, Scheduler *scheduler) {
   Action action;
   auto builder = _actionBuilders.value(node.name());
   if (builder)

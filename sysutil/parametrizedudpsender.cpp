@@ -12,39 +12,44 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "parametrizedudpsender.h"
+#include "util/paramsprovidermerger.h"
 
-const QSet<QString> ParametrizedUdpSender::supportedParamNames {
+const Utf8StringSet ParametrizedUdpSender::supportedParamNames {
   "connecttimeout", "disconnecttimeout", "payload" };
 
 ParametrizedUdpSender::ParametrizedUdpSender(
-    QObject *parent, QString url, ParamSet params,
-    ParamsProvider *paramsEvaluationContext, QString logTask, quint64 logExecId)
+    QObject *parent, const Utf8String &url, const ParamSet &params,
+    ParamsProvider *paramsEvaluationContext, const Utf8String &logTask,
+    quint64 logExecId)
   : QUdpSocket(parent) {
   init(url, params, paramsEvaluationContext, logTask, logExecId);
 }
 
 ParametrizedUdpSender::ParametrizedUdpSender(
-    QString url, ParamSet params, ParamsProvider *paramsEvaluationContext,
-    QString logTask, quint64 logExecId)
+    const Utf8String &url, const ParamSet &params,
+    ParamsProvider *paramsEvaluationContext,
+    const Utf8String &logTask, quint64 logExecId)
   : QUdpSocket() {
   init(url, params, paramsEvaluationContext, logTask, logExecId);
 }
 
 void ParametrizedUdpSender::init(
-    QString url, ParamSet params, ParamsProvider *paramsEvaluationContext,
-    QString logTask, quint64 logExecId) {
-  QUrl qurl(params.evaluate(url, paramsEvaluationContext));
+    const Utf8String &url, const ParamSet &params,
+    ParamsProvider *paramsEvaluationContext, const Utf8String &logTask,
+    quint64 logExecId) {
+  auto ppm = ParamsProviderMerger(params)(paramsEvaluationContext);
+  QUrl qurl(PercentEvaluator::eval_utf16(url, &ppm));
   if (qurl.isValid()) {
     _host = qurl.host();
     _port = (quint16)qurl.port(0);
   } else {
     _port = 0;
   }
-  _connectTimeout = params.valueAsDouble("connecttimeout", 2.0,
-                                         paramsEvaluationContext)*1000;
-  _disconnectTimeout = params.valueAsDouble("disconnecttimeout", .2,
-                                            paramsEvaluationContext)*1000;
-  _payloadFromParams = params.rawValue("payload");
+  _connectTimeout = params.paramNumber<double>(
+                      "connecttimeout", 2.0, paramsEvaluationContext)*1000;
+  _disconnectTimeout = params.paramNumber<double>(
+                      "disconnecttimeout", .2, paramsEvaluationContext)*1000;
+  _payloadFromParams = params.paramRawUtf8("payload");
   _logTask = logTask;
   _logExecId = logExecId ? QString::number(logExecId) : QString();
   _params = params;
@@ -53,17 +58,17 @@ void ParametrizedUdpSender::init(
 /** @param payload if not set, use "payload" parameter content instead
  * @return false if the request cannot be performed, e.g. unknown address */
 bool ParametrizedUdpSender::performRequest(
-    QString payload, ParamsProvider *payloadEvaluationContext) {
+    const Utf8String &payload, ParamsProvider *payloadEvaluationContext) {
   qint64 rc = -1;
-  if (payload.isNull())
-    payload = _payloadFromParams;
-  payload = _params.evaluate(payload, payloadEvaluationContext);
+  auto effective_payload = payload.isNull() ? _payloadFromParams : payload;
+  auto ppm = ParamsProviderMerger(payloadEvaluationContext)(_params);
+  effective_payload = PercentEvaluator::eval_utf8(effective_payload, &ppm);
   if (_host.isEmpty() || !_port)
     return false;
   connectToHost(_host, _port, QIODevice::WriteOnly);
   if (waitForConnected(_connectTimeout)) {
-    rc = write(payload.toUtf8());
-    if (rc < 0)
+    rc = write(effective_payload);
+    if (rc != effective_payload.size())
       Log::warning(_logTask, _logExecId)
           << "error when emiting UDP alert: " << error() << " "
           << errorString();

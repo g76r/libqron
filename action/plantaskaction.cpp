@@ -18,15 +18,15 @@
 
 class PlanTaskActionData : public ActionData {
 public:
-  QString _id;
+  Utf8String _id;
   ParamSet _overridingParams;
   bool _force, _lone;
-  QHash<QString,QString> _paramappend;
+  QHash<Utf8String,Utf8String> _paramappend;
   DisjunctionCondition _queuewhen, _cancelwhen;
 
   PlanTaskActionData(
       Scheduler *scheduler, QString id, ParamSet params, bool force,
-      bool lone, QHash<QString,QString> paramappend,
+      bool lone, QHash<Utf8String,Utf8String> paramappend,
       DisjunctionCondition queuewhen, DisjunctionCondition cancelwhen)
       : ActionData(scheduler), _id(id), _overridingParams(params),
         _force(force), _lone(lone), _paramappend(paramappend),
@@ -35,7 +35,7 @@ public:
                TaskInstance parentInstance) const override {
     if (!_scheduler)
       return;
-    QString id = ParamSet().evaluate(_id, context);
+    auto id = PercentEvaluator::eval_utf8(_id, context);
     if (!parentInstance.isNull()) {
       QString idIfLocalToGroup = parentInstance.task().taskGroup().id()+"."+id;
       if (_scheduler->taskExists(idIfLocalToGroup.toUtf8()))
@@ -43,8 +43,8 @@ public:
     }
     quint64 herdid = _lone ? 0 : parentInstance.herdid();
     ParamSet overridingParams;
-    for (auto key: _overridingParams.keys())
-      overridingParams.setValue(key, _overridingParams.value(key, context));
+    for (auto key: _overridingParams.paramKeys())
+      overridingParams.setValue(key, _overridingParams.paramUtf8(key, context));
     if (!parentInstance.isNull())
       overridingParams.setValue("!parenttaskinstanceid", parentInstance.id());
     TaskInstanceList instances = _scheduler->planTask(
@@ -64,29 +64,28 @@ public:
           << " and cancel condition " << _cancelwhen.toString();
       if (_paramappend.isEmpty())
         continue;
-      ParamsProviderMergerRestorer ppmr(context);
-      auto ppp = childInstance.pseudoParams();
-      context->prepend(childInstance.params());
-      context->prepend(&ppp);
+      context->prepend(&childInstance);
       if (herdid != 0) {
         for (auto key: _paramappend.keys()) {
-          auto value = ParamSet().evaluate(_paramappend.value(key), context);
-          _scheduler->taskInstanceParamAppend(herdid, key,
-                                              ParamSet::escape(value));
+          auto value =
+              PercentEvaluator::eval_utf8(_paramappend.value(key), context);
+          _scheduler->taskInstanceParamAppend(
+                herdid, key, PercentEvaluator::escape(value));
         }
       }
+      context->pop_front();
     }
   }
-  QString toString() const override {
+  Utf8String toString() const override {
     return "*" + _id;
   }
-  QString actionType() const override {
-    return QStringLiteral("plantask");
+  Utf8String actionType() const override {
+    return "plantask"_u8;
   }
   bool mayCreateTaskInstances() const override {
     return true;
   }
-  QString targetName() const override {
+  Utf8String targetName() const override {
     return _id;
   }
   ParamSet params() const override {
@@ -111,7 +110,7 @@ PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
           scheduler, node.contentAsUtf16(),
           ParamSet(node, "param"), node.hasChild("force"),
           node.hasChild("lone"),
-          ParamSet(node, "paramappend").toHash(),
+          ParamSet(node, "paramappend").toUtf8Hash(),
           DisjunctionCondition(node.grandChildrenByChildrenName("queuewhen")),
           DisjunctionCondition(node.grandChildrenByChildrenName("cancelwhen"))
           )) {
@@ -120,7 +119,7 @@ PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
 PlanTaskAction::PlanTaskAction(Scheduler *scheduler, QByteArray taskId)
     : Action(new PlanTaskActionData(
           scheduler, taskId, ParamSet(), false, false,
-          QHash<QString,QString>(), DisjunctionCondition(),
+          QHash<Utf8String,Utf8String>(), DisjunctionCondition(),
           DisjunctionCondition())) {
 }
 

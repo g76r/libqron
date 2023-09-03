@@ -15,6 +15,8 @@
 #define PARAMETRIZEDUDPSENDER_H
 
 #include "libqron_global.h"
+#include "util/paramsprovider.h"
+#include <QUdpSocket>
 
 class LIBQRONSHARED_EXPORT ParametrizedUdpSender : public QUdpSocket {
   Q_OBJECT
@@ -22,7 +24,7 @@ class LIBQRONSHARED_EXPORT ParametrizedUdpSender : public QUdpSocket {
   QString _host;
   quint16 _port;
   int _connectTimeout, _disconnectTimeout;
-  QString  _payloadFromParams, _logTask, _logExecId;
+  Utf8String  _payloadFromParams, _logTask, _logExecId;
   ParamSet _params;
 
 public:
@@ -30,28 +32,29 @@ public:
    * @param logTask only used in log, e.g. task id
    * @param logExecId only used in log, e.g. task instance id
    */
-  ParametrizedUdpSender(QObject *parent, QString url, ParamSet params,
+  ParametrizedUdpSender(QObject *parent, const Utf8String &url,
+                        const ParamSet &params,
                         ParamsProvider *paramsEvaluationContext = 0,
-                        QString logTask = QString(),
+                        const Utf8String &logTask = {},
                         quint64 logExecId = 0);
   /** @param url e.g. "localhost:53", "udp:127.0.0.1:53"
    * @param logTask only used in log, e.g. task id
    * @param logExecId only used in log, e.g. task instance id
    */
-  ParametrizedUdpSender(QString url, ParamSet params,
+  ParametrizedUdpSender(const Utf8String &url, const ParamSet &params,
                         ParamsProvider *paramsEvaluationContext = 0,
-                        QString logTask = QString(),
+                        const Utf8String &logTask = {},
                         quint64 logExecId = 0);
   /** @param payload if not set, use "payload" parameter content instead
    * @return false if the request cannot be performed, e.g. unknown address */
-  bool performRequest(QString payload = QString(),
+  bool performRequest(const Utf8String &payload = {},
                       ParamsProvider *payloadEvaluationContext = 0);
-  const static QSet<QString> supportedParamNames;
+  const static Utf8StringSet supportedParamNames;
 
 private:
-  void init(QString url, ParamSet params,
-            ParamsProvider *paramsEvaluationContext, QString logTask,
-            quint64 logExecId);
+  void init(const Utf8String &url, const ParamSet &params,
+            ParamsProvider *paramsEvaluationContext,
+            const Utf8String &logTask, quint64 logExecId);
 };
 
 #endif // PARAMETRIZEDUDPSENDER_H

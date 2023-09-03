@@ -72,7 +72,7 @@ public:
   TaskGroup taskGroup() const;
   void setTaskGroup(TaskGroup taskGroup);
   /** Resources consumed. */
-  QMap<QString, qint64> resources() const;
+  QMap<Utf8String,qint64> resources() const;
   QDateTime lastExecution() const;
   void setLastExecution(QDateTime timestamp) const;
   QDateTime nextScheduledExecution() const;

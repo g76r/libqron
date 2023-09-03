@@ -15,6 +15,7 @@
 #define TASKWAITCONDITION_H
 
 #include "condition.h"
+#include "pf/pfnode.h"
 
 class TaskWaitConditionData;
 
@@ -33,7 +34,7 @@ enum TaskWaitOperator {
 /** Condition for waiting after other tasks in the same herd. */
 class LIBQRONSHARED_EXPORT TaskWaitCondition : public Condition {
 public: 
-  explicit TaskWaitCondition(PfNode node = PfNode());
+  explicit TaskWaitCondition(PfNode node = {});
   TaskWaitCondition(TaskWaitOperator op, QString expr);
   TaskWaitCondition(const TaskWaitCondition &other);
   ~TaskWaitCondition();

@@ -60,11 +60,11 @@ public:
       }
     }
   }
-  QString toString() const override {
+  Utf8String toString() const override {
     return "requesturl{ "+_address+" }";
   }
-  QString actionType() const override {
-    return QStringLiteral("requesturl");
+  Utf8String actionType() const override {
+    return "requesturl"_u8;
   }
   PfNode toPfNode() const override {
     PfNode node(actionType(), _message);

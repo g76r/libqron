@@ -15,6 +15,7 @@
 #define CALENDAR_H
 
 #include "libqron_global.h"
+#include "modelview/shareduiitem.h"
 
 class CalendarData;
 
@@ -40,8 +41,8 @@ public:
   PfNode toPfNode(bool useNameOnlyIfSet = false) const;
   /** Enumerate rules in a human readable fashion
     * e.g. "include 2014-01-01..2018-12-31, exclude 2014-04-01" */
-  QString toCommaSeparatedRulesString() const;
-  QString name() const;
+  Utf8String toCommaSeparatedRulesString() const;
+  Utf8String name() const;
 
 private:
   const CalendarData *data() const { return specializedData<CalendarData>(); }

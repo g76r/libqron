@@ -34,25 +34,24 @@ Trigger &Trigger::operator=(const Trigger &rhs) {
 Trigger::~Trigger() {
 }
 
-QString Trigger::expression() const {
-  return d ? d->expression() : QString();
+Utf8String Trigger::expression() const {
+  return d ? d->expression() : Utf8String{};
 }
 
-QString Trigger::canonicalExpression() const {
-  return d ? d->canonicalExpression() : QString();
+Utf8String Trigger::canonicalExpression() const {
+  return d ? d->canonicalExpression() : Utf8String{};
 }
 
-QString Trigger::humanReadableExpression() const {
-  return d ? d->humanReadableExpression() : QString();
+Utf8String Trigger::humanReadableExpression() const {
+  return d ? d->humanReadableExpression() : Utf8String{};
 }
 
-QString Trigger::humanReadableExpressionWithCalendar() const {
-  return (!calendar().isNull())
-      ? '['+QString::fromUtf8(calendar().toPfNode(true)
-                              .toPf(PfOptions()
-                                    .setShouldWriteContentBeforeSubnodes()))+']'
-        +humanReadableExpression()
-      : humanReadableExpression();
+Utf8String Trigger::humanReadableExpressionWithCalendar() const {
+  if (calendar().isNull())
+    return humanReadableExpression();
+  Utf8String cal = calendar().toPfNode(true).toPf(
+                     PfOptions().setShouldWriteContentBeforeSubnodes());
+  return "["+cal+"]"+humanReadableExpression();
 }
 
 bool Trigger::isValid() const {
@@ -62,15 +61,15 @@ bool Trigger::isValid() const {
 TriggerData::~TriggerData() {
 }
 
-QString TriggerData::expression() const {
-  return QString();
+Utf8String TriggerData::expression() const {
+  return {};
 }
 
-QString TriggerData::canonicalExpression() const {
+Utf8String TriggerData::canonicalExpression() const {
   return expression();
 }
 
-QString TriggerData::humanReadableExpression() const {
+Utf8String TriggerData::humanReadableExpression() const {
   return expression();
 }
 
@@ -128,14 +127,14 @@ bool Trigger::loadConfig(
   return true;
 }
 
-QString TriggerData::triggerType() const {
-  return u"unknown"_s;
+Utf8String TriggerData::triggerType() const {
+  return "unknown"_u8;
 }
 
 PfNode TriggerData::toPfNode() const {
   PfNode node(triggerType(), expression());
   ConfigUtils::writeComments(&node, _commentsList);
-  ConfigUtils::writeParamSet(&node, _overridingParams, u"param"_s);
+  ConfigUtils::writeParamSet(&node, _overridingParams, "param");
   if (!_calendar.isNull())
     node.appendChild(_calendar.toPfNode(true));
   return node;

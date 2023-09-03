@@ -34,17 +34,16 @@ void ConfigUtils::loadResourcesSet(
     else
       resources->insert(
             ConfigUtils::sanitizeId(p.first, ConfigUtils::LocalId), p.second);
-  }
 }
 
 void ConfigUtils::writeParamSet(PfNode *parentnode, ParamSet params,
                                 QString attrname, bool inherit) {
   if (!parentnode)
     return;
-  QStringList list = params.keys(inherit).values();
-  std::sort(list.begin(), list.end());
-  foreach (const QString &key, list)
-    parentnode->appendChild(PfNode(attrname, key+" "+params.rawValue(key)));
+  auto list = params.paramKeys(inherit ? ParamSet::EvalContext{}
+                                       : ParamSet::DontInherit).toSortedList();
+  for (auto key: list)
+    parentnode->appendChild({attrname, key+" "+params.paramRawUtf8(key)});
 }
 
 void ConfigUtils::writeEventSubscriptions(PfNode *parentnode,
@@ -141,7 +140,8 @@ QRegularExpression ConfigUtils::convertDotHierarchicalFilterToRegexp(
 }
 
 void ConfigUtils::loadEventSubscription(
-    PfNode parentNode, QString childName, QString subscriberId,
+    const PfNode &parentNode, const Utf8String &childName,
+    const Utf8String &subscriberId,
     QList<EventSubscription> *list, Scheduler *scheduler) {
   if (!list)
     return;
@@ -150,29 +150,31 @@ void ConfigUtils::loadEventSubscription(
 }
 
 void ConfigUtils::loadComments(
-    PfNode node, QStringList *commentsList, QSet<QString> excludedDescendants,
-    int maxDepth) {
+    const PfNode &node, Utf8StringList *commentsList,
+    const Utf8StringSet &excludedDescendants, int maxDepth) {
   if (!commentsList)
     return;
   int newMaxDepth = maxDepth < 0 ? maxDepth : (maxDepth-1);
   foreach (const PfNode &child, node.children()) {
     if (child.isComment())
-      commentsList->append(child.contentAsUtf16());
+      commentsList->append(child.contentAsUtf8());
     if (maxDepth && !excludedDescendants.contains(child.name()))
       loadComments(child, commentsList, newMaxDepth);
   }
 }
 
-void ConfigUtils::writeComments(PfNode *node, QStringList commentsList) {
+void ConfigUtils::writeComments(
+    PfNode *node, const Utf8StringList &commentsList) {
   if (!node)
     return;
-  foreach (const QString &comment, commentsList) {
+  for (auto comment: commentsList) {
     node->appendCommentChild(comment);
   }
 }
 
 void ConfigUtils::writeConditions(
-    PfNode *parentnode, QString attrname, DisjunctionCondition conditions) {
+    PfNode *parentnode, const Utf8String &attrname,
+    DisjunctionCondition conditions) {
   if (!parentnode || conditions.isEmpty())
     return;
   PfNode childnode(attrname);

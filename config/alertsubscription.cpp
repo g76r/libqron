@@ -15,48 +15,28 @@
 #include "alert/alertchannel.h"
 #include "alert/alert.h"
 #include "configutils.h"
-
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Pattern",
-  "Channel",
-  "Address",
-  "Messages",
-  "Options", // 5
-  "Emit Message",
-  "Cancel Message",
-  "Reminder Message",
-  "Notify Emit",
-  "Notify Cancel", // 10
-  "Notify Reminder",
-  "Parameters"
-};
+#include "modelview/templatedshareduiitemdata.h"
 
 static QAtomicInt _sequence;
 
-class AlertSubscriptionData : public SharedUiItemData {
+class AlertSubscriptionData
+    : public SharedUiItemDataWithImmutableParams<AlertSubscriptionData> {
 public:
-  QByteArray _id, _channelName;
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  Utf8String _id, _channelName;
   QString _pattern;
   QRegularExpression _patternRegexp;
-  QString _address, _emitMessage, _cancelMessage, _reminderMessage;
+  Utf8String _address, _emitMessage, _cancelMessage, _reminderMessage;
   bool _notifyEmit, _notifyCancel, _notifyReminder;
-  ParamSet _params;
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   AlertSubscriptionData()
-    : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))),
+    : _id(Utf8String::number(_sequence.fetchAndAddOrdered(1))),
       _notifyEmit(false), _notifyCancel(false), _notifyReminder(false) {
   }
-  QByteArray id() const { return _id; }
-  QByteArray idQualifier() const { return "alertsubscription"_ba; }
-  int uiSectionCount() const {
-    return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const {
-    return role == Qt::DisplayRole && section >= 0
-        && (unsigned)section < sizeof _uiHeaderNames
-        ? _uiHeaderNames[section] : QVariant();
-  }
+  Utf8String id() const override { return _id; }
+  QVariant uiData(int section, int role) const override;
 };
 
 AlertSubscription::AlertSubscription() {
@@ -96,26 +76,26 @@ PfNode AlertSubscription::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode subscriptionNode("subscription");
-  subscriptionNode.appendChild(PfNode(QStringLiteral("pattern"), d->_pattern));
+  subscriptionNode.appendChild(PfNode("pattern"_u8, d->_pattern));
   PfNode node(d->_channelName);
   ConfigUtils::writeComments(&node, d->_commentsList);
   if (!d->_address.isEmpty())
-  node.appendChild(PfNode(QStringLiteral("address"), d->_address));
+  node.appendChild(PfNode("address"_u8, d->_address));
   if (!d->_emitMessage.isEmpty())
-    node.appendChild(PfNode(QStringLiteral("emitmessage"), d->_emitMessage));
+    node.appendChild(PfNode("emitmessage"_u8, d->_emitMessage));
   if (!d->_cancelMessage.isEmpty())
-    node.appendChild(PfNode(QStringLiteral("cancelmessage"),
+    node.appendChild(PfNode("cancelmessage"_u8,
                             d->_cancelMessage));
   if (!d->_reminderMessage.isEmpty())
-    node.appendChild(PfNode(QStringLiteral("remindermessage"),
+    node.appendChild(PfNode("remindermessage"_u8,
                             d->_reminderMessage));
   if (!d->_notifyEmit)
-    node.appendChild(PfNode(QStringLiteral("noemitnotify")));
+    node.appendChild(PfNode("noemitnotify"_u8));
   if (!d->_notifyCancel)
-    node.appendChild(PfNode(QStringLiteral("nocancelnotify")));
+    node.appendChild(PfNode("nocancelnotify"_u8));
   if (!d->_notifyReminder)
-    node.appendChild(PfNode(QStringLiteral("noremindernotify")));
-  ConfigUtils::writeParamSet(&node, d->_params, QStringLiteral("param"));
+    node.appendChild(PfNode("noremindernotify"_u8));
+  ConfigUtils::writeParamSet(&node, d->_params, "param");
   subscriptionNode.appendChild(node);
   return subscriptionNode;
 }
@@ -130,48 +110,49 @@ QRegularExpression AlertSubscription::patternRegexp() const {
   return d ? d->_patternRegexp : QRegularExpression();
 }
 
-QByteArray AlertSubscription::channelName() const {
+Utf8String AlertSubscription::channelName() const {
   const AlertSubscriptionData *d = data();
-  return d ? d->_channelName : QByteArray();
+  return d ? d->_channelName : Utf8String();
 }
 
-QString AlertSubscription::rawAddress() const {
+Utf8String AlertSubscription::rawAddress() const {
   const AlertSubscriptionData *d = data();
-  return d ? d->_address : QString();
+  return d ? d->_address : Utf8String();
 }
 
-QString AlertSubscription::address(Alert alert) const {
+Utf8String AlertSubscription::address(Alert alert) const {
   const AlertSubscriptionData *d = data();
-  QString rawAddress = d ? d->_address : QString();
-  AlertPseudoParamsProvider ppp = alert.pseudoParams();
-  return d->_params.evaluate(rawAddress, &ppp);
+  if (!d)
+    return {};
+  auto ppm = ParamsProviderMerger(d->_params)(&alert);
+  return PercentEvaluator::eval_utf8(d->_address, &ppm);
 }
 
-QString AlertSubscription::emitMessage(Alert alert) const {
+Utf8String AlertSubscription::emitMessage(Alert alert) const {
   const AlertSubscriptionData *d = data();
-  QString rawMessage = d ? d->_emitMessage : QString();
+  auto rawMessage = d ? d->_emitMessage : Utf8String();
   if (rawMessage.isEmpty())
     rawMessage = "alert emited: "+alert.idWithCount();
-  AlertPseudoParamsProvider ppp = alert.pseudoParams();
-  return d->_params.evaluate(rawMessage, &ppp);
+  auto ppm = ParamsProviderMerger(d->_params)(&alert);
+  return PercentEvaluator::eval_utf8(rawMessage, &ppm);
 }
 
-QString AlertSubscription::cancelMessage(Alert alert) const {
+Utf8String AlertSubscription::cancelMessage(Alert alert) const {
   const AlertSubscriptionData *d = data();
-  QString rawMessage = d ? d->_cancelMessage : QString();
+  auto rawMessage = d ? d->_cancelMessage: Utf8String();
   if (rawMessage.isEmpty())
     rawMessage = "alert canceled: "+alert.idWithCount();
-  AlertPseudoParamsProvider ppp = alert.pseudoParams();
-  return d->_params.evaluate(rawMessage, &ppp);
+  auto ppm = ParamsProviderMerger(d->_params)(&alert);
+  return PercentEvaluator::eval_utf8(rawMessage, &ppm);
 }
 
-QString AlertSubscription::reminderMessage(Alert alert) const {
+Utf8String AlertSubscription::reminderMessage(Alert alert) const {
   const AlertSubscriptionData *d = data();
-  QString rawMessage = d ? d->_reminderMessage : QString();
+  auto rawMessage = d ? d->_reminderMessage: Utf8String();
   if (rawMessage.isEmpty())
     rawMessage = "alert still raised: "+alert.idWithCount();
-  AlertPseudoParamsProvider ppp = alert.pseudoParams();
-  return d->_params.evaluate(rawMessage, &ppp);
+  auto ppm = ParamsProviderMerger(d->_params)(&alert);
+  return PercentEvaluator::eval_utf8(rawMessage, &ppm);
 }
 
 bool AlertSubscription::notifyEmit() const {
@@ -248,3 +229,37 @@ QVariant AlertSubscriptionData::uiData(int section, int role) const {
   }
   return QVariant{};
 }
+
+static const Utf8String _idQualifier = "alertsubscription";
+
+static const Utf8StringList _sectionNames {
+  "id", // 0
+  "pattern",
+  "channel",
+  "address",
+  "messages",
+  "options", // 5
+  "emitmessage",
+  "cancelmessage",
+  "remindermessage",
+  "notifyemit",
+  "notifycancel", // 10
+  "notifyreminder",
+  "parameters"
+};
+
+static const Utf8StringList _headerNames {
+  "Id", // 0
+  "Pattern",
+  "Channel",
+  "Address",
+  "Messages",
+  "Options", // 5
+  "Emit Message",
+  "Cancel Message",
+  "Reminder Message",
+  "Notify Emit",
+  "Notify Cancel", // 10
+  "Notify Reminder",
+  "Parameters"
+};

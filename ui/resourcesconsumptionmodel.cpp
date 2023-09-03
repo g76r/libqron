@@ -23,7 +23,7 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
   auto tasks = config.tasks().values();
   auto clusters = config.clusters();
   auto hosts = config.hosts().values();
-  QMap<QString,QMap<QString,qint64>> configured;
+  QMap<Utf8String,QMap<Utf8String,qint64>> configured;
   foreach (const Host &host, config.hosts())
     configured.insert(host.id(), host.resources());
   std::sort(tasks.begin(), tasks.end());
@@ -32,7 +32,7 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
   foreach (const Host &host, hosts)
     setCellValue(MINIMUM_CAPTION, host.id(), QString());
   foreach (const Task &task, tasks) {
-    QStringList targets;
+    Utf8StringList targets;
     if (clusters.contains(task.target().toUtf8()))
       foreach (const Host &host, clusters.value(task.target().toUtf8()).hosts())
         targets.append(host.id());
@@ -54,7 +54,7 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
                 min[host.id()].insert(kind, available-consumed);
               }
             } else {
-              QMap<QString,qint64> h;
+              QMap<Utf8String,qint64> h;
               h.insert(kind, available-consumed);
               min.insert(host.id(), h);
             }

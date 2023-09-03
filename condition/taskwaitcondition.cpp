@@ -211,7 +211,7 @@ TaskWaitCondition::TaskWaitCondition(PfNode node) {
   TaskWaitOperator op = operatorFromString(node.name());
   if (op == UnknownOperator)
     return;
-  d = new TaskWaitConditionData(op, node.contentAsString());
+  d = new TaskWaitConditionData(op, node.contentAsUtf8());
 }
 
 TaskWaitCondition::TaskWaitCondition(TaskWaitOperator op, QString expr)

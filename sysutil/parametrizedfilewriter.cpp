@@ -13,19 +13,20 @@
  */
 #include "parametrizedfilewriter.h"
 
-const QSet<QString> ParametrizedFileWriter::supportedParamNames {
+const Utf8StringSet ParametrizedFileWriter::supportedParamNames {
   "truncate", "append", "unique", "temporary", "payload" };
 
 ParametrizedFileWriter::ParametrizedFileWriter(
-    QString path, ParamSet params, ParamsProvider *paramsEvaluationContext,
-    QString logTask, quint64 logExecId)
+    const Utf8String &path, const ParamSet &params,
+    ParamsProvider *paramsEvaluationContext,
+    const Utf8String &logTask, quint64 logExecId)
   : QFile(path), _params(params), _logTask(logTask), _logExecId(logExecId) {
   Q_UNUSED(paramsEvaluationContext)
-  _rawPayloadFromParams = params.rawValue("payload");
-  _truncate = params.valueAsBool("truncate", false, paramsEvaluationContext);
-  _append = params.valueAsBool("append", true, paramsEvaluationContext);
-  _unique = params.valueAsBool("unique", false, paramsEvaluationContext);
-  _temporary = params.valueAsBool("temporary", false, paramsEvaluationContext);
+  _rawPayloadFromParams = params.paramRawUtf8("payload");
+  _truncate = params.paramBool("truncate", false, paramsEvaluationContext);
+  _append = params.paramBool("append", true, paramsEvaluationContext);
+  _unique = params.paramBool("unique", false, paramsEvaluationContext);
+  _temporary = params.paramBool("temporary", false, paramsEvaluationContext);
 }
 
 ParametrizedFileWriter::~ParametrizedFileWriter() {
@@ -34,10 +35,10 @@ ParametrizedFileWriter::~ParametrizedFileWriter() {
 }
 
 qint64 ParametrizedFileWriter::performWrite(
-    QString payload, ParamsProvider *payloadEvaluationContext) {
-  if (payload.isNull())
-    payload = _rawPayloadFromParams;
-  payload = _params.evaluate(payload, payloadEvaluationContext);
+    const Utf8String &payload, ParamsProvider *payloadEvaluationContext) {
+  auto effective_payload = payload.isNull() ? _rawPayloadFromParams : payload;
+  auto ppm = ParamsProviderMerger(payloadEvaluationContext)(_params);
+  effective_payload = PercentEvaluator::eval_utf8(effective_payload, &ppm);
   QIODevice::OpenMode mode = QIODevice::WriteOnly;
   if (_unique) {
     QTemporaryFile tf(fileName());
@@ -60,18 +61,17 @@ qint64 ParametrizedFileWriter::performWrite(
         << errorString();
     return -1;
   }
-  QByteArray data = payload.toUtf8();
   // LATER support binary payloads
-  qint64 bytes = write(data);
+  qint64 bytes = write(effective_payload);
   if (bytes == -1) {
     Log::error(_logTask, _logExecId)
         << "error when writing to file: " << fileName() << " error: " << error()
         << " : " << errorString();
-  } else if (bytes != data.size()) {
+  } else if (bytes != effective_payload.size()) {
     Log::error(_logTask, _logExecId)
         << "error when writing to file: " << fileName() << " error: " << error()
         << " : " << errorString() << " could only write " << bytes
-        << " bytes out of " << data.size();
+        << " bytes out of " << effective_payload.size();
   }
   close();
   return bytes;

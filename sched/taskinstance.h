@@ -120,7 +120,7 @@ public:
    * (rfc5322, internet message format, including http, i.e. no ':' in name,
    * no end-of-line in value)
    */
-  //QMap<QString,QString> varsAsHeaders() const;
+  QMap<QString,QString> varsAsHeaders() const;
   /** vars() keys protected to respect internet headers rules
    * (rfc5322, internet message format, including http, i.e. no ':')
    * warning: since the keys are modified they can be used to lookup into

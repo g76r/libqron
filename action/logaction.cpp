@@ -21,21 +21,21 @@ public:
   LogActionData(QString logMessage = QString(),
                Log::Severity severity = Log::Info)
     : _message(logMessage), _severity(severity) { }
-  QString toString() const {
+  Utf8String toString() const override {
     return "log{ "+Log::severityToString(_severity)+" "+_message+" }";
   }
-  QString actionType() const {
-    return QStringLiteral("log");
+  Utf8String actionType() const override {
+    return "log"_u8;
   }
   void trigger(EventSubscription, ParamsProviderMerger *context,
-               TaskInstance instance) const {
+               TaskInstance instance) const override {
     if (instance.isNull())
-      Log::log(_severity) << ParamSet().evaluate(_message, context);
+      Log::log(_severity) << PercentEvaluator::eval_utf8(_message, context);
     else
       Log::log(_severity, instance.task().id(), instance.idAsLong())
-          << ParamSet().evaluate(_message, context);
+          << PercentEvaluator::eval_utf8(_message, context);
   }
-  PfNode toPfNode() const{
+  PfNode toPfNode() const override {
     PfNode node(actionType(), _message);
     node.appendChild(PfNode("severity", Log::severityToString(_severity)));
     return node;

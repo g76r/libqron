@@ -17,6 +17,7 @@
 #include "config/taskgroup.h"
 #include "config/task.h"
 #include "config/schedulerconfig.h"
+#include "modelview/shareduiitemstablemodel.h"
 
 /** Model holding tasks groups along with their attributes, one group per line,
  * in id alphabetical order. */

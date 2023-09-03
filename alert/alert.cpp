@@ -250,12 +250,12 @@ static const Utf8String _idQualifier = "alert";
 static const Utf8StringList _sectionNames {
   "alertid", // 0
   "alertstatus",
-  "rise_date",
-  "visibility_date",
-  "cancellation_date",
+  "risedate",
+  "visibilitydate",
+  "cancellationdate",
   "actions", // 5
   "count",
-  "id_with_count",
+  "idwithcount",
   "alertstatus"
 };
 

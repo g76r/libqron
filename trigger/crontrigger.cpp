@@ -115,28 +115,28 @@ notstar:
 
 class CronTriggerData : public TriggerData {
 public:
-  QString _cronExpression;
+  Utf8String _cronExpression;
   CronField _seconds, _minutes, _hours, _days, _months, _daysofweek;
   bool _isValid;
   mutable qint64 _lastTriggered, _nextTriggering;
 
-  explicit CronTriggerData(const QString cronExpression = {})
+  explicit CronTriggerData(const QString &cronExpression = {})
     : _seconds(0, 59), _minutes(0, 59), _hours(0, 23), _days(1,31),
       _months(1, 12), _daysofweek(0, 6), _isValid(false), _lastTriggered(-1),
       _nextTriggering(-1) {
     parseCronExpression(cronExpression);
   }
-  QString canonicalExpression() const override {
+  Utf8String canonicalExpression() const override {
     return u"%1 %2 %3 %4 %5 %6"_s
         .arg(_seconds, _minutes, _hours, _days, _months,_daysofweek);
   }
-  QString expression() const override { return _cronExpression; }
-  QString humanReadableExpression() const override {
+  Utf8String expression() const override { return _cronExpression; }
+  Utf8String humanReadableExpression() const override {
     return "("+_cronExpression+")"; }
   QDateTime nextTriggering(QDateTime max) const;
   bool isTriggering(QDateTime timestamp) const;
   bool isValid() const override { return _isValid; }
-  QString triggerType() const override { return u"cron"_s; }
+  Utf8String triggerType() const override { return "cron"_u8; }
 
 private:
   void parseCronExpression(QString cronExpression);
@@ -335,9 +335,9 @@ const CronTriggerData *CronTrigger::data() const {
   return reinterpret_cast<const CronTriggerData*>(d.data());
 }
 
-CronTriggerData *CronTrigger::data() {
-  return reinterpret_cast<CronTriggerData*>(d.data());
-}
+//CronTriggerData *CronTrigger::data() {
+//  return reinterpret_cast<CronTriggerData*>(d.data());
+//}
 
 #if 0
 CronTrigger t("/10 15 6 31 */2 2,3");
@@ -349,3 +349,4 @@ for (int i = 0; i < 100; ++i) {
 }
 qDebug() << "end";
 #endif
+

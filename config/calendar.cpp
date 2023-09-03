@@ -13,19 +13,17 @@
  */
 #include "calendar.h"
 #include "configutils.h"
+#include "modelview/templatedshareduiitemdata.h"
 
 static QAtomicInteger<qint32> sequence = 1;
 static const QRegularExpression
 _dateRE("(([0-9]+)-([0-9]+)-([0-9]+))?(..)?(([0-9]+)-([0-9]+)-([0-9]+))?");
 
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Name",
-  "Date Rules"
-};
-
-class CalendarData : public SharedUiItemData {
+class CalendarData : public SharedUiItemDataBase<CalendarData> {
 public:
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
   struct Rule {
     QDate _begin; // QDate() means -inf
     QDate _end; // QDate() means +inf
@@ -37,24 +35,15 @@ public:
     bool isExcludeAll() const {
       return !_include && _begin.isNull() && _end.isNull(); }
   };
-  QByteArray _id;
-  QString _name;
+  Utf8String _id, _name;
   QList<Rule> _rules;
-  QStringList _commentsList;
-  CalendarData(QString name = {})
-    : _id(QByteArray::number(sequence.fetchAndAddOrdered(1))),
-      _name(name.isEmpty() ? QString() : name) { }
-  QByteArray id() const override { return _id; }
-  QByteArray idQualifier() const override { return "calendar"_ba; }
-  int uiSectionCount() const override {
-    return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
+  Utf8StringList _commentsList;
+  CalendarData(const Utf8String &name = {})
+    : _id(Utf8String::number(sequence.fetchAndAddOrdered(1))),
+      _name(name.isEmpty() ? Utf8String{} : name) { }
+  Utf8String id() const override { return _id; }
   QVariant uiData(int section, int role) const override;
-  QVariant uiHeaderData(int section, int role) const override {
-    return role == Qt::DisplayRole && section >= 0
-        && (unsigned)section < sizeof _uiHeaderNames
-        ? _uiHeaderNames[section] : QVariant{};
-  }
-  QString toCommaSeparatedRulesString() const;
+  Utf8String toCommaSeparatedRulesString() const;
   inline CalendarData &append(QDate begin, QDate end, bool include);
 };
 
@@ -66,7 +55,7 @@ CalendarData &CalendarData::append(QDate begin, QDate end, bool include) {
 }
 
 Calendar::Calendar(PfNode node) {
-  CalendarData *d = new CalendarData(node.contentAsUtf16());
+  CalendarData *d = new CalendarData(node.contentAsUtf8());
   bool atLessOneExclude = false;
   //qDebug() << "*** Calendar(PfNode): " << node.toPf();
   foreach(PfNode child, node.children()) {
@@ -150,12 +139,12 @@ PfNode Calendar::toPfNode(bool useNameOnlyIfSet) const {
   return node;
 }
 
-QString Calendar::toCommaSeparatedRulesString() const {
+Utf8String Calendar::toCommaSeparatedRulesString() const {
   const CalendarData *d = data();
-  return d ? d->toCommaSeparatedRulesString() : QString();
+  return d ? d->toCommaSeparatedRulesString() : Utf8String();
 }
 
-QString CalendarData::toCommaSeparatedRulesString() const {
+Utf8String CalendarData::toCommaSeparatedRulesString() const {
   QString s;
   foreach (const CalendarData::Rule &r, _rules) {
     s.append(r._include ? "include" : "exclude");
@@ -176,9 +165,9 @@ QString CalendarData::toCommaSeparatedRulesString() const {
   return s;
 }
 
-QString Calendar::name() const {
+Utf8String Calendar::name() const {
   const CalendarData *d = data();
-  return d ? d->_name : QString();
+  return d ? d->_name : Utf8String{};
 }
 
 CalendarData *Calendar::data() {
@@ -203,3 +192,18 @@ QVariant CalendarData::uiData(int section, int role) const {
   }
   return {};
 }
+
+static const Utf8String _idQualifier = "calendar";
+
+static const Utf8StringList _sectionNames {
+  "id", // 0
+  "name",
+  "date_rules"
+};
+
+static const Utf8StringList _headerNames {
+  "Id", // 0
+  "Name",
+  "Date Rules"
+};
+

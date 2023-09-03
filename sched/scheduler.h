@@ -179,8 +179,8 @@ public:
 
 signals:
   void hostsResourcesAvailabilityChanged(
-      QString host, QMap<QString,qint64> resources);
-  void noticePosted(QByteArray notice, ParamSet params);
+      const Utf8String &host, const QMap<Utf8String,qint64> &resources);
+  void noticePosted(const Utf8String &notice, const ParamSet &params);
 
 private:
   void taskInstanceStoppedOrCanceled(TaskInstance instance, Executor *executor,

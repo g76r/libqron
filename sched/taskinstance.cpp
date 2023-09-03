@@ -342,9 +342,9 @@ void TaskInstance::setTarget(Host target) const {
 }
 
 static const QRegularExpression _notIdentifierRE{"[^a-zA-Z0-9_]+"};
-//static const QRegularExpression _notHeaderNameRE{"[^\\x21-\\x39\\x3b-\\x7e]+"};
+static const QRegularExpression _notHeaderNameRE{"[^\\x21-\\x39\\x3b-\\x7e]+"};
 // rfc5322 states that a header may contain any ascii printable char but : (3a)
-//static const QRegularExpression _notHeaderValueRE{"[\\0d\\0a]+"};
+static const QRegularExpression _notHeaderValueRE{"[\\0d\\0a]+"};
 
 static QString makeItAnIdentifier(QString key) {
   key.replace(_notIdentifierRE, "_");
@@ -353,14 +353,14 @@ static QString makeItAnIdentifier(QString key) {
   return key;
 }
 
-//static QString makeItAHeaderName(QString key) {
-//  if (key.endsWith(":")) // ignoring : at end of header name
-//    key.chop(1);
-//  key.replace(_notHeaderNameRE, "_");
-//  if (key[0] >= '0' && key[0] <= '9' )
-//    key.insert(0, '_');
-//  return key;
-//}
+static QString makeItAHeaderName(QString key) {
+  if (key.endsWith(":")) // ignoring : at end of header name
+    key.chop(1);
+  key.replace(_notHeaderNameRE, "_");
+  if (key[0] >= '0' && key[0] <= '9' )
+    key.insert(0, '_');
+  return key;
+}
 
 QMap<QString,QString> TaskInstance::varsAsEnv() const {
   QMap<QString,QString> env;
@@ -384,18 +384,18 @@ QMap<QString,QString> TaskInstance::varsAsEnv() const {
 //  return keys;
 //}
 
-//QMap<QString,QString> TaskInstance::varsAsHeaders() const {
-//  QMap<QString,QString> env;
-//  auto vars = task().vars();
-//  for (QString key: vars.paramKeys()) {
-//    if (key.isEmpty())
-//      continue;
-//    auto value = PercentEvaluator::eval_utf16(vars.paramRawUtf8(key),this);
-//    value.replace(_notHeaderValueRE, " ");
-//    env.insert(makeItAHeaderName(key), value);
-//  }
-//  return env;
-//}
+QMap<QString,QString> TaskInstance::varsAsHeaders() const {
+  QMap<QString,QString> env;
+  auto vars = task().vars();
+  for (QString key: vars.paramKeys()) {
+    if (key.isEmpty())
+      continue;
+    auto value = PercentEvaluator::eval_utf16(vars.paramRawUtf8(key),this);
+    value.replace(_notHeaderValueRE, " ");
+    env.insert(makeItAHeaderName(key), value);
+  }
+  return env;
+}
 
 //QStringList TaskInstance::varsAsHeadersKeys() const {
 //  QStringList keys;

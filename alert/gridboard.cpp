@@ -13,53 +13,41 @@
  */
 #include "gridboard.h"
 #include "config/configutils.h"
+#include "modelview/templatedshareduiitemdata.h"
+#include "util/regexpparamsprovider.h"
 
 #define DEFAULT_WARNING_DELAY 0 /* 0 means disabled */
 
 namespace {
 
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Label",
-  "Pattern",
-  "Dimensions",
-  "Params",
-  "Warning Delay", // 5
-  "Updates Counter",
-  "Renders Counter",
-  "Current Components Count",
-  "Current Items Count",
-  "Additional Info" // 10
-};
-
 enum GridStatus { Unknown, Ok, Long, Raised };
 
-inline QString statusToHumanReadableString(GridStatus status) {
+inline Utf8String statusToHumanReadableString(GridStatus status) {
   switch (status) {
   case Ok:
-    return QStringLiteral("ok");
+    return "ok"_u8;
   case Long:
-    return QStringLiteral("OK BUT LONG");
+    return "OK BUT LONG"_u8;
   case Raised:
-    return QStringLiteral("ALERT");
+    return "ALERT"_u8;
   case Unknown:
     ;
   }
-  return QStringLiteral("unknown");
+  return "unknown"_u8;
 }
 
-inline QString statusToHtmlHumanReadableString(GridStatus status) {
+inline Utf8String statusToHtmlHumanReadableString(GridStatus status) {
   switch (status) {
   case Ok:
-    return QStringLiteral("ok");
+    return "ok"_u8;
   case Long:
-    return QStringLiteral("<stong>OK BUT LONG</stong>");
+    return "<stong>OK BUT LONG</stong>"_u8;
   case Raised:
-    return QStringLiteral("<stong>ALERT</stong>");
+    return "<stong>ALERT</stong>"_u8;
   case Unknown:
     ;
   }
-  return QStringLiteral("unknown");
+  return "unknown"_u8;
 }
 
 class TreeItem {
@@ -99,12 +87,18 @@ public:
   }
 };
 
-class DimensionData : public SharedUiItemData {
+class DimensionData : public SharedUiItemDataBase<DimensionData> {
+public:
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+
+private:
   friend class Dimension;
-  QByteArray _id;
-  QString _rawValue, _label;
-  QByteArray id() const { return _id; }
-  QByteArray idQualifier() const { return "gridboarddimension"_ba; }
+  Utf8String _id;
+  Utf8String _rawValue, _label;
+  Utf8String id() const override { return _id; }
+  QVariant uiData(int, int) const override { return {}; }
 };
 
 class Dimension : public SharedUiItem {
@@ -129,20 +123,20 @@ public:
     if (!d)
       return PfNode();
     QString idAndValue;
-    idAndValue = d->_id+' '+d->_rawValue;
+    idAndValue = d->_id+" "+d->_rawValue;
     PfNode node("dimension"_ba, idAndValue);
     if (!d->_label.isEmpty())
       node.setAttribute("label"_ba, d->_label);
     return node;
   }
   const DimensionData *data() const { return specializedData<DimensionData>(); }
-  QString rawValue() const {
+  Utf8String rawValue() const {
     const DimensionData *d = data();
-    return d ? d->_rawValue : QString();
+    return d ? d->_rawValue : Utf8String();
   }
-  QString label() const {
+  Utf8String label() const {
     const DimensionData *d = data();
-    return d ? (d->_label.isEmpty() ? d->_id : d->_label) : QString();
+    return d ? (d->_label.isEmpty() ? d->_id : d->_label) : Utf8String();
   }
 };
 
@@ -153,13 +147,13 @@ Q_DECLARE_TYPEINFO(Dimension, Q_MOVABLE_TYPE);
 static void mergeComponents(
     TreeItem *target, TreeItem *source,
     QList<QSharedPointer<TreeItem>> *components,
-    QList<QHash<QString,TreeItem*>> *indexes) {
+    QList<QHash<Utf8String,TreeItem*>> *indexes) {
   // recursive merge tree
   target->merge(source);
   // replace references in indexes
   for (int i = 0; i < indexes->size(); ++i) {
-    QHash<QString,TreeItem*> &index = (*indexes)[i];
-    foreach (const QString &dimensionValue, index.keys())
+    QHash<Utf8String,TreeItem*> &index = (*indexes)[i];
+    for (auto dimensionValue: index.keys())
       if (index.value(dimensionValue) == source)
         index.insert(dimensionValue, target);
   }
@@ -171,10 +165,13 @@ static void mergeComponents(
     }
 }
 
-class GridboardData : public SharedUiItemData {
+class GridboardData : public SharedUiItemDataBase<GridboardData> {
 public:
-  QByteArray _id;
-  QString _label, _pattern, _info;
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  Utf8String _id;
+  Utf8String _label, _pattern, _info;
   QRegularExpression _patternRegexp;
   QList<Dimension> _dimensions;
   ParamSet _params;
@@ -203,23 +200,14 @@ public:
   /** Forest of connected components. */
   QList<QSharedPointer<TreeItem>> _dataComponents;
   /** Indexes from dimension × dimension value to component root. */
-  QList<QHash<QString,TreeItem*>> _dataIndexesByDimension;
-  QStringList _commentsList;
+  QList<QHash<Utf8String,TreeItem*>> _dataIndexesByDimension;
+  Utf8StringList _commentsList;
   qint64 _updatesCounter, _currentComponentsCount, _currentItemsCount;
   mutable QAtomicInteger<int> _rendersCounter;
   GridboardData() : _warningDelay(DEFAULT_WARNING_DELAY),
     _updatesCounter(0), _currentComponentsCount(0), _currentItemsCount(0) { }
-  ~GridboardData() { }
-  QByteArray id() const { return _id; }
-  QByteArray idQualifier() const { return "gridboard"_ba; }
-  int uiSectionCount() const {
-    return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const {
-    return role == Qt::DisplayRole && section >= 0
-        && (unsigned)section < sizeof _uiHeaderNames
-        ? _uiHeaderNames[section] : QVariant();
-  }
+  Utf8String id() const override { return _id; }
+  QVariant uiData(int section, int role) const override;
 };
 
 Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
@@ -268,7 +256,7 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
     return;
   }
   for (int i = 0; i < d->_dimensions.size(); ++i)
-    d->_dataIndexesByDimension.append(QHash<QString,TreeItem*>());
+    d->_dataIndexesByDimension.append(QHash<Utf8String,TreeItem*>());
   d->_warningDelay = node.doubleAttribute(
         "warningdelay"_ba, DEFAULT_WARNING_DELAY/1e3)*1e3;
   d->_params.setParent(parentParams);
@@ -339,13 +327,14 @@ void Gridboard::update(QRegularExpressionMatch match, Alert alert) {
   ++d->_updatesCounter;
   // compute dimension values and identify possible roots
   QSet<TreeItem*> componentsRootsSet;
-  RegexpParamsProvider rempp(match);
+  auto rempp = RegexpParamsProvider(match);
+  auto ppm = ParamsProviderMerger(&rempp)(&d->_params);
   QStringList dimensionValues;
   for (int i = 0; i < d->_dimensions.size(); ++i) {
-    QString dimensionValue =
-        d->_params.evaluate(d->_dimensions[i].rawValue(), &rempp);
+    auto dimensionValue =
+        PercentEvaluator::eval_utf8(d->_dimensions[i].rawValue(), &ppm);
     if (dimensionValue.isEmpty())
-      dimensionValue = u"(none)"_s;
+      dimensionValue = "(none)"_u8;
     dimensionValues.append(dimensionValue);
     TreeItem *componentRoot =
         d->_dataIndexesByDimension[i].value(dimensionValue);
@@ -399,9 +388,10 @@ void Gridboard::detach() {
   SharedUiItem::detachedData<GridboardData>();
 }
 
-inline static QString formatted(QString text, QString key, ParamSet params) {
-  Utf8StringList slpp(text);
-  return params.value(key, text, true, &slpp);
+inline static Utf8String formatted(
+    const Utf8String &text, const Utf8String &key, const ParamSet &params) {
+  Utf8StringList slpp({text});
+  return params.paramUtf8(key, text, &slpp);
 }
 
 QString Gridboard::toHtml() const {
@@ -411,23 +401,19 @@ QString Gridboard::toHtml() const {
   d->_rendersCounter.fetchAndAddOrdered(1);
   if (d->_dataComponents.isEmpty())
     return QString("No data so far");
-  QString tableClass = d->_params.value(
-        QStringLiteral("gridboard.tableclass"),
-        QStringLiteral("table table-condensed table-hover"));
-  QString divClass = d->_params.value(
-        QStringLiteral("gridboard.divclass"),
-        QStringLiteral("row gridboard-status"));
-  QString componentClass = d->_params.value(
-        QStringLiteral("gridboard.componentclass"),
-        QStringLiteral("gridboard-component"));
-  QString tdClassOk = d->_params.value(QStringLiteral("gridboard.tdclass.ok"));
-  QString tdClassWarning = d->_params.value(
-        QStringLiteral("gridboard.tdclass.warning"), QStringLiteral("warning"));
-  QString tdClassAlerted = d->_params.value(
-        QStringLiteral("gridboard.tdclass.alerted"), QStringLiteral("danger"));
-  QString tdClassUnknown = d->_params.value(
-        QStringLiteral("gridboard.tdclass.unknown"));
-  QString s;
+  auto tableClass = d->_params.paramUtf8("gridboard.tableclass",
+                                         "table table-condensed table-hover");
+  auto divClass = d->_params.paramUtf8("gridboard.divclass",
+                                       "row gridboard-status");
+  auto componentClass = d->_params.paramUtf8("gridboard.componentclass",
+                                             "gridboard-component");
+  auto tdClassOk = d->_params.paramUtf8("gridboard.tdclass.ok");
+  auto tdClassWarning = d->_params.paramUtf8("gridboard.tdclass.warning",
+                                             "warning");
+  auto tdClassAlerted = d->_params.paramUtf8("gridboard.tdclass.alerted",
+                                             "danger");
+  auto tdClassUnknown = d->_params.paramUtf8("gridboard.tdclass.unknown");
+  Utf8String s;
   QList<QSharedPointer<TreeItem>> componentRoots = d->_dataComponents;
   // sort components in the order of their first child
   std::sort(componentRoots.begin(), componentRoots.end(),
@@ -440,24 +426,23 @@ QString Gridboard::toHtml() const {
     return result;
   });
   s = s+"<div class=\""+divClass+"\">\n";
-  foreach (QSharedPointer<TreeItem> componentRoot, componentRoots) {
+  for (const QSharedPointer<TreeItem> &componentRoot: componentRoots) {
     QDateTime now = QDateTime::currentDateTime();
-    QHash<QString,QHash<QString, TreeItem*> > matrix;
-    QStringList rows, columns;
+    QHash<Utf8String,QHash<Utf8String,const TreeItem*>> matrix;
+    Utf8StringList rows, columns;
     switch (d->_dimensions.size()) {
     case 0:
       return "Gridboard with 0 dimensions.";
     case 2: {
-      QSet<QString> columnsSet;
-      foreach (TreeItem *treeItem1, componentRoot->_children) {
+      Utf8StringSet columnsSet;
+      for (const TreeItem *treeItem1: componentRoot->_children) {
         rows.append(treeItem1->_name);
-        foreach (TreeItem *treeItem2, treeItem1->_children) {
+        for (const TreeItem *treeItem2: treeItem1->_children) {
           matrix[treeItem1->_name][treeItem2->_name] = treeItem2;
           columnsSet.insert(treeItem2->_name);
         }
       }
-      columns = columnsSet.values();
-      std::sort(columns.begin(), columns.end());
+      columns = columnsSet.toSortedList();
       break;
     }
     default:
@@ -466,16 +451,14 @@ QString Gridboard::toHtml() const {
     }
     s = s+"<div class=\""+componentClass+"\"><table class=\""+tableClass
         +"\" id=\"gridboard."+d->_id+"\"><tr><th>&nbsp;</th>";
-    foreach (const QString &column, columns)
+    for (auto column: columns)
       s = s+"<th>"
-          +formatted(column, QStringLiteral("gridboard.columnformat"),
-                     d->_params)+"</th>";
-    foreach (const QString &row, rows) {
+          +formatted(column, "gridboard.columnformat", d->_params)+"</th>";
+    for (auto row: rows) {
       s = s+"</tr><tr><th>"
-          +formatted(row, QStringLiteral("gridboard.rowformat"), d->_params)
-          +"</th>";
-      foreach (const QString &column, columns) {
-        TreeItem *item = matrix[row][column];
+          +formatted(row, "gridboard.rowformat", d->_params)+"</th>";
+      for (auto column: columns) {
+        const TreeItem *item = matrix[row][column];
         GridStatus status = item ? item->_status : Unknown;
         if (status == Ok && item && d->_warningDelay &&
             item->_timestamp.msecsTo(now) > d->_warningDelay)
@@ -497,8 +480,8 @@ QString Gridboard::toHtml() const {
         }
         s = s+"<td class=\""+tdClass+"\">"
             +(item ? statusToHtmlHumanReadableString(status)
-                     +"<br/>"+item->_timestamp.toString(
-                       u"yyyy-MM-dd hh:mm:ss,zzz"_s)
+                     +"<br/>"+Utf8String(
+                       item->_timestamp.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s))
                    : "")+"</td>";
       }
     }
@@ -522,10 +505,9 @@ QVariant GridboardData::uiData(int section, int role) const {
     case 2:
       return _pattern;
     case 3: {
-      // LATER optimize
-      QStringList list;
-      foreach (const Dimension &dimension, _dimensions) {
-        list << dimension.id()+"="+dimension.rawValue();
+      Utf8StringList list;
+      for (auto dimension: _dimensions) {
+        list << dimension.id() + "=" + dimension.rawValue();
       }
       return list.join(' ');
     }
@@ -550,3 +532,39 @@ QVariant GridboardData::uiData(int section, int role) const {
   }
   return QVariant();
 }
+
+const Utf8String DimensionData::_idQualifier = "gridboarddimension";
+
+const Utf8StringList DimensionData::_sectionNames;
+
+const Utf8StringList DimensionData::_headerNames;
+
+const Utf8String GridboardData::_idQualifier = "gridboard";
+
+const Utf8StringList GridboardData::_sectionNames {
+  "id", // 0
+  "label",
+  "pattern",
+  "dimensions",
+  "params",
+  "warning_delay", // 5
+  "updates_count",
+  "renders_count",
+  "components_count",
+  "items_count",
+  "additional_info" // 10
+};
+
+const Utf8StringList GridboardData::_headerNames {
+  "Id", // 0
+  "Label",
+  "Pattern",
+  "Dimensions",
+  "Params",
+  "Warning Delay", // 5
+  "Updates Count",
+  "Renders Count",
+  "Components Count",
+  "Items Count",
+  "Additional Info" // 10
+};

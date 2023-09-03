@@ -25,7 +25,7 @@ static QString humanReadableActionEdgeLabel(
     const EventSubscription &sub, const Action &action) {
   QString label = sub.eventName();
   ParamSet params = action.params();
-  QStringList keys = action.params().keys().values();
+  auto keys = action.params().paramKeys().toSortedList();
   if (!keys.isEmpty())
     label += " ("+keys.join(',')+")";
   QString filter = sub.filter().pattern();

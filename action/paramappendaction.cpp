@@ -25,20 +25,20 @@ public:
   ParamAppendActionData(QStringList twoStringsList)
     : ParamAppendActionData(twoStringsList.value(0),
                             twoStringsList.value(1)) { }
-  QString toString() const {
+  Utf8String toString() const override {
     return "paramappend{ "+_key+" += "+_rawvalue+" }";
   }
-  QString actionType() const {
-    return QStringLiteral("paramappend");
+  Utf8String actionType() const override {
+    return "paramappend"_u8;
   }
   void trigger(EventSubscription, ParamsProviderMerger *context,
-               TaskInstance instance) const {
+               TaskInstance instance) const override {
     if (instance.isNull())
       return;
-    QString value = ParamSet().evaluate(_rawvalue, context);
+    auto value = PercentEvaluator::eval_utf8(_rawvalue, context);
     instance.paramAppend(_key, value);
   }
-  PfNode toPfNode() const{
+  PfNode toPfNode() const override {
     PfNode node(actionType(), _key+" "+_rawvalue);
     return node;
   }

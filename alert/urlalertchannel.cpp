@@ -30,29 +30,26 @@ void UrlAlertChannel::doNotifyAlert(Alert alert) {
     connect(_nam, &QNetworkAccessManager::finished,
             this, &UrlAlertChannel::replyFinished);
   }
-  QString address = alert.subscription().address(alert), message;
+  Utf8String address = alert.subscription().address(alert), message;
   ParamSet params = alert.subscription().params();
   switch(alert.status()) {
   case Alert::Nonexistent:
   case Alert::Raised:
     if (!alert.subscription().notifyEmit())
       return;
-    if (params.contains(QStringLiteral("emitaddress")))
-      address = params.rawValue(QStringLiteral("emitaddress"));
-    if (params.contains(QStringLiteral("emitmethod")))
-      params.setValue(QStringLiteral("method"),
-                      params.rawValue(QStringLiteral("emitmethod")));
+    if (params.paramContains("emitaddress"))
+      address = params.paramRawUtf8("emitaddress");
+    if (params.paramContains("emitmethod"))
+      params.setValue("method",params.paramRawUtf8("emitmethod"));
     message = alert.subscription().emitMessage(alert);
-
     break;
   case Alert::Canceled:
     if (!alert.subscription().notifyCancel())
       return;
-    if (params.contains(QStringLiteral("canceladdress")))
-      address = params.rawValue(QStringLiteral("canceladdress"));
-    if (params.contains(QStringLiteral("cancelmethod")))
-      params.setValue(QStringLiteral("method"),
-                      params.rawValue(QStringLiteral("cancelmethod")));
+    if (params.paramContains("canceladdress"))
+      address = params.paramRawUtf8("canceladdress");
+    if (params.paramContains("cancelmethod"))
+      params.setValue("method", params.paramRawUtf8("cancelmethod"));
     message = alert.subscription().cancelMessage(alert);
     break;
   case Alert::Rising:
@@ -61,13 +58,12 @@ void UrlAlertChannel::doNotifyAlert(Alert alert) {
     ; // should never happen
   }
   // LATER support for binary messages
-  AlertPseudoParamsProvider ppp = alert.pseudoParams();
-  if (address.startsWith("udp:", Qt::CaseInsensitive)) {
-    ParametrizedUdpSender sender(address, params, &ppp);
-    sender.performRequest(message, &ppp);
+  if (address.startsWith("udp:")) {
+    ParametrizedUdpSender sender(address, params, &alert);
+    sender.performRequest(message, &alert);
   } else {
-    ParametrizedNetworkRequest request(address, params, &ppp);
-    request.performRequest(_nam, message, &ppp);
+    ParametrizedNetworkRequest request(address, params, &alert);
+    request.performRequest(_nam, message, &alert);
     /*if (reply) {
     QObject::connect(reply, (void (QNetworkReply::*)(QNetworkReply::NetworkError))&QNetworkReply::error,
                      [=](QNetworkReply::NetworkError error){

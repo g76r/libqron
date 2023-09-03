@@ -32,7 +32,7 @@ class GridboardThread : public QThread {
 public:
   GridboardThread(Alerter *alerter) : _alerter(alerter), _buffer(10),
   _gridboardsEvaluationsCounter(0), _gridboardsUpdatesCounter(0) { }
-  void run() {
+  void run() override {
     while (!isInterruptionRequested()) {
       Alert alert;
       if (_buffer.tryGet(&alert, 500)) {

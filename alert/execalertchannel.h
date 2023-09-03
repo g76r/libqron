@@ -24,7 +24,7 @@ public:
   ExecAlertChannel(Alerter *alerter);
 
 protected:
-  void doNotifyAlert(Alert alert);
+  void doNotifyAlert(Alert alert) override;
 };
 
 #endif // EXECALERTCHANNEL_H

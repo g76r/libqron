@@ -18,6 +18,7 @@
 #include "sysutil/parametrizednetworkrequest.h"
 #include "scheduler.h"
 #include "condition/disjunctioncondition.h"
+#include <QProcess>
 
 #define PROCESS_OUTPUT_CHUNK_SIZE 16384
 #define DEFAULT_STATUS_POLLING_INTERVAL 5000
@@ -33,7 +34,7 @@ static int staticInit() {
 }
 Q_CONSTRUCTOR_FUNCTION(staticInit)
 
-static inline QByteArray dockerNameCleanedUp(QByteArray input) {
+static inline Utf8String dockerNameCleanedUp(Utf8String input) {
   return input.isEmpty() || ::isalnum(input.at(0)) ? input : input.sliced(1);
 }
 
@@ -115,13 +116,11 @@ void Executor::executeOneTry() {
 }
 
 void Executor::localMean() {
-  const auto ppp = _instance.pseudoParams();
   const auto params = _instance.params();
-  QString shell = params
-      .value(QStringLiteral("command.shell"), _localDefaultShell);
+  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
   QStringList cmdline;
-  cmdline << shell << "-c"
-          << params.evaluate(_instance.task().command(), &ppp);
+  cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
+               _instance.task().command(), &_instance);
   Log::info(_instance.task().id(), _instance.idAsLong())
       << "exact command line to be executed (using shell " << shell << "): "
       << cmdline.value(2);
@@ -130,10 +129,8 @@ void Executor::localMean() {
 }
 
 void Executor::backgroundStart() {
-  const auto ppp = _instance.pseudoParams();
   const auto params = _instance.params();
-  QString shell = params
-                    .value(QStringLiteral("command.shell"), _localDefaultShell);
+  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
   if (_instance.task().statuscommand().isEmpty()) {
     _instance.consumeAllTries();
     Log::error(_instance.task().id(), _instance.idAsLong())
@@ -143,16 +140,17 @@ void Executor::backgroundStart() {
     return;
   }
   QStringList cmdline;
-  cmdline << shell << "-c"
-          << params.evaluate(_instance.task().command(), &ppp);
+  cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
+               _instance.task().command(), &_instance);
   Log::info(_instance.task().id(), _instance.idAsLong())
     << "exact command line to be executed (using shell " << shell << "): "
     << cmdline.value(2);
   if (!_instance.task().abortcommand().isEmpty())
     _instance.setAbortable();
   _backgroundStatus = Starting;
-  int pollingInterval = params.valueAsInt("command.status.interval",
-                                          DEFAULT_STATUS_POLLING_INTERVAL);
+  int pollingInterval =
+      params.paramNumber<int>("command.status.interval",
+                              DEFAULT_STATUS_POLLING_INTERVAL);
   _statusPollingTimer->start(pollingInterval);
   execProcess(cmdline, true);
   if (_process)
@@ -167,13 +165,11 @@ void Executor::pollStatus() {
     case Started:
       ;
   }
-  const auto ppp = _instance.pseudoParams();
   const auto params = _instance.params();
-  QString shell = params
-                    .value(QStringLiteral("command.shell"), _localDefaultShell);
+  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
   QStringList cmdline;
-  cmdline << shell << "-c"
-          << params.evaluate(_instance.task().statuscommand(), &ppp);
+  cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
+               _instance.task().statuscommand(), &_instance);
   execProcess(cmdline, true);
   if (_process)
     QTimer::singleShot(10000, _process, &QProcess::terminate);
@@ -192,13 +188,11 @@ void Executor::backgroundAbort() {
     case Started:
       break;
   }
-  const auto ppp = _instance.pseudoParams();
   const auto params = _instance.params();
-  QString shell = params
-                    .value(QStringLiteral("command.shell"), _localDefaultShell);
+  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
   QStringList cmdline;
-  cmdline << shell << "-c"
-          << params.evaluate(_instance.task().abortcommand(), &ppp);
+  cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
+               _instance.task().abortcommand(), &_instance);
   _backgroundStatus = Aborting;
   execProcess(cmdline, true);
   if (_process)
@@ -207,15 +201,14 @@ void Executor::backgroundAbort() {
 
 void Executor::sshMean() {
   QStringList cmdline, sshCmdline;
-  const auto ppp = _instance.pseudoParams();
   const auto params = _instance.params();
-  QString username = params.value("ssh.username");
-  qlonglong port = params.valueAsLong("ssh.port");
-  QString ignoreknownhosts = params.value("ssh.ignoreknownhosts", "true");
-  QString identity = params.value("ssh.identity");
-  QStringList options = params.valueAsStrings("ssh.options");
-  bool disablepty = params.valueAsBool("ssh.disablepty", false);
-  QString shell = params.value(QStringLiteral("command.shell"));
+  const auto username = params.paramUtf16("ssh.username");
+  const auto port = params.paramNumber<int>("ssh.port", -1);
+  const auto ignoreknownhosts = params.paramBool("ssh.ignoreknownhosts", true);
+  const auto identity = params.paramUtf16("ssh.identity");
+  const auto options = params.paramUtf16List("ssh.options");
+  const auto disablepty = params.paramBool("ssh.disablepty", false);
+  const auto shell = params.paramUtf16("command.shell");
   sshCmdline << "ssh" << "-oLogLevel=ERROR" << "-oEscapeChar=none"
              << "-oServerAliveInterval=10" << "-oServerAliveCountMax=3"
              << "-oIdentitiesOnly=yes" << "-oKbdInteractiveAuthentication=no"
@@ -225,7 +218,7 @@ void Executor::sshMean() {
     sshCmdline << "-t" << "-t";
     _instance.setAbortable();
   }
-  if (ignoreknownhosts == "true")
+  if (ignoreknownhosts)
     sshCmdline << "-oUserKnownHostsFile=/dev/null"
                << "-oGlobalKnownHostsFile=/dev/null"
                << "-oStrictHostKeyChecking=no";
@@ -233,7 +226,7 @@ void Executor::sshMean() {
     sshCmdline << "-oPort="+QString::number(port);
   if (!identity.isEmpty())
     sshCmdline << "-oIdentityFile=" + identity;
-  foreach (QString option, options)
+  for (auto option: options)
     sshCmdline << "-o" + option;
   if (!username.isEmpty())
     sshCmdline << "-oUser=" + username;
@@ -247,11 +240,13 @@ void Executor::sshMean() {
     // must quote command line because remote user default shell will parse and
     // interpretate it and we want to keep it as is in -c argument to choosen
     // shell
-    cmdline << '\'' + params.evaluate(
-                 _instance.task().command(), &ppp).replace("'", "'\\''") + '\'';
+    cmdline << '\'' + PercentEvaluator::eval_utf16(
+                 _instance.task().command(), &_instance).replace("'", "'\\''")
+               + '\'';
   } else {
     // let remote user default shell interpretate command line
-    cmdline << params.evaluate(_instance.task().command(), &ppp);
+    cmdline << PercentEvaluator::eval_utf16(
+                 _instance.task().command(), &_instance);
   }
   Log::info(_instance.task().id(), _instance.idAsLong())
       << "exact command line to be executed (through ssh on host "
@@ -261,33 +256,29 @@ void Executor::sshMean() {
 }
 
 void Executor::dockerParam(
-    QString *cmdline, QString paramName, const ParamsProvider *context,
-    ParamSet instanceParams, QString defaultValue) const {
-  auto value = instanceParams.value(
-        "docker."+paramName, defaultValue, true, context);
+    QString *cmdline, const Utf8String &key, const ParamsProvider *context,
+    const ParamSet &params, const QString &def) const {
+  auto value = params.paramUtf16("docker."+key, def, context);
   if (!value.isEmpty())
-    *cmdline += "--"+paramName+" '"+value.remove('\'')+"' ";
+    *cmdline += "--"+key+" '"+value.remove('\'')+"' ";
 }
 
 void Executor::dockerArrayParam(
-    QString *cmdline, QString paramName, const ParamsProvider *context,
-    ParamSet instanceParams, QString defaultValue) const {
-  auto values = instanceParams.valueAsStrings(
-        "docker."+paramName, defaultValue, true, context);
+    QString *cmdline, const Utf8String &key, const ParamsProvider *context,
+    const ParamSet &params, const QString &def) const {
+  auto values = params.paramUtf16List("docker."+key, def, context);
   for (auto value: values)
-    *cmdline += "--"+paramName+" '"+value.remove('\'')+"' ";
+    *cmdline += "--"+key+" '"+value.remove('\'')+"' ";
 }
 
 void Executor::dockerMean() {
   const auto params = _instance.params();
-  QString shell = params.value(QStringLiteral("command.shell"),
-                               _localDefaultShell);
+  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
   QString cmdline;
-  const auto ppp = _instance.pseudoParams();
-  const auto image = params.value("docker.image", &ppp).remove('\'');
-  const bool shouldPull = params.valueAsBool("docker.pull", true);
-  const bool shouldInit = params.valueAsBool("docker.init", true);
-  const bool shouldRm = params.valueAsBool("docker.rm", true);
+  const auto image = params.paramUtf16("docker.image", &_instance).remove('\'');
+  const bool shouldPull = params.paramBool("docker.pull", true, &_instance);
+  const bool shouldInit = params.paramBool("docker.init", true, &_instance);
+  const bool shouldRm = params.paramBool("docker.rm", true, &_instance);
   if (image.isEmpty()) {
     _instance.consumeAllTries();
     Log::error(_instance.task().id(), _instance.idAsLong())
@@ -306,38 +297,38 @@ void Executor::dockerMean() {
   const auto vars = _instance.varsAsEnv();
   for (auto key: vars.keys())
     cmdline += "-e " + key + "='" + vars.value(key).remove('\'') + "' ";
-  dockerParam(&cmdline, "name", &ppp, params,
+  dockerParam(&cmdline, "name", &_instance, params,
               dockerNameCleanedUp(_instance.task().id())+"_"+_instance.id()+"_"
-              +QByteArray::number(_instance.currentTry()));
-  dockerArrayParam(&cmdline, "mount", &ppp, params);
-  dockerArrayParam(&cmdline, "tmpfs", &ppp, params);
-  dockerArrayParam(&cmdline, "volume", &ppp, params);
-  dockerArrayParam(&cmdline, "volumes-from", &ppp, params);
-  dockerArrayParam(&cmdline, "publish", &ppp, params);
-  dockerArrayParam(&cmdline, "expose", &ppp, params);
-  dockerArrayParam(&cmdline, "label", &ppp, params);
-  dockerParam(&cmdline, "ipc", &ppp, params);
-  dockerParam(&cmdline, "network", &ppp, params);
-  dockerParam(&cmdline, "pid", &ppp, params);
-  dockerParam(&cmdline, "memory", &ppp, params, "512m");
-  dockerParam(&cmdline, "cpus", &ppp, params, "1.0");
+              +Utf8String::number(_instance.currentTry()));
+  dockerArrayParam(&cmdline, "mount", &_instance, params);
+  dockerArrayParam(&cmdline, "tmpfs", &_instance, params);
+  dockerArrayParam(&cmdline, "volume", &_instance, params);
+  dockerArrayParam(&cmdline, "volumes-from", &_instance, params);
+  dockerArrayParam(&cmdline, "publish", &_instance, params);
+  dockerArrayParam(&cmdline, "expose", &_instance, params);
+  dockerArrayParam(&cmdline, "label", &_instance, params);
+  dockerParam(&cmdline, "ipc", &_instance, params);
+  dockerParam(&cmdline, "network", &_instance, params);
+  dockerParam(&cmdline, "pid", &_instance, params);
+  dockerParam(&cmdline, "memory", &_instance, params, "512m");
+  dockerParam(&cmdline, "cpus", &_instance, params, "1.0");
   cmdline += "--ulimit core=0 --ulimit nproc=1024 --ulimit nofile=1024 ";
-  dockerArrayParam(&cmdline, "ulimit", &ppp, params);
-  dockerArrayParam(&cmdline, "device-read-bps", &ppp, params);
-  dockerArrayParam(&cmdline, "device-read-iops", &ppp, params);
-  dockerArrayParam(&cmdline, "device-write-bps", &ppp, params);
-  dockerArrayParam(&cmdline, "device-write-iops", &ppp, params);
-  dockerParam(&cmdline, "hostname", &ppp, params);
-  dockerArrayParam(&cmdline, "add-host", &ppp, params);
-  dockerArrayParam(&cmdline, "dns", &ppp, params);
-  dockerArrayParam(&cmdline, "dns-search", &ppp, params);
-  dockerArrayParam(&cmdline, "dns-option", &ppp, params);
-  dockerParam(&cmdline, "user", &ppp, params);
-  dockerArrayParam(&cmdline, "group-add", &ppp, params);
-  dockerParam(&cmdline, "workdir", &ppp, params);
-  dockerParam(&cmdline, "entrypoint", &ppp, params);
+  dockerArrayParam(&cmdline, "ulimit", &_instance, params);
+  dockerArrayParam(&cmdline, "device-read-bps", &_instance, params);
+  dockerArrayParam(&cmdline, "device-read-iops", &_instance, params);
+  dockerArrayParam(&cmdline, "device-write-bps", &_instance, params);
+  dockerArrayParam(&cmdline, "device-write-iops", &_instance, params);
+  dockerParam(&cmdline, "hostname", &_instance, params);
+  dockerArrayParam(&cmdline, "add-host", &_instance, params);
+  dockerArrayParam(&cmdline, "dns", &_instance, params);
+  dockerArrayParam(&cmdline, "dns-search", &_instance, params);
+  dockerArrayParam(&cmdline, "dns-option", &_instance, params);
+  dockerParam(&cmdline, "user", &_instance, params);
+  dockerArrayParam(&cmdline, "group-add", &_instance, params);
+  dockerParam(&cmdline, "workdir", &_instance, params);
+  dockerParam(&cmdline, "entrypoint", &_instance, params);
   cmdline += "'" + image + "' "
-      + params.evaluate(_instance.task().command(), &ppp);
+      + PercentEvaluator::eval_utf16(_instance.task().command(), &_instance);
   _instance.setAbortable();
   execProcess({ shell, "-c", cmdline }, false);
 }
@@ -413,9 +404,10 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
     case Task::Ssh:
     case Task::Docker:
       success = _instance.task().params()
-                  .valueAsBool("return.code.default.success", success);
+                  .paramBool("return.code.default.success", success);
       success = _instance.task().params()
-                  .valueAsBool("return.code."+QString::number(exitCode)+".success",success);
+                  .paramBool("return.code."+Utf8String::number(exitCode)
+                             +".success", success);
       Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
                _instance.idAsLong())
         << "task '" << _instance.task().id() << "' stopped "
@@ -456,7 +448,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
             break;
           stopping = true;
           success = (exitCode == 1); // 1: succeeded 2+: failed
-          exitCode = _instance.params().valueAsInt("return.code", -1);
+          exitCode = _instance.params().paramNumber<int>("return.code", -1);
           Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
                    _instance.idAsLong())
             << "task '" << _instance.task().id() << "' stopped "
@@ -514,9 +506,7 @@ void Executor::processProcessOutput(bool isStderr) {
     while (!_process->read(PROCESS_OUTPUT_CHUNK_SIZE).isEmpty());
     return;
   }
-  const auto params = _instance.params();
-  const auto ppp = _instance.pseudoParams();
-  auto ppm = ParamsProviderMerger(params)(&ppp);
+  auto ppm = ParamsProviderMerger(&_instance);
   while (!(ba = _process->read(PROCESS_OUTPUT_CHUNK_SIZE)).isEmpty()) {
     buf.append(ba);
     int i;
@@ -576,7 +566,7 @@ void Executor::readyReadStandardOutput() {
   bool isStderr = false;
   if (_instance.task().mergeStderrIntoStdout()
       || (_instance.task().mean() == Task::Ssh
-          && _instance.params().value("ssh.disablepty") != "true"))
+          && !_instance.params().paramBool("ssh.disablepty", false)))
     isStderr = true;
   processProcessOutput(isStderr);
 }
@@ -586,10 +576,9 @@ void Executor::httpMean() {
   if (command.size() && command.at(0) == '/')
     command = command.mid(1);
   QString url = "http://"+_instance.target().hostname()+"/"+command;
-  const auto ppp = _instance.pseudoParams();
   const auto params = _instance.params();
   ParametrizedNetworkRequest networkRequest(
-        url, params, &ppp, _instance.task().id(), _instance.idAsLong());
+        url, params, &_instance, _instance.task().id(), _instance.idAsLong());
   const auto vars = _instance.varsAsHeaders();
   for (auto key: vars.keys())
     networkRequest.setRawHeader(key.toLatin1(), vars.value(key).toUtf8());
@@ -597,7 +586,7 @@ void Executor::httpMean() {
   if (networkRequest.url().isValid()) {
     _instance.setAbortable();
     emit taskInstanceStarted(_instance);
-    _reply = networkRequest.performRequest(_nam, QString(), &ppp);
+    _reply = networkRequest.performRequest(_nam, QString(), &_instance);
     if (_reply) {
       // note that the apparent critical window between QNAM::get/put/post()
       // and connection to reply signals is not actually critical since
@@ -637,8 +626,9 @@ void Executor::getReplyContent(QNetworkReply *reply, QString *replyContent,
   Q_ASSERT(replyContent);
   if (!replyContent->isNull())
     return;
-  int maxsize = _instance.task().params().valueAsInt(maxsizeKey, 4096);
-  int maxwait = (int)_instance.task().params().valueAsDouble(maxwaitKey, 5.0)*1000;
+  int maxsize = _instance.task().params().paramNumber<int>(maxsizeKey, 4096);
+  int maxwait = (int)(_instance.task().params()
+                      .paramNumber<double>(maxwaitKey, 5.0)*1000);
   qint64 now = QDateTime::currentMSecsSinceEpoch();
   qint64 deadline = now+maxwait;
   while (reply->bytesAvailable() < maxsize && now < deadline) {
@@ -682,12 +672,13 @@ void Executor::replyHasFinished(QNetworkReply *reply,
   if (status > 0) {
     success =  status >= 200 && status <= 299;
     success = _instance.task().params()
-        .valueAsBool(QStringLiteral("return.code.default.success"), success);
+        .paramBool("return.code.default.success", success);
     success = _instance.task().params()
-        .valueAsBool("return.code."+QString::number(status)+".success",success);
+        .paramBool("return.code."+Utf8String::number(status)
+                   +".success", success);
     if (success) {
-      QString replyValidationPattern = _instance.task().params().value(
-            QStringLiteral("reply.validation.pattern"));
+      QString replyValidationPattern =
+          _instance.task().params().paramUtf16("reply.validation.pattern");
       if (!replyValidationPattern.isEmpty()) {
         QRegularExpression re(replyValidationPattern); // LATER cache
         if (!re.isValid()) {
@@ -713,7 +704,7 @@ void Executor::replyHasFinished(QNetworkReply *reply,
     }
   }
   if (!success || _instance.task().params()
-      .valueAsBool(QStringLiteral("log.reply.onsuccess"), false)) {
+      .paramBool("log.reply.onsuccess", false)) {
     getReplyContent(reply, &replyContent, QStringLiteral("log.reply.maxsize"),
                     QStringLiteral("log.reply.maxwait"));
     Log::info(taskId, _instance.idAsLong())
@@ -735,22 +726,19 @@ void Executor::replyHasFinished(QNetworkReply *reply,
 
 void Executor::scatterMean() {
   const QString command = _instance.task().command();
-  const auto ppp = _instance.pseudoParams();
   const auto params = _instance.params();
   const auto vars = _instance.task().vars();
-  auto ppm = ParamsProviderMerger(params)(&ppp);
-  const auto inputs = params.value("scatter.input"_ba, &ppm).split(_whitespace);
-  const auto regexp = QRegularExpression(
-        params.value("scatter.regexp"_ba, ".*"_ba));
-  const auto tiiparam = params.rawValue(
-        "scatter.tiiparam"_ba, "scatter_children_tii_"+_instance.id())
+  const auto inputs = params.paramUtf8List("scatter.input", &_instance);
+  const QRegularExpression regexp(params.paramUtf16("scatter.regexp", ".*"));
+  const auto tiiparam = params.paramRawUtf8(
+        "scatter.tiiparam", "scatter_children_tii_"+_instance.id())
       .trimmed();
-  const auto force = params.valueAsBool("scatter.force"_ba, false, true, &ppm);
-  const auto lone = params.valueAsBool("scatter.lone"_ba, false, true, &ppm);
-  const auto onlast = params.value("scatter.onlast"_ba, &ppm);
-  const auto onlast_condition = params.value(
-        "scatter.onlast.condition"_ba, "allfinished"_ba, &ppm);
-  // LATER const auto mean = params.value("scatter.mean", "plantask", &ppm);
+  const auto force = params.paramBool("scatter.force", false, &_instance);
+  const auto lone = params.paramBool("scatter.lone", false, &_instance);
+  const auto onlast = params.paramUtf8("scatter.onlast", &_instance);
+  const auto onlast_condition = params.paramUtf8(
+        "scatter.onlast.condition", "allfinished", &_instance);
+  // LATER const auto mean = params.value("scatter.mean", "plantask", &_instance);
   // LATER queuewhen ?
   TaskInstanceList instances;
 
@@ -758,21 +746,21 @@ void Executor::scatterMean() {
   int rank = -1;
   for (auto input: inputs) {
     ++rank;
-    const auto ppmr = ParamsProviderMergerRestorer(ppm);
     const auto match = regexp.match(input);
     const auto rpp = RegexpParamsProvider(match);
+    auto ppm = ParamsProviderMerger(&_instance);
     if (match.hasMatch())
       ppm.prepend(&rpp);
     else
       ppm.overrideParamValue("0", input); // %0 will be available anyway
-    auto taskid = ParamSet().evaluate(command, &ppm).toUtf8();
+    auto taskid = PercentEvaluator::eval_utf8(command, &ppm);
     const auto idIfLocalToGroup = _instance.task().taskGroup().id()+"."+taskid;
     if (_scheduler->taskExists(idIfLocalToGroup))
       taskid = idIfLocalToGroup;
     ParamSet overridingParams;
-    for (auto key: vars.keys()) {
-      auto value = ParamSet().evaluate(vars.rawValue(key), &ppm);
-      overridingParams.setValue(key, ParamSet::escape(value));
+    for (auto key: vars.paramKeys()) {
+      auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm);
+      overridingParams.setValue(key, PercentEvaluator::escape(value));
     }
     auto instance = _scheduler->planTask(
         taskid, overridingParams, force, lone ? 0 : _instance.herdid(),
@@ -784,22 +772,21 @@ void Executor::scatterMean() {
           << force;
       continue;
     }
-    const auto ppp = instance.pseudoParams();
-    ppm.prepend(instance.params()).prepend(&ppp);
+    ppm.prepend(&instance);
     _scheduler->taskInstanceParamAppend(
           lone ? instance.herdid() : _instance.herdid(), tiiparam,
           instance.id());
     instances << instance;
     if (rank == inputs.size()-1 && !onlast.isEmpty()) {
-      auto taskid = ppm.evaluate(onlast).toUtf8();
+      auto taskid = PercentEvaluator::eval_utf8(onlast, &ppm);
       const auto idIfLocalToGroup = _instance.task().taskGroup().id()+"."
           +taskid;
       if (_scheduler->taskExists(idIfLocalToGroup))
         taskid = idIfLocalToGroup;
       ParamSet overridingParams;
-      for (auto key: vars.keys()) {
-        auto value = ppm.evaluate(vars.rawValue(key));
-        overridingParams.setValue(key, ParamSet::escape(value));
+      for (auto key: vars.paramKeys()) {
+        auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm);
+        overridingParams.setValue(key, PercentEvaluator::escape(value));
       }
       auto onlastinstance = _scheduler->planTask(
             taskid, overridingParams, force,
@@ -856,7 +843,7 @@ void Executor::abort() {
         [[fallthrough]];
       case Task::Docker:
         if (_process) {
-          hardkill = _instance.params().valueAsBool(
+          hardkill = _instance.params().paramBool(
             "command.hardkill", hardkill);
           Log::info(_instance.task().id(), _instance.idAsLong())
             << "process task abort requested, using "

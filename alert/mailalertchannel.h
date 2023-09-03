@@ -15,6 +15,7 @@
 #define MAILALERTCHANNEL_H
 
 #include "alertchannel.h"
+#include "config/alerterconfig.h"
 
 class MailAlertQueue;
 class MailSender;
@@ -27,7 +28,7 @@ class LIBQRONSHARED_EXPORT MailAlertChannel : public AlertChannel {
   Q_OBJECT
   Q_DISABLE_COPY(MailAlertChannel)
   friend MailAlertQueue;
-  QHash<QString,MailAlertQueue*> _queues;
+  QHash<Utf8String,MailAlertQueue*> _queues;
   AlerterConfig _config;
   MailSender *_mailSender;
   QTimer *_asyncProcessingTimer;
@@ -35,8 +36,8 @@ class LIBQRONSHARED_EXPORT MailAlertChannel : public AlertChannel {
 public:
   explicit MailAlertChannel(Alerter *alerter);
   ~MailAlertChannel();
-  void doNotifyAlert(Alert alert);
-  void setConfig(AlerterConfig config);
+  void doNotifyAlert(Alert alert) override;
+  void setConfig(AlerterConfig config) override;
 
 private slots:
   void asyncProcessing();

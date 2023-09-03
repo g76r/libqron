@@ -29,7 +29,7 @@ public:
               AllocatedOverConfigured, LowWaterMark, LwmOverConfigured };
 private:
   Mode _mode;
-  QMap<QString,QMap<QString,qint64> > _configured, _lwm;
+  QMap<Utf8String,QMap<Utf8String,qint64> > _configured, _lwm;
 
 public:
   explicit HostsResourcesAvailabilityModel(

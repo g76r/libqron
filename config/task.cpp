@@ -120,10 +120,10 @@ void Task::copyLiveAttributesFromOldTask(Task oldTask) {
   // keep last triggered timestamp from previously defined trigger
   QMap<QByteArray,CronTrigger> oldCronTriggers;
   for (auto trigger: oldTask.data()->_cronTriggers)
-    oldCronTriggers.insert(trigger.canonicalExpression().toUtf8(), trigger);
+    oldCronTriggers.insert(trigger.canonicalExpression(), trigger);
   for (auto trigger: d->_cronTriggers) {
     CronTrigger oldTrigger =
-        oldCronTriggers.value(trigger.canonicalExpression().toUtf8());
+        oldCronTriggers.value(trigger.canonicalExpression());
     if (oldTrigger.isValid())
       trigger.setLastTriggered(oldTrigger.lastTriggered());
   }
@@ -196,8 +196,8 @@ void TaskData::setTaskGroup(TaskGroup taskGroup) {
   _id = _group.id()+"."+_localId;
 }
 
-QMap<QString, qint64> Task::resources() const {
-  return !isNull() ? data()->_resources : QMap<QString,qint64>{};
+QMap<Utf8String,qint64> Task::resources() const {
+  return !isNull() ? data()->_resources : QMap<Utf8String,qint64>{};
 }
 
 QDateTime Task::lastExecution() const {

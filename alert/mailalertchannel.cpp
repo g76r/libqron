@@ -67,9 +67,9 @@ MailAlertChannel::MailAlertChannel(Alerter *alerter)
 void MailAlertChannel::setConfig(AlerterConfig config) {
   _config = config;
   // LATER make server specification more user friendly, e.g. "localhost:25" or "localhost"
-  QString relay = _config.params().value("mail.relay", "smtp://127.0.0.1");
+  QString relay = _config.params().paramUtf16("mail.relay", "smtp://127.0.0.1");
   int smtpTimeoutMs = std::max(
-        _config.params().value("mail.smtp.timeout", "5").toDouble()*1000, 1.0);
+        _config.params().paramNumber<double>("mail.smtp.timeout", 5)*1000, 1.0);
   if (_mailSender)
     delete _mailSender;
   _mailSender = new MailSender(relay, smtpTimeoutMs);
@@ -77,7 +77,7 @@ void MailAlertChannel::setConfig(AlerterConfig config) {
   QStringList queuesRemoved;
   QSet<QString> configuredAddresses;
   for (const AlertSubscription &subscription: _config.alertSubscriptions())
-    if (subscription.channelName() == QStringLiteral("mail"))
+    if (subscription.channelName() == "mail")
       for (const QString &address:
                splittedAddresses(subscription.address(Alert())))
         configuredAddresses.insert(address);
@@ -217,20 +217,20 @@ void MailAlertChannel::processQueue(QVariant address) {
       QHash<QString,QString> headers;
       // headers
       if (queue->_alerts.size())
-        subject = _config.params()
-            .value("mail.alertsubject."+queue->_address,
-                   _config.params().value("mail.alertsubject",
-                                          "NEW QRON ALERT"));
+        subject = _config.params().paramUtf16(
+                    "mail.alertsubject."+queue->_address,
+                    _config.params().paramUtf16(
+                      "mail.alertsubject", "NEW QRON ALERT"));
       else if (queue->_cancellations.size())
-        subject = _config.params()
-            .value("mail.cancelsubject."+queue->_address,
-                   _config.params().value("mail.cancelsubject",
-                                          "canceling qron alert"));
+        subject = _config.params().paramUtf16(
+                    "mail.cancelsubject."+queue->_address,
+                    _config.params().paramUtf16(
+                      "mail.cancelsubject", "canceling qron alert"));
       else
-        subject = _config.params()
-            .value("mail.remindersubject."+queue->_address,
-                   _config.params().value("mail.remindersubject",
-                                          "qron alert reminder"));
+        subject = _config.params().paramUtf16(
+                    "mail.remindersubject."+queue->_address,
+                    _config.params().paramUtf16(
+                      "mail.remindersubject", "qron alert reminder"));
       headers.insert("Subject", subject);
       headers.insert("To", addr);
       headers.insert("User-Agent", "qron free scheduler (www.qron.eu)");
@@ -244,9 +244,9 @@ void MailAlertChannel::processQueue(QVariant address) {
                      QString::number(reminders.size()));
       // body
       html = "<html><head><title>"+subject+"</title></head><body>";
-      QString webConsoleUrl = _config.params()
-          .value("webconsoleurl."+queue->_address,
-                 _config.params().value("webconsoleurl"));
+      QString webConsoleUrl = _config.params().paramUtf16(
+                                "webconsoleurl."+queue->_address,
+                                _config.params().paramUtf16("webconsoleurl"));
       if (!webConsoleUrl.isEmpty()) {
         text.append("Alerts can also be viewed here:\r\n")
             .append(webConsoleUrl).append("\r\n\r\n");
@@ -275,11 +275,10 @@ void MailAlertChannel::processQueue(QVariant address) {
               .append("\r\n");
           text.append(s);
           QString style =
-              _config.params()
-              .value("mail.alertstyle."+queue->_address,
-                     _config.params()
-                     .value("mail.alertstyle",
-                            "background:#ff0000;color:#ffffff;"));
+              _config.params().paramUtf16(
+                "mail.alertstyle."+queue->_address,
+                _config.params().paramUtf16(
+                  "mail.alertstyle", "background:#ff0000;color:#ffffff;"));
           html.append("<li style=\"").append(style).append("\">")
               .append(s).append("</li>");
         }
@@ -298,10 +297,10 @@ void MailAlertChannel::processQueue(QVariant address) {
               .append(")\r\n");
           text.append(s);
           QString style =
-              _config.params()
-              .value("mail.cancelstyle."+queue->_address,
-                     _config.params().value("mail.cancelstyle",
-                                            "background:#8080ff"));
+              _config.params().paramUtf16(
+                "mail.cancelstyle."+queue->_address,
+                _config.params().paramUtf16(
+                  "mail.cancelstyle", "background:#8080ff"));
           html.append("<li style=\"").append(style).append("\">")
               .append(s).append("</li>");
         }
@@ -318,10 +317,10 @@ void MailAlertChannel::processQueue(QVariant address) {
               .append("\r\n");
           text.append(s);
           QString style =
-              _config.params()
-              .value("mail.reminderstyle."+queue->_address,
-                     _config.params().value("mail.reminderstyle",
-                                            "background:#ffff80"));
+              _config.params().paramUtf16(
+                "mail.reminderstyle."+queue->_address,
+                _config.params().paramUtf16(
+                  "mail.reminderstyle", "background:#ffff80"));
           html.append("<li style=\"").append(style).append("\">")
               .append(s).append("</li>");
         }
@@ -340,7 +339,7 @@ void MailAlertChannel::processQueue(QVariant address) {
       html.append("</body></html>\n");
       // mime handling
       QString body;
-      if (_config.params().valueAsBool("mail.enablehtml", true)) {
+      if (_config.params().paramNumber<bool>("mail.enablehtml", true)) {
         headers.insert("Content-Type",
                        "multipart/alternative; boundary="+boundary);
         body = "--"+boundary+"\r\nContent-Type: text/plain\r\n\r\n"+text
@@ -350,10 +349,10 @@ void MailAlertChannel::processQueue(QVariant address) {
         body = text;
       // queuing
       QString senderAddress =
-          _config.params()
-          .value("mail.senderaddress."+queue->_address,
-                 _config.params().value("mail.senderaddress",
-                                        "please-do-not-reply@localhost"));
+          _config.params().paramUtf16(
+            "mail.senderaddress."+queue->_address,
+            _config.params().paramUtf16(
+              "mail.senderaddress", "please-do-not-reply@localhost"));
       bool queued = _mailSender->send(senderAddress, recipients, body,
                                       QMultiHash<QString,QString>(headers),
                                       QList<QVariant>(), errorString);

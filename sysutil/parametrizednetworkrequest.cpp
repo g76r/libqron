@@ -13,52 +13,53 @@
  */
 #include "parametrizednetworkrequest.h"
 
-#define DEFAULT_REQUEST_CONTENT_TYPE "text/plain"_ba
+#define DEFAULT_REQUEST_CONTENT_TYPE "text/plain"_u8
 
-const QSet<QString> ParametrizedNetworkRequest::supportedParamNames {
+const Utf8StringSet ParametrizedNetworkRequest::supportedParamNames {
   "method", "user", "password", "proto", "port", "payload", "content-type",
   "follow-redirect", "redirect-max" };
 
 ParametrizedNetworkRequest::ParametrizedNetworkRequest(
-    QString url, ParamSet params, const ParamsProvider *paramsEvaluationContext,
-    QString logTask, quint64 logExecId)
+    const Utf8String &url, const ParamSet &params,
+    const ParamsProvider *paramsEvaluationContext,
+    const Utf8String &logTask, quint64 logExecId)
   : QNetworkRequest(), _logTask(logTask),
     _logExecId(logExecId ? QString::number(logExecId) : QString()),
     _params(params) {
-  QUrl qurl(params.evaluate(url, paramsEvaluationContext));
-  QString proto = params.value("proto", paramsEvaluationContext);
+  auto ppm = ParamsProviderMerger(params)(paramsEvaluationContext);
+  QUrl qurl(PercentEvaluator::eval_utf16(url, &ppm));
+  auto proto = params.paramUtf8("proto"_u8, paramsEvaluationContext);
   if (!proto.isNull())
     qurl.setScheme(proto);
-  QString user = params.value("user", qurl.userName(), paramsEvaluationContext);
-  QString password = params.value("password", qurl.password(),
-                                  paramsEvaluationContext);
-  int port = params.valueAsInt("port", -1, paramsEvaluationContext);
+  auto user = params.paramUtf8("user"_u8, qurl.userName(),
+                               paramsEvaluationContext);
+  auto password = params.paramUtf8("password"_u8, qurl.password(),
+                                   paramsEvaluationContext);
+  int port = params.paramNumber<int>("port"_u8, -1, paramsEvaluationContext);
   if (port > 0 && port < 65536)
     qurl.setPort(port);
   // must set basic auth through custom header since url user/password are
   // ignored by QNetworkAccessManager (at less for first request, before a 401)
-  if (!user.isEmpty()) {
-    QByteArray token = (user+":"+password).toUtf8();
-    setRawHeader("Authorization", "Basic "+token.toBase64());
-  }
+  if (!user.isEmpty())
+    setRawHeader("Authorization", ("Basic "+user+":"+password).toBase64());
   qurl.setUserName(QString());
   qurl.setPassword(QString());
   setUrl(qurl);
   _method = HttpRequest::methodFromText(
-        params.paramUtf8("method"_ba, "GET"_ba,
+        params.paramUtf8("method"_u8, "GET"_u8,
                          paramsEvaluationContext).toUpper());
   auto contentType = params.paramUtf8(
-        "content-type"_ba, paramsEvaluationContext);
+        "content-type"_u8, paramsEvaluationContext);
   if (contentType.isNull()
       && (_method == HttpRequest::POST || _method == HttpRequest::PUT))
     contentType = DEFAULT_REQUEST_CONTENT_TYPE;
   if (!contentType.isNull())
     setHeader(QNetworkRequest::ContentTypeHeader, contentType);
-  _rawPayloadFromParams = params.rawParamUtf8("payload"_ba);
-  bool followRedirect = params.valueAsBool(
-        "follow-redirect"_ba, false, paramsEvaluationContext);
-  int redirectMax = params.valueAsInt(
-        "redirect-max", -1, paramsEvaluationContext);
+  _rawPayloadFromParams = params.paramRawUtf8("payload"_u8);
+  bool followRedirect = params.paramNumber<bool>(
+                          "follow-redirect"_u8, false, paramsEvaluationContext);
+  int redirectMax = params.paramNumber<int>(
+                      "redirect-max"_u8, -1, paramsEvaluationContext);
   if (redirectMax > 0)
     followRedirect = true;
   setAttribute(QNetworkRequest::RedirectPolicyAttribute,
@@ -69,13 +70,13 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
 }
 
 QNetworkReply *ParametrizedNetworkRequest::performRequest(
-    QNetworkAccessManager *nam, QString payload,
+    QNetworkAccessManager *nam, const Utf8String &payload,
     const ParamsProvider *payloadEvaluationContext) {
   QNetworkReply *reply = 0;
   QUrl url = this->url();
-  if (payload.isNull())
-    payload = _rawPayloadFromParams;
-  payload = _params.evaluate(payload, payloadEvaluationContext);
+  auto effective_payload = payload.isNull() ? _rawPayloadFromParams : payload;
+  auto ppm = ParamsProviderMerger(payloadEvaluationContext)(_params);
+  effective_payload = PercentEvaluator::eval_utf8(effective_payload, &ppm);
   // LATER support proxy
   // LATER support ssl (https)
   if (url.isValid()) {
@@ -88,19 +89,19 @@ QNetworkReply *ParametrizedNetworkRequest::performRequest(
         reply = nam->get(*this);
         break;
       case HttpRequest::POST:
-        reply = nam->post(*this, payload.toUtf8());
+        reply = nam->post(*this, effective_payload);
         break;
       case HttpRequest::HEAD:
         reply = nam->head(*this);
         break;
       case HttpRequest::PUT:
-        reply = nam->put(*this, payload.toUtf8());
+        reply = nam->put(*this, effective_payload);
         break;
       case HttpRequest::DELETE:
         reply = nam->deleteResource(*this);
         break;
       case HttpRequest::OPTIONS:
-        reply = nam->sendCustomRequest(*this, "OPTIONS", payload.toUtf8());
+        reply = nam->sendCustomRequest(*this, "OPTIONS", effective_payload);
         break;
       case HttpRequest::NONE:
       case HttpRequest::ANY:

@@ -57,7 +57,7 @@ public:
 
 private:
   inline const CronTriggerData *data() const;
-  inline CronTriggerData *data();
+  //  inline CronTriggerData *data();
 };
 
 // FIXME Q_DECLARE_METATYPE(CronTrigger)

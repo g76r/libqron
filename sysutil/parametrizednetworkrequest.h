@@ -15,6 +15,11 @@
 #define PARAMETRIZEDNETWORKREQUEST_H
 
 #include "libqron_global.h"
+#include "util/paramset.h"
+#include "httpd/httprequest.h"
+#include "util/utf8stringset.h"
+#include <QNetworkRequest>
+#include <QNetworkAccessManager>
 
 /** Class extending QNetworkRequest to give easy ways to parametrize the
  * request using ParamSet parameters.
@@ -33,9 +38,9 @@
  *       see QNetworkRequest::setMaximumRedirectsAllowed()
  */
 class LIBQRONSHARED_EXPORT ParametrizedNetworkRequest : public QNetworkRequest {
-  QString _logTask, _logExecId;
+  Utf8String _logTask, _logExecId;
   HttpRequest::HttpMethod _method;
-  QString _rawPayloadFromParams;
+  Utf8String _rawPayloadFromParams;
   ParamSet _params;
 
 public:
@@ -44,15 +49,15 @@ public:
    * @param logExecId only used in log, e.g. task instance id
    */
   ParametrizedNetworkRequest(
-      QString url, ParamSet params,
+      const Utf8String &url, const ParamSet &params,
       const ParamsProvider *paramsEvaluationContext = 0,
-      QString logTask = QString(), quint64 logExecId = 0);
+      const Utf8String &logTask = {}, quint64 logExecId = 0);
   /** @param payload if not set, use "payload" parameter content instead
    * @return 0 if the request cannot be performed, e.g. unknown method */
   QNetworkReply *performRequest(
-      QNetworkAccessManager *nam, QString payload = QString(),
+      QNetworkAccessManager *nam, const Utf8String &payload = {},
       const ParamsProvider *payloadEvaluationContext = 0);
-  const static QSet<QString> supportedParamNames;
+  const static Utf8StringSet supportedParamNames;
 };
 
 #endif // PARAMETRIZEDNETWORKREQUEST_H

@@ -30,7 +30,7 @@ class LIBQRONSHARED_EXPORT TasksModel : public SharedUiItemsTableModel {
 
 public:
   explicit TasksModel(QObject *parent = 0);
-  QVariant data(const QModelIndex &index, int role) const;
+  QVariant data(const QModelIndex &index, int role) const override;
   /** Way to add custom html at the end of "Actions" column. Will be evaluated
    * through Task.params(). */
   void setCustomActions(QString customActions) {

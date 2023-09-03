@@ -20,18 +20,18 @@ public:
   QString _command;
   ExecActionData(QString command = QString())
     : _command(command) { }
-  QString toString() const {
+  Utf8String toString() const override {
     return "exec{ "+_command+" }";
   }
-  QString actionType() const {
-    return QStringLiteral("exec");
+  Utf8String actionType() const override {
+    return "exec"_u8;
   }
   void trigger(EventSubscription, ParamsProviderMerger *context,
-               TaskInstance instance) const {
+               TaskInstance instance) const override {
     QString shell = "bash";
     QStringList cmdline;
     cmdline << shell << "-c"
-            << ParamSet().evaluate(_command, context);
+            << PercentEvaluator::eval_utf16(_command, context);
     auto process = new QProcess;
     /*QObject::connect(process, &QProcess::errorOccurred,
                      [process,instance,command=_command](
@@ -71,7 +71,7 @@ public:
     QString program = cmdline.takeFirst();
     process->start(program, cmdline);
   }
-  PfNode toPfNode() const{
+  PfNode toPfNode() const override {
     PfNode node(actionType(), _command);
     return node;
   }

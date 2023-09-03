@@ -16,6 +16,8 @@
 
 #include "config/schedulerconfig.h"
 #include "eventsubscription.h"
+#include "modelview/shareduiitemdocumentmanager.h"
+#include <QMutexLocker>
 
 /** Document manager for scheduler config
  * @see SharedUiItemDocumentManager
@@ -34,10 +36,11 @@ public:
    * config() is thread-safe again */
   void setConfig(SchedulerConfig newConfig, QMutexLocker<QMutex> *locker = 0);
   using SharedUiItemDocumentManager::itemById;
-  SharedUiItem itemById(QByteArray idQualifier, QByteArray id) const override;
+  SharedUiItem itemById(
+      const Utf8String &qualifier, const Utf8String &id) const override;
   using SharedUiItemDocumentManager::itemsByIdQualifier;
   SharedUiItemList<SharedUiItem> itemsByIdQualifier(
-      QByteArray idQualifier) const override;
+      const Utf8String &qualifier) const override;
   QMap<QByteArray,Calendar> namedCalendars() const {
     return _config.namedCalendars(); }
   QMap<QByteArray,PfNode> externalParams() const {
@@ -70,11 +73,12 @@ signals:
 
 protected:
   bool prepareChangeItem(
-      SharedUiItemDocumentTransaction *transaction, SharedUiItem newItem,
-      SharedUiItem oldItem, QByteArray idQualifier,
-      QString *errorString) override;
-  void commitChangeItem(SharedUiItem newItem, SharedUiItem oldItem,
-                        QByteArray idQualifier) override;
+      SharedUiItemDocumentTransaction *transaction,
+      const SharedUiItem &new_item, const SharedUiItem &old_item,
+      const Utf8String &qualifier, QString *errorString) override;
+  void commitChangeItem(
+      const SharedUiItem &new_item, const SharedUiItem &old_item,
+      const Utf8String &qualifier) override;
 
 private:
   template<class T>

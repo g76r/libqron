@@ -25,7 +25,7 @@ class LIBQRONSHARED_EXPORT LogAlertChannel : public AlertChannel {
 
 public:
   LogAlertChannel(Alerter *alerter);
-  void doNotifyAlert(Alert alert);
+  void doNotifyAlert(Alert alert) override;
 };
 
 #endif // LOGALERTCHANNEL_H

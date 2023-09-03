@@ -22,11 +22,11 @@ public:
   PostNoticeActionData(Scheduler *scheduler = 0, QString notice = QString(),
                        ParamSet params = ParamSet())
     : ActionData(scheduler), _notice(notice), _noticeParams(params) { }
-  QString toString() const override {
+  Utf8String toString() const override {
     return "^"+_notice;
   }
-  QString actionType() const override {
-    return QStringLiteral("postnotice");
+  Utf8String actionType() const override {
+    return "postnotice"_u8;
   }
   void trigger(EventSubscription, ParamsProviderMerger *context,
                TaskInstance) const override {
@@ -38,7 +38,7 @@ public:
     _scheduler->postNotice(PercentEvaluator::eval_utf8(_notice, context),
                            noticeParams);
   }
-  QString targetName() const override {
+  Utf8String targetName() const override {
     return _notice;
   }
   ParamSet params() const override {

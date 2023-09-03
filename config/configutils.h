@@ -47,7 +47,8 @@ public:
   static QRegularExpression readDotHierarchicalFilter(
       QString s, bool caseSensitive = true);
   static void loadEventSubscription(
-      PfNode parentNode, QString childName, QString subscriberId,
+      const PfNode &parentNode, const Utf8String &childName,
+      const Utf8String &subscriberId,
       QList<EventSubscription> *list, Scheduler *scheduler);
   static void writeParamSet(PfNode *parentnode, ParamSet params,
                             QString attrname, bool inherit = false);
@@ -59,14 +60,14 @@ public:
   /** Recursively load comments children of node into commentsList.
    * @param excludedDescendants descendant nodes names ignored during recursion
    * @param maxDepth -1 means infinite recursion */
-  static void loadComments(PfNode node, QStringList *commentsList,
-                           QSet<QString> excludedDescendants = QSet<QString>(),
+  static void loadComments(const PfNode &node, Utf8StringList *commentsList,
+                           const Utf8StringSet &excludedDescendants = {},
                            int maxDepth = -1);
   /** Convenience method. */
-  static void loadComments(PfNode node, QStringList *commentsList,
+  static void loadComments(const PfNode &node, Utf8StringList *commentsList,
                            int maxDepth) {
-    loadComments(node, commentsList, QSet<QString>(), maxDepth); }
-  static void writeComments(PfNode *node, QStringList commentsList);
+    loadComments(node, commentsList, {}, maxDepth); }
+  static void writeComments(PfNode *node, const Utf8StringList &commentsList);
   /** @return true if valid or absent, false if present and invalid */
   template<typename T>
   static bool loadAttribute(
@@ -109,8 +110,8 @@ public:
     *field = i != 0;
     return true;
   }
-  static void writeConditions(
-      PfNode *parentnode, QString attrname, DisjunctionCondition conditions);
+  static void writeConditions(PfNode *parentnode, const Utf8String &attrname,
+                              DisjunctionCondition conditions);
 
 private:
   ConfigUtils();

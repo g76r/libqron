@@ -15,6 +15,8 @@
 #define TRIGGER_H
 
 #include "config/calendar.h"
+#include "pf/pfnode.h"
+#include "config/calendar.h"
 
 class TriggerData;
 
@@ -29,15 +31,15 @@ public:
   ~Trigger();
   /** Trigger expression as it was initialy given.
    * e.g. "1/10 * * * * *", "noticename" */
-  QString expression() const;
+  Utf8String expression() const;
   /** Trigger expression in a canonical/unique form.
    * e.g. "1,11,21,31,41,51 * * * * *" */
-  QString canonicalExpression() const;
+  Utf8String canonicalExpression() const;
   /** e.g. "(1/10 * * * * *)" or "^noticename" */
-  QString humanReadableExpression() const;
+  Utf8String humanReadableExpression() const;
   /** e.g. "[(calendar foo)](1/10 * * * * *)",
    * "[(calendar(include ..2013-1-1))]^noticename" */
-  QString humanReadableExpressionWithCalendar() const;
+  Utf8String humanReadableExpressionWithCalendar() const;
   /** Trigger contains usable, not null or empty, data. */
   bool isValid() const;
   //void setCalendar(Calendar calendar);

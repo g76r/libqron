@@ -14,6 +14,7 @@
 #include "alerterconfig.h"
 #include "configutils.h"
 #include "alert/gridboard.h"
+#include "modelview/templatedshareduiitemdata.h"
 
 #define DEFAULT_RISE_DELAY 120000 /* 120" = 2' */
 // mayrise delay is disabled de facto when >= rise delay since rise delay will
@@ -25,33 +26,24 @@
 #define DEFAULT_MIN_DELAY_BETWEEN_SEND 600000 /* 600" = 10' */
 #define DEFAULT_DELAY_BEFORE_FIRST_SEND 30000 /* 30" */
 
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Params",
-  "Rise Delay",
-  "Mayrise Delay",
-  "Drop Delay",
-  "Minimum Delay Between Send", // 5
-  "Delay Before First Send",
-  "Remind Period",
-  "Duplicate Emit Delay"
-};
-
 static QAtomicInt _sequence;
 
 static QSet<QString> excludedDescendantsForComments {
   "subscription", "settings", "gridboard"
 };
 
-class AlerterConfigData : public SharedUiItemData {
+class AlerterConfigData
+    : public SharedUiItemDataWithImmutableParams<AlerterConfigData, true> {
 public:
-  QByteArray _id;
-  ParamSet _params;
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  Utf8String _id;
   QList<AlertSubscription> _alertSubscriptions;
   QList<AlertSettings> _alertSettings;
   qint64 _riseDelay, _mayriseDelay, _dropDelay, _duplicateEmitDelay,
   _minDelayBetweenSend, _delayBeforeFirstSend, _remindPeriod;
-  QStringList _channelNames, _commentsList;
+  Utf8StringList _channelNames, _commentsList;
   QList<Gridboard> _gridboards;
   AlerterConfigData()
     : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))),
@@ -63,16 +55,8 @@ public:
     _remindPeriod(DEFAULT_REMIND_PERIOD) {
   }
   AlerterConfigData(PfNode root);
-  QByteArray id() const { return _id; }
-  QByteArray idQualifier() const { return "alerterconfig"_ba; }
-  int uiSectionCount() const {
-    return sizeof _uiHeaderNames / sizeof *_uiHeaderNames; }
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const {
-    return role == Qt::DisplayRole && section >= 0
-        && (unsigned)section < sizeof _uiHeaderNames
-        ? _uiHeaderNames[section] : QVariant();
-  }
+  Utf8String id() const override { return _id; }
+  QVariant uiData(int section, int role) const override;
 };
 
 AlerterConfig::AlerterConfig(PfNode root)
@@ -80,7 +64,8 @@ AlerterConfig::AlerterConfig(PfNode root)
 }
 
 AlerterConfigData::AlerterConfigData(PfNode root)
-  : _params (root, "param"), _riseDelay(DEFAULT_RISE_DELAY),
+  : SharedUiItemDataWithImmutableParams<AlerterConfigData, true>(
+      ParamSet(root, "param")), _riseDelay(DEFAULT_RISE_DELAY),
     _mayriseDelay(DEFAULT_MAYRISE_DELAY),
     _dropDelay(DEFAULT_DROP_DELAY),
     _duplicateEmitDelay(DEFAULT_DUPLICATE_EMIT_DELAY),
@@ -103,7 +88,7 @@ AlerterConfigData::AlerterConfigData(PfNode root)
           || channelnode.isComment()) {
         // ignore
       } else {
-        if (_channelNames.contains(channelnode.name())) {
+        if (_channelNames.contains(channelnode.utf8Name())) {
           AlertSubscription sub(subscriptionnode, channelnode, _params);
           _alertSubscriptions.append(sub);
           //Log::debug() << "configured alert subscription " << channelnode.name()
@@ -197,9 +182,9 @@ QList<AlertSettings> AlerterConfig::alertSettings() const {
   return d ? d->_alertSettings : QList<AlertSettings>();
 }
 
-QStringList AlerterConfig::channelsNames() const {
+Utf8StringList AlerterConfig::channelsNames() const {
   const AlerterConfigData *d = data();
-  return d ? d->_channelNames : QStringList();
+  return d ? d->_channelNames : Utf8StringList{};
 }
 
 PfNode AlerterConfig::toPfNode() const {
@@ -267,3 +252,30 @@ QList<Gridboard> AlerterConfig::gridboards() const {
   const AlerterConfigData *d = data();
   return d ? d->_gridboards : QList<Gridboard>();
 }
+
+static const Utf8String _idQualifier = "alerterconfig";
+
+static const Utf8StringList _sectionNames {
+  "id", // 0
+  "params",
+  "risedelay",
+  "mayrisedelay",
+  "dropdelay",
+  "mindelaybetweensend", // 5
+  "delaybeforefirstsend",
+  "remindperiod",
+  "duplicateemitdelay"
+};
+
+static const Utf8StringList _headerNames {
+  "Id", // 0
+  "Params",
+  "Rise Delay",
+  "Mayrise Delay",
+  "Drop Delay",
+  "Delay Between Send", // 5
+  "Delay Before First Send",
+  "Remind Period",
+  "Duplicate Emit Delay"
+};
+

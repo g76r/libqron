@@ -142,32 +142,32 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
 }
 
 SharedUiItem QronConfigDocumentManager::itemById(
-    QByteArray idQualifier, QByteArray id) const {
+    const Utf8String &qualifier, const Utf8String &id) const {
   // TODO also implement for other items
-  if (idQualifier == "task") {
+  if (qualifier == "task") {
     return _config.tasks().value(id);
-  } else if (idQualifier == "taskgroup") {
+  } else if (qualifier == "taskgroup") {
     return _config.taskgroups().value(id);
-  } else if (idQualifier == "host") {
+  } else if (qualifier == "host") {
     return _config.hosts().value(id);
-  } else if (idQualifier == "cluster") {
+  } else if (qualifier == "cluster") {
     return _config.clusters().value(id);
   }
   return SharedUiItem();
 }
 
 SharedUiItemList<SharedUiItem> QronConfigDocumentManager
-::itemsByIdQualifier(QByteArray idQualifier) const {
+::itemsByIdQualifier(const Utf8String &qualifier) const {
   // TODO also implement for other items
-  if (idQualifier == "task") {
+  if (qualifier == "task") {
     return SharedUiItemList<Task>(_config.tasks().values());
-  } else if (idQualifier == "taskgroup") {
+  } else if (qualifier == "taskgroup") {
     return SharedUiItemList<TaskGroup>(_config.taskgroups().values());
-  } else if (idQualifier == "host") {
+  } else if (qualifier == "host") {
     return SharedUiItemList<Host>(_config.hosts().values());
-  } else if (idQualifier == "cluster") {
+  } else if (qualifier == "cluster") {
     return SharedUiItemList<Cluster>(_config.clusters().values());
-  } else if (idQualifier == "calendar") {
+  } else if (qualifier == "calendar") {
     // LATER is it right to return only *named* calendars ?
     return SharedUiItemList<Calendar>(_config.namedCalendars().values());
   }
@@ -253,27 +253,28 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
 }
 
 bool QronConfigDocumentManager::prepareChangeItem(
-    SharedUiItemDocumentTransaction *transaction, SharedUiItem newItem,
-    SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
-  QByteArray oldId = oldItem.id(), newId = newItem.id();
+    SharedUiItemDocumentTransaction *transaction, const SharedUiItem &new_item,
+    const SharedUiItem &old_item, const Utf8String &qualifier,
+    QString *errorString) {
+  QByteArray oldId = old_item.id(), newId = new_item.id();
   QString reason;
-  if (idQualifier == "taskgroup") {
+  if (qualifier == "taskgroup") {
     // currently nothing to do
-  } else if (idQualifier == "task") {
+  } else if (qualifier == "task") {
     // currently nothing to do
-  } else if (idQualifier == "cluster") {
+  } else if (qualifier == "cluster") {
     // currently nothing to do
-  } else if (idQualifier == "host") {
+  } else if (qualifier == "host") {
     // currently nothing to do
-  } else if (idQualifier == "calendar") {
+  } else if (qualifier == "calendar") {
     // currently nothing to do
   } else {
     reason = "QronConfigDocumentManager::changeItem do not support item type: "
-        +idQualifier;
+        +qualifier;
   }
   // TODO implement more item types
   if (reason.isNull()) {
-    storeItemChange(transaction, newItem, oldItem, idQualifier);
+    storeItemChange(transaction, new_item, old_item, qualifier);
     //qDebug() << "QronConfigDocumentManager::prepareChangeItem succeeded:"
     //         << idQualifier << newItem.id() << oldId;
     return true;
@@ -285,11 +286,12 @@ bool QronConfigDocumentManager::prepareChangeItem(
 }
 
 void QronConfigDocumentManager::commitChangeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QByteArray idQualifier) {
-  _config.changeItem(newItem, oldItem, idQualifier);
+    const SharedUiItem &new_item, const SharedUiItem &old_item,
+    const Utf8String &qualifier) {
+  _config.changeItem(new_item, old_item, qualifier);
   //qDebug() << "QronConfigDocumentManager::commitChangeItem done"
   //         << newItem.qualifiedId() << oldItem.qualifiedId();
-  SharedUiItemDocumentManager::commitChangeItem(newItem, oldItem, idQualifier);
+  SharedUiItemDocumentManager::commitChangeItem(new_item, old_item, qualifier);
 }
 
 void QronConfigDocumentManager::changeParams(

@@ -15,6 +15,7 @@
 #define CONFIGHISTORYMODEL_H
 
 #include "configmgt/confighistoryentry.h"
+#include "modelview/shareduiitemstablemodel.h"
 
 /** Model holding config history entries, last entry first. */
 class LIBQRONSHARED_EXPORT ConfigHistoryModel : public SharedUiItemsTableModel {

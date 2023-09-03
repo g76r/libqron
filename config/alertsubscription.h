@@ -50,15 +50,15 @@ public:
     SharedUiItem::operator=(other); return *this; }
   QString pattern() const;
   QRegularExpression patternRegexp() const;
-  QByteArray channelName() const;
-  QString rawAddress() const;
-  QString address(Alert alert) const;
-  QString emitMessage(Alert alert) const;
-  QString cancelMessage(Alert alert) const;
-  QString reminderMessage(Alert alert) const;
+  Utf8String channelName() const;
+  Utf8String rawAddress() const;
+  Utf8String address(Alert alert) const;
+  Utf8String emitMessage(Alert alert) const;
+  Utf8String cancelMessage(Alert alert) const;
+  Utf8String reminderMessage(Alert alert) const;
   /** human readable description such as "emitmessage=foo remindermessage=bar"
    * or "" or "cancelmessage=baz" */
-  QString messagesDescriptions() const;
+  Utf8String messagesDescriptions() const;
   bool notifyEmit() const;
   bool notifyCancel() const;
   bool notifyReminder() const;

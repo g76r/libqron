@@ -17,6 +17,7 @@
 #include "libqron_global.h"
 #include "alertsubscription.h"
 #include "alertsettings.h"
+#include "util/paramset.h"
 
 class AlerterConfigData;
 class Gridboard;
@@ -49,7 +50,7 @@ public:
   QList<AlertSubscription> alertSubscriptions() const;
   QList<AlertSettings> alertSettings() const;
   /** Available channels names */
-  QStringList channelsNames() const;
+  Utf8StringList channelsNames() const;
   PfNode toPfNode() const;
   QList<Gridboard> gridboards() const;
 

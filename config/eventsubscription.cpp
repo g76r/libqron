@@ -105,14 +105,14 @@ bool EventSubscription::triggerActions() const {
   return triggerActions(&context, TaskInstance(), [](Action){ return true; });
 }
 
-QStringList EventSubscription::toStringList(QList<EventSubscription> list) {
-  QStringList l;
-  foreach (EventSubscription sub, list)
+Utf8StringList EventSubscription::toStringList(QList<EventSubscription> list) {
+  Utf8StringList l;
+  for (auto sub: list)
     l.append(sub.toStringList());
   return l;
 }
 
-QStringList EventSubscription::toStringList() const {
+Utf8StringList EventSubscription::toStringList() const {
   return Action::toStringList(actions());
 }
 

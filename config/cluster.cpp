@@ -24,7 +24,7 @@ public:
   Utf8String _label;
   Cluster::Balancing _balancing;
   QList<Host> _hosts;
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   QVariant uiData(int section, int role) const override;
   Utf8String id() const override { return _id; }
   bool setUiData(

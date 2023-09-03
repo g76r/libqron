@@ -13,15 +13,16 @@
  */
 #include "noticetrigger.h"
 #include "trigger_p.h"
+#include "pf/pfnode.h"
 
 class NoticeTriggerData : public TriggerData {
 public:
-  QString _notice;
-  NoticeTriggerData(QString notice = QString()) : _notice(notice) { }
-  QString expression() const { return _notice; }
-  QString humanReadableExpression() const { return "^"+_notice; }
-  bool isValid() const { return !_notice.isEmpty(); }
-  QString triggerType() const { return "notice"; }
+  Utf8String _notice;
+  NoticeTriggerData(const Utf8String &notice = {}) : _notice(notice) { }
+  Utf8String expression() const override { return _notice; }
+  Utf8String humanReadableExpression() const override { return "^"+_notice; }
+  bool isValid() const override { return !_notice.isEmpty(); }
+  Utf8String triggerType() const override { return "notice"_u8; }
 };
 
 NoticeTrigger::NoticeTrigger() {
@@ -29,7 +30,7 @@ NoticeTrigger::NoticeTrigger() {
 
 NoticeTrigger::NoticeTrigger(PfNode node,
                              QMap<QByteArray, Calendar> namedCalendars)
-  : Trigger(new NoticeTriggerData(node.contentAsString())){
+  : Trigger(new NoticeTriggerData(node.contentAsUtf8())){
   loadConfig(node, namedCalendars);
 }
 

@@ -16,8 +16,8 @@
 
 #include "libqron_global.h"
 #include <QSharedDataPointer>
-#include "util/paramset.h"
 #include "pf/pfnode.h"
+#include "util/paramsprovidermerger.h"
 
 class ActionData;
 class EventSubscription;
@@ -39,20 +39,20 @@ public:
   void trigger(EventSubscription subscription, ParamsProviderMerger *context,
                TaskInstance instance) const;
   /** Human readable description of action */
-  QString toString() const;
+  Utf8String toString() const;
   /** Type of action for programmatic test, e.g. "postnotice" */
-  QString actionType() const;
+  Utf8String actionType() const;
   /** Action can create task instances, e.g. "requesttask" */
   bool mayCreateTaskInstances() const;
-  static QStringList toStringList(QList<Action> list);
+  static Utf8StringList toStringList(QList<Action> list);
   /** Name of the target, for actions where it makes sense. Null otherwise.
    * e.g. task id for requesttask, notice for postnotice, etc. */
-  QString targetName() const;
+  Utf8String targetName() const;
   ParamSet params() const;
   PfNode toPfNode() const;
   /** Create the appropriate Action subclass according to configuration
    *  fragment. */
-  static Action createAction(PfNode node, Scheduler *scheduler);
+  static Action createAction(const PfNode &node, Scheduler *scheduler);
 
 protected:
   explicit Action(ActionData *data);

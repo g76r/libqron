@@ -24,16 +24,16 @@ void LogAlertChannel::doNotifyAlert(Alert alert) {
   case Alert::Raised:
     if (!alert.subscription().notifyEmit())
       return;
-    Log::log(alert.subscription().emitMessage(alert).toUtf8(),
+    Log::log(alert.subscription().emitMessage(alert),
              Log::severityFromString(
-               alert.subscription().address(alert).toUtf8()));
+               alert.subscription().address(alert)));
     break;
   case Alert::Canceled:
     if (!alert.subscription().notifyCancel())
       return;
-    Log::log(alert.subscription().cancelMessage(alert).toUtf8(),
+    Log::log(alert.subscription().cancelMessage(alert),
              Log::severityFromString(
-               alert.subscription().address(alert).toLatin1()));
+               alert.subscription().address(alert)));
     break;
   case Alert::Rising:
   case Alert::MayRise:

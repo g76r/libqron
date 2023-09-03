@@ -12,33 +12,24 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "logfile.h"
-
-static QByteArray _uiHeaderNames[] = {
-  "Id", // 0
-  "Path Pattern",
-  "Minimum Severity",
-  "Buffered",
-};
+#include "log/log.h"
+#include "modelview/templatedshareduiitemdata.h"
 
 static QAtomicInt _sequence;
 
-class LogFileData : public SharedUiItemData {
+class LogFileData : public SharedUiItemDataBase<LogFileData> {
 public:
-  QByteArray _id;
+  static const Utf8String _idQualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  Utf8String _id;
   QString _pathPattern;
   Log::Severity _minimumSeverity;
   bool _buffered;
-  LogFileData() : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))),
+  LogFileData() : _id(Utf8String::number(_sequence.fetchAndAddOrdered(1))),
     _minimumSeverity(Log::Debug), _buffered(true) { }
   QVariant uiData(int section, int role) const override;
-  QVariant uiHeaderData(int section, int role) const override;
-  int uiSectionCount() const override;
-  QByteArray id() const override { return _id; }
-  QByteArray idQualifier() const override { return "logfile"_ba; }
-  /*bool setUiData(int section, const QVariant &value, QString *errorString,
-                 SharedUiItemDocumentTransaction *transaction,
-                 int role) override;
-  Qt::ItemFlags uiFlags(int section) const override;*/
+  Utf8String id() const override { return _id; }
 };
 
 LogFile::LogFile() {
@@ -48,13 +39,12 @@ LogFile::LogFile(const LogFile &other) : SharedUiItem(other) {
 }
 
 LogFile::LogFile(PfNode node) {
-  QString pathPattern = node.attribute(QStringLiteral("file"));
+  QString pathPattern = node.attribute("file"_u8);
   if (!pathPattern.isEmpty()) {
     LogFileData *d = new LogFileData;
     d->_pathPattern = pathPattern;
-    d->_minimumSeverity = Log::severityFromString(
-          node.attribute(QStringLiteral("level")).toUtf8());
-    d->_buffered = !node.hasChild(QStringLiteral("unbuffered"));
+    d->_minimumSeverity = Log::severityFromString(node.attribute("level"_u8));
+    d->_buffered = !node.hasChild("unbuffered"_u8);
     setData(d);
   }
 }
@@ -98,16 +88,6 @@ QVariant LogFileData::uiData(int section, int role) const {
   return QVariant();
 }
 
-QVariant LogFileData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
-
-int LogFileData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
-}
-
 LogFileData *LogFile::data() {
   return SharedUiItem::detachedData<LogFileData>();
 }
@@ -127,3 +107,20 @@ PfNode LogFile::toPfNode() const {
     node.appendChild(PfNode("unbuffered"));
   return node;
 }
+
+static const Utf8String _idQualifier = "logfile";
+
+static const Utf8StringList _sectionNames {
+  "id", // 0
+  "path_pattern",
+  "minimum_severity",
+  "buffered",
+};
+
+static const Utf8StringList _headerNames {
+  "Id", // 0
+  "Path Pattern",
+  "Minimum Severity",
+  "Buffered",
+};
+
