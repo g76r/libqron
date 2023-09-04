@@ -94,7 +94,7 @@ public:
   QVariant uiHeaderData(int section, int role) const;
   int uiSectionCount() const;
   QByteArray id() const { return _id; }
-  QByteArray idQualifier() const { return "config"_ba; }
+  QByteArray qualifier() const { return "config"_ba; }
   void applyLogConfig() const;
 };
 
@@ -483,29 +483,29 @@ QList<LogFile> SchedulerConfig::logfiles() const {
 }
 
 void SchedulerConfig::changeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QByteArray idQualifier) {
+    SharedUiItem newItem, SharedUiItem oldItem, QByteArray qualifier) {
   SchedulerConfigData *d = data();
   if (!d)
     setData(d = new SchedulerConfigData());
-  if (idQualifier == "task") {
+  if (qualifier == "task") {
     Task &actualNewItem = reinterpret_cast<Task&>(newItem);
     d->_tasks.remove(oldItem.id());
     if (!newItem.isNull())
       d->_tasks.insert(newItem.id(), actualNewItem);
     recomputeId();
-  } else if (idQualifier == "taskgroup") {
+  } else if (qualifier == "taskgroup") {
       TaskGroup &actualNewItem = reinterpret_cast<TaskGroup&>(newItem);
       d->_taskgroups.remove(oldItem.id());
       if (!newItem.isNull())
         d->_taskgroups.insert(newItem.id(), actualNewItem);
       recomputeId();
-  } else if (idQualifier == "cluster") {
+  } else if (qualifier == "cluster") {
     Cluster &actualNewItem = reinterpret_cast<Cluster&>(newItem);
     d->_clusters.remove(oldItem.id());
     if (!newItem.isNull())
       d->_clusters.insert(newItem.id(), actualNewItem);
     recomputeId();
-  } else if (idQualifier == "host") {
+  } else if (qualifier == "host") {
     Host &actualNewItem = reinterpret_cast<Host&>(newItem);
     d->_hosts.remove(oldItem.id());
     if (!newItem.isNull())
@@ -513,7 +513,7 @@ void SchedulerConfig::changeItem(
     recomputeId();
   } else {
     qDebug() << "unsupported item type in SchedulerConfig::changeItem:"
-             << idQualifier;
+             << qualifier;
   }
 }
 

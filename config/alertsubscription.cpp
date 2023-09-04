@@ -22,7 +22,7 @@ static QAtomicInt _sequence;
 class AlertSubscriptionData
     : public SharedUiItemDataWithImmutableParams<AlertSubscriptionData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   Utf8String _id, _channelName;
@@ -230,9 +230,9 @@ QVariant AlertSubscriptionData::uiData(int section, int role) const {
   return QVariant{};
 }
 
-static const Utf8String _idQualifier = "alertsubscription";
+const Utf8String AlertSubscriptionData::_qualifier = "alertsubscription";
 
-static const Utf8StringList _sectionNames {
+const Utf8StringList AlertSubscriptionData::_sectionNames {
   "id", // 0
   "pattern",
   "channel",
@@ -248,7 +248,7 @@ static const Utf8StringList _sectionNames {
   "parameters"
 };
 
-static const Utf8StringList _headerNames {
+const Utf8StringList AlertSubscriptionData::_headerNames {
   "Id", // 0
   "Pattern",
   "Channel",

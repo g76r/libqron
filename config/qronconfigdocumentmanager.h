@@ -38,8 +38,8 @@ public:
   using SharedUiItemDocumentManager::itemById;
   SharedUiItem itemById(
       const Utf8String &qualifier, const Utf8String &id) const override;
-  using SharedUiItemDocumentManager::itemsByIdQualifier;
-  SharedUiItemList<SharedUiItem> itemsByIdQualifier(
+  using SharedUiItemDocumentManager::itemsByQualifier;
+  SharedUiItemList<SharedUiItem> itemsByQualifier(
       const Utf8String &qualifier) const override;
   QMap<QByteArray,Calendar> namedCalendars() const {
     return _config.namedCalendars(); }
@@ -84,11 +84,11 @@ private:
   template<class T>
   void inline emitSignalForItemTypeChanges(
       QMap<QByteArray,T> newItems, QMap<QByteArray,T> oldItems,
-      QByteArray idQualifier);
+      QByteArray qualifier);
   /*template<>
   void inline emitSignalForItemTypeChanges(
       QMap<QByteArray,T> newItems, QMap<QByteArray,T> oldItems,
-      QByteArray idQualifier);
+      QByteArray qualifier);
   */
 };
 

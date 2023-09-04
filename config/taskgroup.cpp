@@ -18,7 +18,7 @@
 class TaskGroupData : public TaskOrGroupData {
 public:
   QVariant uiData(int section, int role) const override;
-  Utf8String idQualifier() const override { return "taskgroup"_u8; }
+  Utf8String qualifier() const override { return "taskgroup"_u8; }
   bool setUiData(
       int section, const QVariant &value, QString *errorString,
       SharedUiItemDocumentTransaction *transaction, int role) override;
@@ -50,8 +50,8 @@ bool TaskGroupData::loadConfig(
 
 bool TaskOrGroupData::loadConfig(
     PfNode node, SharedUiItem parent, Scheduler *scheduler) {
-  if (parent.idQualifier() != "tasksroot"
-      && parent.idQualifier() != "taskgroup") {
+  if (parent.qualifier() != "tasksroot"
+      && parent.qualifier() != "taskgroup") {
     qWarning() << "internal error in TaskOrGroupData::loadConfig";
     return false;
   }

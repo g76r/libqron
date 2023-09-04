@@ -35,7 +35,7 @@ static QSet<QString> excludedDescendantsForComments {
 class AlerterConfigData
     : public SharedUiItemDataWithImmutableParams<AlerterConfigData, true> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   Utf8String _id;
@@ -253,9 +253,9 @@ QList<Gridboard> AlerterConfig::gridboards() const {
   return d ? d->_gridboards : QList<Gridboard>();
 }
 
-static const Utf8String _idQualifier = "alerterconfig";
+const Utf8String AlerterConfigData::_qualifier = "alerterconfig";
 
-static const Utf8StringList _sectionNames {
+const Utf8StringList AlerterConfigData::_sectionNames {
   "id", // 0
   "params",
   "risedelay",
@@ -267,7 +267,7 @@ static const Utf8StringList _sectionNames {
   "duplicateemitdelay"
 };
 
-static const Utf8StringList _headerNames {
+const Utf8StringList AlerterConfigData::_headerNames {
   "Id", // 0
   "Params",
   "Rise Delay",
@@ -278,4 +278,3 @@ static const Utf8StringList _headerNames {
   "Remind Period",
   "Duplicate Emit Delay"
 };
-

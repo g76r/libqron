@@ -42,7 +42,7 @@ public:
                  SharedUiItemDocumentTransaction *transaction,
                  int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
-  Utf8String idQualifier() const override { return "task"_u8; }
+  Utf8String qualifier() const override { return "task"_u8; }
   PfNode toPfNode() const;
   void setTaskGroup(TaskGroup taskGroup);
 };

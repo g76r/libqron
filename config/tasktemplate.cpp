@@ -37,8 +37,8 @@ TaskTemplate::TaskTemplate(PfNode node, Scheduler *scheduler, SharedUiItem paren
 bool TaskOrTemplateData::loadConfig(
     PfNode node, Scheduler *scheduler, SharedUiItem parent,
     QMap<QByteArray,Calendar> namedCalendars) {
-  if (parent.idQualifier() != "tasksroot"
-      && parent.idQualifier() != "taskgroup") [[unlikely]] {
+  if (parent.qualifier() != "tasksroot"
+      && parent.qualifier() != "taskgroup") [[unlikely]] {
     Log::error() << "internal error in TaskOrGroupData::loadConfig";
     return false;
   }
@@ -50,7 +50,7 @@ bool TaskOrTemplateData::loadConfig(
         node, "mean", &_mean,
         [](QString value) { return Task::meanFromString(value.trimmed()); },
         [](Task::Mean mean) { return mean != Task::UnknownMean; })) {
-    Log::error() << idQualifier()+" with invalid execution mean: "
+    Log::error() << qualifier()+" with invalid execution mean: "
                  << node.toString();
     return false;
   }
@@ -70,14 +70,14 @@ bool TaskOrTemplateData::loadConfig(
         node, "maxinstances", &_maxInstances,
         [](QString value) { return value.toInt(0,0); },
         [](int value) { return value > 0; })) {
-    Log::error() << "invalid "+idQualifier()+" maxinstances: " << node.toPf();
+    Log::error() << "invalid "+qualifier()+" maxinstances: " << node.toPf();
     return false;
   }
   if (!ConfigUtils::loadAttribute<int>(
         node, "maxtries", &_maxTries,
         [](QString value) { return value.toInt(0,0); },
         [](int value) { return value > 0; })) {
-    Log::error() << "invalid "+idQualifier()+" maxtries: " << node.toPf();
+    Log::error() << "invalid "+qualifier()+" maxtries: " << node.toPf();
     return false;
   }
   ConfigUtils::loadAttribute<long long>(
@@ -120,9 +120,9 @@ bool TaskOrTemplateData::loadConfig(
         if (trigger.isValid()) {
           _noticeTriggers.append(trigger);
           Log::debug() << "configured notice trigger '" << content
-                       << "' on "+idQualifier()+" '" << _id << "'";
+                       << "' on "+qualifier()+" '" << _id << "'";
         } else {
-          Log::error() << idQualifier()+" with invalid notice trigger: "
+          Log::error() << qualifier()+" with invalid notice trigger: "
                        << node.toString();
           return false;
         }
@@ -132,16 +132,16 @@ bool TaskOrTemplateData::loadConfig(
           _cronTriggers.append(trigger);
           Log::debug() << "configured cron trigger "
                        << trigger.humanReadableExpression()
-                       << " on "+idQualifier()+" " << _id;
+                       << " on "+qualifier()+" " << _id;
         } else {
-          Log::error() << idQualifier()+" with invalid cron trigger: "
+          Log::error() << qualifier()+" with invalid cron trigger: "
                        << grandchild.toString();
           return false;
         }
         // LATER read misfire config
       } else {
         Log::warning() << "ignoring unknown trigger type '" << triggerType
-                       << "' on "+idQualifier()+" " << _id;
+                       << "' on "+qualifier()+" " << _id;
       }
     }
   }
@@ -157,14 +157,14 @@ bool TaskOrTemplateData::loadConfig(
         node, "herdingpolicy", &_herdingPolicy,
         [](QString value) { return Task::herdingPolicyFromString(value); },
         [](Task::HerdingPolicy p) { return p != Task::HerdingPolicyUnknown;})) {
-    Log::error() << "invalid herdingpolicy on "+idQualifier()+": "
+    Log::error() << "invalid herdingpolicy on "+qualifier()+": "
                  << node.toPf();
     return false;
   }
   QList<PfNode> children = node.childrenByName("requestform");
   if (!children.isEmpty()) {
     if (children.size() > 1) {
-      Log::error() << idQualifier()+" with several requestform: "
+      Log::error() << qualifier()+" with several requestform: "
                    << node.toString();
       return false;
     }

@@ -22,7 +22,7 @@ static QAtomicInt _sequence;
 class TaskInstanceData
     : public SharedUiItemDataWithMutableParams<TaskInstanceData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
@@ -704,7 +704,7 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
     } },
 };
 
-const Utf8String TaskInstanceData::_idQualifier = "taskinstance"_u8;
+const Utf8String TaskInstanceData::_qualifier = "taskinstance"_u8;
 
 const Utf8StringList TaskInstanceData::_sectionNames {
   "taskinstanceid", // 0

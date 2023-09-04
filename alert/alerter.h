@@ -251,7 +251,7 @@ signals:
    * calls, not through emitAlert()) has been created or destroyed or modified.
    * Can be connected to a SharedUiItemsModel. */
   void statefulAlertChanged(Alert newAlert, Alert oldAlert,
-                            QByteArray idQualifier);
+                            QByteArray qualifier);
   /** An alert is emited through alert channels.
    * This occurs for stateful alerts when raising an alert that is not
    * already raised (through raiseAlert()) or when canceling a raised alert

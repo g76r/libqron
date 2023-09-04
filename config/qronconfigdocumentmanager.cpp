@@ -25,9 +25,9 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
         "taskgroup", AfterUpdate,
         [](SharedUiItemDocumentTransaction *transaction,
         SharedUiItem *newItem, SharedUiItem oldItem,
-        QByteArray idQualifier, QString *errorString) {
+        QByteArray qualifier, QString *errorString) {
     Q_UNUSED(oldItem)
-    Q_UNUSED(idQualifier)
+    Q_UNUSED(qualifier)
     TaskGroup *newGroup = static_cast<TaskGroup*>(newItem);
     if (newItem->id() != oldItem.id()) {
       SharedUiItemList<> taskItems =
@@ -60,9 +60,9 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "host", BeforeUpdate|BeforeCreate,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
     Q_UNUSED(oldItem)
-    Q_UNUSED(idQualifier)
+    Q_UNUSED(qualifier)
     if (!transaction->itemById("cluster", newItem->id()).isNull()) {
       *errorString = "Host id already used by a cluster: "+newItem->id();
       return false;
@@ -72,8 +72,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "host", AfterUpdate|AfterDelete,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
-    Q_UNUSED(idQualifier)
+        SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
+    Q_UNUSED(qualifier)
     // cannot be a fk because target can reference either a host or a cluster
     foreach (const SharedUiItem &oldTaskItem,
              transaction->foreignKeySources("task", 5, oldItem.id())) {
@@ -85,7 +85,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
     }
     // on host change, upgrade every cluster it belongs to
     foreach (const SharedUiItem &oldClusterItem,
-             transaction->itemsByIdQualifier("cluster")) {
+             transaction->itemsByQualifier("cluster")) {
       auto &oldCluster = static_cast<const Cluster &>(oldClusterItem);
       SharedUiItemList<Host> hosts = oldCluster.hosts();
       for (int i = 0; i < hosts.size(); ++i) {
@@ -112,9 +112,9 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "cluster", BeforeUpdate|BeforeCreate,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
     Q_UNUSED(oldItem)
-    Q_UNUSED(idQualifier)
+    Q_UNUSED(qualifier)
     if (!transaction->itemById("host", newItem->id()).isNull()) {
       *errorString = "Cluster id already used by a host: "+newItem->id();
       return false;
@@ -124,9 +124,9 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "cluster", AfterUpdate|AfterDelete,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QByteArray idQualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
     Q_UNUSED(oldItem)
-    Q_UNUSED(idQualifier)
+    Q_UNUSED(qualifier)
     // cannot be a fk because target can reference either a host or a cluster
     foreach (const SharedUiItem &oldTaskItem,
              transaction->foreignKeySources("task", 5, oldItem.id())) {
@@ -157,7 +157,7 @@ SharedUiItem QronConfigDocumentManager::itemById(
 }
 
 SharedUiItemList<SharedUiItem> QronConfigDocumentManager
-::itemsByIdQualifier(const Utf8String &qualifier) const {
+::itemsByQualifier(const Utf8String &qualifier) const {
   // TODO also implement for other items
   if (qualifier == "task") {
     return SharedUiItemList<Task>(_config.tasks().values());
@@ -179,46 +179,46 @@ static const SharedUiItem _nullItem;
 template<class T>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges(
     QMap<QByteArray, T> newItems, QMap<QByteArray, T> oldItems,
-    QByteArray idQualifier) {
+    QByteArray qualifier) {
   foreach (const T &oldItem, oldItems)
     if (!newItems.contains(oldItem.id()))
-      emit itemChanged(_nullItem, oldItem, idQualifier);
+      emit itemChanged(_nullItem, oldItem, qualifier);
   foreach (const T &newItem, newItems)
-    emit itemChanged(newItem, oldItems.value(newItem.id()), idQualifier);
+    emit itemChanged(newItem, oldItems.value(newItem.id()), qualifier);
 }
 
 template<>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<PfNode>(
     QMap<QByteArray, PfNode> newItems, QMap<QByteArray, PfNode> oldItems,
-    QByteArray idQualifier) {
+    QByteArray qualifier) {
   for (auto oldItem: oldItems) {
     auto name = oldItem.utf8Name();
     if (!newItems.contains(name))
       emit itemChanged(
-          _nullItem, GenericSharedUiItem(idQualifier, name), idQualifier);
+          _nullItem, GenericSharedUiItem(qualifier, name), qualifier);
   }
   for (auto newItem: newItems) {
     auto name = newItem.utf8Name();
-    auto item = GenericSharedUiItem(idQualifier, name);
+    auto item = GenericSharedUiItem(qualifier, name);
     emit itemChanged(
-          item, oldItems.contains(name) ? item : _nullItem, idQualifier);
+          item, oldItems.contains(name) ? item : _nullItem, qualifier);
   }
 }
 
 template<>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<Task>(
     QMap<QByteArray,Task> newItems, QMap<QByteArray,Task> oldItems,
-    QByteArray idQualifier) {
+    QByteArray qualifier) {
   foreach (const Task &oldItem, oldItems) {
     if (!newItems.contains(oldItem.id())) {
-      emit itemChanged(_nullItem, oldItem, idQualifier);
+      emit itemChanged(_nullItem, oldItem, qualifier);
     }
   }
   QList<Task> newList = newItems.values();
   std::sort(newList.begin(), newList.end());
   foreach (const Task &newItem, newList) {
     const Task &oldItem = oldItems.value(newItem.id());
-    emit itemChanged(newItem, oldItem, idQualifier);
+    emit itemChanged(newItem, oldItem, qualifier);
   }
 }
 
@@ -276,7 +276,7 @@ bool QronConfigDocumentManager::prepareChangeItem(
   if (reason.isNull()) {
     storeItemChange(transaction, new_item, old_item, qualifier);
     //qDebug() << "QronConfigDocumentManager::prepareChangeItem succeeded:"
-    //         << idQualifier << newItem.id() << oldId;
+    //         << qualifier << newItem.id() << oldId;
     return true;
   } else {
     if (errorString)

@@ -35,7 +35,7 @@ static QStringList excludeOnfinishSubscriptions { "onfinish" };
 class TasksRootData
     : public SharedUiItemDataWithImmutableParams<TasksRootData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
@@ -108,108 +108,8 @@ public:
 
 class TaskTemplateData : public TaskOrTemplateData {
 public:
-  Utf8String idQualifier() const override { return "tasktemplate"_u8; }
+  Utf8String qualifier() const override { return "tasktemplate"_u8; }
   PfNode toPfNode() const;
-};
-
-const Utf8String TasksRootData::_idQualifier = "tasksroot";
-
-const Utf8StringList TasksRootData::_sectionNames = {
-  "tasklocalid", // 0
-  "parent_group",
-  "label",
-  "mean",
-  "command",
-  "target", // 5
-  "triggers",
-  "parameters",
-  "resources",
-  "last_execution",
-  "next_execution", // 10
-  "taskid",
-  "max_instances",
-  "running_count",
-  "on_start",
-  "on_success", // 15
-  "on_failure",
-  "running_slash_max",
-  "actions",
-  "last_execution_status",
-  "applied_templates", // was: System environment // 20
-  "vars",
-  "instance_params", // was: Unsetenv
-  "min_expected_duration",
-  "max_expected_duration",
-  "overridable_params", // 25
-  "last_execution_duration",
-  "max_duration_before_abort",
-  "triggers_incl_calendars",
-  "enabled",
-  "has_triggers_with_calendars", // 30
-  "herding_policy", // was: Workflow task
-  "last_taskinstanceid",
-  "human_readable_info",
-  "executions_count",
-  "max_queued_instances", // 35 was: Enqueue policy
-  "on_plan",
-  "deduplicate_criterion",
-  "merge_stdout_into_stderr",
-  "on_stderr",
-  "on_stdout", // 40
-  "status_command",
-  "abort_command",
-  "max_tries",
-  "pause_between_tries",
-  "deduplicate_strategy", // 45
-};
-
-const Utf8StringList TasksRootData::_headerNames = {
-  "Task local Id", // 0
-  "Parent Group",
-  "Label",
-  "Mean",
-  "Command",
-  "Target", // 5
-  "Triggers",
-  "Parameters",
-  "Resources",
-  "Last execution",
-  "Next execution", // 10
-  "Id",
-  "Max instances",
-  "Running count",
-  "On start",
-  "On success", // 15
-  "On failure",
-  "Running / max",
-  "Actions",
-  "Last execution status",
-  "Applied templates", // was: System environment // 20
-  "Vars",
-  "Instance params", // was: Unsetenv
-  "Min expected duration",
-  "Max expected duration",
-  "Overridable params", // 25
-  "Last execution duration",
-  "Max duration before abort",
-  "Triggers incl. calendars",
-  "Enabled",
-  "Has triggers with calendars", // 30
-  "Herding policy", // was: Workflow task
-  "Last taskinstanceid",
-  "Human readable info",
-  "Executions count",
-  "Max queued instances", // 35 was: Enqueue policy
-  "On plan",
-  "Deduplicate criterion",
-  "Merge stdout into stderr",
-  "On stderr",
-  "On stdout", // 40
-  "Status command",
-  "Abort command",
-  "Max tries",
-  "Pause between tries",
-  "Deduplicate strategy", // 45
 };
 
 #endif // TASK_P_H

@@ -36,7 +36,7 @@ public:
       QObject *parent = 0, HostsResourcesAvailabilityModel::Mode mode
       = HostsResourcesAvailabilityModel::FreeOverConfigured);
   void changeItem(
-      SharedUiItem newItem, SharedUiItem oldItem, QString idQualifier);
+      SharedUiItem newItem, SharedUiItem oldItem, QString qualifier);
   void hostsResourcesAvailabilityChanged(
       QString host, QMap<QString, qint64> resources);
 };

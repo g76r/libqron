@@ -79,7 +79,7 @@ public:
   PfNode originalPfNode() const;
   void copyLiveAttributesFromOldTasks(QMap<QByteArray,Task> oldTasks);
   void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
-                  QByteArray idQualifier);
+                  QByteArray qualifier);
   void changeParams(ParamSet newParams, ParamSet oldParams, QByteArray setId);
   void applyLogConfig() const;
 

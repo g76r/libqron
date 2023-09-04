@@ -19,7 +19,7 @@ static QAtomicInt _sequence;
 
 class AlertSettingsData : public SharedUiItemDataBase<AlertSettingsData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   Utf8String _id;
@@ -174,9 +174,9 @@ QVariant AlertSettingsData::uiData(int section, int role) const {
   return QVariant();
 }
 
-static const Utf8String _idQualifier = "alertsettings";
+const Utf8String AlertSettingsData::_qualifier = "alertsettings";
 
-static const Utf8StringList _sectionNames {
+const Utf8StringList AlertSettingsData::_sectionNames {
   "id", // 0
   "pattern",
   "options",
@@ -188,7 +188,7 @@ static const Utf8StringList _sectionNames {
   "acceptabilitywindow"
 };
 
-static const Utf8StringList _headerNames {
+const Utf8StringList AlertSettingsData::_headerNames {
   "Id", // 0
   "Pattern",
   "Options",
@@ -199,4 +199,3 @@ static const Utf8StringList _headerNames {
   "Visibility Window",
   "Acceptability Window"
 };
-

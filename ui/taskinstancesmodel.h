@@ -35,7 +35,7 @@ public:
   void setCustomActions(QString customActions) {
     _customActions = customActions; }
   void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
-                  QByteArray idQualifier) override;
+                  QByteArray qualifier) override;
 };
 
 #endif // TASKINSTANCESMODEL_H

@@ -17,7 +17,7 @@
 
 class AlertData : public SharedUiItemDataWithFunctions<AlertData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
@@ -245,9 +245,9 @@ static const SharedUiItemDataFunctions _paramFunctions = {
     } },
 };
 
-static const Utf8String _idQualifier = "alert";
+const Utf8String AlertData::_qualifier = "alert";
 
-static const Utf8StringList _sectionNames {
+const Utf8StringList AlertData::_sectionNames {
   "alertid", // 0
   "alertstatus",
   "risedate",
@@ -259,7 +259,7 @@ static const Utf8StringList _sectionNames {
   "alertstatus"
 };
 
-static const Utf8StringList _headerNames {
+const Utf8StringList AlertData::_headerNames {
   "Id", // 0
   "Status",
   "Rise Date",

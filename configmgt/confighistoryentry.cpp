@@ -17,7 +17,7 @@
 class ConfigHistoryEntryData
     : public SharedUiItemDataBase<ConfigHistoryEntryData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   Utf8String _id;
@@ -71,9 +71,9 @@ ConfigHistoryEntryData *ConfigHistoryEntry::data() {
   return detachedData<ConfigHistoryEntryData>();
 }
 
-static const Utf8String _idQualifier = "confighistoryentry";
+const Utf8String ConfigHistoryEntryData::_qualifier = "confighistoryentry";
 
-static const Utf8StringList _sectionNames {
+const Utf8StringList ConfigHistoryEntryData::_sectionNames {
   "historyentryid", // 0
   "timestamp",
   "event",
@@ -81,7 +81,7 @@ static const Utf8StringList _sectionNames {
   "actions"
 };
 
-static const Utf8StringList _headerNames {
+const Utf8StringList ConfigHistoryEntryData::_headerNames {
   "History Entry Id", // 0
   "Timestamp",
   "Event",

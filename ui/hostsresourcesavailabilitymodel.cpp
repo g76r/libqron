@@ -63,8 +63,8 @@ void HostsResourcesAvailabilityModel::hostsResourcesAvailabilityChanged(
 }
 
 void HostsResourcesAvailabilityModel::changeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QString idQualifier) {
-  if (idQualifier == QStringLiteral("host")) {
+    SharedUiItem newItem, SharedUiItem oldItem, QString qualifier) {
+  if (qualifier == QStringLiteral("host")) {
     QString newId = newItem.id(), oldId = oldItem.id();
     if (newItem.isNull() || newId != oldId) {
       _configured.remove(oldId);

@@ -34,7 +34,7 @@ public:
       const QMimeData *data, Qt::DropAction action, int targetRow,
       int targetColumn, const QModelIndex &targetParent) override;
   void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
-                  QByteArray idQualifier) override;
+                  QByteArray qualifier) override;
 
 protected:
   void determineItemPlaceInTree(SharedUiItem newItem, QModelIndex *parent,

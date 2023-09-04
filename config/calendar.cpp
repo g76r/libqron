@@ -21,7 +21,7 @@ _dateRE("(([0-9]+)-([0-9]+)-([0-9]+))?(..)?(([0-9]+)-([0-9]+)-([0-9]+))?");
 
 class CalendarData : public SharedUiItemDataBase<CalendarData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   struct Rule {
@@ -193,15 +193,15 @@ QVariant CalendarData::uiData(int section, int role) const {
   return {};
 }
 
-static const Utf8String _idQualifier = "calendar";
+const Utf8String CalendarData::_qualifier = "calendar";
 
-static const Utf8StringList _sectionNames {
+const Utf8StringList CalendarData::_sectionNames {
   "id", // 0
   "name",
   "date_rules"
 };
 
-static const Utf8StringList _headerNames {
+const Utf8StringList CalendarData::_headerNames {
   "Id", // 0
   "Name",
   "Date Rules"

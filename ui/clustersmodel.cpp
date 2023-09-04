@@ -26,7 +26,7 @@ class HostReference : public SharedUiItem {
     HostReferenceData(QString cluster, QString host)
       : _id((cluster+"~"+host).toUtf8()), _cluster(cluster), _host(host) { }
     Utf8String id() const override { return _id; }
-    Utf8String idQualifier() const override { return "hostreference"_u8; }
+    Utf8String qualifier() const override { return "hostreference"_u8; }
     int uiSectionCount() const override { return 1; }
     QVariant uiData(int section, int role) const override {
       return section == 0 && role == Qt::DisplayRole ? _host : QVariant{}; }
@@ -62,14 +62,14 @@ ClustersModel::ClustersModel(QObject *parent)
 }
 
 void ClustersModel::changeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QByteArray idQualifier) {
-  if (idQualifier == "cluster"_ba) {
+    SharedUiItem newItem, SharedUiItem oldItem, QByteArray qualifier) {
+  if (qualifier == "cluster"_ba) {
     // remove host references rows
     QModelIndex oldIndex = indexOf(oldItem);
     if (oldIndex.isValid())
       removeRows(0, rowCount(oldIndex), oldIndex);
     // regular changeItem
-    SharedUiItemsTreeModel::changeItem(newItem, oldItem, idQualifier);
+    SharedUiItemsTreeModel::changeItem(newItem, oldItem, qualifier);
     // insert host references rows
     QModelIndex newIndex = indexOf(newItem);
     if (newIndex.isValid()) {
@@ -82,14 +82,14 @@ void ClustersModel::changeItem(
       }
     }
   } else {
-    SharedUiItemsTreeModel::changeItem(newItem, oldItem, idQualifier);
+    SharedUiItemsTreeModel::changeItem(newItem, oldItem, qualifier);
   }
 }
 
 void ClustersModel::determineItemPlaceInTree(
     SharedUiItem newItem, QModelIndex *parent, int *row) {
   Q_UNUSED(row)
-  if (newItem.idQualifier() == "hostreference"_ba) {
+  if (newItem.qualifier() == "hostreference"_ba) {
     HostReference &hf = reinterpret_cast<HostReference&>(newItem);
     *parent = indexOf("cluster:"_ba+hf.cluster().toUtf8());
   }
@@ -110,10 +110,10 @@ bool ClustersModel::canDropMimeData(
   if (idsArrays.isEmpty())
     return false; // nothing to drop
   foreach (const QByteArray &qualifiedId, idsArrays) {
-    QString idQualifier = QString::fromUtf8(
+    QString qualifier = QString::fromUtf8(
           qualifiedId.left(qualifiedId.indexOf(':')));
-    if (idQualifier != "host"_ba
-        && idQualifier != "hostreference"_ba)
+    if (qualifier != "host"_ba
+        && qualifier != "hostreference"_ba)
       return false; // can only drop hosts
   }
   return true;

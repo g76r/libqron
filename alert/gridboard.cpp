@@ -89,7 +89,7 @@ public:
 
 class DimensionData : public SharedUiItemDataBase<DimensionData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
 
@@ -167,7 +167,7 @@ static void mergeComponents(
 
 class GridboardData : public SharedUiItemDataBase<GridboardData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   Utf8String _id;
@@ -533,13 +533,13 @@ QVariant GridboardData::uiData(int section, int role) const {
   return QVariant();
 }
 
-const Utf8String DimensionData::_idQualifier = "gridboarddimension";
+const Utf8String DimensionData::_qualifier = "gridboarddimension";
 
 const Utf8StringList DimensionData::_sectionNames;
 
 const Utf8StringList DimensionData::_headerNames;
 
-const Utf8String GridboardData::_idQualifier = "gridboard";
+const Utf8String GridboardData::_qualifier = "gridboard";
 
 const Utf8StringList GridboardData::_sectionNames {
   "id", // 0

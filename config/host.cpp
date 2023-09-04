@@ -18,7 +18,7 @@
 
 class HostData : public SharedUiItemDataBase<HostData> {
 public:
-  static const Utf8String _idQualifier;
+  static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
   Utf8String _id, _label, _hostname;
@@ -167,16 +167,16 @@ PfNode Host::toPfNode() const {
   return node;
 }
 
-static const Utf8String _idQualifier = "host";
+const Utf8String HostData::_qualifier = "host";
 
-static const Utf8StringList _sectionNames {
+const Utf8StringList HostData::_sectionNames {
   "hostid", // 0
   "hostname",
   "resources",
   "label",
 };
 
-static const Utf8StringList _headerNames {
+const Utf8StringList HostData::_headerNames {
   "Id", // 0
   "Hostname",
   "Resources",
