@@ -45,8 +45,8 @@ public:
   Task();
   Task(const Task &other);
   Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-       QMap<QByteArray, Calendar> namedCalendars,
-       QMap<QByteArray, TaskTemplate> taskTemplates);
+       QMap<Utf8String, Calendar> namedCalendars,
+       QMap<Utf8String, TaskTemplate> taskTemplates);
   /** Should only be used by SharedUiItemsModels to get size and headers from
    * a non-null item. */
   static Task dummyTask();
@@ -147,7 +147,7 @@ public:
   PfNode toPfNode() const;
   /** to be called when activating a new configuration, to keep live attributes
    * such as lastReturnCode() or enabled() */
-  void copyLiveAttributesFromOldTask(Task oldTask);
+  void copyLiveAttributesFromOldTask(const Task &oldTask);
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
 

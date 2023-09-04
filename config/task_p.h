@@ -100,9 +100,9 @@ public:
                  SharedUiItemDocumentTransaction *transaction,
                  int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
-  void setId(QByteArray id) { _id = id; }
+  void setId(const Utf8String &id) { _id = id; }
   bool loadConfig(PfNode node, Scheduler *scheduler, SharedUiItem parent,
-                  QMap<QByteArray, Calendar> namedCalendars);
+                  QMap<Utf8String, Calendar> namedCalendars);
   void fillPfNode(PfNode &node) const;
 };
 

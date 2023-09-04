@@ -41,9 +41,9 @@ public:
   using SharedUiItemDocumentManager::itemsByQualifier;
   SharedUiItemList<SharedUiItem> itemsByQualifier(
       const Utf8String &qualifier) const override;
-  QMap<QByteArray,Calendar> namedCalendars() const {
+  QMap<Utf8String,Calendar> namedCalendars() const {
     return _config.namedCalendars(); }
-  QMap<QByteArray,PfNode> externalParams() const {
+  QMap<Utf8String,PfNode> externalParams() const {
     return _config.externalParams(); }
   int tasksCount() const { return _config.tasks().count(); }
   int taskGroupsCount() const { return _config.taskgroups().count(); }
@@ -83,8 +83,8 @@ protected:
 private:
   template<class T>
   void inline emitSignalForItemTypeChanges(
-      QMap<QByteArray,T> newItems, QMap<QByteArray,T> oldItems,
-      QByteArray qualifier);
+      const QMap<Utf8String,T> &newItems, const QMap<Utf8String,T> &oldItems,
+      const Utf8String &qualifier);
   /*template<>
   void inline emitSignalForItemTypeChanges(
       QMap<QByteArray,T> newItems, QMap<QByteArray,T> oldItems,

@@ -270,3 +270,5 @@ const Utf8StringList AlertData::_headerNames {
   "Id With Count",
   "Status"
 };
+
+const SharedUiItemDataFunctions AlertData::_paramFunctions;

@@ -51,13 +51,13 @@ public:
   ParamSet vars() const { return tasksRoot().vars(); }
   ParamSet instanceparams() const { return tasksRoot().instanceparams(); }
   TasksRoot tasksRoot() const;
-  QMap<QByteArray,TaskGroup> taskgroups() const;
-  QMap<QByteArray,TaskTemplate> tasktemplates() const;
-  QMap<QByteArray,Task> tasks() const;
-  QMap<QByteArray,Cluster> clusters() const;
-  QMap<QByteArray,Host> hosts() const;
-  QMap<QByteArray, Calendar> namedCalendars() const;
-  QMap<QByteArray, PfNode> externalParams() const;
+  QMap<Utf8String,TaskGroup> taskgroups() const;
+  QMap<Utf8String,TaskTemplate> tasktemplates() const;
+  QMap<Utf8String,Task> tasks() const;
+  QMap<Utf8String,Cluster> clusters() const;
+  QMap<Utf8String,Host> hosts() const;
+  QMap<Utf8String, Calendar> namedCalendars() const;
+  QMap<Utf8String, PfNode> externalParams() const;
   QList<EventSubscription> onstart() const;
   QList<EventSubscription> onsuccess() const;
   QList<EventSubscription> onfailure() const;
@@ -77,7 +77,7 @@ public:
   /** Originaly parsed PF tree, if SchedulerConfig was constructed from a PF
    * tree, usefull for a configuration repository in a running scheduler. */
   PfNode originalPfNode() const;
-  void copyLiveAttributesFromOldTasks(QMap<QByteArray,Task> oldTasks);
+  void copyLiveAttributesFromOldTasks(const QMap<Utf8String, Task> &oldTasks);
   void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
                   QByteArray qualifier);
   void changeParams(ParamSet newParams, ParamSet oldParams, QByteArray setId);

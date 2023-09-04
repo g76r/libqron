@@ -73,7 +73,7 @@ void LocalConfigRepository::openRepository(QString basePath) {
       }
       auto configId = config.id();
       if (configId != fi.baseName()) { // filename must be fixed to match id
-        QString rightPath = fi.path()+"/"+configId;
+        auto rightPath = Utf8String(fi.path())+"/"+configId;
         Log::warning() << "renaming config file because id mismatch: "
                        << fi.fileName() << " to " << rightPath;
         // LATER also rename in config log to keep consistency
@@ -81,9 +81,9 @@ void LocalConfigRepository::openRepository(QString basePath) {
         if (target.exists()) {
           // target can already exist, since file with bad id can be a duplicate
           // remove previously existing same file in errors dir if any
-          QFile(errorsDir.path()+"/"+configId).remove();
+          QFile(errorsDir.path()+"/"+configId.toString()).remove();
           // move to errors dir
-          if (!target.rename(errorsDir.path()+"/"+configId))
+          if (!target.rename(errorsDir.path()+"/"+configId.toString()))
             Log::error() << "cannot move duplicated config file to 'errors' "
                             "subdir: " << fi.fileName();
         }
@@ -168,7 +168,7 @@ QByteArray LocalConfigRepository::addConfig(SchedulerConfig config) {
       return id;
     }*/
     if (!_basePath.isEmpty()) {
-      QSaveFile f(_basePath+"/configs/"+id);
+      QSaveFile f(_basePath+"/configs/"+id.toString());
       if (!f.open(QIODevice::WriteOnly|QIODevice::Truncate)
           || f.write(config.originalPfNode()
                      .toPf(PfOptions().setShouldIndent()

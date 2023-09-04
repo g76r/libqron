@@ -25,7 +25,7 @@ public:
   TaskTemplate();
   TaskTemplate(const TaskTemplate &other);
   TaskTemplate(PfNode node, Scheduler *scheduler, SharedUiItem parent,
-               QMap<QByteArray, Calendar> namedCalendars);
+               QMap<Utf8String, Calendar> namedCalendars);
   TaskTemplate &operator=(const TaskTemplate &other) {
     SharedUiItem::operator=(other); return *this; }
   int maxInstances() const;

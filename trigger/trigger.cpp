@@ -91,7 +91,7 @@ ParamSet Trigger::overridingParams() const {
 }
 
 bool Trigger::loadConfig(
-    PfNode node, QMap<QByteArray,Calendar> namedCalendars) {
+    PfNode node, QMap<Utf8String,Calendar> namedCalendars) {
   ConfigUtils::loadComments(node, &d->_commentsList,
                             excludedDescendantsForComments);
   QList<PfNode> list = node.childrenByName("calendar"_ba);

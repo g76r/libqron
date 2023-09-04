@@ -38,6 +38,7 @@ public:
   static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
+  static const SharedUiItemDataFunctions _paramFunctions;
   Utf8String _id;
   QList<AlertSubscription> _alertSubscriptions;
   QList<AlertSettings> _alertSettings;
@@ -278,3 +279,5 @@ const Utf8StringList AlerterConfigData::_headerNames {
   "Remind Period",
   "Duplicate Emit Delay"
 };
+
+const SharedUiItemDataFunctions AlerterConfigData::_paramFunctions;

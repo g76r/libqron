@@ -29,7 +29,7 @@ NoticeTrigger::NoticeTrigger() {
 }
 
 NoticeTrigger::NoticeTrigger(PfNode node,
-                             QMap<QByteArray, Calendar> namedCalendars)
+                             QMap<Utf8String, Calendar> namedCalendars)
   : Trigger(new NoticeTriggerData(node.contentAsUtf8())){
   loadConfig(node, namedCalendars);
 }

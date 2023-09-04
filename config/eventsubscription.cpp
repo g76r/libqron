@@ -24,7 +24,7 @@ public:
   QRegularExpression _filter;
   QList<Action> _actions;
   ParamSet _globalParams;
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   EventSubscriptionData(QString subscriberName = QString(),
                         QString eventName = QString(),
                         ParamSet globalParams = ParamSet())
@@ -83,9 +83,8 @@ bool EventSubscription::triggerActions(
   if (!d)
     return false;
   ParamsProviderMergerRestorer ppmr(context);
-  auto ppp = instance.pseudoParams();
   if (!instance.isNull())
-    context->append(&ppp).append(instance.params());
+    context->append(&instance);
   for (Action a: d->_actions) {
     if (a.actionType() == "stop")
       return true;

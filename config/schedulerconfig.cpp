@@ -16,16 +16,11 @@
 #include "action/action.h"
 #include "configutils.h"
 #include "tasksroot.h"
+#include "modelview/templatedshareduiitemdata.h"
+#include <QMutexLocker>
 
 #define DEFAULT_MAXTOTALTASKINSTANCES 16
 #define DEFAULT_MAXQUEUEDREQUESTS 128
-
-static QString _uiHeaderNames[] {
-  "Id", // 0
-  "Last Load Time",
-  "Is Active",
-  "Actions"
-};
 
 static QSet<QString> excludedDescendantsForComments {
   "task", "taskgroup", "host", "cluster", "calendar", "alerts",
@@ -52,30 +47,33 @@ public:
 
 } // unnamed namespace
 
-class SchedulerConfigData : public SharedUiItemData{
+class SchedulerConfigData : public SharedUiItemDataBase<SchedulerConfigData> {
 public:
-  QMap<QByteArray,TaskGroup> _taskgroups;
-  QMap<QByteArray,TaskTemplate> _tasktemplates;
-  QMap<QByteArray,Task> _tasks;
-  QMap<QByteArray,Cluster> _clusters;
-  QMap<QByteArray,Host> _hosts;
+  static const Utf8String _qualifier;
+  static const Utf8StringList _sectionNames;
+  static const Utf8StringList _headerNames;
+  QMap<Utf8String,TaskGroup> _taskgroups;
+  QMap<Utf8String,TaskTemplate> _tasktemplates;
+  QMap<Utf8String,Task> _tasks;
+  QMap<Utf8String,Cluster> _clusters;
+  QMap<Utf8String,Host> _hosts;
   TasksRoot _tasksRoot;
   QList<EventSubscription> _onlog, _onnotice, _onschedulerstart, _onconfigload;
   qint32 _maxtotaltaskinstances, _maxqueuedrequests;
-  QMap<QByteArray,Calendar> _namedCalendars;
-  QMap<QByteArray,PfNode> _externalParams;
+  QMap<Utf8String,Calendar> _namedCalendars;
+  QMap<Utf8String,PfNode> _externalParams;
   AlerterConfig _alerterConfig;
   AccessControlConfig _accessControlConfig;
   QList<LogFile> _logfiles;
   QDateTime _lastLoadTime;
-  QStringList _commentsList;
+  Utf8StringList _commentsList;
   mutable QMutex _mutex;
   mutable QByteArray _id;
   PfNode _originalPfNode;
   SchedulerConfigData() : _maxtotaltaskinstances(0), _maxqueuedrequests(0) { }
   SchedulerConfigData(PfNode root, Scheduler *scheduler, bool applyLogConfig);
   SchedulerConfigData(const SchedulerConfigData &other)
-    : SharedUiItemData(other),
+    : SharedUiItemDataBase<SchedulerConfigData>(other),
       _taskgroups(other._taskgroups), _tasktemplates(other._tasktemplates),
       _tasks(other._tasks), _clusters(other._clusters), _hosts(other._hosts),
       _tasksRoot(other._tasksRoot), _onlog(other._onlog),
@@ -90,11 +88,8 @@ public:
       _logfiles(other._logfiles),
       _lastLoadTime(other._lastLoadTime), _id(other._id) {
   }
-  QVariant uiData(int section, int role) const;
-  QVariant uiHeaderData(int section, int role) const;
-  int uiSectionCount() const;
-  QByteArray id() const { return _id; }
-  QByteArray qualifier() const { return "config"_ba; }
+  QVariant uiData(int section, int role) const override;
+  Utf8String id() const override { return _id; }
   void applyLogConfig() const;
 };
 
@@ -338,7 +333,7 @@ ignore_task:;
         &requestTaskActionLinks, "*");
   // LATER onschedulershutdown
   foreach (const RequestTaskActionLink &link, requestTaskActionLinks) {
-    auto targetName = link._action.targetName().toUtf8();
+    auto targetName = link._action.targetName();
     auto taskId = link._contextTask.id();
     if (!link._contextTask.isNull() && !targetName.contains('.')) { // id to group
       targetName = taskId.left(taskId.lastIndexOf('.')+1)+targetName;
@@ -380,39 +375,39 @@ TasksRoot SchedulerConfig::tasksRoot() const {
   return d ? d->_tasksRoot : TasksRoot();
 }
 
-QMap<QByteArray, TaskGroup> SchedulerConfig::taskgroups() const {
+QMap<Utf8String, TaskGroup> SchedulerConfig::taskgroups() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_taskgroups : QMap<QByteArray,TaskGroup>();
+  return d ? d->_taskgroups : QMap<Utf8String,TaskGroup>();
 }
 
-QMap<QByteArray,TaskTemplate> SchedulerConfig::tasktemplates() const {
+QMap<Utf8String,TaskTemplate> SchedulerConfig::tasktemplates() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_tasktemplates : QMap<QByteArray,TaskTemplate>();
+  return d ? d->_tasktemplates : QMap<Utf8String,TaskTemplate>();
 }
 
-QMap<QByteArray,Task> SchedulerConfig::tasks() const {
+QMap<Utf8String,Task> SchedulerConfig::tasks() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_tasks : QMap<QByteArray,Task>();
+  return d ? d->_tasks : QMap<Utf8String,Task>();
 }
 
-QMap<QByteArray,Cluster> SchedulerConfig::clusters() const {
+QMap<Utf8String,Cluster> SchedulerConfig::clusters() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_clusters : QMap<QByteArray,Cluster>{};
+  return d ? d->_clusters : QMap<Utf8String,Cluster>{};
 }
 
-QMap<QByteArray,Host> SchedulerConfig::hosts() const {
+QMap<Utf8String,Host> SchedulerConfig::hosts() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_hosts : QMap<QByteArray,Host>{};
+  return d ? d->_hosts : QMap<Utf8String,Host>{};
 }
 
-QMap<QByteArray,Calendar> SchedulerConfig::namedCalendars() const {
+QMap<Utf8String,Calendar> SchedulerConfig::namedCalendars() const {
   const SchedulerConfigData *d = data();
-  return d ? d->_namedCalendars : QMap<QByteArray,Calendar>{};
+  return d ? d->_namedCalendars : QMap<Utf8String,Calendar>{};
 }
 
-QMap<QByteArray,PfNode> SchedulerConfig::externalParams() const {
+QMap<Utf8String,PfNode> SchedulerConfig::externalParams() const {
   auto d = data();
-  return d ? d->_externalParams : QMap<QByteArray,PfNode>{};
+  return d ? d->_externalParams : QMap<Utf8String,PfNode>{};
 }
 
 QList<EventSubscription> SchedulerConfig::onstart() const {
@@ -554,11 +549,11 @@ QByteArray SchedulerConfig::recomputeId() const {
 }
 
 void SchedulerConfig::copyLiveAttributesFromOldTasks(
-    QMap<QByteArray, Task> oldTasks) {
+    const QMap<Utf8String, Task> &oldTasks) {
   SchedulerConfigData *d = data();
   if (!d)
     return;
-  foreach (const Task &oldTask, oldTasks) {
+  for (auto oldTask: oldTasks) {
     Task task = d->_tasks.value(oldTask.id());
     if (task.isNull())
       continue;
@@ -619,9 +614,9 @@ PfNode SchedulerConfig::toPfNode() const {
   //qSort(namedCalendars);
   //foreach (const Calendar &calendar, namedCalendars)
   //  node.appendChild(calendar.toPfNode());
-  QByteArrayList calendarNames = d->_namedCalendars.keys();
+  auto calendarNames = d->_namedCalendars.keys();
   std::sort(calendarNames.begin(), calendarNames.end());
-  foreach (auto calendarName, calendarNames)
+  for (auto calendarName: calendarNames)
     node.appendChild(d->_namedCalendars.value(calendarName).toPfNode());
   for (auto node: d->_externalParams)
     node.appendChild(node);
@@ -635,16 +630,6 @@ PfNode SchedulerConfig::toPfNode() const {
 
 SchedulerConfigData *SchedulerConfig::data() {
   return detachedData<SchedulerConfigData>();
-}
-
-QVariant SchedulerConfigData::uiHeaderData(int section, int role) const {
-  return role == Qt::DisplayRole && section >= 0
-      && (unsigned)section < sizeof _uiHeaderNames
-      ? _uiHeaderNames[section] : QVariant();
-}
-
-int SchedulerConfigData::uiSectionCount() const {
-  return sizeof _uiHeaderNames / sizeof *_uiHeaderNames;
 }
 
 QVariant SchedulerConfigData::uiData(int section, int role) const {
@@ -676,3 +661,21 @@ void SchedulerConfig::applyLogConfig() const {
   if (d)
     d->applyLogConfig();
 }
+
+const Utf8String SchedulerConfigData::_qualifier = "config";
+
+const Utf8StringList SchedulerConfigData::_sectionNames {
+  "configid", // 0
+  "last_load_time",
+  "is_active",
+  "actions"
+};
+
+const Utf8StringList SchedulerConfigData::_headerNames {
+  "Id", // 0
+  "Last Load Time",
+  "Is Active",
+  "Actions"
+};
+
+

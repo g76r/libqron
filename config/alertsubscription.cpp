@@ -25,6 +25,7 @@ public:
   static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
   static const Utf8StringList _headerNames;
+  static const SharedUiItemDataFunctions _paramFunctions;
   Utf8String _id, _channelName;
   QString _pattern;
   QRegularExpression _patternRegexp;
@@ -263,3 +264,5 @@ const Utf8StringList AlertSubscriptionData::_headerNames {
   "Notify Reminder",
   "Parameters"
 };
+
+const SharedUiItemDataFunctions AlertSubscriptionData::_paramFunctions;

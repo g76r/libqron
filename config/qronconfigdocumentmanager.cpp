@@ -178,8 +178,8 @@ static const SharedUiItem _nullItem;
 
 template<class T>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges(
-    QMap<QByteArray, T> newItems, QMap<QByteArray, T> oldItems,
-    QByteArray qualifier) {
+    const QMap<Utf8String, T> &newItems, const QMap<Utf8String, T> &oldItems,
+    const Utf8String &qualifier) {
   foreach (const T &oldItem, oldItems)
     if (!newItems.contains(oldItem.id()))
       emit itemChanged(_nullItem, oldItem, qualifier);
@@ -189,8 +189,9 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges(
 
 template<>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<PfNode>(
-    QMap<QByteArray, PfNode> newItems, QMap<QByteArray, PfNode> oldItems,
-    QByteArray qualifier) {
+    const QMap<Utf8String, PfNode> &newItems,
+    const QMap<Utf8String, PfNode> &oldItems,
+    const Utf8String &qualifier) {
   for (auto oldItem: oldItems) {
     auto name = oldItem.utf8Name();
     if (!newItems.contains(name))
@@ -207,8 +208,9 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<PfNode>(
 
 template<>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<Task>(
-    QMap<QByteArray,Task> newItems, QMap<QByteArray,Task> oldItems,
-    QByteArray qualifier) {
+    const QMap<Utf8String,Task> &newItems,
+    const QMap<Utf8String,Task> &oldItems,
+    const Utf8String &qualifier) {
   foreach (const Task &oldItem, oldItems) {
     if (!newItems.contains(oldItem.id())) {
       emit itemChanged(_nullItem, oldItem, qualifier);
@@ -228,23 +230,23 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
   _config = newConfig;
   if (locker)
     locker->unlock();
-  emit paramsChanged(newConfig.params(), oldConfig.params(), "globalparams"_ba);
-  emit paramsChanged(newConfig.vars(), oldConfig.vars(), "globalvars"_ba);
+  emit paramsChanged(newConfig.params(), oldConfig.params(), "globalparams"_u8);
+  emit paramsChanged(newConfig.vars(), oldConfig.vars(), "globalvars"_u8);
   emit accessControlConfigurationChanged(
         !newConfig.accessControlConfig().isEmpty());
   emitSignalForItemTypeChanges(
-        newConfig.hosts(), oldConfig.hosts(), "host"_ba);
+        newConfig.hosts(), oldConfig.hosts(), "host"_u8);
   emitSignalForItemTypeChanges(
-        newConfig.clusters(), oldConfig.clusters(), "cluster"_ba);
+        newConfig.clusters(), oldConfig.clusters(), "cluster"_u8);
   emitSignalForItemTypeChanges(
-        newConfig.namedCalendars(), oldConfig.namedCalendars(), "calendar"_ba);
+        newConfig.namedCalendars(), oldConfig.namedCalendars(), "calendar"_u8);
   emitSignalForItemTypeChanges(
         newConfig.externalParams(), oldConfig.externalParams(),
         "externalparams"_ba);
   emitSignalForItemTypeChanges(
-        newConfig.taskgroups(), oldConfig.taskgroups(), "taskgroup"_ba);
+        newConfig.taskgroups(), oldConfig.taskgroups(), "taskgroup"_u8);
   emitSignalForItemTypeChanges(
-        newConfig.tasks(), oldConfig.tasks(), "task"_ba);
+        newConfig.tasks(), oldConfig.tasks(), "task"_u8);
   // TODO also implement for other items
   emit globalEventSubscriptionsChanged(
         newConfig.onstart(), newConfig.onsuccess(), newConfig.onfailure(),

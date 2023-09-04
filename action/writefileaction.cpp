@@ -26,22 +26,22 @@ public:
     : _path(path), _message(message), _params(params) {
   }
   void trigger(EventSubscription, ParamsProviderMerger *context,
-               TaskInstance instance) const {
+               TaskInstance instance) const override {
     ParamsProviderMergerRestorer ppmr(context);
     context->prepend(_params);
     // LATER support binary payloads
-    auto path = ParamSet().evaluate(_path, context);
+    auto path = PercentEvaluator::eval_utf8(_path, context);
     ParametrizedFileWriter writer(
           path, _params, context, instance.task().id(), instance.idAsLong());
     writer.performWrite(_message, context);
   }
-  Utf8String toString() const {
+  Utf8String toString() const override {
     return "writefile{ "+_path+" }";
   }
-  Utf8String actionType() const {
+  Utf8String actionType() const override {
     return "writefile"_u8;
   }
-  PfNode toPfNode() const{
+  PfNode toPfNode() const override {
     PfNode node(actionType(), _message);
     node.appendChild(PfNode(QStringLiteral("path"), _path));
     ConfigUtils::writeParamSet(&node, _params, QStringLiteral("param"));

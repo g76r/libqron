@@ -53,10 +53,9 @@ Task::Task() {
 Task::Task(const Task &other) : SharedUiItem(other) {
 }
 
-Task::Task(
-    PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-    QMap<QByteArray,Calendar> namedCalendars,
-    QMap<QByteArray, TaskTemplate> taskTemplates) {
+Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
+    QMap<Utf8String, Calendar> namedCalendars,
+    QMap<Utf8String, TaskTemplate> taskTemplates) {
   TaskData *d = new TaskData;
   d->_localId = ConfigUtils::sanitizeId(node.contentAsUtf16(),
                                         ConfigUtils::LocalId).toUtf8();
@@ -103,7 +102,7 @@ Task::Task(
   setData(d);
 }
 
-void Task::copyLiveAttributesFromOldTask(Task oldTask) {
+void Task::copyLiveAttributesFromOldTask(const Task &oldTask) {
   TaskData *d = this->data();
   if (!d || oldTask.isNull())
     return;
