@@ -14,8 +14,6 @@
 #ifndef LIBQRON_STABLE_H
 #define LIBQRON_STABLE_H
 
-#include "libp6core_stable.h"
-
 // C
 #include <sys/types.h>
 
@@ -32,6 +30,15 @@
 #include <QUdpSocket>
 #include <QMetaType>
 #include <QAbstractTableModel>
+#include <QProcess>
+#include <QTimer>
+#include <QThread>
+#include <QCoreApplication>
+#include <QProcessEnvironment>
+#include <QMimeData>
+#include <QBuffer>
+#include <QFileInfo>
+#include <QDir>
 
 // libp6core
 #include "util/paramsprovidermerger.h"

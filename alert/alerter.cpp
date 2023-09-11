@@ -17,6 +17,8 @@
 #include "mailalertchannel.h"
 #include "config/configutils.h"
 #include "alert.h"
+#include <QTimer>
+#include <QThread>
 
 // LATER replace this 10" ugly batch with predictive timer (min(timestamps))
 // taking into account that it must be at less as precise as visibilitywindow

@@ -13,6 +13,7 @@
  */
 #include "alertchannel.h"
 #include "alerter.h"
+#include <QThread>
 
 AlertChannel::AlertChannel(Alerter *alerter)
   : QObject(0), _thread(new QThread), _alerter(alerter) {

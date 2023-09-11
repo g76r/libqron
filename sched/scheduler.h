@@ -17,6 +17,7 @@
 #include "config/qronconfigdocumentmanager.h"
 #include "taskinstance.h"
 #include "condition/condition.h"
+#include <random>
 
 class QThread;
 class QFileSystemWatcher;

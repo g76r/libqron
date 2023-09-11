@@ -12,6 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "configrepository.h"
+#include <QThread>
 
 ConfigRepository::ConfigRepository(QObject *parent, Scheduler *scheduler)
   : QObject(parent), _scheduler(scheduler) {

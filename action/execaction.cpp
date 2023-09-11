@@ -14,6 +14,8 @@
 #include "execaction.h"
 #include "action_p.h"
 #include "sched/taskinstance.h"
+#include <QProcess>
+#include <QTimer>
 
 class ExecActionData : public ActionData {
 public:

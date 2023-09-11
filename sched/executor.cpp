@@ -18,7 +18,7 @@
 #include "sysutil/parametrizednetworkrequest.h"
 #include "scheduler.h"
 #include "condition/disjunctioncondition.h"
-#include <QProcess>
+#include <QTimer>
 
 #define PROCESS_OUTPUT_CHUNK_SIZE 16384
 #define DEFAULT_STATUS_POLLING_INTERVAL 5000

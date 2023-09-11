@@ -15,6 +15,8 @@
 #include "mail/mailsender.h"
 #include "alerter.h"
 #include "mail/mailaddress.h"
+#include <QTimer>
+#include <QThread>
 
 // LATER replace this 60" ugly batch with _remindFrequency and make reminding no longer drift
 #define ASYNC_PROCESSING_INTERVAL 60000

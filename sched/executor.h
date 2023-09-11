@@ -17,12 +17,15 @@
 #include "taskinstance.h"
 #include "config/host.h"
 #include "eventthread.h"
+#include <QProcessEnvironment>
+#include <QProcess>
 
 class QThread;
 class QNetworkAccessManager;
 class QNetworkReply;
 class Alerter;
 class Scheduler;
+class QTimer;
 
 /** Class handling execution of a task after its being dequeued, from start
  * to end or cancellation. */

@@ -12,6 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "clustersmodel.h"
+#include <QMimeData>
 
 /** Host reference item, to be inserted as cluster child in cluster tree,
  * without the need of having real host items which data are inconsistent with

@@ -16,6 +16,7 @@
 #include "sysutil/parametrizedudpsender.h"
 #include "alerter.h"
 #include "config/alerterconfig.h"
+#include <QThread>
 
 UrlAlertChannel::UrlAlertChannel(Alerter *alerter)
   : AlertChannel(alerter), _nam(0) {

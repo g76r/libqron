@@ -25,6 +25,9 @@
 #include "action/action.h"
 #include "executor.h"
 #include "alert/alerter.h"
+#include <QCoreApplication>
+#include <QThread>
+#include <QTimer>
 
 #define REEVALUATE_QUEUED_INSTANCES_EVENT (QEvent::Type(QEvent::User+1))
 #define REEVALUATE_PLANNED_INSTANCES_EVENT (QEvent::Type(QEvent::User+2))

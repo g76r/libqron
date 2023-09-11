@@ -12,6 +12,8 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "localconfigrepository.h"
+#include <QFileInfo>
+#include <QDir>
 
 LocalConfigRepository::LocalConfigRepository(
     QObject *parent, Scheduler *scheduler, QString basePath)

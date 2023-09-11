@@ -18,6 +18,7 @@
 #include "tasksroot.h"
 #include "modelview/templatedshareduiitemdata.h"
 #include <QMutexLocker>
+#include <QBuffer>
 
 #define DEFAULT_MAXTOTALTASKINSTANCES 16
 #define DEFAULT_MAXQUEUEDREQUESTS 128

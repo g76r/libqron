@@ -16,6 +16,7 @@
 
 #include "config/eventsubscription.h"
 #include "taskinstance.h"
+#include <QThread>
 
 /** Dedicated thread for processing events (i.e. triggering actions). */
 class LIBQRONSHARED_EXPORT EventThread : public QThread {
