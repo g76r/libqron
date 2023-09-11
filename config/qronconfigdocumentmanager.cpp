@@ -157,9 +157,6 @@ SharedUiItem QronConfigDocumentManager::itemById(
 SharedUiItemList QronConfigDocumentManager::itemsByQualifier(
     const Utf8String &qualifier) const {
   // TODO also implement for other items
-  qDebug() << "QronConfigDocumentManager::itemsByQualifier" << this << qualifier
-           << _config.tasks() << _config.tasks().values()
-           << SharedUiItemList(_config.tasks().values());
   if (qualifier == "task") {
     return _config.tasks().values();
   } else if (qualifier == "taskgroup") {
