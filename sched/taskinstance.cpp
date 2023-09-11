@@ -706,6 +706,11 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       return PercentEvaluator::eval_utf8(
             tid->_task.deduplicateCriterion(), tid);
     } },
+  { "!", [](const SharedUiItemData *data, const Utf8String &key,
+        const PercentEvaluator::EvalContext context, int) -> QVariant {
+      auto tid = reinterpret_cast<const TaskInstanceData*>(data);
+      return tid->_task.paramValue(key, context);
+    } },
 };
 
 const Utf8String TaskInstanceData::_qualifier = "taskinstance"_u8;
