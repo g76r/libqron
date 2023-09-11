@@ -45,8 +45,8 @@ public:
   Utf8String name() const;
 
 private:
-  const CalendarData *data() const { return specializedData<CalendarData>(); }
-  CalendarData *data();
+  inline const CalendarData *data() const;
+  inline CalendarData *data();
 };
 
 Q_DECLARE_TYPEINFO(Calendar, Q_MOVABLE_TYPE);

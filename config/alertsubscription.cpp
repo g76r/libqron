@@ -231,6 +231,10 @@ QVariant AlertSubscriptionData::uiData(int section, int role) const {
   return QVariant{};
 }
 
+const AlertSubscriptionData *AlertSubscription::data() const {
+  return specializedData<AlertSubscriptionData>();
+}
+
 const Utf8String AlertSubscriptionData::_qualifier = "alertsubscription";
 
 const Utf8StringList AlertSubscriptionData::_sectionNames {

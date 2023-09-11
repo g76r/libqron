@@ -254,6 +254,10 @@ QList<Gridboard> AlerterConfig::gridboards() const {
   return d ? d->_gridboards : QList<Gridboard>();
 }
 
+const AlerterConfigData *AlerterConfig::data() const {
+  return specializedData<AlerterConfigData>();
+}
+
 const Utf8String AlerterConfigData::_qualifier = "alerterconfig";
 
 const Utf8StringList AlerterConfigData::_sectionNames {

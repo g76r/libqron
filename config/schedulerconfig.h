@@ -84,10 +84,9 @@ public:
   void applyLogConfig() const;
 
 private:
-  SchedulerConfigData *data();
-  const SchedulerConfigData *data() const {
-    return specializedData<SchedulerConfigData>(); }
-  QByteArray recomputeId() const;
+  inline SchedulerConfigData *data();
+  inline const SchedulerConfigData *data() const;
+  inline QByteArray recomputeId() const;
 };
 
 Q_DECLARE_METATYPE(SchedulerConfig)

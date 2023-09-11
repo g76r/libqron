@@ -30,9 +30,8 @@ public:
     SharedUiItem::operator=(other); return *this; }
 
 private:
-  ConfigHistoryEntryData *data();
-  const ConfigHistoryEntryData *data() const {
-    return specializedData<ConfigHistoryEntryData>(); }
+  inline ConfigHistoryEntryData *data();
+  inline const ConfigHistoryEntryData *data() const;
 };
 
 Q_DECLARE_METATYPE(ConfigHistoryEntry)

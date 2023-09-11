@@ -44,8 +44,8 @@ public:
   bool mergeStderrIntoStdout() const;
 
 private:
-  TasksRootData *data();
-  const TasksRootData *data() const { return specializedData<TasksRootData>(); }
+  inline TasksRootData *data();
+  inline const TasksRootData *data() const;
 };
 
 Q_DECLARE_TYPEINFO(TasksRoot, Q_MOVABLE_TYPE);

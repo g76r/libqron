@@ -17,6 +17,7 @@
 #include "config/task.h"
 #include "config/host.h"
 #include "condition/condition.h"
+#include "modelview/shareduiitemlist.h"
 
 class TaskInstanceData;
 class TaskInstanceList;
@@ -129,34 +130,35 @@ public:
   //QStringList varsAsHeadersKeys() const;
 
 private:
-  TaskInstanceData *data();
-  const TaskInstanceData *data() const {
-    return specializedData<TaskInstanceData>(); }
+  inline TaskInstanceData *data();
+  inline const TaskInstanceData *data() const;
 };
 
 Q_DECLARE_METATYPE(TaskInstance)
 Q_DECLARE_TYPEINFO(TaskInstance, Q_MOVABLE_TYPE);
 
 class LIBQRONSHARED_EXPORT TaskInstanceList
-    : public SharedUiItemList<TaskInstance> {
+    : public SharedUiItemList {
 public:
   TaskInstanceList() { }
   TaskInstanceList(const TaskInstanceList &other)
-    : SharedUiItemList<TaskInstance>(other) { }
-  TaskInstanceList(const SharedUiItemList<TaskInstance> &other)
-    : SharedUiItemList<TaskInstance>(other) { }
+    : SharedUiItemList(other) { }
+  TaskInstanceList(const SharedUiItemList &other)
+    : SharedUiItemList(other) { }
   TaskInstanceList(const QList<TaskInstance> &other)
-    : SharedUiItemList<TaskInstance>(other) { }
+    : SharedUiItemList(other) { }
   operator QList<quint64>() const {
     QList<quint64> list;
-    for (auto i : *this)
-      list.append(i.idAsLong());
+    for (auto sui : *this)
+      list.append(sui.casted<TaskInstance>().idAsLong());
     return list;
   }
   operator QStringList() const {
     QStringList list;
-    for (auto i : *this)
+    for (auto sui : *this) {
+      auto i = sui.casted<TaskInstance>();
       list.append(i.task().id()+"/"+i.id());
+    }
     return list;
   }
 };

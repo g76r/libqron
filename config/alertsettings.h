@@ -51,8 +51,7 @@ public:
   CronTrigger acceptabilityWindow() const;
 
 private:
-  const AlertSettingsData *data() const {
-    return specializedData<AlertSettingsData>(); }
+  inline const AlertSettingsData *data() const;
 };
 
 Q_DECLARE_METATYPE(AlertSettings)

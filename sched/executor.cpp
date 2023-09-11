@@ -765,7 +765,7 @@ void Executor::scatterMean() {
     auto instance = _scheduler->planTask(
         taskid, overridingParams, force, lone ? 0 : _instance.herdid(),
           Condition(), Condition())
-        .value(0);
+        .value(0).casted<TaskInstance>();
     if (instance.isNull()) {
       Log::error(_instance.task().id(), _instance.idAsLong())
           << "scatter failed to plan task : " << taskid << overridingParams

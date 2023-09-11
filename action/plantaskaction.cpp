@@ -56,7 +56,8 @@ public:
           << subscription.subscriberName() << "|" << subscription.eventName();
       return;
     }
-    for (auto childInstance: instances) {
+    for (auto sui: instances) {
+      auto childInstance = sui.casted<TaskInstance>();
       Log::info(parentInstance.task().id(), parentInstance.idAsLong())
           << "plantask action planned execution of task "
           << childInstance.task().id() << "/" << childInstance.groupId()

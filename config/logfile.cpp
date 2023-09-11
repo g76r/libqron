@@ -92,6 +92,10 @@ LogFileData *LogFile::data() {
   return SharedUiItem::detachedData<LogFileData>();
 }
 
+const LogFileData *LogFile::data() const {
+  return specializedData<LogFileData>();
+}
+
 void LogFile::detach() {
   SharedUiItem::detachedData<LogFileData>();
 }

@@ -30,10 +30,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
     Q_UNUSED(qualifier)
     TaskGroup *newGroup = static_cast<TaskGroup*>(newItem);
     if (newItem->id() != oldItem.id()) {
-      SharedUiItemList<> taskItems =
-          transaction->foreignKeySources("task", 1, oldItem.id());
-      foreach (SharedUiItem oldTaskItem, taskItems) {
-        Task oldTask = static_cast<Task&>(oldTaskItem);
+      for (auto sui: transaction->foreignKeySources("task", 1, oldItem.id())) {
+        auto oldTask = sui.casted<const Task>();
         Task newTask = oldTask;
         newTask.setTaskGroup(*newGroup);
         if (!transaction->changeItem(newTask, oldTask, "task", errorString))
@@ -87,14 +85,14 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
     foreach (const SharedUiItem &oldClusterItem,
              transaction->itemsByQualifier("cluster")) {
       auto &oldCluster = static_cast<const Cluster &>(oldClusterItem);
-      SharedUiItemList<Host> hosts = oldCluster.hosts();
+      auto hosts = oldCluster.hosts();
       for (int i = 0; i < hosts.size(); ++i) {
         if(hosts[i] == oldItem) {
           Cluster newCluster = oldCluster;
           if (newItem->isNull())
             hosts.removeAt(i);
           else
-            hosts[i] = static_cast<Host&>(*newItem);
+            hosts[i] = newItem->casted<Host>();
           newCluster.setHosts(hosts);
           if (!transaction->changeItem(newCluster, oldCluster, "cluster",
                                        errorString))
@@ -156,22 +154,25 @@ SharedUiItem QronConfigDocumentManager::itemById(
   return SharedUiItem();
 }
 
-SharedUiItemList<SharedUiItem> QronConfigDocumentManager
-::itemsByQualifier(const Utf8String &qualifier) const {
+SharedUiItemList QronConfigDocumentManager::itemsByQualifier(
+    const Utf8String &qualifier) const {
   // TODO also implement for other items
+  qDebug() << "QronConfigDocumentManager::itemsByQualifier" << this << qualifier
+           << _config.tasks() << _config.tasks().values()
+           << SharedUiItemList(_config.tasks().values());
   if (qualifier == "task") {
-    return SharedUiItemList<Task>(_config.tasks().values());
+    return _config.tasks().values();
   } else if (qualifier == "taskgroup") {
-    return SharedUiItemList<TaskGroup>(_config.taskgroups().values());
+    return _config.taskgroups().values();
   } else if (qualifier == "host") {
-    return SharedUiItemList<Host>(_config.hosts().values());
+    return _config.hosts().values();
   } else if (qualifier == "cluster") {
-    return SharedUiItemList<Cluster>(_config.clusters().values());
+    return _config.clusters().values();
   } else if (qualifier == "calendar") {
     // LATER is it right to return only *named* calendars ?
-    return SharedUiItemList<Calendar>(_config.namedCalendars().values());
+    return _config.namedCalendars().values();
   }
-  return SharedUiItemList<SharedUiItem>();
+  return {};
 }
 
 static const SharedUiItem _nullItem;

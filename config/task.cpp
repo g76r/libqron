@@ -21,7 +21,7 @@ class TaskData : public TaskOrTemplateData {
 public:
   QByteArray _localId;
   TaskGroup _group;
-  SharedUiItemList<TaskTemplate> _appliedTemplates;
+  SharedUiItemList _appliedTemplates;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
@@ -567,9 +567,9 @@ void Task::clearOtherTriggers() {
     data()->_otherTriggers.clear();
 }
 
-SharedUiItemList<TaskTemplate> Task::appliedTemplates() const {
+SharedUiItemList Task::appliedTemplates() const {
   auto d = data();
-  return d ? d->_appliedTemplates : SharedUiItemList<TaskTemplate>();
+  return d ? d->_appliedTemplates : SharedUiItemList{};
 }
 
 QVariant TaskData::uiData(int section, int role) const {
@@ -688,6 +688,10 @@ TaskData *Task::data() {
   return detachedData<TaskData>();
 }
 
+const TaskData *Task::data() const {
+  return specializedData<TaskData>();
+}
+
 PfNode Task::originalPfNode() const {
   const TaskData *d = data();
   if (!d)
@@ -741,7 +745,6 @@ PfNode TaskData::toPfNode() const {
     escaped.replace('\\', "\\\\");
     node.setAttribute("command", escaped);
   }
-
   // triggering and constraints attributes
   PfNode triggers("trigger");
   foreach (const Trigger &ct, _cronTriggers)

@@ -38,7 +38,7 @@ public:
   void changeItem(
       SharedUiItem newItem, SharedUiItem oldItem, QString qualifier);
   void hostsResourcesAvailabilityChanged(
-      QString host, QMap<QString, qint64> resources);
+      const Utf8String &host, const QMap<Utf8String, qint64> &resources);
 };
 
 #endif // HOSTSRESOURCESAVAILABILITYMODEL_H

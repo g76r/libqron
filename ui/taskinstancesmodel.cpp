@@ -43,12 +43,15 @@ QVariant TaskInstancesModel::data(const QModelIndex &index, int role) const {
 }
 
 void TaskInstancesModel::changeItem(
-    SharedUiItem newItem, SharedUiItem oldItem, QByteArray qualifier) {
+    const SharedUiItem &newItem, const SharedUiItem &oldItem,
+    const Utf8String &qualifier) {
   //qDebug() << "TaskInstancesModel::changeItem" << newItem.qualifiedId() << oldItem.qualifiedId();
   if (! _keepFinished && qualifier == "taskinstance"_u8) {
-    TaskInstance &newTaskInstance = reinterpret_cast<TaskInstance&>(newItem);
-    if (newTaskInstance.isFinished())
-      newItem = SharedUiItem();
+    auto newTaskInstance = newItem.casted<const TaskInstance>();
+    if (newTaskInstance.isFinished()) {
+      SharedUiItemsTableModel::changeItem({}, oldItem, qualifier);
+      return;
+    }
   }
   SharedUiItemsTableModel::changeItem(newItem, oldItem, qualifier);
 }

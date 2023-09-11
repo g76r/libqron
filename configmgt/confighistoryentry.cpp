@@ -71,6 +71,10 @@ ConfigHistoryEntryData *ConfigHistoryEntry::data() {
   return detachedData<ConfigHistoryEntryData>();
 }
 
+const ConfigHistoryEntryData *ConfigHistoryEntry::data() const {
+  return specializedData<ConfigHistoryEntryData>();
+}
+
 const Utf8String ConfigHistoryEntryData::_qualifier = "confighistoryentry";
 
 const Utf8StringList ConfigHistoryEntryData::_sectionNames {

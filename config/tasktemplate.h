@@ -36,8 +36,7 @@ public:
 
 private:
   TaskTemplateData *data();
-  const TaskTemplateData *data() const {
-    return specializedData<TaskTemplateData>(); }
+  const TaskTemplateData *data() const;
 };
 
 Q_DECLARE_TYPEINFO(TaskTemplate, Q_MOVABLE_TYPE);

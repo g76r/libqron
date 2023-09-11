@@ -15,6 +15,7 @@
 #define TASK_H
 
 #include "taskgroup.h"
+#include "modelview/shareduiitemlist.h"
 
 class TaskData;
 class TaskOrTemplateData;
@@ -142,7 +143,7 @@ public:
   QStringList otherTriggers() const;
   void appendOtherTriggers(QString text);
   void clearOtherTriggers();
-  SharedUiItemList<TaskTemplate> appliedTemplates() const;
+  SharedUiItemList appliedTemplates() const;
   PfNode originalPfNode() const;
   PfNode toPfNode() const;
   /** to be called when activating a new configuration, to keep live attributes
@@ -152,8 +153,8 @@ public:
                  SharedUiItemDocumentTransaction *transaction, int role);
 
 private:
-  TaskData *data();
-  const TaskData *data() const { return specializedData<TaskData>(); }
+  inline TaskData *data();
+  inline const TaskData *data() const;
 };
 
 Q_DECLARE_TYPEINFO(Task, Q_MOVABLE_TYPE);

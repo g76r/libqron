@@ -165,6 +165,10 @@ TaskGroupData *TaskGroup::data() {
   return detachedData<TaskGroupData>();
 }
 
+const TaskGroupData *TaskGroup::data() const {
+  return specializedData<TaskGroupData>();
+}
+
 PfNode TaskGroup::originalPfNode() const {
   const TaskGroupData *d = data();
   if (!d)

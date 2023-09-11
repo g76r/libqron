@@ -33,12 +33,13 @@ public:
   bool dropMimeData(
       const QMimeData *data, Qt::DropAction action, int targetRow,
       int targetColumn, const QModelIndex &targetParent) override;
-  void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
-                  QByteArray qualifier) override;
+  void changeItem(
+      const SharedUiItem &newItem, const SharedUiItem &oldItem,
+      const Utf8String &qualifier) override;
 
 protected:
-  void determineItemPlaceInTree(SharedUiItem newItem, QModelIndex *parent,
-                                int *row) override;
+  void determineItemPlaceInTree(
+      const SharedUiItem &newItem, QModelIndex *parent, int *row) override;
 };
 
 #endif // CLUSTERSMODEL_H

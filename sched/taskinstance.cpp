@@ -568,6 +568,10 @@ TaskInstanceData *TaskInstance::data() {
   return detachedData<TaskInstanceData>();
 }
 
+const TaskInstanceData *TaskInstance::data() const {
+  return specializedData<TaskInstanceData>();
+}
+
 const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
   { "!taskinstanceid", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext, int) -> QVariant {

@@ -272,7 +272,8 @@ TaskInstanceList Scheduler::doRequestTask(
       instances.append(instance);
   }
   if (!instances.isEmpty()) {
-    for (auto instance: instances) {
+    for (auto sui: instances) {
+      auto instance = sui.casted<TaskInstance>();
       planOrRequestCommonPostProcess(instance, herder, overridingParams);
       emit itemChanged(instance, instance, "taskinstance"_ba);
       triggerPlanActions(instance);
@@ -434,9 +435,9 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
       while (duplicates.size() > max_queued_instances) {
         TaskInstance duplicate;
         if (strategy == "keeplast")
-          duplicate = duplicates.takeFirst();
+          duplicate = duplicates.takeFirst().casted<TaskInstance>();
         else
-          duplicate = duplicates.takeLast();
+          duplicate = duplicates.takeLast().casted<TaskInstance>();
         if (duplicate == instance) {
           self_canceled = true;
           doCancelTaskInstance(
@@ -573,10 +574,12 @@ TaskInstanceList Scheduler::doCancelTaskInstancesByTaskId(QByteArray taskId) {
     if (i.task().id() == taskId)
       instances << i;
   }
-  for (auto instance : instances)
+  for (auto sui : instances) {
+    auto instance = sui.casted<TaskInstance>();
     if (doCancelTaskInstance(instance, false, "canceling task as requested")
             .isNull())
       instances.removeOne(instance);
+  }
   return instances;
 }
 
@@ -685,7 +688,7 @@ bool Scheduler::checkTrigger(
     TaskInstanceList instances = requestTask(taskId, overridingParams);
     if (!instances.isEmpty())
       for (auto ti : instances)
-        Log::info(taskId, ti.idAsLong())
+        Log::info(taskId, ti.id())
             << "cron trigger " << trigger.humanReadableExpression()
             << " triggered task " << taskId;
     //else
@@ -750,7 +753,7 @@ void Scheduler::postNotice(QByteArray notice, ParamSet noticeParams) {
         TaskInstanceList instances = requestTask(task.id(), overridingParams);
         if (!instances.isEmpty())
           for (auto ti: instances)
-            Log::info(task.id(), ti.idAsLong())
+            Log::info(task.id(), ti.id())
                 << "notice " << trigger.humanReadableExpression()
                 << " triggered task " << task.id();
         else
@@ -889,7 +892,7 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
   auto target = instance.target().id();
   if (target.isEmpty()) // use task target if not overiden at intance level
     target = task.target().toUtf8();
-  SharedUiItemList<Host> hosts;
+  SharedUiItemList hosts;
   Host host = config().hosts().value(target);
   if (host.isNull()) {
     Cluster cluster = config().clusters().value(target);
@@ -924,7 +927,8 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
   }
   // LATER implement best effort resource check for forced requests
   auto taskResources = task.resources();
-  foreach (Host h, hosts) {
+  for (auto sui: hosts) {
+    auto h = sui.casted<Host>();
     // LATER skip hosts currently down or disabled
     if (!taskResources.isEmpty()) {
       auto hostConsumedResources = _consumedResources.value(h.id());

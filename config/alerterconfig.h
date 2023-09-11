@@ -55,8 +55,7 @@ public:
   QList<Gridboard> gridboards() const;
 
 private:
-  const AlerterConfigData *data() const {
-    return specializedData<AlerterConfigData>(); }
+  inline const AlerterConfigData *data() const;
 };
 
 Q_DECLARE_METATYPE(AlerterConfig)

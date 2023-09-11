@@ -49,8 +49,8 @@ public:
   void setHosts(QList<Host> hosts);
 
 private:
-  ClusterData *data();
-  const ClusterData *data() const { return specializedData<ClusterData>(); }
+  inline ClusterData *data();
+  inline const ClusterData *data() const;
 };
 
 Q_DECLARE_TYPEINFO(Cluster, Q_MOVABLE_TYPE);

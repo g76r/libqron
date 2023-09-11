@@ -174,6 +174,10 @@ QVariant AlertSettingsData::uiData(int section, int role) const {
   return QVariant();
 }
 
+const AlertSettingsData *AlertSettings::data() const {
+  return specializedData<AlertSettingsData>();
+}
+
 const Utf8String AlertSettingsData::_qualifier = "alertsettings";
 
 const Utf8StringList AlertSettingsData::_sectionNames {

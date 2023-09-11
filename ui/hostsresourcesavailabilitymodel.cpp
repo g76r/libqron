@@ -19,11 +19,11 @@ HostsResourcesAvailabilityModel::HostsResourcesAvailabilityModel(
 }
 
 void HostsResourcesAvailabilityModel::hostsResourcesAvailabilityChanged(
-    QString host, QMap<QString, qint64> resources) {
+    const Utf8String &host, const QMap<Utf8String, qint64> &resources) {
   if (_mode != Configured) {
     auto hostConfigured = _configured.value(host);
     auto hostLwm = _lwm.value(host);
-    foreach (QString kind, resources.keys()) {
+    for (auto kind: resources.keys()) {
       qint64 configured = hostConfigured.value(kind);
       qint64 free = resources.value(kind);
       switch (_mode) {

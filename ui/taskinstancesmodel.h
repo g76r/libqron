@@ -34,8 +34,8 @@ public:
    * through TaskInstance.params(). */
   void setCustomActions(QString customActions) {
     _customActions = customActions; }
-  void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
-                  QByteArray qualifier) override;
+  void changeItem(const SharedUiItem &newItem, const SharedUiItem &oldItem,
+                  const Utf8String &qualifier) override;
 };
 
 #endif // TASKINSTANCESMODEL_H

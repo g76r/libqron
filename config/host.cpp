@@ -146,6 +146,10 @@ HostData *Host::data() {
   return SharedUiItem::detachedData<HostData>();
 }
 
+const HostData *Host::data() const {
+  return specializedData<HostData>();
+}
+
 void Host::detach() {
   SharedUiItem::detachedData<HostData>();
 }

@@ -158,6 +158,10 @@ ClusterData *Cluster::data() {
   return detachedData<ClusterData>();
 }
 
+const ClusterData *Cluster::data() const {
+  return specializedData<ClusterData>();
+}
+
 PfNode Cluster::toPfNode() const {
   const ClusterData *d = data();
   if (!d)

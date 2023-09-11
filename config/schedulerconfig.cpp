@@ -265,11 +265,12 @@ ignore_tasktemplate:;
           node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
                "onstderr", "onstdout" },
           &requestTaskActionLinks, task.id(), task);
-    for (auto tmpl: task.appliedTemplates()) {
+    for (auto tmpl:
+         task.appliedTemplates().filtered<TaskTemplate>("tasktemplate")) {
       recordTaskActionLinks(
             tmpl.originalPfNode(),
             { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
-           "onstderr", "onstdout" },
+              "onstderr", "onstdout" },
             &requestTaskActionLinks, task.id(), task);
     }
 ignore_task:;
@@ -630,6 +631,10 @@ PfNode SchedulerConfig::toPfNode() const {
 
 SchedulerConfigData *SchedulerConfig::data() {
   return detachedData<SchedulerConfigData>();
+}
+
+const SchedulerConfigData *SchedulerConfig::data() const {
+  return specializedData<SchedulerConfigData>();
 }
 
 QVariant SchedulerConfigData::uiData(int section, int role) const {

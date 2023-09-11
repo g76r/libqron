@@ -40,8 +40,8 @@ public:
   PfNode toPfNode() const;
 
 private:
-  LogFileData *data();
-  const LogFileData *data() const { return specializedData<LogFileData>(); }
+  inline LogFileData *data();
+  inline const LogFileData *data() const;
 };
 
 Q_DECLARE_TYPEINFO(LogFile, Q_MOVABLE_TYPE);

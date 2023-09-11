@@ -141,6 +141,10 @@ TasksRootData *TasksRoot::data() {
   return detachedData<TasksRootData>();
 }
 
+const TasksRootData *TasksRoot::data() const {
+  return specializedData<TasksRootData>();
+}
+
 bool TasksRoot::setUiData(
     int section, const QVariant &value, QString *errorString,
     SharedUiItemDocumentTransaction *transaction, int role) {

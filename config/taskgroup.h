@@ -59,8 +59,8 @@ public:
                  SharedUiItemDocumentTransaction *transaction, int role);
 
 private:
-  TaskGroupData *data();
-  const TaskGroupData *data() const { return specializedData<TaskGroupData>(); }
+  inline TaskGroupData *data();
+  inline const TaskGroupData *data() const;
 };
 
 Q_DECLARE_TYPEINFO(TaskGroup, Q_MOVABLE_TYPE);

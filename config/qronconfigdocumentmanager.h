@@ -39,8 +39,7 @@ public:
   SharedUiItem itemById(
       const Utf8String &qualifier, const Utf8String &id) const override;
   using SharedUiItemDocumentManager::itemsByQualifier;
-  SharedUiItemList<SharedUiItem> itemsByQualifier(
-      const Utf8String &qualifier) const override;
+  SharedUiItemList itemsByQualifier(const Utf8String &qualifier) const override;
   QMap<Utf8String,Calendar> namedCalendars() const {
     return _config.namedCalendars(); }
   QMap<Utf8String,PfNode> externalParams() const {
@@ -61,7 +60,7 @@ public:
   void changeParams(ParamSet newParams, ParamSet oldParams, QByteArray setId);
 
 signals:
-  void logConfigurationChanged(SharedUiItemList<> logfiles);
+  void logConfigurationChanged(SharedUiItemList logfiles);
   void paramsChanged(ParamSet newParams, ParamSet oldParams, QByteArray setId);
   void accessControlConfigurationChanged(bool enabled);
   void globalEventSubscriptionsChanged(

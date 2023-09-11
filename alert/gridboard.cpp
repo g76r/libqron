@@ -314,6 +314,10 @@ GridboardData *Gridboard::data() {
   return detachedData<GridboardData>();
 }
 
+const GridboardData *Gridboard::data() const {
+  return specializedData<GridboardData>();
+}
+
 QRegularExpression Gridboard::patternRegexp() const {
   const GridboardData *d = data();
   return d ? d->_patternRegexp : QRegularExpression();

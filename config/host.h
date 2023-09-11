@@ -39,8 +39,8 @@ public:
                  SharedUiItemDocumentTransaction *transaction, int role);
 
 private:
-  HostData *data();
-  const HostData *data() const { return specializedData<HostData>(); }
+  inline HostData *data();
+  inline const HostData *data() const;
 };
 
 Q_DECLARE_TYPEINFO(Host, Q_MOVABLE_TYPE);

@@ -66,8 +66,7 @@ public:
   PfNode toPfNode() const;
 
 private:
-  const AlertSubscriptionData *data() const {
-    return specializedData<AlertSubscriptionData>(); }
+  inline const AlertSubscriptionData *data() const;
 };
 
 Q_DECLARE_METATYPE(AlertSubscription)

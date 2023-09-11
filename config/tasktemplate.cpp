@@ -182,6 +182,10 @@ TaskTemplateData *TaskTemplate::data() {
   return detachedData<TaskTemplateData>();
 }
 
+const TaskTemplateData *TaskTemplate::data() const {
+  return specializedData<TaskTemplateData>();
+}
+
 PfNode TaskTemplate::originalPfNode() const {
   const TaskTemplateData *d = data();
   if (!d)

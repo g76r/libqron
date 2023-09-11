@@ -174,6 +174,10 @@ CalendarData *Calendar::data() {
   return detachedData<CalendarData>();
 }
 
+const CalendarData *Calendar::data() const {
+  return specializedData<CalendarData>();
+}
+
 QVariant CalendarData::uiData(int section, int role) const {
   switch(role) {
   case Qt::DisplayRole:

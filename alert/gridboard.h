@@ -64,8 +64,8 @@ public:
   QString toHtml() const;
 
 private:
-  const GridboardData *data() const { return specializedData<GridboardData>(); }
-  GridboardData *data();
+  inline const GridboardData *data() const;
+  inline GridboardData *data();
 };
 
 Q_DECLARE_TYPEINFO(Gridboard, Q_MOVABLE_TYPE);
