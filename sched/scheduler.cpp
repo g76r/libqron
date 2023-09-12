@@ -164,15 +164,16 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
     }
   }
   _configdate = QDateTime::currentDateTime().toMSecsSinceEpoch();
+  auto ppm = ParamsProviderMerger(globalParams());
   if (_firstConfigurationLoad) {
     _firstConfigurationLoad = false;
     Log::info() << "starting scheduler";
     for (auto sub: newConfig.onschedulerstart())
-      if (sub.triggerActions())
+      if (sub.triggerActions(&ppm))
         break;
   }
   for (auto sub: newConfig.onconfigload())
-    if (sub.triggerActions())
+    if (sub.triggerActions(&ppm))
       break;
 }
 
@@ -278,12 +279,12 @@ TaskInstanceList Scheduler::doRequestTask(
     for (auto sui: instances) {
       auto instance = sui.casted<TaskInstance>();
       planOrRequestCommonPostProcess(instance, herder, overridingParams);
-      emit itemChanged(instance, instance, "taskinstance"_ba);
+      emit itemChanged(instance, instance, "taskinstance"_u8);
       triggerPlanActions(instance);
       Log::debug(taskId, instance.idAsLong())
           << "task instance params after planning" << instance.params();
       if (!herder.isNull() && herder != instance) {
-        emit itemChanged(herder, herder, "taskinstance"_ba);
+        emit itemChanged(herder, herder, "taskinstance"_u8);
         reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
       }
     }
@@ -382,16 +383,16 @@ TaskInstanceList Scheduler::doPlanTask(
       << " and cancel condition " << instance.cancelwhen().toString();
   planOrRequestCommonPostProcess(instance, herder, overridingParams);
   if (herder.isNull()) {
-    emit itemChanged(instance, instance, "taskinstance"_ba);
+    emit itemChanged(instance, instance, "taskinstance"_u8);
     triggerPlanActions(instance);
     instance = enqueueTaskInstance(instance);
   } else {
     triggerPlanActions(instance);
     reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
   }
-  emit itemChanged(instance, instance, "taskinstance"_ba);
+  emit itemChanged(instance, instance, "taskinstance"_u8);
   if (!herder.isNull())
-    emit itemChanged(herder, herder, "taskinstance"_ba);
+    emit itemChanged(herder, herder, "taskinstance"_u8);
   Log::debug(taskId, instance.idAsLong())
       << "task instance params after planning" << instance.params();
   if (!instance.isNull())
@@ -731,11 +732,14 @@ bool Scheduler::checkTrigger(
   return fired;
 }
 
-void Scheduler::postNotice(QByteArray notice, ParamSet noticeParams) {
+void Scheduler::postNotice(
+    const Utf8String &notice, const ParamSet &originalNoticeParams) {
   if (notice.isNull()) {
     Log::warning() << "cannot post a null/empty notice";
     return;
   }
+  ParamSet noticeParams = originalNoticeParams;
+  noticeParams.setScope("notice");
   auto tasks = config().tasks();
   noticeParams.setValue("!notice"_u8, notice);
   Log::info() << "posting notice " << notice << " with params " << noticeParams;
@@ -768,9 +772,9 @@ void Scheduler::postNotice(QByteArray notice, ParamSet noticeParams) {
   }
   emit noticePosted(notice, noticeParams);
   // TODO filter onnotice events
-  ParamsProviderMerger ppm(noticeParams);
+  auto ppm = ParamsProviderMerger(noticeParams)(globalParams());
   for (auto sub: config().onnotice())
-    if (sub.triggerActions(&ppm, TaskInstance()))
+    if (sub.triggerActions(&ppm))
       break;
 }
 
@@ -1029,6 +1033,9 @@ void Scheduler::taskInstanceStoppedOrCanceled(
     // must trigger actions that may create new herded tasks now, to be
     // able to wait for them
     triggerFinishActions(instance, [](Action a) {
+      // note instance.idAsLong() == instance.herdid() is implied by if+return
+      // just above so this filter and the one in the other triggerFinishActions
+      // truly form a partition
       return a.mayCreateTaskInstances();
     });
   }

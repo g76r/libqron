@@ -65,7 +65,7 @@ AlertSubscription::AlertSubscription(
   d->_notifyCancel = !channelnode.hasChild("nocancelnotify");
   d->_notifyReminder = d->_notifyEmit && !channelnode.hasChild("noremindernotify");
   d->_params = ParamSet(subscriptionnode, "param");
-  d->_params << ParamSet(channelnode, "param");
+  d->_params += ParamSet(channelnode, "param");
   d->_params.setParent(parentParams);
   ConfigUtils::loadComments(subscriptionnode, &d->_commentsList, 0);
   ConfigUtils::loadComments(channelnode, &d->_commentsList);

@@ -94,16 +94,6 @@ bool EventSubscription::triggerActions(
   return false;
 }
 
-bool EventSubscription::triggerActions(
-    ParamsProviderMerger *context, TaskInstance instance) const {
-  return triggerActions(context, instance, [](Action){ return true; });
-}
-
-bool EventSubscription::triggerActions() const {
-  ParamsProviderMerger context;
-  return triggerActions(&context, TaskInstance(), [](Action){ return true; });
-}
-
 Utf8StringList EventSubscription::toStringList(QList<EventSubscription> list) {
   Utf8StringList l;
   for (auto sub: list)

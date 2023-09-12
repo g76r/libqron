@@ -138,9 +138,7 @@ public slots:
   /** Post a notice.
    * This method is thread-safe.
    * If params has no parent it will be set global params as parent */
-  void postNotice(QByteArray notice, ParamSet params);
-  void postNotice(QString notice, ParamSet params) {
-    postNotice(notice.toUtf8(), params); }
+  void postNotice(const Utf8String &notice, const ParamSet &params);
   /** Ask for queued requests to be reevaluated during next event loop
     * iteration.
     * This method must be called every time something occurs that could make a

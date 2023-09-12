@@ -29,7 +29,6 @@ public:
   quint64 _id, _herdid, _groupId;
   QByteArray _idAsString;
   Task _task;
-  mutable AtomicValue<ParamSet> _params;
   QDateTime _creationDateTime;
   bool _force;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
@@ -57,7 +56,8 @@ public:
                    quint64 herdid, quint64 groupId = 0,
                    Condition queuewhen = Condition(),
                    Condition cancelwhen = Condition())
-    : SharedUiItemDataWithMutableParams<TaskInstanceData>(params),
+    : SharedUiItemDataWithMutableParams<TaskInstanceData>(
+        params.withParent(task.params())),
       _id(newId()), _herdid(herdid == 0 ? _id : herdid),
       _groupId(groupId ? groupId : _id),
       _idAsString(QByteArray::number(_id)), _task(task),
@@ -66,15 +66,12 @@ public:
       _finish(LLONG_MIN),
       _success(false), _returnCode(0), _abortable(false),
       _remainingTries(_task.maxTries()),
-      _queuewhen(queuewhen), _cancelwhen(cancelwhen) {
-    auto p = _params.lockedData();
-    p->setParent(task.params());
-  }
+      _queuewhen(queuewhen), _cancelwhen(cancelwhen) {}
   TaskInstanceData()
     : _id(0), _herdid(0), _groupId(0), _force(false),
       _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
       _finish(LLONG_MIN), _success(false), _returnCode(0),
-      _abortable(false), _remainingTries(0) { }
+      _abortable(false), _remainingTries(0) {}
 
 private:
   static quint64 newId() {
@@ -368,7 +365,7 @@ QMap<QString,QString> TaskInstance::varsAsEnv() const {
   for (auto key: vars.paramKeys()) {
     if (key.isEmpty())
       continue;
-    auto value = PercentEvaluator::eval_utf16(vars.paramRawUtf8(key), this);
+    auto value = vars.paramUtf16(key, this);
     env.insert(makeItAnIdentifier(key), value);
   }
   return env;
@@ -390,7 +387,7 @@ QMap<QString,QString> TaskInstance::varsAsHeaders() const {
   for (QString key: vars.paramKeys()) {
     if (key.isEmpty())
       continue;
-    auto value = PercentEvaluator::eval_utf16(vars.paramRawUtf8(key),this);
+    auto value = vars.paramUtf16(key, this);
     value.replace(_notHeaderValueRE, " ");
     env.insert(makeItAHeaderName(key), value);
   }
@@ -552,10 +549,8 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
           return _queuewhen.toString();
         case 18:
           return _cancelwhen.toString();
-        case 19: {
-          auto pp = _params.lockedData();
-          return PercentEvaluator::eval(_task.deduplicateCriterion(), &*pp);
-        }
+        case 19:
+          return PercentEvaluator::eval(_task.deduplicateCriterion(), this);
       }
       break;
     default:
@@ -670,25 +665,25 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
             reinterpret_cast<const TaskInstanceData*>(data)->creationDatetime(),
             key.mid(ml), context);
-    } },
+    }, true },
   { "!startdate", [](const SharedUiItemData *data, const Utf8String &key,
         const PercentEvaluator::EvalContext context, int ml) -> QVariant {
       return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
             reinterpret_cast<const TaskInstanceData*>(data)->startDatetime(),
             key.mid(ml), context);
-    } },
+    }, true },
   { "!stopdate", [](const SharedUiItemData *data, const Utf8String &key,
         const PercentEvaluator::EvalContext context, int ml) -> QVariant {
       return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
             reinterpret_cast<const TaskInstanceData*>(data)->stopDatetime(),
             key.mid(ml), context);
-    } },
+    }, true },
   { "!finishdate", [](const SharedUiItemData *data, const Utf8String &key,
         const PercentEvaluator::EvalContext context, int ml) -> QVariant {
       return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
             reinterpret_cast<const TaskInstanceData*>(data)->finishDatetime(),
             key.mid(ml), context);
-    } },
+    }, true },
   { "!remainingtries", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
@@ -709,8 +704,8 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
   { "!", [](const SharedUiItemData *data, const Utf8String &key,
         const PercentEvaluator::EvalContext context, int) -> QVariant {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
-      return tid->_task.paramValue(key, context);
-    } },
+      return tid->_task.paramRawValue(key, context);
+    }, true },
 };
 
 const Utf8String TaskInstanceData::_qualifier = "taskinstance"_u8;

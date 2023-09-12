@@ -17,6 +17,8 @@
 #include "libqron_global.h"
 #include <QSharedDataPointer>
 #include "util/paramsprovidermerger.h"
+#include "sched/taskinstance.h"
+#include "action/action.h"
 
 class EventSubscriptionData;
 class TaskInstance;
@@ -60,13 +62,8 @@ public:
    * passed to Action::trigger()
    * @return true if stop action was encountered */
   [[nodiscard]] bool triggerActions(
-      ParamsProviderMerger *context, TaskInstance instance,
-      std::function<bool(Action a)> filter) const;
-  /** Syntaxic sugar */
-  [[nodiscard]] bool triggerActions(
-      ParamsProviderMerger *context, TaskInstance instance) const;
-  /** Syntaxic sugar */
-  [[nodiscard]] bool triggerActions() const;
+      ParamsProviderMerger *context, TaskInstance instance = {},
+      std::function<bool(Action a)> filter = [](Action){ return true; }) const;
   static Utf8StringList toStringList(QList<EventSubscription> list);
   Utf8StringList toStringList() const;
   PfNode toPfNode() const;

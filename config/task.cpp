@@ -81,6 +81,7 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
     delete d;
     return;
   }
+  d->_params.setScope("task");
   // default mean: local
   if (d->_mean == UnknownMean)
     d->_mean = Local;

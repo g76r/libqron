@@ -37,8 +37,12 @@ TaskGroup::TaskGroup(PfNode node, SharedUiItem parent, Scheduler *scheduler) {
   TaskGroupData *d = new TaskGroupData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
                                    ConfigUtils::FullyQualifiedId).toUtf8();
-  if (d->loadConfig(node, parent, scheduler))
+  if (d->loadConfig(node, parent, scheduler)) {
+    d->_params.setScope("taskgroup");
     setData(d);
+  } else {
+    delete d;
+  }
 }
 
 bool TaskGroupData::loadConfig(

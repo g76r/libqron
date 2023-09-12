@@ -23,7 +23,6 @@ class ActionData;
 class EventSubscription;
 class Scheduler;
 class TaskInstance;
-class EventSubscription;
 
 /** Action performed when an event (e.g. onsuccess) occurs. */
 class LIBQRONSHARED_EXPORT Action {

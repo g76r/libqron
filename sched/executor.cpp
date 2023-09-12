@@ -116,8 +116,7 @@ void Executor::executeOneTry() {
 }
 
 void Executor::localMean() {
-  const auto params = _instance.params();
-  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
+  const auto shell = _instance.paramUtf16("command.shell", _localDefaultShell);
   QStringList cmdline;
   cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
                _instance.task().command(), &_instance);
@@ -129,8 +128,7 @@ void Executor::localMean() {
 }
 
 void Executor::backgroundStart() {
-  const auto params = _instance.params();
-  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
+  const auto shell = _instance.paramUtf16("command.shell", _localDefaultShell);
   if (_instance.task().statuscommand().isEmpty()) {
     _instance.consumeAllTries();
     Log::error(_instance.task().id(), _instance.idAsLong())
@@ -148,9 +146,9 @@ void Executor::backgroundStart() {
   if (!_instance.task().abortcommand().isEmpty())
     _instance.setAbortable();
   _backgroundStatus = Starting;
-  int pollingInterval =
-      params.paramNumber<int>("command.status.interval",
-                              DEFAULT_STATUS_POLLING_INTERVAL);
+  const int pollingInterval =
+      _instance.paramNumber<int>("command.status.interval",
+                                 DEFAULT_STATUS_POLLING_INTERVAL);
   _statusPollingTimer->start(pollingInterval);
   execProcess(cmdline, true);
   if (_process)
@@ -165,8 +163,7 @@ void Executor::pollStatus() {
     case Started:
       ;
   }
-  const auto params = _instance.params();
-  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
+  const auto shell = _instance.paramUtf16("command.shell", _localDefaultShell);
   QStringList cmdline;
   cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
                _instance.task().statuscommand(), &_instance);
@@ -188,8 +185,7 @@ void Executor::backgroundAbort() {
     case Started:
       break;
   }
-  const auto params = _instance.params();
-  const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
+  const auto shell = _instance.paramUtf16("command.shell", _localDefaultShell);
   QStringList cmdline;
   cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
                _instance.task().abortcommand(), &_instance);
@@ -448,7 +444,7 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
             break;
           stopping = true;
           success = (exitCode == 1); // 1: succeeded 2+: failed
-          exitCode = _instance.params().paramNumber<int>("return.code", -1);
+          exitCode = _instance.paramNumber<int>("return.code", -1);
           Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
                    _instance.idAsLong())
             << "task '" << _instance.task().id() << "' stopped "
@@ -564,9 +560,11 @@ void Executor::readyReadStandardOutput() {
     return;
   _process->setReadChannel(QProcess::StandardOutput);
   bool isStderr = false;
-  if (_instance.task().mergeStderrIntoStdout()
-      || (_instance.task().mean() == Task::Ssh
-          && !_instance.params().paramBool("ssh.disablepty", false)))
+  auto task = _instance.task();
+  if (task.mergeStderrIntoStdout()
+      || (task.mean() == Task::Ssh
+          && _instance.paramBool(
+            "ssh.disablepty", false)))
     isStderr = true;
   processProcessOutput(isStderr);
 }
@@ -759,7 +757,7 @@ void Executor::scatterMean() {
       taskid = idIfLocalToGroup;
     ParamSet overridingParams;
     for (auto key: vars.paramKeys()) {
-      auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm);
+      auto value = vars.paramUtf8(key, &ppm);
       overridingParams.setValue(key, PercentEvaluator::escape(value));
     }
     auto instance = _scheduler->planTask(
@@ -843,8 +841,7 @@ void Executor::abort() {
         [[fallthrough]];
       case Task::Docker:
         if (_process) {
-          hardkill = _instance.params().paramBool(
-            "command.hardkill", hardkill);
+          hardkill = _instance.paramBool("command.hardkill", hardkill);
           Log::info(_instance.task().id(), _instance.idAsLong())
             << "process task abort requested, using "
             << (hardkill ? "hard" : "soft") << " kill method";

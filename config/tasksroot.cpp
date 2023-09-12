@@ -22,8 +22,12 @@ TasksRoot::TasksRoot(const TasksRoot &other) : SharedUiItem(other) {
 
 TasksRoot::TasksRoot(PfNode node, Scheduler *scheduler) {
   TasksRootData *d = new TasksRootData;
-  if (d->loadConfig(node, scheduler))
+  if (d->loadConfig(node, scheduler)) {
+    d->_params.setScope("global");
     setData(d);
+  } else {
+    delete d;
+  }
 }
 
 bool TasksRootData::loadConfig(
@@ -31,7 +35,9 @@ bool TasksRootData::loadConfig(
   _originalPfNode = node;
   _params += ParamSet(node, "param");
   _vars += ParamSet(node, "var");
+  _vars.setScope("var");
   _instanceparams += ParamSet(node, "instanceparam");
+  _instanceparams.setScope("instanceparams");
   ConfigUtils::loadBoolean(node, "mergestderrintostdout",
                            &_mergeStderrIntoStdout);
   ConfigUtils::loadEventSubscription(
