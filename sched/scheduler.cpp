@@ -111,12 +111,16 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
     auto file_name = node.attribute("file");
     // FIXME it's not the right way to split a command line, see executor
     auto cmdline = node.childrenByName("command").value(0).contentAsStringList();
+    ParamSet ext;
     if (!file_name.isEmpty())
-      ParamSet::registerExternalParams(
-            name, ParamSet::fromFile(file_name)); // TODO support options
+      ext = ParamSet::fromFile(file_name); // TODO support options
     else if (cmdline.size())
-      ParamSet::registerExternalParams(
-            name, ParamSet::fromCommandOutput(cmdline)); // TODO support options
+      ext = ParamSet::fromCommandOutput(cmdline); // TODO support options
+    ParamSet::registerExternalParams(name, ext);
+    if (ext.isEmpty())
+      Log::warning() << "external param set '" << name << "' is empty";
+    Log::info() << "registered external param set '" << name
+                << "' with these keys: " << ext.paramKeys().toSortedList();
   }
   newConfig.copyLiveAttributesFromOldTasks(oldConfig.tasks());
   QMutexLocker ml(&_configGuard);
