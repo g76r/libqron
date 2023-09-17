@@ -33,7 +33,7 @@ static QStringList excludeOnfinishSubscriptions { "onfinish" };
 #define TASKSROOTID "*"
 
 class TasksRootData
-    : public SharedUiItemDataWithImmutableParams<TasksRootData> {
+    : public SharedUiItemDataWithImmutableParams<TasksRootData,true> {
 public:
   static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;

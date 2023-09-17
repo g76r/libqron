@@ -20,7 +20,7 @@
 static QAtomicInt _sequence;
 
 class TaskInstanceData
-    : public SharedUiItemDataWithMutableParams<TaskInstanceData> {
+    : public SharedUiItemDataWithMutableParams<TaskInstanceData,true> {
 public:
   static const Utf8String _qualifier;
   static const Utf8StringList _sectionNames;
@@ -56,7 +56,7 @@ public:
                    quint64 herdid, quint64 groupId = 0,
                    Condition queuewhen = Condition(),
                    Condition cancelwhen = Condition())
-    : SharedUiItemDataWithMutableParams<TaskInstanceData>(
+    : SharedUiItemDataWithMutableParams<TaskInstanceData,true>(
         params.withParent(task.params())),
       _id(newId()), _herdid(herdid == 0 ? _id : herdid),
       _groupId(groupId ? groupId : _id),
@@ -715,7 +715,7 @@ const Utf8StringList TaskInstanceData::_sectionNames {
   "taskid",
   "status",
   "creation_date",
-  "start_ate",
+  "start_date",
   "stop_date", // 5
   "time_queued",
   "time_running",
@@ -727,7 +727,7 @@ const Utf8StringList TaskInstanceData::_sectionNames {
   "time_waiting",
   "duration",
   "queue_date", // 15
-  "Time planned",
+  "time_planned",
   "queue_when",
   "cancel_when",
   "deduplicate_criterion", // 19
