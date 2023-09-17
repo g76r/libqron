@@ -50,7 +50,7 @@ public:
   QList<User> _users;
   Utf8StringList _commentsList;
   AccessControlConfigData() {}
-  AccessControlConfigData(ParamsProvider *context, PfNode node);
+  explicit AccessControlConfigData(PfNode node);
 };
 
 AccessControlConfig::AccessControlConfig() : d(new AccessControlConfigData) {
@@ -60,8 +60,8 @@ AccessControlConfig::AccessControlConfig(const AccessControlConfig &rhs)
   : d(rhs.d) {
 }
 
-AccessControlConfig::AccessControlConfig(ParamsProvider *context, PfNode node)
-  : d(new AccessControlConfigData(context, node)) {
+AccessControlConfig::AccessControlConfig(PfNode node)
+  : d(new AccessControlConfigData(node)) {
 }
 
 AccessControlConfig &AccessControlConfig::operator=(
@@ -74,14 +74,12 @@ AccessControlConfig &AccessControlConfig::operator=(
 AccessControlConfig::~AccessControlConfig() {
 }
 
-AccessControlConfigData::AccessControlConfigData(
-    ParamsProvider *context, PfNode node) {
+AccessControlConfigData::AccessControlConfigData(PfNode node) {
   foreach (PfNode child, node.childrenByName("user-file")) {
     QString path = child.contentAsUtf16().trimmed();
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
-            PercentEvaluator::eval_utf16(
-              child.utf16attribute("cipher", "plain"), context));
+          child.attribute("cipher", "plain"));
     if (path.isEmpty())
       Log::error() << "access control user file with empty path: "
                    << child.toString();
@@ -95,17 +93,13 @@ AccessControlConfigData::AccessControlConfigData(
       _userFiles.append(userFile);
     }
   }
-  foreach (PfNode child, node.childrenByName("user"_ba)) {
-    QString userId =
-        PercentEvaluator::eval_utf16(child.contentAsUtf16(), context).trimmed();
-    QString encodedPassword =
-        PercentEvaluator::eval_utf16(child.utf16attribute("password"), context)
-        .trimmed();
+  foreach (PfNode child, node.childrenByName("user")) {
+    QString userId = child.contentAsUtf16().trimmed();
+    QString encodedPassword = child.attribute("password");
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
-            PercentEvaluator::eval_utf16(
-              child.utf16attribute("cipher", "plain"), context).trimmed());
-    auto rolelist = child.stringListAttribute("roles"_ba);
+          child.attribute("cipher", "plain"));
+    auto rolelist = child.stringListAttribute("roles");
     auto roles = QSet<QString>(rolelist.begin(), rolelist.end());
     if (userId.isEmpty())
       Log::error() << "access control user with no id: " << child.toString();
@@ -153,7 +147,8 @@ PfNode AccessControlConfig::toPfNode() const {
 void AccessControlConfig::applyConfiguration(
     InMemoryAuthenticator *authenticator,
     InMemoryUsersDatabase *usersDatabase,
-    QFileSystemWatcher *accessControlFilesWatcher) const {
+    QFileSystemWatcher *accessControlFilesWatcher,
+    const ParamsProvider *context) const {
   if (authenticator)
     authenticator->clearUsers();
   if (usersDatabase)
@@ -165,8 +160,8 @@ void AccessControlConfig::applyConfiguration(
   }
   if (!d)
     return;
-  foreach (const AccessControlConfigData::UserFile &userFile, d->_userFiles) {
-    QString path = userFile._path;
+  for (auto userFile: d->_userFiles) {
+    auto path = PercentEvaluator::eval_utf16(userFile._path, context);
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
       Log::error() << "cannot open access control user file '" << path
@@ -209,12 +204,14 @@ void AccessControlConfig::applyConfiguration(
       Log::error() << "error reading access control user file '" << path
                    << "': " << file.errorString();
   }
-  foreach (const AccessControlConfigData::User &user, d->_users) {
+  for (auto user: d->_users) {
+    auto userid = PercentEvaluator::eval_utf16(user._userId, context);
+    auto passwd = PercentEvaluator::eval_utf16(user._encodedPassword, context);
+    // LATER % evaluate roles even maybe cipher
     if (authenticator)
-      authenticator->insertUser(user._userId, user._encodedPassword,
-                                user._cipher);
+      authenticator->insertUser(userid, passwd, user._cipher);
     if (usersDatabase)
-      usersDatabase->insertUser(user._userId, user._roles);
+      usersDatabase->insertUser(userid, user._roles);
   }
 }
 

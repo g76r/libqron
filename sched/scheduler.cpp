@@ -182,8 +182,10 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
 }
 
 void Scheduler::reloadAccessControlConfig() {
+  auto global_params = config().params();
   config().accessControlConfig().applyConfiguration(
-        _authenticator, _usersDatabase, _accessControlFilesWatcher);
+        _authenticator, _usersDatabase, _accessControlFilesWatcher,
+        &global_params);
 }
 
 static bool planOrRequestCommonPreProcess(

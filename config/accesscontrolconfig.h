@@ -31,13 +31,15 @@ class LIBQRONSHARED_EXPORT AccessControlConfig {
 public:
   AccessControlConfig();
   AccessControlConfig(const AccessControlConfig &);
-  AccessControlConfig(ParamsProvider *context, PfNode node);
+  explicit AccessControlConfig(PfNode node);
   AccessControlConfig &operator=(const AccessControlConfig &);
   ~AccessControlConfig();
   PfNode toPfNode() const;
-  void applyConfiguration(InMemoryAuthenticator *authenticator,
-                          InMemoryUsersDatabase *usersDatabase,
-                          QFileSystemWatcher *accessControlFilesWatcher) const;
+  void applyConfiguration(
+      InMemoryAuthenticator *authenticator,
+      InMemoryUsersDatabase *usersDatabase,
+      QFileSystemWatcher *accessControlFilesWatcher,
+      const ParamsProvider *context) const;
   bool isEmpty() const;
 };
 

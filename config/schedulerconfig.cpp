@@ -147,7 +147,6 @@ SchedulerConfigData::SchedulerConfigData(
   if (applyLogConfig)
     this->applyLogConfig();
   _tasksRoot = TasksRoot(root, scheduler);
-  auto ppm = ParamsProviderMerger(_tasksRoot.params());
   _namedCalendars.clear();
   foreach (PfNode node, root.childrenByName("calendar")) {
     auto name = node.contentAsUtf8();
@@ -355,7 +354,7 @@ ignore_task:;
   }
   QList<PfNode> accessControl = root.childrenByName("access-control");
   if (accessControl.size() > 0) {
-    _accessControlConfig = AccessControlConfig(&ppm, accessControl.first());
+    _accessControlConfig = AccessControlConfig(accessControl.first());
     if (accessControl.size() > 1) {
       Log::error() << "ignoring multiple 'access-control' in configuration";
     }
