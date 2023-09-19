@@ -338,71 +338,30 @@ void TaskInstance::setTarget(Host target) const {
   }
 }
 
-static const QRegularExpression _notIdentifierRE{"[^a-zA-Z0-9_]+"};
-static const QRegularExpression _notHeaderNameRE{"[^\\x21-\\x39\\x3b-\\x7e]+"};
-// rfc5322 states that a header may contain any ascii printable char but : (3a)
-static const QRegularExpression _notHeaderValueRE{"[\\0d\\0a]+"};
-
-static QString makeItAnIdentifier(QString key) {
-  key.replace(_notIdentifierRE, "_");
-  if (key[0] >= '0' && key[0] <= '9' )
-    key.insert(0, '_');
-  return key;
-}
-
-static QString makeItAHeaderName(QString key) {
-  if (key.endsWith(":")) // ignoring : at end of header name
-    key.chop(1);
-  key.replace(_notHeaderNameRE, "_");
-  if (key[0] >= '0' && key[0] <= '9' )
-    key.insert(0, '_');
-  return key;
-}
-
 QMap<QString,QString> TaskInstance::varsAsEnv() const {
   QMap<QString,QString> env;
   auto vars = task().vars();
   for (auto key: vars.paramKeys()) {
-    if (key.isEmpty())
+    if (key.isEmpty()) [[unlikely]]
       continue;
-    auto value = vars.paramUtf16(key, this);
-    env.insert(makeItAnIdentifier(key), value);
+    auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), this);
+    env.insert(key.toIdentifier(), value);
   }
   return env;
 }
-
-//QStringList TaskInstance::varsAsEnvKeys() const {
-//  QStringList keys;
-//  for (QString key: task().vars().paramKeys()) {
-//    if (key.isEmpty())
-//      continue;
-//    keys << makeItAnIdentifier(key);
-//  }
-//  return keys;
-//}
 
 QMap<QString,QString> TaskInstance::varsAsHeaders() const {
   QMap<QString,QString> env;
   auto vars = task().vars();
-  for (QString key: vars.paramKeys()) {
-    if (key.isEmpty())
+  for (auto key: vars.paramKeys()) {
+    if (key.isEmpty()) [[unlikely]]
       continue;
-    auto value = vars.paramUtf16(key, this);
-    value.replace(_notHeaderValueRE, " ");
-    env.insert(makeItAHeaderName(key), value);
+    auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), this);
+    value.remove('\r').replace('\n', ' ');
+    env.insert(key.toInternetHeaderName(), value);
   }
   return env;
 }
-
-//QStringList TaskInstance::varsAsHeadersKeys() const {
-//  QStringList keys;
-//  for (QString key: task().vars().paramKeys()) {
-//    if (key.isEmpty())
-//      continue;
-//    keys << makeItAHeaderName(key);
-//  }
-//  return keys;
-//}
 
 void TaskInstance::setTask(Task task) {
   TaskInstanceData *d = data();
@@ -701,12 +660,38 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       return PercentEvaluator::eval_utf8(
             tid->_task.deduplicateCriterion(), tid);
     } },
+#if 0
+  { "!varsasenv", [](const SharedUiItemData *data, const Utf8String&,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto tid = (TaskInstanceData*)(data);
+      auto map = TaskInstance(tid).varsAsEnv();
+      qDebug() << "**** !varsasenv" << map;
+      Utf8StringList s;
+      for (auto key: map.keys())
+        s += key+"="+map.value(key);
+      return s.join(' ');
+    } },
+  { "!varsasheaders", [](const SharedUiItemData *data, const Utf8String&,
+        const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto tid = (TaskInstanceData*)(data);
+      auto map = TaskInstance(tid).varsAsHeaders();
+      qDebug() << "**** !varsasheaders" << map;
+      Utf8StringList s;
+      for (auto key: map.keys())
+        s += key+"="+map.value(key);
+      return s.join(' ');
+    } },
+#endif
   { "!", [](const SharedUiItemData *data, const Utf8String &key,
         const PercentEvaluator::EvalContext context, int) -> QVariant {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
       return tid->_task.paramRawValue(key, context);
     }, true },
 };
+
+#if 0
+TaskInstance::TaskInstance(TaskInstanceData *data) : SharedUiItem(data) {}
+#endif
 
 const Utf8String TaskInstanceData::_qualifier = "taskinstance"_u8;
 

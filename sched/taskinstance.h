@@ -29,6 +29,9 @@ public:
   enum TaskInstanceStatus { Planned, Queued, Running, Waiting, Success, Failure,
                             Canceled };
   TaskInstance();
+#if 0
+  TaskInstance(TaskInstanceData *data);
+#endif
   TaskInstance(const TaskInstance &);
   TaskInstance(Task task, bool force, ParamSet params, quint64 herdid,
                Condition queuewhen = Condition(),
@@ -111,23 +114,11 @@ public:
    * (i.e. no special character and prefix with _ if first character is a digit)
    */
   QMap<QString,QString> varsAsEnv() const;
-  /** vars() keys protected to respect shell environment rules
-   * (i.e. no special character and prefix with _ if first character is a digit)
-   * warning: since the keys are modified they can be used to lookup into
-   * varsAsEnv() but no longer in task().vars() (at less not always)
-   */
-  //QStringList varsAsEnvKeys() const;
   /** vars(), evaluated and protected to respect internet headers rules
    * (rfc5322, internet message format, including http, i.e. no ':' in name,
    * no end-of-line in value)
    */
   QMap<QString,QString> varsAsHeaders() const;
-  /** vars() keys protected to respect internet headers rules
-   * (rfc5322, internet message format, including http, i.e. no ':')
-   * warning: since the keys are modified they can be used to lookup into
-   * varsAsHeaders() but no longer in task().vars() (at less not always)
-   */
-  //QStringList varsAsHeadersKeys() const;
 
 private:
   inline TaskInstanceData *data();

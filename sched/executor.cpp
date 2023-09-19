@@ -331,6 +331,8 @@ void Executor::dockerMean() {
 
 void Executor::execProcess(QStringList cmdline, bool useVarsAsEnv) {
   QProcessEnvironment sysenv;
+  qDebug() << "***** execProcess" << cmdline << useVarsAsEnv
+           << _instance.params() << _instance.varsAsEnv();
   if (useVarsAsEnv) {
     auto env = _instance.varsAsEnv();
     for (auto key: env.keys())
