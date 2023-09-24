@@ -34,7 +34,8 @@ public:
       return;
     ParamSet noticeParams;
     for (auto key: _noticeParams.paramKeys())
-      noticeParams.setValue(key, _noticeParams.paramValue(key, context));
+      noticeParams.setValue(key, PercentEvaluator::escape(
+                              _noticeParams.paramValue(key, context)));
     _scheduler->postNotice(PercentEvaluator::eval_utf8(_notice, context),
                            noticeParams);
   }
