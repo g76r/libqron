@@ -23,7 +23,6 @@ TasksRoot::TasksRoot(const TasksRoot &other) : SharedUiItem(other) {
 TasksRoot::TasksRoot(PfNode node, Scheduler *scheduler) {
   TasksRootData *d = new TasksRootData;
   if (d->loadConfig(node, scheduler)) {
-    d->_params.setScope("global");
     setData(d);
   } else {
     delete d;
@@ -173,9 +172,9 @@ Qt::ItemFlags TasksRootData::uiFlags(int section) const {
   return flags;
 }
 
-const Utf8String TasksRootData::_qualifier = "tasksroot";
+const Utf8String TasksRootData::_qualifier = "dummy";// b/c of subclassing
 
-const Utf8StringList TasksRootData::_sectionNames = {
+const Utf8StringIndexedConstList TasksRootData::_sectionNames = {
   "tasklocalid", // 0
   "parent_group",
   "label",
@@ -224,7 +223,7 @@ const Utf8StringList TasksRootData::_sectionNames = {
   "deduplicate_strategy", // 45
 };
 
-const Utf8StringList TasksRootData::_headerNames = {
+const Utf8StringIndexedConstList TasksRootData::_headerNames = {
   "Task local Id", // 0
   "Parent Group",
   "Label",

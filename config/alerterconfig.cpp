@@ -36,8 +36,8 @@ class AlerterConfigData
     : public SharedUiItemDataWithImmutableParams<AlerterConfigData, true> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
   Utf8String _id;
   QList<AlertSubscription> _alertSubscriptions;
@@ -260,7 +260,7 @@ const AlerterConfigData *AlerterConfig::data() const {
 
 const Utf8String AlerterConfigData::_qualifier = "alerterconfig";
 
-const Utf8StringList AlerterConfigData::_sectionNames {
+const Utf8StringIndexedConstList AlerterConfigData::_sectionNames {
   "id", // 0
   "params",
   "risedelay",
@@ -272,7 +272,7 @@ const Utf8StringList AlerterConfigData::_sectionNames {
   "duplicateemitdelay"
 };
 
-const Utf8StringList AlerterConfigData::_headerNames {
+const Utf8StringIndexedConstList AlerterConfigData::_headerNames {
   "Id", // 0
   "Params",
   "Rise Delay",

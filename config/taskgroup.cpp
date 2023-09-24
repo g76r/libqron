@@ -17,6 +17,7 @@
 
 class TaskGroupData : public TaskOrGroupData {
 public:
+  TaskGroupData() { _params.setScope(qualifier()); }
   QVariant uiData(int section, int role) const override;
   Utf8String qualifier() const override { return "taskgroup"_u8; }
   bool setUiData(
@@ -38,7 +39,6 @@ TaskGroup::TaskGroup(PfNode node, SharedUiItem parent, Scheduler *scheduler) {
   d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
                                    ConfigUtils::FullyQualifiedId).toUtf8();
   if (d->loadConfig(node, parent, scheduler)) {
-    d->_params.setScope("taskgroup");
     setData(d);
   } else {
     delete d;

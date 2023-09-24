@@ -18,8 +18,8 @@
 class ClusterData : public SharedUiItemDataBase<ClusterData> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   Utf8String _id;
   Utf8String _label;
   Cluster::Balancing _balancing;
@@ -205,14 +205,14 @@ Cluster::Balancing Cluster::balancingFromString(QString balancing) {
 
 const Utf8String ClusterData::_qualifier = "cluster";
 
-const Utf8StringList ClusterData::_sectionNames {
+const Utf8StringIndexedConstList ClusterData::_sectionNames {
   "clusterid", // 0
   "hosts",
   "balancing_method",
   "label",
 };
 
-const Utf8StringList ClusterData::_headerNames {
+const Utf8StringIndexedConstList ClusterData::_headerNames {
   "Id", // 0
   "Hosts",
   "Balancing Method",

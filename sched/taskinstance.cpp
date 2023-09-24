@@ -23,8 +23,8 @@ class TaskInstanceData
     : public SharedUiItemDataWithMutableParams<TaskInstanceData,true> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
   quint64 _id, _herdid, _groupId;
   QByteArray _idAsString;
@@ -699,7 +699,7 @@ TaskInstance::TaskInstance(TaskInstanceData *data) : SharedUiItem(data) {}
 
 const Utf8String TaskInstanceData::_qualifier = "taskinstance"_u8;
 
-const Utf8StringList TaskInstanceData::_sectionNames {
+const Utf8StringIndexedConstList TaskInstanceData::_sectionNames {
   "taskinstanceid", // 0
   "taskid",
   "status",
@@ -722,7 +722,7 @@ const Utf8StringList TaskInstanceData::_sectionNames {
   "deduplicate_criterion", // 19
 };
 
-const Utf8StringList TaskInstanceData::_headerNames {
+const Utf8StringIndexedConstList TaskInstanceData::_headerNames {
   "Instance Id", // 0
   "Task Id",
   "Status",

@@ -34,7 +34,9 @@ public:
 
   TaskData(): _lastExecution(LLONG_MIN), _nextScheduledExecution(LLONG_MIN),
       _lastSuccessful(true), _lastReturnCode(-1),
-      _lastDurationMillis(-1), _lastTaskInstanceId(0) { }
+      _lastDurationMillis(-1), _lastTaskInstanceId(0) {
+    _params.setScope(qualifier());
+  }
   QDateTime lastExecution() const;
   QDateTime nextScheduledExecution() const;
   QVariant uiData(int section, int role) const override;
@@ -81,7 +83,6 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
     delete d;
     return;
   }
-  d->_params.setScope("task");
   // default mean: local
   if (d->_mean == UnknownMean)
     d->_mean = Local;

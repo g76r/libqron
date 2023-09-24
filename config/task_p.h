@@ -35,9 +35,9 @@ static QStringList excludeOnfinishSubscriptions { "onfinish" };
 class TasksRootData
     : public SharedUiItemDataWithImmutableParams<TasksRootData,true> {
 public:
-  static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8String _qualifier; // dummy b/c of subclassing
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
   Utf8String _id;
   ParamSet _vars, _instanceparams;
@@ -47,7 +47,8 @@ public:
   PfNode _originalPfNode;
   bool _mergeStderrIntoStdout = false;
 
-  TasksRootData(const Utf8String &id = TASKSROOTID) : _id(id) {}
+  TasksRootData(const Utf8String &id = TASKSROOTID) : _id(id) {
+    _params.setScope(qualifier()); }
   QVariant uiData(int section, int role) const override;
   Utf8String id() const override { return _id; }
   bool setUiData(
@@ -56,6 +57,7 @@ public:
   Qt::ItemFlags uiFlags(int section) const override;
   bool loadConfig(PfNode node, Scheduler *scheduler);
   void fillPfNode(PfNode &node) const;
+  Utf8String qualifier() const override { return "tasksroot"_u8; }
 };
 
 class TaskOrGroupData : public TasksRootData {
@@ -69,6 +71,7 @@ public:
   Qt::ItemFlags uiFlags(int section) const override;
   bool loadConfig(PfNode node, SharedUiItem parentGroup, Scheduler *scheduler);
   void fillPfNode(PfNode &node) const;
+  Utf8String qualifier() const override { return "taskorgroup"_u8; }
 };
 
 class TaskOrTemplateData : public TaskOrGroupData {
@@ -104,10 +107,12 @@ public:
   bool loadConfig(PfNode node, Scheduler *scheduler, SharedUiItem parent,
                   QMap<Utf8String, Calendar> namedCalendars);
   void fillPfNode(PfNode &node) const;
+  Utf8String qualifier() const override { return "taskortemplate"_u8; }
 };
 
 class TaskTemplateData : public TaskOrTemplateData {
 public:
+  TaskTemplateData() { _params.setScope(qualifier()); }
   Utf8String qualifier() const override { return "tasktemplate"_u8; }
   PfNode toPfNode() const;
 };

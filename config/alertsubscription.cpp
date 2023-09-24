@@ -23,8 +23,8 @@ class AlertSubscriptionData
     : public SharedUiItemDataWithImmutableParams<AlertSubscriptionData> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
   Utf8String _id, _channelName;
   QString _pattern;
@@ -237,7 +237,7 @@ const AlertSubscriptionData *AlertSubscription::data() const {
 
 const Utf8String AlertSubscriptionData::_qualifier = "alertsubscription";
 
-const Utf8StringList AlertSubscriptionData::_sectionNames {
+const Utf8StringIndexedConstList AlertSubscriptionData::_sectionNames {
   "id", // 0
   "pattern",
   "channel",
@@ -253,7 +253,7 @@ const Utf8StringList AlertSubscriptionData::_sectionNames {
   "parameters"
 };
 
-const Utf8StringList AlertSubscriptionData::_headerNames {
+const Utf8StringIndexedConstList AlertSubscriptionData::_headerNames {
   "Id", // 0
   "Pattern",
   "Channel",

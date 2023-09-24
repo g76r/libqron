@@ -19,8 +19,8 @@
 class HostData : public SharedUiItemDataBase<HostData> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   Utf8String _id, _label, _hostname;
   QMap<Utf8String,qint64> _resources; // configured max resources available
   Utf8StringList _commentsList;
@@ -173,14 +173,14 @@ PfNode Host::toPfNode() const {
 
 const Utf8String HostData::_qualifier = "host";
 
-const Utf8StringList HostData::_sectionNames {
+const Utf8StringIndexedConstList HostData::_sectionNames {
   "hostid", // 0
   "hostname",
   "resources",
   "label",
 };
 
-const Utf8StringList HostData::_headerNames {
+const Utf8StringIndexedConstList HostData::_headerNames {
   "Id", // 0
   "Hostname",
   "Resources",

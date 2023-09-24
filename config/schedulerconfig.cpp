@@ -51,8 +51,8 @@ public:
 class SchedulerConfigData : public SharedUiItemDataBase<SchedulerConfigData> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   QMap<Utf8String,TaskGroup> _taskgroups;
   QMap<Utf8String,TaskTemplate> _tasktemplates;
   QMap<Utf8String,Task> _tasks;
@@ -669,14 +669,14 @@ void SchedulerConfig::applyLogConfig() const {
 
 const Utf8String SchedulerConfigData::_qualifier = "config";
 
-const Utf8StringList SchedulerConfigData::_sectionNames {
+const Utf8StringIndexedConstList SchedulerConfigData::_sectionNames {
   "configid", // 0
   "last_load_time",
   "is_active",
   "actions"
 };
 
-const Utf8StringList SchedulerConfigData::_headerNames {
+const Utf8StringIndexedConstList SchedulerConfigData::_headerNames {
   "Id", // 0
   "Last Load Time",
   "Is Active",

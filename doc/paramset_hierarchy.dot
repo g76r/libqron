@@ -2,7 +2,7 @@ graph g {
 
 // configuration objects carrying params
 node [shape=box,style=filled,color=powderblue]
-global [label="Global Params"]
+global [label="Tasks Root Params"]
 external [label="External Params",style=dashed,color=""]
 { rank=min; global; external; } // sticked at the top
 taskgroup [label="Task Group Params"]

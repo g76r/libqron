@@ -20,8 +20,8 @@ static QAtomicInt _sequence;
 class LogFileData : public SharedUiItemDataBase<LogFileData> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   Utf8String _id;
   QString _pathPattern;
   Log::Severity _minimumSeverity;
@@ -114,14 +114,14 @@ PfNode LogFile::toPfNode() const {
 
 const Utf8String LogFileData::_qualifier = "logfile";
 
-const Utf8StringList LogFileData::_sectionNames {
+const Utf8StringIndexedConstList LogFileData::_sectionNames {
   "id", // 0
   "path_pattern",
   "minimum_severity",
   "buffered",
 };
 
-const Utf8StringList LogFileData::_headerNames {
+const Utf8StringIndexedConstList LogFileData::_headerNames {
   "Id", // 0
   "Path Pattern",
   "Minimum Severity",

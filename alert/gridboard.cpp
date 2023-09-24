@@ -90,8 +90,8 @@ public:
 class DimensionData : public SharedUiItemDataBase<DimensionData> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
 
 private:
   friend class Dimension;
@@ -168,8 +168,8 @@ static void mergeComponents(
 class GridboardData : public SharedUiItemDataBase<GridboardData> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   Utf8String _id;
   Utf8String _label, _pattern, _info;
   QRegularExpression _patternRegexp;
@@ -539,13 +539,13 @@ QVariant GridboardData::uiData(int section, int role) const {
 
 const Utf8String DimensionData::_qualifier = "gridboarddimension";
 
-const Utf8StringList DimensionData::_sectionNames;
+const Utf8StringIndexedConstList DimensionData::_sectionNames;
 
-const Utf8StringList DimensionData::_headerNames;
+const Utf8StringIndexedConstList DimensionData::_headerNames;
 
 const Utf8String GridboardData::_qualifier = "gridboard";
 
-const Utf8StringList GridboardData::_sectionNames {
+const Utf8StringIndexedConstList GridboardData::_sectionNames {
   "id", // 0
   "label",
   "pattern",
@@ -559,7 +559,7 @@ const Utf8StringList GridboardData::_sectionNames {
   "additional_info" // 10
 };
 
-const Utf8StringList GridboardData::_headerNames {
+const Utf8StringIndexedConstList GridboardData::_headerNames {
   "Id", // 0
   "Label",
   "Pattern",

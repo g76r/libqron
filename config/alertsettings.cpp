@@ -20,8 +20,8 @@ static QAtomicInt _sequence;
 class AlertSettingsData : public SharedUiItemDataBase<AlertSettingsData> {
 public:
   static const Utf8String _qualifier;
-  static const Utf8StringList _sectionNames;
-  static const Utf8StringList _headerNames;
+  static const Utf8StringIndexedConstList _sectionNames;
+  static const Utf8StringIndexedConstList _headerNames;
   Utf8String _id;
   QString _pattern;
   QRegularExpression _patternRegexp;
@@ -180,7 +180,7 @@ const AlertSettingsData *AlertSettings::data() const {
 
 const Utf8String AlertSettingsData::_qualifier = "alertsettings";
 
-const Utf8StringList AlertSettingsData::_sectionNames {
+const Utf8StringIndexedConstList AlertSettingsData::_sectionNames {
   "id", // 0
   "pattern",
   "options",
@@ -192,7 +192,7 @@ const Utf8StringList AlertSettingsData::_sectionNames {
   "acceptabilitywindow"
 };
 
-const Utf8StringList AlertSettingsData::_headerNames {
+const Utf8StringIndexedConstList AlertSettingsData::_headerNames {
   "Id", // 0
   "Pattern",
   "Options",
