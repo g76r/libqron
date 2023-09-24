@@ -189,7 +189,8 @@ Task TaskInstance::task() const {
   return d ? d->_task : Task();
 }
 
-void TaskInstance::setParam(QString key, QString value) const {
+void TaskInstance::setParam(
+    const Utf8String &key, const QVariant &value) const {
   auto d = data();
   if (!d)
     return;
@@ -197,7 +198,8 @@ void TaskInstance::setParam(QString key, QString value) const {
   params->setValue(key, value);
 }
 
-void TaskInstance::paramAppend(QString key, QString value) const {
+void TaskInstance::paramAppend(
+    const Utf8String &key, const QVariant &value) const {
   auto d = data();
   if (!d)
     return;
@@ -206,7 +208,7 @@ void TaskInstance::paramAppend(QString key, QString value) const {
   if (!current.isValid())
     params->setValue(key, value);
   else
-    params->setValue(key, current.toString()+' '+value);
+    params->setValue(key, Utf8String(current)+" "_u8+Utf8String(value));
 }
 
 ParamSet TaskInstance::params() const {
@@ -528,141 +530,141 @@ const TaskInstanceData *TaskInstance::data() const {
 
 const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
   { "!taskinstanceid", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)->_idAsString;
     } },
   { "!herdid", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)->_herdid;
     } },
   { "!taskinstancegroupid", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)->_groupId;
     } },
   { "!runningms", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)->runningMillis();
     } },
   { "!runnings", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->runningMillis()/1e3;
     } },
   { "!waitingms", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->waitingMillis();
     } },
   { "!waitings", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->waitingMillis()/1e3;
     } },
   { "!plannedms", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->plannedMillis();
     } },
   { "!planneds", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->plannedMillis()/1e3;
     } },
   { "!queuedms", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->queuedMillis();
     } },
   { "!queueds", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->queuedMillis()/1e3;
     } },
   { "!durationms", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->durationMillis();
     } },
   { "!durations", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->durationMillis()/1e3;
     } },
   // total[m]s: backward compatiblity with qron < 1.12
   { "!totalms", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->durationMillis();
     } },
   { "!totals", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->durationMillis()/1e3;
     } },
   { "!returncode", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->_returnCode;
     } },
   { "!status", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return TaskInstance::statusAsString(
             reinterpret_cast<const TaskInstanceData*>(data)->status());
     } },
   { "!target", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->_target.id();
     } },
   { "!targethostname", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->_target.hostname();
     } },
   { "!requestdate", [](const SharedUiItemData *data, const Utf8String &key,
-        const PercentEvaluator::EvalContext context, int ml) -> QVariant {
+        const PercentEvaluator::EvalContext &context, int ml) -> QVariant {
       return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
             reinterpret_cast<const TaskInstanceData*>(data)->creationDatetime(),
             key.mid(ml), context);
     }, true },
   { "!startdate", [](const SharedUiItemData *data, const Utf8String &key,
-        const PercentEvaluator::EvalContext context, int ml) -> QVariant {
+        const PercentEvaluator::EvalContext &context, int ml) -> QVariant {
       return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
             reinterpret_cast<const TaskInstanceData*>(data)->startDatetime(),
             key.mid(ml), context);
     }, true },
   { "!stopdate", [](const SharedUiItemData *data, const Utf8String &key,
-        const PercentEvaluator::EvalContext context, int ml) -> QVariant {
+        const PercentEvaluator::EvalContext &context, int ml) -> QVariant {
       return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
             reinterpret_cast<const TaskInstanceData*>(data)->stopDatetime(),
             key.mid(ml), context);
     }, true },
   { "!finishdate", [](const SharedUiItemData *data, const Utf8String &key,
-        const PercentEvaluator::EvalContext context, int ml) -> QVariant {
+        const PercentEvaluator::EvalContext &context, int ml) -> QVariant {
       return TimeFormats::toMultifieldSpecifiedCustomTimestamp(
             reinterpret_cast<const TaskInstanceData*>(data)->finishDatetime(),
             key.mid(ml), context);
     }, true },
   { "!remainingtries", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->_remainingTries.data();
     } },
   { "!currenttry", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
        // FIXME not sure it works well if task.maxTries change meanwhile
       return tid->_task.maxTries() - tid->_remainingTries.data();
     } },
   { "!deduplicatecriterion", [](const SharedUiItemData *data, const Utf8String&,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
       return PercentEvaluator::eval_utf8(
             tid->_task.deduplicateCriterion(), tid);
     } },
 #if 0
   { "!varsasenv", [](const SharedUiItemData *data, const Utf8String&,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       auto tid = (TaskInstanceData*)(data);
       auto map = TaskInstance(tid).varsAsEnv();
       qDebug() << "**** !varsasenv" << map;
@@ -672,7 +674,7 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       return s.join(' ');
     } },
   { "!varsasheaders", [](const SharedUiItemData *data, const Utf8String&,
-        const PercentEvaluator::EvalContext, int) -> QVariant {
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
       auto tid = (TaskInstanceData*)(data);
       auto map = TaskInstance(tid).varsAsHeaders();
       qDebug() << "**** !varsasheaders" << map;
@@ -683,9 +685,11 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
     } },
 #endif
   { "!", [](const SharedUiItemData *data, const Utf8String &key,
-        const PercentEvaluator::EvalContext context, int) -> QVariant {
+        const PercentEvaluator::EvalContext &context, int) -> QVariant {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
-      return tid->_task.paramRawValue(key, context);
+      PercentEvaluator::EvalContext new_context = context;
+      new_context.setScopeFilter({}); // in case it was [taskinstance]
+      return tid->_task.paramRawValue(key, new_context);
     }, true },
 };
 

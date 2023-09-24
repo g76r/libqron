@@ -41,10 +41,10 @@ public:
   TaskInstance &operator=(const TaskInstance &other) {
     SharedUiItem::operator=(other); return *this; }
   Task task() const;
-  void setParam(QString key, QString value) const;
+  void setParam(const Utf8String &key, const QVariant &value) const;
   /** Either set param if empty or append a space followed by value to current
    * value */
-  void paramAppend(QString key, QString value) const;
+  void paramAppend(const Utf8String &key, const QVariant &value) const;
   ParamSet params() const;
   quint64 idAsLong() const;
   /** @return string of the form "taskid/taskinstanceid" */
