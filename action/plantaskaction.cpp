@@ -44,8 +44,10 @@ public:
     quint64 herdid = _lone ? 0 : parentInstance.herdid();
     ParamSet overridingParams;
     for (auto key: _overridingParams.paramKeys())
-      overridingParams.setValue(key, PercentEvaluator::eval_utf8(
-                                  _overridingParams.paramRawUtf8(key), context));
+      overridingParams.setValue(
+            key, PercentEvaluator::escape(
+              PercentEvaluator::eval(
+                _overridingParams.paramRawUtf8(key), context)));
     if (!parentInstance.isNull())
       overridingParams.setValue("!parenttaskinstanceid", parentInstance.id());
     TaskInstanceList instances = _scheduler->planTask(
