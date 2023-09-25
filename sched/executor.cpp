@@ -64,7 +64,7 @@ Executor::Executor(Scheduler *scheduler) : QObject(0), _isTemporary(false),
 Executor::~Executor() {
 }
 
-void Executor::execute(TaskInstance instance) {
+void Executor::execute(const TaskInstance &instance) {
   QMetaObject::invokeMethod(this, [this,instance]() {
     _instance = instance;
     _aborting = _retrying = false;
@@ -404,14 +404,6 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
       success = _instance.task().params()
                   .paramBool("return.code."+Utf8String::number(exitCode)
                              +".success", success);
-      Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
-               _instance.idAsLong())
-        << "task '" << _instance.task().id() << "' stopped "
-        << (success ? "successfully" : "in failure") << " with return code "
-        << exitCode << " on host '" << _instance.target().hostname()
-        << "' after running " << _instance.runningMillis()
-        << " ms (duration including queue: " << _instance.durationMillis()
-        << " ms)";
       break;
     case Task::Background:
       stopping = false;
@@ -445,14 +437,6 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
           stopping = true;
           success = (exitCode == 1); // 1: succeeded 2+: failed
           exitCode = _instance.paramNumber<int>("return.code", -1);
-          Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
-                   _instance.idAsLong())
-            << "task '" << _instance.task().id() << "' stopped "
-            << (success ? "successfully" : "in failure") << " with return code "
-            << exitCode << " on host '" << _instance.target().hostname()
-            << "' after running " << _instance.runningMillis()
-            << " ms (duration including queue: "
-            << _instance.durationMillis() << " ms)";
           break;
         case Aborting:
           _backgroundStatus = Started;
@@ -906,6 +890,17 @@ void Executor::stopOrRetry(bool success, int returnCode) {
   _instance.setSuccess(success);
   _instance.setReturnCode(returnCode);
   _instance.setStopDatetime();
+  Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
+           _instance.idAsLong())
+    << "task '" << _instance.task().id() << "' stopped "
+    << (success ? "successfully" : "in failure") << " with return code "
+    << returnCode << " on host '" << _instance.target().hostname()
+    << "' after running " << _instance.runningMillis()
+    << " ms (planned time: " << _instance.plannedMillis() << " ms queued time: "
+    << _instance.queuedMillis()
+    << " ms) with these timestamps: creation: " << _instance.creationDatetime()
+    << " queue: " << _instance.queueDatetime() << " start: "
+    << _instance.startDatetime() << " stop: " << _instance.stopDatetime();
   emit taskInstanceStopped(_instance, this);
   _instance = TaskInstance();
 }

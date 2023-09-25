@@ -56,7 +56,7 @@ public:
   void setTemporary(bool temporary = true) { _isTemporary = temporary; }
   bool isTemporary() const { return _isTemporary; }
   /** Execute a task now. This method is thread-safe. */
-  void execute(TaskInstance instance);
+  void execute(const TaskInstance &instance);
   /** Abort current task now. This method is thread-safe. */
   void abort();
   void noticePosted(QString notice, ParamSet params);
