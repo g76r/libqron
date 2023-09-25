@@ -107,45 +107,43 @@ public:
     _finish = datetime.isValid() ? datetime.toMSecsSinceEpoch() : LLONG_MIN; }
   qint64 inline plannedMillis() const {
     auto creation = _creationDateTime.toMSecsSinceEpoch();
-    if (_queue == LLONG_MIN) { // not queued : taking live value so far
-      if (_finish != LLONG_MIN) // canceled
-        return _finish - creation;
-      else  // not queued : taking live value so far
-        return QDateTime::currentMSecsSinceEpoch() - creation;
-    }
-    return _queue - creation;
+    if (_queue != LLONG_MIN) // queued or further
+      return _queue - creation;
+    if (_finish != LLONG_MIN) // canceled before being queued
+      return _finish - creation;
+    // still planned : taking live value so far
+    return QDateTime::currentMSecsSinceEpoch() - creation;
   }
   qint64 inline queuedMillis() const {
     if (_queue == LLONG_MIN) // still planned
       return 0;
-    if (_start == LLONG_MIN) {
-      if (_finish != LLONG_MIN) // canceled
-        return _finish - _queue;
-      else  // not started : taking live value so far
-        return QDateTime::currentMSecsSinceEpoch() - _queue;
-    }
-    return _start - _queue;
+    if (_start != LLONG_MIN) // running, waiting or finished
+      return _start - _queue;
+    if (_finish != LLONG_MIN) // canceled
+      return _finish - _queue;
+    // still queued : taking live value so far
+    return QDateTime::currentMSecsSinceEpoch() - _queue;
   }
   qint64 inline runningMillis() const {
     if (_start == LLONG_MIN) // not started
       return 0;
-    if (_finish == LLONG_MIN) // not finished : taking live value so far
+    if (_stop == LLONG_MIN) // not finished : taking live value so far
       return QDateTime::currentMSecsSinceEpoch() - _start;
-    return _finish - _start;
+    return _stop - _start;
   }
   qint64 inline waitingMillis() const {
     if (_stop == LLONG_MIN) // still running (or before, or canceled)
       return 0;
     if (_finish == LLONG_MIN) // not finished : taking live value so far
-      return QDateTime::currentMSecsSinceEpoch() - _queue;
+      return QDateTime::currentMSecsSinceEpoch() - _start;
     return _finish - _stop;
   }
   qint64 inline durationMillis() const {
-    if (_queue == LLONG_MIN) // still planned (or canceled)
+    if (_start == LLONG_MIN) // still planned, queued or canceled
       return 0;
     if (_finish == LLONG_MIN) // not finished : taking live value so far
-      return QDateTime::currentMSecsSinceEpoch() - _queue;
-    return _finish - _queue;
+      return QDateTime::currentMSecsSinceEpoch() - _start;
+    return _finish - _start;
   }
   TaskInstance::TaskInstanceStatus inline status() const {
     if (_finish != LLONG_MIN) {
@@ -580,23 +578,13 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->queuedMillis()/1e3;
     } },
-  { "!durationms", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext&, int) -> QVariant {
-      return reinterpret_cast<const TaskInstanceData*>(data)
-          ->durationMillis();
-    } },
-  { "!durations", [](const SharedUiItemData *data, const Utf8String &,
-        const PercentEvaluator::EvalContext&, int) -> QVariant {
-      return reinterpret_cast<const TaskInstanceData*>(data)
-          ->durationMillis()/1e3;
-    } },
   // total[m]s: backward compatiblity with qron < 1.12
-  { "!totalms", [](const SharedUiItemData *data, const Utf8String &,
+  { { "!durationms", "!totalms" }, [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->durationMillis();
     } },
-  { "!totals", [](const SharedUiItemData *data, const Utf8String &,
+  { { "!durations", "!totals" }, [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->durationMillis()/1e3;

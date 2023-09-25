@@ -52,7 +52,7 @@ public:
   quint64 groupId() const;
   QDateTime creationDatetime() const;
   QDateTime queueDatetime() const;
-  void setQueueDatetime(QDateTime datetime= QDateTime::currentDateTime()) const;
+  void setQueueDatetime(QDateTime datetime) const;
   QDateTime startDatetime() const;
   void setStartDatetime(QDateTime datetime
                         = QDateTime::currentDateTime()) const;

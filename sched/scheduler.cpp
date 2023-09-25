@@ -480,7 +480,7 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
     _alerter->raiseAlert("scheduler.maxqueuedrequests.reached"_ba);
     return {};
   }
-  instance.setQueueDatetime();
+  instance.setQueueDatetime(QDateTime::currentDateTime());
   _unfinishedTasks.insert(instance.idAsLong(), instance);
   _alerter->cancelAlert("scheduler.maxqueuedrequests.reached"_ba);
   Log::debug(taskId, instance.idAsLong())
@@ -1217,8 +1217,8 @@ void Scheduler::periodicChecks() {
     case TaskInstance::Success:
     case TaskInstance::Failure:
     case TaskInstance::Canceled:
-      continue;
     case TaskInstance::Queued:
+      continue;
     case TaskInstance::Running:
     case TaskInstance::Waiting:
         ;
