@@ -1167,7 +1167,7 @@ void Scheduler::taskInstanceFinishedOrCanceled(
   _unfinishedHerds.remove(instance.idAsLong());
   auto success = instance.success();
   Log::log(success ? Log::Info : Log::Warning, taskId, instance.idAsLong())
-    << "herder task '" << taskId << "' finished "
+    << "task '" << taskId << "' finished "
     << (success ? "successfully" : "in failure") << " with return code "
     << instance.returnCode() << " on host '" << instance.target().hostname()
     << "' after duration (running+waiting) " << instance.durationMillis()
