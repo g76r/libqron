@@ -1165,6 +1165,19 @@ void Scheduler::taskInstanceFinishedOrCanceled(
       _unfinishedTasks.remove(i);
   }
   _unfinishedHerds.remove(instance.idAsLong());
+  auto success = instance.success();
+  Log::log(success ? Log::Info : Log::Warning, taskId, instance.idAsLong())
+    << "herder task '" << taskId << "' finished "
+    << (success ? "successfully" : "in failure") << " with return code "
+    << instance.returnCode() << " on host '" << instance.target().hostname()
+    << "' after duration (running+waiting) " << instance.durationMillis()
+    << " ms (planned time: " << instance.plannedMillis() << " ms queued time: "
+    << instance.queuedMillis() << " ms running time: "
+    << instance.runningMillis() << " ms waiting time: "
+    << instance.waitingMillis() << " ms) with these timestamps: creation: "
+    << instance.creationDatetime() << " queue: " << instance.queueDatetime()
+    << " start: " << instance.startDatetime() << " stop: "
+    << instance.stopDatetime() << " finish: " << instance.finishDatetime();
   emit itemChanged(instance, instance, "taskinstance"_ba);
   emit itemChanged(configuredTask, configuredTask, "task"_ba);
   reevaluateQueuedTaskInstances();
