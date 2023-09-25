@@ -113,8 +113,8 @@ bool ClustersModel::canDropMimeData(
   foreach (const QByteArray &qualifiedId, idsArrays) {
     QString qualifier = QString::fromUtf8(
           qualifiedId.left(qualifiedId.indexOf(':')));
-    if (qualifier != "host"_ba
-        && qualifier != "hostreference"_ba)
+    if (qualifier != "host"_u8
+        && qualifier != "hostreference"_u8)
       return false; // can only drop hosts
   }
   return true;
@@ -175,12 +175,12 @@ bool ClustersModel::dropMimeData(
   // update actual data item
   QList<Host> newHosts;
   foreach (const QString &id, newHostsIds) {
-    SharedUiItem hostSui = documentManager()->itemById("host"_ba, id.toUtf8());
+    SharedUiItem hostSui = documentManager()->itemById("host"_u8, id.toUtf8());
     Host &host = static_cast<Host&>(hostSui);
     newHosts << host;
   }
   Cluster newCluster = oldCluster;
   newCluster.setHosts(newHosts);
-  documentManager()->changeItem(newCluster, oldCluster, "cluster"_ba);
+  documentManager()->changeItem(newCluster, oldCluster, "cluster"_u8);
   return true;
 }

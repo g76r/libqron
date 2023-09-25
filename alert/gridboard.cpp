@@ -115,7 +115,7 @@ public:
     d->_rawValue = idAndValue.value(1);
     if (d->_rawValue.isEmpty())
       d->_rawValue = "%"+d->_id;
-    d->_label = node.utf16attribute("label"_ba);
+    d->_label = node.utf16attribute("label"_u8);
     setData(d);
   }
   PfNode toPfNode() const {
@@ -124,9 +124,9 @@ public:
       return PfNode();
     QString idAndValue;
     idAndValue = d->_id+" "+d->_rawValue;
-    PfNode node("dimension"_ba, idAndValue);
+    PfNode node("dimension"_u8, idAndValue);
     if (!d->_label.isEmpty())
-      node.setAttribute("label"_ba, d->_label);
+      node.setAttribute("label"_u8, d->_label);
     return node;
   }
   const DimensionData *data() const { return specializedData<DimensionData>(); }
@@ -220,9 +220,9 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
     delete d;
     return;
   }
-  d->_label = node.utf16attribute("label"_ba);
-  d->_info = node.utf16attribute("info"_ba);
-  d->_pattern = node.utf16attribute("pattern"_ba);
+  d->_label = node.utf16attribute("label"_u8);
+  d->_info = node.utf16attribute("info"_u8);
+  d->_pattern = node.utf16attribute("pattern"_u8);
   d->_patternRegexp = QRegularExpression(d->_pattern);
   if (!d->_patternRegexp.isValid())
     Log::warning() << "gridboard with invalid pattern: " << node.toString();
@@ -258,9 +258,9 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
   for (int i = 0; i < d->_dimensions.size(); ++i)
     d->_dataIndexesByDimension.append(QHash<Utf8String,TreeItem*>());
   d->_warningDelay = node.doubleAttribute(
-        "warningdelay"_ba, DEFAULT_WARNING_DELAY/1e3)*1e3;
+        "warningdelay"_u8, DEFAULT_WARNING_DELAY/1e3)*1e3;
   d->_params.setParent(parentParams);
-  d->_params = ParamSet(node, "param"_ba);
+  d->_params = ParamSet(node, "param"_u8);
   ConfigUtils::loadComments(node, &d->_commentsList);
   // LATER load old state
   // LATER load initvalues
@@ -294,19 +294,19 @@ PfNode Gridboard::toPfNode() const {
   const GridboardData *d = data();
   if (!d)
     return PfNode();
-  PfNode node("gridboard"_ba, d->_id);
+  PfNode node("gridboard"_u8, d->_id);
   ConfigUtils::writeComments(&node, d->_commentsList);
   if (!d->_label.isEmpty() && d->_label != d->_id)
-    node.setAttribute("label"_ba, d->_label);
+    node.setAttribute("label"_u8, d->_label);
   if (!d->_info.isEmpty())
-    node.setAttribute("info"_ba, d->_info);
-  node.setAttribute("pattern"_ba, d->_pattern);
+    node.setAttribute("info"_u8, d->_info);
+  node.setAttribute("pattern"_u8, d->_pattern);
   foreach (const Dimension &dimension, d->_dimensions)
     node.appendChild(dimension.toPfNode());
   // LATER initvalues
   ConfigUtils::writeParamSet(&node, d->_params, u"param"_s);
   if (d->_warningDelay != DEFAULT_WARNING_DELAY)
-    node.setAttribute("warningdelay"_ba, d->_warningDelay/1e3);
+    node.setAttribute("warningdelay"_u8, d->_warningDelay/1e3);
   return node;
 }
 

@@ -50,15 +50,15 @@ AlertSettings::AlertSettings(PfNode node) {
   if (d->_pattern.isEmpty() || !d->_patternRegexp.isValid())
     Log::warning() << "unsupported alert settings match pattern '"
                    << d->_pattern << "': " << node.toString();
-  d->_riseDelay = node.doubleAttribute("risedelay"_ba, 0)*1e3;
-  d->_mayriseDelay = node.doubleAttribute("mayrisedelay"_ba, 0)*1e3;
-  d->_dropDelay = node.doubleAttribute("dropdelay"_ba, 0)*1e3;
-  d->_duplicateEmitDelay = node.doubleAttribute("duplicateemitdelay"_ba, 0)*1e3;
+  d->_riseDelay = node.doubleAttribute("risedelay"_u8, 0)*1e3;
+  d->_mayriseDelay = node.doubleAttribute("mayrisedelay"_u8, 0)*1e3;
+  d->_dropDelay = node.doubleAttribute("dropdelay"_u8, 0)*1e3;
+  d->_duplicateEmitDelay = node.doubleAttribute("duplicateemitdelay"_u8, 0)*1e3;
   ConfigUtils::loadComments(node, &d->_commentsList);
   d->_visibilityWindow = CronTrigger(
-        node.utf16attribute("visibilitywindow"_ba));
+        node.utf16attribute("visibilitywindow"_u8));
   d->_acceptabilityWindow = CronTrigger(
-        node.utf16attribute("acceptabilitywindow"_ba));
+        node.utf16attribute("acceptabilitywindow"_u8));
   setData(d);
 }
 
@@ -66,21 +66,21 @@ PfNode AlertSettings::toPfNode() const {
   const AlertSettingsData *d = data();
   if (!d)
     return PfNode();
-  PfNode node("settings"_ba);
+  PfNode node("settings"_u8);
   ConfigUtils::writeComments(&node, d->_commentsList);
-  node.setAttribute("pattern"_ba, d->_pattern);
+  node.setAttribute("pattern"_u8, d->_pattern);
   if (d->_riseDelay > 0)
-    node.setAttribute("risedelay"_ba, d->_riseDelay/1e3);
+    node.setAttribute("risedelay"_u8, d->_riseDelay/1e3);
   if (d->_mayriseDelay > 0)
-    node.setAttribute("mayrisedelay"_ba, d->_mayriseDelay/1e3);
+    node.setAttribute("mayrisedelay"_u8, d->_mayriseDelay/1e3);
   if (d->_dropDelay > 0)
-    node.setAttribute("dropdelay"_ba, d->_dropDelay/1e3);
+    node.setAttribute("dropdelay"_u8, d->_dropDelay/1e3);
   if (d->_duplicateEmitDelay > 0)
-    node.setAttribute("duplicateemitdelay"_ba, d->_duplicateEmitDelay/1e3);
+    node.setAttribute("duplicateemitdelay"_u8, d->_duplicateEmitDelay/1e3);
   if (d->_visibilityWindow.isValid())
-    node.setAttribute("visibilitywindow"_ba, d->_visibilityWindow.expression());
+    node.setAttribute("visibilitywindow"_u8, d->_visibilityWindow.expression());
   if (d->_acceptabilityWindow.isValid())
-    node.setAttribute("acceptabilitywindow"_ba,
+    node.setAttribute("acceptabilitywindow"_u8,
                       d->_acceptabilityWindow.expression());
   return node;
 }

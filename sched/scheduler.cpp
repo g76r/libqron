@@ -477,12 +477,12 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
     Log::error(taskId, instance.idAsLong())
         << "cannot queue task because maxqueuedrequests is already reached ("
         << config().maxqueuedrequests() << ")";
-    _alerter->raiseAlert("scheduler.maxqueuedrequests.reached"_ba);
+    _alerter->raiseAlert("scheduler.maxqueuedrequests.reached"_u8);
     return {};
   }
   instance.setQueueDatetime(QDateTime::currentDateTime());
   _unfinishedTasks.insert(instance.idAsLong(), instance);
-  _alerter->cancelAlert("scheduler.maxqueuedrequests.reached"_ba);
+  _alerter->cancelAlert("scheduler.maxqueuedrequests.reached"_u8);
   Log::debug(taskId, instance.idAsLong())
       << "queuing task " << instance.idSlashId()
       << " with request group id " << instance.groupId()
@@ -676,7 +676,7 @@ void Scheduler::checkTriggersForAllTasks() {
   }
   // LATER if this is usefull only to remove next exec time when reloading config w/o time trigger, this should be called in reloadConfig
   foreach (const Task task, tasksWithoutTimeTrigger)
-    emit itemChanged(task, task, "task"_ba);
+    emit itemChanged(task, task, "task"_u8);
 }
 
 bool Scheduler::checkTrigger(
@@ -734,7 +734,7 @@ bool Scheduler::checkTrigger(
   } else {
     task.setNextScheduledExecution(QDateTime());
   }
-  emit itemChanged(task, task, "task"_ba);
+  emit itemChanged(task, task, "task"_u8);
   return fired;
 }
 
@@ -846,7 +846,7 @@ void Scheduler::enqueueAsManyTaskInstancesAsPossible() {
           << queuewhen.toString();
       instance = enqueueTaskInstance(instance);
       if (!instance.isNull()) [[likely]]
-        emit itemChanged(instance, instance, "taskinstance"_ba);
+        emit itemChanged(instance, instance, "taskinstance"_u8);
       continue;
     }
     Condition cancelwhen = instance.cancelwhen();
@@ -887,10 +887,10 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
            +QByteArray::number(ti.startDatetime().msecsTo(now))+" ms; ";
     }
     Log::info(taskId, instance.idAsLong()) << s;
-    _alerter->raiseAlert("scheduler.maxtotaltaskinstances.reached"_ba);
+    _alerter->raiseAlert("scheduler.maxtotaltaskinstances.reached"_u8);
     return;
   }
-  _alerter->cancelAlert("scheduler.maxtotaltaskinstances.reached"_ba);
+  _alerter->cancelAlert("scheduler.maxtotaltaskinstances.reached"_u8);
   if (instance.force())
     task.fetchAndAddRunningCount(1);
   else if (task.fetchAndAddRunningCount(1) >= task.maxInstances()) {
@@ -1056,7 +1056,7 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   Log::info(instance.task().id(), instance.id())
       << "waiting for herded tasks to finish: " << waitingTasks;
   instance.setAbortable();
-  emit itemChanged(instance, instance, "taskinstance"_ba);
+  emit itemChanged(instance, instance, "taskinstance"_u8);
   reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
 }
 
@@ -1178,8 +1178,8 @@ void Scheduler::taskInstanceFinishedOrCanceled(
     << instance.creationDatetime() << " queue: " << instance.queueDatetime()
     << " start: " << instance.startDatetime() << " stop: "
     << instance.stopDatetime() << " finish: " << instance.finishDatetime();
-  emit itemChanged(instance, instance, "taskinstance"_ba);
-  emit itemChanged(configuredTask, configuredTask, "task"_ba);
+  emit itemChanged(instance, instance, "taskinstance"_u8);
+  emit itemChanged(configuredTask, configuredTask, "task"_u8);
   reevaluateQueuedTaskInstances();
 }
 
@@ -1195,7 +1195,7 @@ bool Scheduler::enableTask(QByteArray taskId, bool enable) {
     _alerter->raiseAlert("task.disabled."+taskId);
   if (enable)
     reevaluateQueuedTaskInstances();
-  emit itemChanged(t, t, "task"_ba);
+  emit itemChanged(t, t, "task"_u8);
   return true;
 }
 
@@ -1203,7 +1203,7 @@ void Scheduler::enableAllTasks(bool enable) {
   QList<Task> tasks(config().tasks().values());
   foreach (Task t, tasks) {
     t.setEnabled(enable);
-    emit itemChanged(t, t, "task"_ba);
+    emit itemChanged(t, t, "task"_u8);
   }
   if (enable)
     reevaluateQueuedTaskInstances();
@@ -1234,7 +1234,7 @@ void Scheduler::periodicChecks() {
 }
 
 void Scheduler::propagateTaskInstanceChange(TaskInstance instance) {
-  emit itemChanged(instance, _nullItem, "taskinstance"_ba);
+  emit itemChanged(instance, _nullItem, "taskinstance"_u8);
 }
 
 QMap<quint64,TaskInstance> Scheduler::unfinishedTaskInstances() {

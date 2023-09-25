@@ -240,7 +240,7 @@ void QronConfigDocumentManager::setConfig(SchedulerConfig newConfig,
         newConfig.namedCalendars(), oldConfig.namedCalendars(), "calendar"_u8);
   emitSignalForItemTypeChanges(
         newConfig.externalParams(), oldConfig.externalParams(),
-        "externalparams"_ba);
+        "externalparams"_u8);
   emitSignalForItemTypeChanges(
         newConfig.taskgroups(), oldConfig.taskgroups(), "taskgroup"_u8);
   emitSignalForItemTypeChanges(

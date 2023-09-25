@@ -94,7 +94,7 @@ bool Trigger::loadConfig(
     PfNode node, QMap<Utf8String,Calendar> namedCalendars) {
   ConfigUtils::loadComments(node, &d->_commentsList,
                             excludedDescendantsForComments);
-  QList<PfNode> list = node.childrenByName("calendar"_ba);
+  QList<PfNode> list = node.childrenByName("calendar"_u8);
   if (list.size() > 1)
     Log::error() << "ignoring multiple calendar definition: "
                  << node.toPf();

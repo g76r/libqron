@@ -601,13 +601,13 @@ QVariant TaskData::uiData(int section, int role) const {
     case 19: {
       QDateTime dt = lastExecution();
       if (dt.isNull())
-        return QVariant();
-      auto returnCode = QByteArray::number(_lastReturnCode);
+        return {};
+      auto returnCode = Utf8String::number(_lastReturnCode);
       auto returnCodeLabel = _params.paramUtf8("return.code."+returnCode
                                                +".label");
-      Utf8String s = dt.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s).toUtf8()
-          + (_lastSuccessful ? " success"_ba : " failure"_ba)
-          +" (code "_ba + returnCode;
+      Utf8String s = Utf8String(dt.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s))
+          + (_lastSuccessful ? " success"_u8 : " failure"_u8)
+          +" (code "_u8 + returnCode;
       if (!returnCodeLabel.isEmpty())
         s = s + " : "_u8 + returnCodeLabel;
       s += ')';

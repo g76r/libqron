@@ -457,7 +457,7 @@ void Alerter::commitChange(Alert *newAlert, Alert *oldAlert) {
 //      || oldAlert->id().startsWith("task.maxinstancesreached")) {
 //    qDebug() << "commitChange:" << newAlert->id() << newAlert->statusToString() << oldAlert->statusToString();
 //  }
-  emit statefulAlertChanged(*newAlert, *oldAlert, "alert"_ba);
+  emit statefulAlertChanged(*newAlert, *oldAlert, "alert"_u8);
 }
 
 QList<AlertSubscription> Alerter::alertSubscriptions(QByteArray alertId) {
@@ -466,7 +466,7 @@ QList<AlertSubscription> Alerter::alertSubscriptions(QByteArray alertId) {
     foreach (const AlertSubscription &sub, _config.alertSubscriptions()) {
       if (sub.patternRegexp().match(alertId).hasMatch()) {
         auto channelName = sub.channelName();
-        if (channelName == "stop"_ba)
+        if (channelName == "stop"_u8)
           break;
         if (!_channels.contains(channelName)) // should never happen
           continue;
