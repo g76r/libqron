@@ -193,7 +193,7 @@ void TaskInstance::setParam(
   if (!d)
     return;
   auto params = d->_params.lockedData();
-  params->setValue(key, value);
+  params->insert(key, value);
 }
 
 void TaskInstance::paramAppend(
@@ -204,9 +204,9 @@ void TaskInstance::paramAppend(
   auto params = d->_params.lockedData();
   auto current = params->paramRawValue(key);
   if (!current.isValid())
-    params->setValue(key, value);
+    params->insert(key, value);
   else
-    params->setValue(key, Utf8String(current)+" "_u8+Utf8String(value));
+    params->insert(key, Utf8String(current)+" "_u8+Utf8String(value));
 }
 
 ParamSet TaskInstance::params() const {

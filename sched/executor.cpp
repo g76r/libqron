@@ -742,7 +742,7 @@ void Executor::scatterMean() {
     ParamSet overridingParams;
     for (auto key: vars.paramKeys()) {
       auto value = vars.paramUtf8(key, &ppm);
-      overridingParams.setValue(key, PercentEvaluator::escape(value));
+      overridingParams.insert(key, PercentEvaluator::escape(value));
     }
     auto instance = _scheduler->planTask(
         taskid, overridingParams, force, lone ? 0 : _instance.herdid(),
@@ -768,7 +768,7 @@ void Executor::scatterMean() {
       ParamSet overridingParams;
       for (auto key: vars.paramKeys()) {
         auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm);
-        overridingParams.setValue(key, PercentEvaluator::escape(value));
+        overridingParams.insert(key, PercentEvaluator::escape(value));
       }
       auto onlastinstance = _scheduler->planTask(
             taskid, overridingParams, force,
@@ -794,7 +794,7 @@ void Executor::scatterMean() {
 
 
 void Executor::noticePosted(QString notice, ParamSet params) {
-  params.setValue(QStringLiteral("!notice"), notice);
+  params.insert(QStringLiteral("!notice"), notice);
 }
 
 void Executor::abort() {

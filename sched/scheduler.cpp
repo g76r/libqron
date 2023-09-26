@@ -691,7 +691,7 @@ bool Scheduler::checkTrigger(
     ParamSet overridingParams;
     // FIXME check calendar ?
     for (auto key: trigger.overridingParams().paramKeys()) {
-      overridingParams.setValue(
+      overridingParams.insert(
             key, PercentEvaluator::escape(
               trigger.overridingParams().paramUtf8(key, &task)));
     }
@@ -747,7 +747,7 @@ void Scheduler::postNotice(
   ParamSet noticeParams = originalNoticeParams;
   noticeParams.setScope("notice");
   auto tasks = config().tasks();
-  noticeParams.setValue("!notice"_u8, notice);
+  noticeParams.insert("!notice"_u8, notice);
   Log::info() << "posting notice " << notice << " with params " << noticeParams;
   for (auto task: tasks.values()) {
     auto ppm = ParamsProviderMerger(&noticeParams)(&task);
@@ -759,7 +759,7 @@ void Scheduler::postNotice(
         ParamSet overridingParams;
         // FIXME check calendar
         for (auto key: trigger.overridingParams().paramKeys()) {
-          overridingParams.setValue(
+          overridingParams.insert(
                 key, PercentEvaluator::escape(
                   trigger.overridingParams().paramUtf8(key, &ppm)));
         }

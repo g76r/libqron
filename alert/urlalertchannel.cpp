@@ -41,7 +41,7 @@ void UrlAlertChannel::doNotifyAlert(Alert alert) {
     if (params.paramContains("emitaddress"))
       address = params.paramRawUtf8("emitaddress");
     if (params.paramContains("emitmethod"))
-      params.setValue("method",params.paramRawUtf8("emitmethod"));
+      params.insert("method",params.paramRawUtf8("emitmethod"));
     message = alert.subscription().emitMessage(alert);
     break;
   case Alert::Canceled:
@@ -50,7 +50,7 @@ void UrlAlertChannel::doNotifyAlert(Alert alert) {
     if (params.paramContains("canceladdress"))
       address = params.paramRawUtf8("canceladdress");
     if (params.paramContains("cancelmethod"))
-      params.setValue("method", params.paramRawUtf8("cancelmethod"));
+      params.insert("method", params.paramRawUtf8("cancelmethod"));
     message = alert.subscription().cancelMessage(alert);
     break;
   case Alert::Rising:
