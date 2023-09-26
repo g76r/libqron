@@ -40,9 +40,9 @@ void ConfigUtils::writeParamSet(PfNode *parentnode, ParamSet params,
                                 QString attrname, bool inherit) {
   if (!parentnode)
     return;
-  auto list = params.paramKeys(inherit ? ParamSet::EvalContext{}
-                                       : ParamSet::DontInherit).toSortedList();
-  for (auto key: list)
+  if (!inherit)
+    params.setParent({});
+  for (auto key: params.paramKeys().toSortedList())
     parentnode->appendChild({attrname, key+" "+params.paramRawUtf8(key)});
 }
 
