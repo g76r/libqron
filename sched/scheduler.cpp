@@ -758,10 +758,12 @@ void Scheduler::postNotice(
                     << " triggered task " << task.id();
         ParamSet overridingParams;
         // FIXME check calendar
-        for (auto key: trigger.overridingParams().paramKeys()) {
+        auto trigger_overridingparams = trigger.overridingParams();
+        for (auto key: trigger_overridingparams.paramKeys()) {
           overridingParams.insert(
                 key, PercentEvaluator::escape(
-                  trigger.overridingParams().paramUtf8(key, &ppm)));
+                  PercentEvaluator::eval(
+                    trigger_overridingparams.paramRawUtf8(key), &ppm)));
         }
         TaskInstanceList instances = requestTask(task.id(), overridingParams);
         if (!instances.isEmpty())
