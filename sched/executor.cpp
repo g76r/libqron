@@ -874,13 +874,17 @@ void Executor::stopOrRetry(bool success, int returnCode) {
     }
     quint32 ms = _instance.task().millisBetweenTries();
     if (ms > 0) {
-      Log::warning(_instance.task().id(), _instance.idAsLong())
+      Log::info(_instance.task().id(), _instance.idAsLong())
         << "waiting " << ms/1000.0 << " seconds before retrying";
       BlockingTimer t { ms, [this]() -> bool { return _aborting; } };
       t.wait();
     }
     if (!_aborting) {
       _alerter->emitAlert("task.retry."+_instance.task().id());
+      Log::warning(_instance.task().id(), _instance.idAsLong())
+        << "retrying task '" << _instance.task().id() << "' after "
+        << _instance.runningMillis() << " ms already running, still "
+        << _instance.remainingTries() << " tries remaining.";
       executeOneTry();
       return;
     }

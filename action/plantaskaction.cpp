@@ -48,8 +48,12 @@ public:
             key, PercentEvaluator::escape(
               PercentEvaluator::eval(
                 _overridingParams.paramRawUtf8(key), context)));
-    if (!parentInstance.isNull())
+    if (!parentInstance.isNull()) {
       overridingParams.insert("!parenttaskinstanceid", parentInstance.id());
+      overridingParams.insert("!parenttaskid", parentInstance.task().id());
+      overridingParams.insert("!parenttasklocalid",
+                              parentInstance.task().localId());
+    }
     TaskInstanceList instances = _scheduler->planTask(
       id, overridingParams, _force, herdid, _queuewhen, _cancelwhen);
     if (instances.isEmpty()) {
