@@ -202,7 +202,8 @@ void Executor::sshMean() {
   const auto port = params.paramNumber<int>("ssh.port", -1);
   const auto ignoreknownhosts = params.paramBool("ssh.ignoreknownhosts", true);
   const auto identity = params.paramUtf16("ssh.identity");
-  const auto options = params.paramUtf16List("ssh.options");
+  const auto options = params.paramUtf16("ssh.options")
+                       .split(_whitespace, Qt::SkipEmptyParts);
   const auto disablepty = params.paramBool("ssh.disablepty", false);
   const auto shell = params.paramUtf16("command.shell");
   sshCmdline << "ssh" << "-oLogLevel=ERROR" << "-oEscapeChar=none"
@@ -262,7 +263,8 @@ void Executor::dockerParam(
 void Executor::dockerArrayParam(
     QString *cmdline, const Utf8String &key, const ParamsProvider *context,
     const ParamSet &params, const QString &def) const {
-  auto values = params.paramUtf16List("docker."+key, def, context);
+  auto values = params.paramUtf16("docker."+key, def, context)
+                .split(_whitespace, Qt::SkipEmptyParts);
   for (auto value: values)
     *cmdline += "--"+key+" '"+value.remove('\'')+"' ";
 }
@@ -710,7 +712,8 @@ void Executor::scatterMean() {
   const QString command = _instance.task().command();
   const auto params = _instance.params();
   const auto vars = _instance.task().vars();
-  const auto inputs = params.paramUtf8List("scatter.input", &_instance);
+  const auto inputs = params.paramUtf8("scatter.input", &_instance)
+                      .split(Utf8String::AsciiWhitespace, Qt::SkipEmptyParts);
   const QRegularExpression regexp(params.paramUtf16("scatter.regexp", ".*"));
   const auto tiiparam = params.paramRawUtf8(
         "scatter.tiiparam", "scatter_children_tii_"+_instance.id())
