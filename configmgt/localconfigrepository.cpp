@@ -14,6 +14,7 @@
 #include "localconfigrepository.h"
 #include <QFileInfo>
 #include <QDir>
+#include <QSaveFile>
 
 LocalConfigRepository::LocalConfigRepository(
     QObject *parent, Scheduler *scheduler, QString basePath)
@@ -83,9 +84,9 @@ void LocalConfigRepository::openRepository(QString basePath) {
         if (target.exists()) {
           // target can already exist, since file with bad id can be a duplicate
           // remove previously existing same file in errors dir if any
-          QFile(errorsDir.path()+"/"+configId.toString()).remove();
+          QFile(errorsDir.path()+"/"+configId.toUtf16()).remove();
           // move to errors dir
-          if (!target.rename(errorsDir.path()+"/"+configId.toString()))
+          if (!target.rename(errorsDir.path()+"/"+configId.toUtf16()))
             Log::error() << "cannot move duplicated config file to 'errors' "
                             "subdir: " << fi.fileName();
         }
@@ -170,7 +171,7 @@ QByteArray LocalConfigRepository::addConfig(SchedulerConfig config) {
       return id;
     }*/
     if (!_basePath.isEmpty()) {
-      QSaveFile f(_basePath+"/configs/"+id.toString());
+      QSaveFile f(_basePath+"/configs/"+id.toUtf16());
       if (!f.open(QIODevice::WriteOnly|QIODevice::Truncate)
           || f.write(config.originalPfNode()
                      .toPf(PfOptions().setShouldIndent()
