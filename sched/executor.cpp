@@ -743,10 +743,10 @@ void Executor::scatterMean() {
     if (_scheduler->taskExists(idIfLocalToGroup))
       taskid = idIfLocalToGroup;
     ParamSet overridingParams;
-    for (auto key: vars.paramKeys()) {
-      auto value = vars.paramUtf8(key, &ppm);
-      overridingParams.insert(key, PercentEvaluator::escape(value));
-    }
+    for (auto key: vars.paramKeys())
+      overridingParams.insert(
+            key, PercentEvaluator::escape(
+              PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm)));
     auto instance = _scheduler->planTask(
         taskid, overridingParams, force, lone ? 0 : _instance.herdid(),
           Condition(), Condition())
