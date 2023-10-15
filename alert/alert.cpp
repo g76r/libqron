@@ -15,12 +15,11 @@
 #include "config/alertsubscription.h"
 #include "modelview/templatedshareduiitemdata.h"
 
-class AlertData : public SharedUiItemDataWithFunctions<AlertData> {
+class AlertData : public SharedUiItemDataBase<AlertData> {
 public:
   static const Utf8String _qualifier;
   static const Utf8StringIndexedConstList _sectionNames;
   static const Utf8StringIndexedConstList _headerNames;
-  static const SharedUiItemDataFunctions _paramFunctions;
   Utf8String _id;
   Alert::AlertStatus _status;
   QDateTime _riseDate, _visibilityDate, _cancellationDate, _lastReminderDate;
@@ -210,41 +209,6 @@ Utf8String Alert::idWithCount() const {
   return d ? d->idWithCount() : Utf8String();
 }
 
-static const SharedUiItemDataFunctions _paramFunctions = {
-  { "!alertid", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
-      return reinterpret_cast<const AlertData*>(data)->_id;
-    } },
-  { "!alertidwithcount", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
-      return reinterpret_cast<const AlertData*>(data)->idWithCount();
-    } },
-  { "!alertcount", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
-      return reinterpret_cast<const AlertData*>(data)->_count;
-    } },
-  { "!risedate", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
-      return reinterpret_cast<const AlertData*>(data)
-      ->_riseDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
-    } },
-  { "!cancellationdate", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
-      return reinterpret_cast<const AlertData*>(data)
-      ->_cancellationDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
-    } },
-  { "!visibilitydate", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
-      return reinterpret_cast<const AlertData*>(data)
-      ->_visibilityDate.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
-    } },
-  { "!alertstatus", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
-      return Alert::statusAsString(
-      reinterpret_cast<const AlertData*>(data)->_status);
-    } },
-};
-
 const Utf8String AlertData::_qualifier = "alert";
 
 const Utf8StringIndexedConstList AlertData::_sectionNames {
@@ -270,5 +234,3 @@ const Utf8StringIndexedConstList AlertData::_headerNames {
   "Id With Count",
   "Status"
 };
-
-const SharedUiItemDataFunctions AlertData::_paramFunctions;
