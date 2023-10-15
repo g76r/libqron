@@ -12,6 +12,7 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "parametrizednetworkrequest.h"
+#include "util/paramsprovidermerger.h"
 
 #define DEFAULT_REQUEST_CONTENT_TYPE "text/plain"_u8
 
@@ -42,8 +43,8 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
   // ignored by QNetworkAccessManager (at less for first request, before a 401)
   if (!user.isEmpty())
     setRawHeader("Authorization", ("Basic "+user+":"+password).toBase64());
-  qurl.setUserName(QString());
-  qurl.setPassword(QString());
+  qurl.setUserName({});
+  qurl.setPassword({});
   setUrl(qurl);
   _method = HttpRequest::methodFromText(
         params.paramUtf8("method"_u8, "GET"_u8,
