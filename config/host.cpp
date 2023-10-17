@@ -43,10 +43,10 @@ Host::Host(PfNode node, ParamSet globalParams) {
   HostData *d = new HostData;
   d->_id = ConfigUtils::sanitizeId(
         node.contentAsUtf16(), ConfigUtils::FullyQualifiedId).toUtf8();
-  d->_label = PercentEvaluator::eval_utf8(node.utf16attribute("label"),
-                                          &globalParams);
+  d->_label = PercentEvaluator::eval_utf8(
+                node.attribute("label"), &globalParams);
   d->_hostname = ConfigUtils::sanitizeId(
-        PercentEvaluator::eval_utf8(node.utf16attribute("hostname"), &globalParams),
+        PercentEvaluator::eval_utf8(node.attribute("hostname"), &globalParams),
         ConfigUtils::Hostname);
   ConfigUtils::loadResourcesSet(node, &d->_resources, "resource");
   ConfigUtils::loadComments(node, &d->_commentsList);
@@ -57,13 +57,13 @@ Host::~Host() {
 }
 
 Utf8String Host::hostname() const {
-  const HostData *d = data();
-  return d ? (d->_hostname.isEmpty() ? d->_id : d->_hostname)
-           : Utf8String();
+  auto d = data();
+  return d ? d->_hostname | d->_id : Utf8String{};
 }
 
 QMap<Utf8String,qint64> Host::resources() const {
-  return !isNull() ? data()->_resources : QMap<Utf8String,qint64>{};
+  auto d = data();
+  return d ? d->_resources : QMap<Utf8String,qint64>{};
 }
 
 QVariant HostData::uiData(int section, int role) const {
@@ -75,20 +75,20 @@ QVariant HostData::uiData(int section, int role) const {
       return _id;
     case 1:
       if (role == Qt::EditRole)
-        return _hostname == _id ? QVariant() : _hostname;
-      return _hostname.isEmpty() ? _id : _hostname;
+        return _hostname == _id ? QVariant{} : _hostname;
+      return _hostname | _id;
     case 2:
       return QronUiUtils::resourcesAsString(_resources);
     case 3:
       if (role == Qt::EditRole)
-        return _label == _id ? QVariant() : _label;
-      return _label.isEmpty() ? _id : _label;
+        return _label == _id ? QVariant{} : _label;
+      return _label | _id;
     }
     break;
   default:
     ;
   }
-  return QVariant();
+  return {};
 }
 
 bool Host::setUiData(int section, const QVariant &value, QString *errorString,
