@@ -28,8 +28,8 @@ static const QRegularExpression _asciiControlCharsSeqRE("[\\0-\\x1f]+");
 static const QRegularExpression _whitespace { "\\s+" };
 
 static int staticInit() {
-  char *value = getenv("SHELL");
-  _localDefaultShell = value && *value ? value : "/bin/sh";
+  auto value = qgetenv("SHELL");
+  _localDefaultShell = value | "/bin/sh"_u8;
   return 0;
 }
 Q_CONSTRUCTOR_FUNCTION(staticInit)
