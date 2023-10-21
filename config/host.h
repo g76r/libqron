@@ -33,6 +33,7 @@ public:
   Utf8String hostname() const;
   /** Configured max resources available. */
   QMap<Utf8String, qint64> resources() const;
+  Utf8String sshhealthcheck() const;
   void detach();
   PfNode toPfNode() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,

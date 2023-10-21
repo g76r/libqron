@@ -21,7 +21,7 @@ public:
   static const Utf8String _qualifier;
   static const Utf8StringIndexedConstList _sectionNames;
   static const Utf8StringIndexedConstList _headerNames;
-  Utf8String _id, _label, _hostname;
+  Utf8String _id, _label, _hostname, _sshhealthcheck;
   QMap<Utf8String,qint64> _resources; // configured max resources available
   Utf8StringList _commentsList;
   QVariant uiData(int section, int role) const override;
@@ -48,6 +48,7 @@ Host::Host(PfNode node, ParamSet globalParams) {
   d->_hostname = ConfigUtils::sanitizeId(
         PercentEvaluator::eval_utf8(node.attribute("hostname"), &globalParams),
         ConfigUtils::Hostname);
+  d->_sshhealthcheck = node.attribute("sshhealthcheck");
   ConfigUtils::loadResourcesSet(node, &d->_resources, "resource");
   ConfigUtils::loadComments(node, &d->_commentsList);
   setData(d);
@@ -64,6 +65,11 @@ Utf8String Host::hostname() const {
 QMap<Utf8String,qint64> Host::resources() const {
   auto d = data();
   return d ? d->_resources : QMap<Utf8String,qint64>{};
+}
+
+Utf8String Host::sshhealthcheck() const {
+  auto d = data();
+  return d ? d->_sshhealthcheck : Utf8String{};
 }
 
 QVariant HostData::uiData(int section, int role) const {
@@ -83,6 +89,8 @@ QVariant HostData::uiData(int section, int role) const {
       if (role == Qt::EditRole)
         return _label == _id ? QVariant{} : _label;
       return _label | _id;
+    case 4:
+      return _sshhealthcheck;
     }
     break;
   default:
@@ -125,6 +133,9 @@ bool HostData::setUiData(
   case 3:
     _label = s;
     return true;
+  case 4:
+    _sshhealthcheck = s;
+    return true;
   }
   return SharedUiItemData::setUiData(section, value, errorString, transaction,
                                      role);
@@ -164,6 +175,8 @@ PfNode Host::toPfNode() const {
     node.appendChild(PfNode("label", d->_label));
   if (!d->_hostname.isEmpty() && d->_hostname != d->_id)
     node.appendChild(PfNode("hostname", d->_hostname));
+  if (!d->_sshhealthcheck.isEmpty())
+    node.appendChild(PfNode("sshhealthcheck", d->_sshhealthcheck));
   foreach (const QString &key, d->_resources.keys())
     node.appendChild(
           PfNode("resource",
@@ -178,6 +191,7 @@ const Utf8StringIndexedConstList HostData::_sectionNames {
   "hostname",
   "resources",
   "label",
+  "sshhealthcheck",
 };
 
 const Utf8StringIndexedConstList HostData::_headerNames {
@@ -185,4 +199,5 @@ const Utf8StringIndexedConstList HostData::_headerNames {
   "Hostname",
   "Resources",
   "Label",
+  "SSH Healthcheck",
 };
