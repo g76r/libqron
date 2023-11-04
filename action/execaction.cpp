@@ -62,7 +62,7 @@ public:
                        if (instance.isNull())
                          Log::warning() << errorString;
                        else
-                         Log::warning(instance.task().id(), instance.idAsLong())
+                         Log::warning(instance.taskId(), instance.idAsLong())
                            << errorString;
                      });
     //process->setProcessChannelMode(QProcess::SeparateChannels);

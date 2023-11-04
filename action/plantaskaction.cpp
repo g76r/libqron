@@ -36,8 +36,9 @@ public:
     if (!_scheduler)
       return;
     auto id = PercentEvaluator::eval_utf8(_id, context);
+    auto parentTask = parentInstance.task();
     if (!parentInstance.isNull()) {
-      QString idIfLocalToGroup = parentInstance.task().taskGroup().id()+"."+id;
+      QString idIfLocalToGroup = parentTask.taskGroup().id()+"."+id;
       if (_scheduler->taskExists(idIfLocalToGroup.toUtf8()))
         id = idIfLocalToGroup;
     }
@@ -50,14 +51,14 @@ public:
                 _overridingParams.paramRawUtf8(key), context)));
     if (!parentInstance.isNull()) {
       overridingParams.insert("!parenttaskinstanceid", parentInstance.id());
-      overridingParams.insert("!parenttaskid", parentInstance.task().id());
+      overridingParams.insert("!parenttaskid", parentInstance.taskId());
       overridingParams.insert("!parenttasklocalid",
-                              parentInstance.task().localId());
+                              parentTask.localId());
     }
     TaskInstanceList instances = _scheduler->planTask(
       id, overridingParams, _force, herdid, _queuewhen, _cancelwhen);
     if (instances.isEmpty()) {
-      Log::error(parentInstance.task().id(), parentInstance.idAsLong())
+      Log::error(parentInstance.taskId(), parentInstance.idAsLong())
           << "plantask action failed to plan execution of task "
           << id << " within event subscription context "
           << subscription.subscriberName() << "|" << subscription.eventName();
@@ -65,9 +66,9 @@ public:
     }
     for (auto sui: instances) {
       auto childInstance = sui.casted<TaskInstance>();
-      Log::info(parentInstance.task().id(), parentInstance.idAsLong())
+      Log::info(parentInstance.taskId(), parentInstance.idAsLong())
           << "plantask action planned execution of task "
-          << childInstance.task().id() << "/" << childInstance.groupId()
+          << childInstance.taskId() << "/" << childInstance.groupId()
           << " with queue condition " << _queuewhen.toString()
           << " and cancel condition " << _cancelwhen.toString();
       if (_paramappend.isEmpty())

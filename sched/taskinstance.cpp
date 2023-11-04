@@ -27,8 +27,8 @@ public:
   static const Utf8StringIndexedConstList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
   quint64 _id, _herdid, _groupId;
-  QByteArray _idAsString;
-  Task _task;
+  Utf8String _idAsString, _taskId;
+  mutable AtomicValue<Task> _task;
   QDateTime _creationDateTime;
   bool _force;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
@@ -60,12 +60,13 @@ public:
         params.withParent(task.params())),
       _id(newId()), _herdid(herdid == 0 ? _id : herdid),
       _groupId(groupId ? groupId : _id),
-      _idAsString(QByteArray::number(_id)), _task(task),
+      _idAsString(Utf8String::number(_id)),
+      _taskId(task.id()), _task(task),
       _creationDateTime(QDateTime::currentDateTime()), _force(force),
       _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
       _finish(LLONG_MIN),
       _success(false), _returnCode(0), _abortable(false),
-      _remainingTries(_task.maxTries()),
+      _remainingTries(task.maxTries()),
       _queuewhen(queuewhen), _cancelwhen(cancelwhen) {}
   TaskInstanceData()
     : _id(0), _herdid(0), _groupId(0), _force(false),
@@ -184,7 +185,19 @@ TaskInstance::TaskInstance(Task task, quint64 groupId,
 
 Task TaskInstance::task() const {
   const TaskInstanceData *d = data();
-  return d ? d->_task : Task();
+  if (!d)
+    return {};
+  auto ld = d->_task.lockedData();
+  auto t = *ld;
+  t.detach();
+  return t;
+}
+
+Utf8String TaskInstance::taskId() const {
+  const TaskInstanceData *d = data();
+  if (!d)
+    return {};
+  return d->_taskId;
 }
 
 void TaskInstance::setParam(
@@ -366,8 +379,8 @@ QMap<QString,QString> TaskInstance::varsAsHeaders() const {
 void TaskInstance::setTask(Task task) {
   TaskInstanceData *d = data();
   if (d) {
-    d->_task = task;
     auto p = d->_params.lockedData();
+    d->_task = task;
     p->setParent(task.params());
     d->_remainingTries = task.maxTries();
   }
@@ -416,7 +429,7 @@ int TaskInstance::remainingTries() const {
 int TaskInstance::currentTry() const {
   const TaskInstanceData *d = data();
   // FIXME not sure it works well if task.maxTries change meanwhile
-  return d ? d->_task.maxTries() - d->_remainingTries.data() : 0;
+  return d ? d->_task.lockedData()->maxTries() - d->_remainingTries.data() : 0;
 }
 
 Condition TaskInstance::queuewhen() const {
@@ -463,7 +476,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
         case 0:
           return _idAsString;
         case 1:
-          return _task.id();
+          return _taskId;
         case 2:
           return TaskInstance::statusAsString(status());
         case 3:
@@ -509,7 +522,8 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
         case 18:
           return _cancelwhen.toString();
         case 19:
-          return PercentEvaluator::eval(_task.deduplicateCriterion(), this);
+          return PercentEvaluator::eval(
+                _task.lockedData()->deduplicateCriterion(), this);
       }
       break;
     default:
@@ -642,13 +656,13 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
         const PercentEvaluator::EvalContext&, int) -> QVariant {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
        // FIXME not sure it works well if task.maxTries change meanwhile
-      return tid->_task.maxTries() - tid->_remainingTries.data();
+      return tid->_task.lockedData()->maxTries() - tid->_remainingTries.data();
     } },
   { "!deduplicatecriterion", [](const SharedUiItemData *data, const Utf8String&,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
       return PercentEvaluator::eval_utf8(
-            tid->_task.deduplicateCriterion(), tid);
+            tid->_task.lockedData()->deduplicateCriterion(), tid);
     } },
 #if 0
   { "!varsasenv", [](const SharedUiItemData *data, const Utf8String&,
@@ -685,7 +699,7 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
       PercentEvaluator::EvalContext new_context = context;
       new_context.setScopeFilter({}); // in case it was [taskinstance]
-      return tid->_task.paramRawValue(key, new_context);
+      return tid->_task.lockedData()->paramRawValue(key, new_context);
     }, true },
 };
 

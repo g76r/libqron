@@ -78,8 +78,8 @@ void Executor::execute(const TaskInstance &instance) {
 void Executor::executeOneTry() {
   _instance.consumeOneTry();
   const auto mean = _instance.task().mean();
-  Log::info(_instance.task().id(), _instance.idAsLong())
-    << "starting task '" << _instance.task().id() << "' through mean '"
+  Log::info(_instance.taskId(), _instance.idAsLong())
+    << "starting task '" << _instance.taskId() << "' through mean '"
     << Task::meanAsString(mean) << "' after " << _instance.queuedMillis()
     << " ms in queue";
   switch (mean) {
@@ -108,7 +108,7 @@ void Executor::executeOneTry() {
     case Task::UnknownMean: [[unlikely]] // should never happen
       ;
   }
-  Log::error(_instance.task().id(), _instance.idAsLong())
+  Log::error(_instance.taskId(), _instance.idAsLong())
     << "cannot execute task with unknown mean '"
     << Task::meanAsString(mean) << "'";
   _instance.consumeAllTries();
@@ -117,10 +117,11 @@ void Executor::executeOneTry() {
 
 void Executor::localMean() {
   const auto shell = _instance.paramUtf16("command.shell", _localDefaultShell);
+  const auto task = _instance.task();
   QStringList cmdline;
   cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
-               _instance.task().command(), &_instance);
-  Log::info(_instance.task().id(), _instance.idAsLong())
+               task.command(), &_instance);
+  Log::info(_instance.taskId(), _instance.idAsLong())
       << "exact command line to be executed (using shell " << shell << "): "
       << cmdline.value(2);
   _instance.setAbortable();
@@ -129,21 +130,22 @@ void Executor::localMean() {
 
 void Executor::backgroundStart() {
   const auto shell = _instance.paramUtf16("command.shell", _localDefaultShell);
-  if (_instance.task().statuscommand().isEmpty()) {
+  const auto task = _instance.task();
+  if (task.statuscommand().isEmpty()) {
     _instance.consumeAllTries();
-    Log::error(_instance.task().id(), _instance.idAsLong())
+    Log::error(_instance.taskId(), _instance.idAsLong())
       << "cannot execute background task without statuscommand '"
-      << _instance.task().id() << "'";
+      << _instance.taskId() << "'";
     stopOrRetry(false, -1);
     return;
   }
   QStringList cmdline;
   cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
-               _instance.task().command(), &_instance);
-  Log::info(_instance.task().id(), _instance.idAsLong())
+               task.command(), &_instance);
+  Log::info(_instance.taskId(), _instance.idAsLong())
     << "exact command line to be executed (using shell " << shell << "): "
     << cmdline.value(2);
-  if (!_instance.task().abortcommand().isEmpty())
+  if (!task.abortcommand().isEmpty())
     _instance.setAbortable();
   _backgroundStatus = Starting;
   const int pollingInterval =
@@ -164,9 +166,10 @@ void Executor::pollStatus() {
       ;
   }
   const auto shell = _instance.paramUtf16("command.shell", _localDefaultShell);
+  const auto task = _instance.task();
   QStringList cmdline;
   cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
-               _instance.task().statuscommand(), &_instance);
+               task.statuscommand(), &_instance);
   execProcess(cmdline, true);
   if (_process)
     QTimer::singleShot(10000, _process, &QProcess::terminate);
@@ -175,20 +178,21 @@ void Executor::pollStatus() {
 void Executor::backgroundAbort() {
   switch(_backgroundStatus) {
     case Starting:
-      Log::info(_instance.task().id(), _instance.idAsLong())
+      Log::info(_instance.taskId(), _instance.idAsLong())
         << "cannot abort task because it's not yet started";
       return;
     case Aborting:
-      Log::info(_instance.task().id(), _instance.idAsLong())
+      Log::info(_instance.taskId(), _instance.idAsLong())
         << "cannot abort task because it's already being aborted";
       return;
     case Started:
       break;
   }
   const auto shell = _instance.paramUtf16("command.shell", _localDefaultShell);
+  const auto task = _instance.task();
   QStringList cmdline;
   cmdline << shell << "-c" << PercentEvaluator::eval_utf16(
-               _instance.task().abortcommand(), &_instance);
+               task.abortcommand(), &_instance);
   _backgroundStatus = Aborting;
   execProcess(cmdline, true);
   if (_process)
@@ -206,6 +210,7 @@ void Executor::sshMean() {
                        .split(_whitespace, Qt::SkipEmptyParts);
   const auto disablepty = params.paramBool("ssh.disablepty", false);
   const auto shell = params.paramUtf16("command.shell");
+  const auto task = _instance.task();
   sshCmdline << "ssh" << "-oLogLevel=ERROR" << "-oEscapeChar=none"
              << "-oServerAliveInterval=10" << "-oServerAliveCountMax=3"
              << "-oIdentitiesOnly=yes" << "-oKbdInteractiveAuthentication=no"
@@ -238,14 +243,13 @@ void Executor::sshMean() {
     // interpretate it and we want to keep it as is in -c argument to choosen
     // shell
     cmdline << '\'' + PercentEvaluator::eval_utf16(
-                 _instance.task().command(), &_instance).replace("'", "'\\''")
+                 task.command(), &_instance).replace("'", "'\\''")
                + '\'';
   } else {
     // let remote user default shell interpretate command line
-    cmdline << PercentEvaluator::eval_utf16(
-                 _instance.task().command(), &_instance);
+    cmdline << PercentEvaluator::eval_utf16(task.command(), &_instance);
   }
-  Log::info(_instance.task().id(), _instance.idAsLong())
+  Log::info(_instance.taskId(), _instance.idAsLong())
       << "exact command line to be executed (through ssh on host "
       << _instance.target().hostname() <<  "): " << cmdline;
   sshCmdline << cmdline;
@@ -272,6 +276,7 @@ void Executor::dockerArrayParam(
 void Executor::dockerMean() {
   const auto params = _instance.params();
   const auto shell = params.paramUtf16("command.shell", _localDefaultShell);
+  const auto task = _instance.task();
   QString cmdline;
   const auto image = params.paramUtf16("docker.image", &_instance).remove('\'');
   const bool shouldPull = params.paramBool("docker.pull", true, &_instance);
@@ -279,9 +284,9 @@ void Executor::dockerMean() {
   const bool shouldRm = params.paramBool("docker.rm", true, &_instance);
   if (image.isEmpty()) {
     _instance.consumeAllTries();
-    Log::error(_instance.task().id(), _instance.idAsLong())
+    Log::error(_instance.taskId(), _instance.idAsLong())
         << "cannot execute container with empty image name '"
-        << _instance.task().id() << "'";
+        << _instance.taskId() << "'";
     stopOrRetry(false, -1);
     return;
   }
@@ -296,7 +301,7 @@ void Executor::dockerMean() {
   for (auto key: vars.keys())
     cmdline += "-e " + key + "='" + vars.value(key).remove('\'') + "' ";
   dockerParam(&cmdline, "name", &_instance, params,
-              dockerNameCleanedUp(_instance.task().id())+"_"+_instance.id()+"_"
+              dockerNameCleanedUp(_instance.taskId())+"_"+_instance.id()+"_"
               +Utf8String::number(_instance.currentTry()));
   dockerArrayParam(&cmdline, "mount", &_instance, params);
   dockerArrayParam(&cmdline, "tmpfs", &_instance, params);
@@ -326,7 +331,7 @@ void Executor::dockerMean() {
   dockerParam(&cmdline, "workdir", &_instance, params);
   dockerParam(&cmdline, "entrypoint", &_instance, params);
   cmdline += "'" + image + "' "
-      + PercentEvaluator::eval_utf16(_instance.task().command(), &_instance);
+      + PercentEvaluator::eval_utf16(task.command(), &_instance);
   _instance.setAbortable();
   execProcess({ shell, "-c", cmdline }, false);
 }
@@ -342,9 +347,9 @@ void Executor::execProcess(QStringList cmdline, bool useVarsAsEnv) {
   }
   if (cmdline.isEmpty()) {
     _instance.consumeAllTries();
-    Log::warning(_instance.task().id(), _instance.idAsLong())
+    Log::warning(_instance.taskId(), _instance.idAsLong())
         << "cannot execute task with empty command '"
-        << _instance.task().id() << "'";
+        << _instance.taskId() << "'";
     stopOrRetry(false, -1);
     return;
   }
@@ -362,7 +367,7 @@ void Executor::execProcess(QStringList cmdline, bool useVarsAsEnv) {
           this, &Executor::readyReadStandardOutput);
   _process->setProcessEnvironment(sysenv);
   QString program = cmdline.takeFirst();
-  Log::debug(_instance.task().id(), _instance.idAsLong())
+  Log::debug(_instance.taskId(), _instance.idAsLong())
       << "about to start system process '" << program << "' with args "
       << cmdline << " and environment " << sysenv.toStringList();
   emit taskInstanceStarted(_instance);
@@ -384,7 +389,7 @@ void Executor::processError(QProcess::ProcessError error) {
     return; // LATER add log
   readyReadStandardError();
   readyReadStandardOutput();
-  Log::warning(_instance.task().id(), _instance.idAsLong()) // TODO info if aborting
+  Log::warning(_instance.taskId(), _instance.idAsLong()) // TODO info if aborting
       << "task error #" << error << " : " << _process->errorString();
   _process->kill();
   processFinished(-1, QProcess::CrashExit);
@@ -393,19 +398,19 @@ void Executor::processError(QProcess::ProcessError error) {
 void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
   if (!_process)
     return; // LATER add log
+  const auto task = _instance.task();
   readyReadStandardError();
   readyReadStandardOutput();
   bool success = (exitStatus == QProcess::NormalExit && exitCode == 0);
   bool stopping = true;
-  switch (_instance.task().mean()) {
+  switch (task.mean()) {
     case Task::Local:
     case Task::Ssh:
     case Task::Docker:
-      success = _instance.task().params()
-                  .paramBool("return.code.default.success", success);
-      success = _instance.task().params()
-                  .paramBool("return.code."+Utf8String::number(exitCode)
-                             +".success", success);
+      success = _instance.paramBool("return.code.default.success", success);
+      success = _instance.paramBool(
+                  "return.code."+Utf8String::number(exitCode)+".success",
+                  success);
       break;
     case Task::Background:
       stopping = false;
@@ -413,8 +418,8 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
         case Starting:
           _backgroundStatus = Started;
           if (exitCode != 0) {
-            Log::warning(_instance.task().id(), _instance.idAsLong())
-              << "background task '" << _instance.task().id()
+            Log::warning(_instance.taskId(), _instance.idAsLong())
+              << "background task '" << _instance.taskId()
               << "' failed, starting command finished with return code "
               << exitCode << " after "<< _instance.durationMillis()
               << " ms of main task duration : " << _process->errorString();
@@ -422,15 +427,15 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
             success = false;
             break;
           }
-          Log::info(_instance.task().id(), _instance.idAsLong())
-            << "background task '" << _instance.task().id() << "' started, "
+          Log::info(_instance.taskId(), _instance.idAsLong())
+            << "background task '" << _instance.taskId() << "' started, "
             << "starting command finished with return code " << exitCode
             << " after "<< _instance.durationMillis()
             << " ms of main task duration";
           break;
         case Started:
-          Log::debug(_instance.task().id(), _instance.idAsLong())
-            << "background task '" << _instance.task().id() << "' running, "
+          Log::debug(_instance.taskId(), _instance.idAsLong())
+            << "background task '" << _instance.taskId() << "' running, "
             << "status command finished with return code " << exitCode
             << " after "<< _instance.durationMillis()
             << " ms of main task duration";
@@ -442,8 +447,8 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
           break;
         case Aborting:
           _backgroundStatus = Started;
-          Log::info(_instance.task().id(), _instance.idAsLong())
-            << "background task '" << _instance.task().id() << "' aborting, "
+          Log::info(_instance.taskId(), _instance.idAsLong())
+            << "background task '" << _instance.taskId() << "' aborting, "
             << "aborting command finished with return code " << exitCode
             << " after "<< _instance.durationMillis()
             << " ms of main task duration";
@@ -473,14 +478,15 @@ void Executor::processFinished(int exitCode, QProcess::ExitStatus exitStatus) {
 
 void Executor::processProcessOutput(bool isStderr) {
   QByteArray ba, &buf = isStderr ? _errBuf : _outBuf;
-  bool parsecommands = _instance.task().mean() == Task::Background;
+  const auto task = _instance.task();
+  bool parsecommands = task.mean() == Task::Background;
   if (!_outputSubsInitialized) {
     _stdoutSubs = _scheduler->config().tasksRoot().onstdout()
-                  + _instance.task().taskGroup().onstdout()
-                  + _instance.task().onstdout();
+                  + task.taskGroup().onstdout()
+                  + task.onstdout();
     _stderrSubs = _scheduler->config().tasksRoot().onstderr()
-                  + _instance.task().taskGroup().onstderr()
-                  + _instance.task().onstderr();
+                  + task.taskGroup().onstderr()
+                  + task.onstderr();
     _outputSubsInitialized = true;
   }
   QList<EventSubscription> subs = isStderr ? _stderrSubs : _stdoutSubs;
@@ -511,7 +517,7 @@ void Executor::processProcessOutput(bool isStderr) {
           QString errorString = pdh.errorString()+" at line "
                                 +QString::number(pdh.errorLine())
                                 +" column "+QString::number(pdh.errorColumn());
-          Log::error(_instance.task().id(), _instance.idAsLong())
+          Log::error(_instance.taskId(), _instance.idAsLong())
             << "cannot parse !qron: command in task output: " << errorString;
           continue;
         }
@@ -546,23 +552,23 @@ void Executor::readyReadStandardOutput() {
     return;
   _process->setReadChannel(QProcess::StandardOutput);
   bool isStderr = false;
-  auto task = _instance.task();
+  const auto task = _instance.task();
   if (task.mergeStderrIntoStdout()
       || (task.mean() == Task::Ssh
-          && _instance.paramBool(
-            "ssh.disablepty", false)))
+          && _instance.paramBool("ssh.disablepty", false)))
     isStderr = true;
   processProcessOutput(isStderr);
 }
 
 void Executor::httpMean() {
-  QString command = _instance.task().command();
+  const auto task = _instance.task();
+  QString command = task.command();
   if (command.size() && command.at(0) == '/')
     command = command.mid(1);
   QString url = "http://"+_instance.target().hostname()+"/"+command;
   const auto params = _instance.params();
   ParametrizedNetworkRequest networkRequest(
-        url, params, &_instance, _instance.task().id(), _instance.idAsLong());
+        url, params, &_instance, _instance.taskId(), _instance.idAsLong());
   const auto vars = _instance.varsAsHeaders();
   for (auto key: vars.keys())
     networkRequest.setRawHeader(key.toLatin1(), vars.value(key).toUtf8());
@@ -583,13 +589,13 @@ void Executor::httpMean() {
       connect(_reply, &QNetworkReply::errorOccurred, this, &Executor::replyError);
       connect(_reply, &QNetworkReply::finished, this, &Executor::replyFinished);
     } else {
-      Log::error(_instance.task().id(), _instance.idAsLong())
+      Log::error(_instance.taskId(), _instance.idAsLong())
           << "cannot start HTTP request";
       stopOrRetry(false, -1);
     }
   } else {
     _instance.consumeAllTries();
-    Log::error(_instance.task().id(), _instance.idAsLong())
+    Log::error(_instance.taskId(), _instance.idAsLong())
         << "unsupported HTTP URL: "
         << networkRequest.url().toString(QUrl::RemovePassword);
     stopOrRetry(false, -1);
@@ -610,9 +616,9 @@ void Executor::getReplyContent(QNetworkReply *reply, QString *replyContent,
   Q_ASSERT(replyContent);
   if (!replyContent->isNull())
     return;
-  int maxsize = _instance.task().params().paramNumber<int>(maxsizeKey, 4096);
-  int maxwait = (int)(_instance.task().params()
-                      .paramNumber<double>(maxwaitKey, 5.0)*1000);
+  const auto task = _instance.task();
+  int maxsize = task.paramNumber<int>(maxsizeKey, 4096);
+  int maxwait = (int)(task.paramNumber<double>(maxwaitKey, 5.0)*1000);
   qint64 now = QDateTime::currentMSecsSinceEpoch();
   qint64 deadline = now+maxwait;
   while (reply->bytesAvailable() < maxsize && now < deadline) {
@@ -630,7 +636,7 @@ void Executor::getReplyContent(QNetworkReply *reply, QString *replyContent,
 // error() is not followed by finished() and I am not sure there are such cases)
 void Executor::replyHasFinished(QNetworkReply *reply,
                                QNetworkReply::NetworkError error) {
-  QString taskId = _instance.task().id();
+  QString taskId = _instance.taskId();
   if (!_reply) {
     Log::debug() << "Executor::replyFinished called as it is not responsible "
                     "of any http request";
@@ -655,14 +661,12 @@ void Executor::replyHasFinished(QNetworkReply *reply,
   QString replyContent;
   if (status > 0) {
     success =  status >= 200 && status <= 299;
-    success = _instance.task().params()
-        .paramBool("return.code.default.success", success);
-    success = _instance.task().params()
-        .paramBool("return.code."+Utf8String::number(status)
-                   +".success", success);
+    success = _instance.paramBool("return.code.default.success", success);
+    success = _instance.paramBool("return.code."+Utf8String::number(status)
+                                  +".success", success);
     if (success) {
       QString replyValidationPattern =
-          _instance.task().params().paramUtf16("reply.validation.pattern");
+          _instance.paramUtf16("reply.validation.pattern");
       if (!replyValidationPattern.isEmpty()) {
         QRegularExpression re(replyValidationPattern); // LATER cache
         if (!re.isValid()) {
@@ -687,8 +691,7 @@ void Executor::replyHasFinished(QNetworkReply *reply,
       }
     }
   }
-  if (!success || _instance.task().params()
-      .paramBool("log.reply.onsuccess", false)) {
+  if (!success || _instance.paramBool("log.reply.onsuccess", false)) {
     getReplyContent(reply, &replyContent, QStringLiteral("log.reply.maxsize"),
                     QStringLiteral("log.reply.maxwait"));
     Log::info(taskId, _instance.idAsLong())
@@ -709,9 +712,10 @@ void Executor::replyHasFinished(QNetworkReply *reply,
 }
 
 void Executor::scatterMean() {
-  const QString command = _instance.task().command();
+  const auto task = _instance.task();
+  const QString command = task.command();
   const auto params = _instance.params();
-  const auto vars = _instance.task().vars();
+  const auto vars = task.vars();
   const auto inputs = params.paramUtf8("scatter.input", &_instance)
                       .split(Utf8String::AsciiWhitespace, Qt::SkipEmptyParts);
   const QRegularExpression regexp(params.paramUtf16("scatter.regexp", ".*"));
@@ -739,7 +743,7 @@ void Executor::scatterMean() {
     else
       ppm.overrideParamValue("0", input); // %0 will be available anyway
     auto taskid = PercentEvaluator::eval_utf8(command, &ppm);
-    const auto idIfLocalToGroup = _instance.task().taskGroup().id()+"."+taskid;
+    const auto idIfLocalToGroup = task.taskGroup().id()+"."+taskid;
     if (_scheduler->taskExists(idIfLocalToGroup))
       taskid = idIfLocalToGroup;
     ParamSet overridingParams;
@@ -752,7 +756,7 @@ void Executor::scatterMean() {
           Condition(), Condition())
         .value(0).casted<TaskInstance>();
     if (instance.isNull()) {
-      Log::error(_instance.task().id(), _instance.idAsLong())
+      Log::error(_instance.taskId(), _instance.idAsLong())
           << "scatter failed to plan task : " << taskid << overridingParams
           << force;
       continue;
@@ -764,7 +768,7 @@ void Executor::scatterMean() {
     instances << instance;
     if (rank == inputs.size()-1 && !onlast.isEmpty()) {
       auto taskid = PercentEvaluator::eval_utf8(onlast, &ppm);
-      const auto idIfLocalToGroup = _instance.task().taskGroup().id()+"."
+      const auto idIfLocalToGroup = task.taskGroup().id()+"."
           +taskid;
       if (_scheduler->taskExists(idIfLocalToGroup))
         taskid = idIfLocalToGroup;
@@ -779,7 +783,7 @@ void Executor::scatterMean() {
             DisjunctionCondition({PfNode(onlast_condition, "%"+tiiparam)}),
             Condition()).value(0);
       if (onlastinstance.isNull()) {
-        Log::error(_instance.task().id(), _instance.idAsLong())
+        Log::error(_instance.taskId(), _instance.idAsLong())
             << "scatter failed to plan onlast task : " << taskid
             << overridingParams << force;
         continue;
@@ -787,10 +791,10 @@ void Executor::scatterMean() {
       instances << onlastinstance;
     }
   }
-  Log::debug(_instance.task().id(), _instance.idAsLong())
+  Log::debug(_instance.taskId(), _instance.idAsLong())
       << "scatter planned " << instances.size() << " tasks : "
       << instances.join(' ');
-  //Log::error(_instance.task().id(), _instance.idAsLong()) << "cannot start HTTP request";
+  //Log::error(_instance.taskId(), _instance.idAsLong()) << "cannot start HTTP request";
   //taskInstanceStopping(false, -1);
   stopOrRetry(true, 0);
 }
@@ -808,18 +812,19 @@ void Executor::abort() {
                       "currently responsible for any task";
       return;
     }
+    const auto task = _instance.task();
+    const auto mean = task.mean();
     if (!_instance.abortable()) {
-      if (_instance.task().mean() == Task::Ssh)
-        Log::warning(_instance.task().id(), _instance.idAsLong())
+      if (mean == Task::Ssh)
+        Log::warning(_instance.taskId(), _instance.idAsLong())
             << "cannot abort task because ssh tasks are not abortable when "
                "ssh.disablepty is set to true";
       else
-        Log::warning(_instance.task().id(), _instance.idAsLong())
+        Log::warning(_instance.taskId(), _instance.idAsLong())
             << "cannot abort task because it's not abortable";
       return;
     }
     _aborting = true;
-    const auto mean = _instance.task().mean();
     bool hardkill = false;
     switch(mean) {
       case Task::Local:
@@ -829,7 +834,7 @@ void Executor::abort() {
       case Task::Docker:
         if (_process) {
           hardkill = _instance.paramBool("command.hardkill", hardkill);
-          Log::info(_instance.task().id(), _instance.idAsLong())
+          Log::info(_instance.taskId(), _instance.idAsLong())
             << "process task abort requested, using "
             << (hardkill ? "hard" : "soft") << " kill method";
           if (hardkill)
@@ -844,7 +849,7 @@ void Executor::abort() {
         return;
       case Task::Http:
         if (_reply) {
-          Log::info(_instance.task().id(), _instance.idAsLong())
+          Log::info(_instance.taskId(), _instance.idAsLong())
             << "http task abort requested";
           _reply->abort();
           return;
@@ -855,7 +860,7 @@ void Executor::abort() {
       case Task::UnknownMean:  [[unlikely]]
         ; // should never happen
     }
-    Log::warning(_instance.task().id(), _instance.idAsLong())
+    Log::warning(_instance.taskId(), _instance.idAsLong())
       << "cannot abort task";
   });
 }
@@ -863,6 +868,7 @@ void Executor::abort() {
 void Executor::stopOrRetry(bool success, int returnCode) {
   if (_retrying)
     return; // avoid being called when calling QCoreApplication::processEvents()
+  const auto task = _instance.task();
   _outputSubsInitialized = false;
   _stdoutSubs.clear();
   _stderrSubs.clear();
@@ -875,17 +881,17 @@ void Executor::stopOrRetry(bool success, int returnCode) {
       _reply->deleteLater();
       _reply = 0;
     }
-    quint32 ms = _instance.task().millisBetweenTries();
+    quint32 ms = task.millisBetweenTries();
     if (ms > 0) {
-      Log::info(_instance.task().id(), _instance.idAsLong())
+      Log::info(_instance.taskId(), _instance.idAsLong())
         << "waiting " << ms/1000.0 << " seconds before retrying";
       BlockingTimer t { ms, [this]() -> bool { return _aborting; } };
       t.wait();
     }
     if (!_aborting) {
-      _alerter->emitAlert("task.retry."+_instance.task().id());
-      Log::warning(_instance.task().id(), _instance.idAsLong())
-        << "retrying task '" << _instance.task().id() << "' after "
+      _alerter->emitAlert("task.retry."+_instance.taskId());
+      Log::warning(_instance.taskId(), _instance.idAsLong())
+        << "retrying task '" << _instance.taskId() << "' after "
         << _instance.runningMillis() << " ms already running, still "
         << _instance.remainingTries() << " tries remaining.";
       executeOneTry();
@@ -897,9 +903,9 @@ void Executor::stopOrRetry(bool success, int returnCode) {
   _instance.setSuccess(success);
   _instance.setReturnCode(returnCode);
   _instance.setStopDatetime();
-  Log::log(success ? Log::Info : Log::Warning, _instance.task().id(),
+  Log::log(success ? Log::Info : Log::Warning, _instance.taskId(),
            _instance.idAsLong())
-    << "task '" << _instance.task().id() << "' stopped "
+    << "task '" << _instance.taskId() << "' stopped "
     << (success ? "successfully" : "in failure") << " with return code "
     << returnCode << " on host '" << _instance.target().hostname()
     << "' after running " << _instance.runningMillis()

@@ -151,6 +151,7 @@ public:
   void copyLiveAttributesFromOldTask(const Task &oldTask);
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
+  void detach();
 
 private:
   inline TaskData *data();

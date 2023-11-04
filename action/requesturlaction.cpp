@@ -43,12 +43,12 @@ public:
     if (_address.startsWith("udp:", Qt::CaseInsensitive)) {
       // LATER run UDP in a separate thread to avoid network/dns/etc. hangups
       ParametrizedUdpSender sender(
-          _address, _params, context, instance.task().id(),
+          _address, _params, context, instance.taskId(),
           instance.idAsLong());
       sender.performRequest(_message, context);
     } else {
       ParametrizedNetworkRequest request(
-            _address, _params, context, instance.task().id(),
+            _address, _params, context, instance.taskId(),
           instance.idAsLong());
       QNetworkReply *reply = request.performRequest(
             globalNetworkActionHub->_nam, _message, context);

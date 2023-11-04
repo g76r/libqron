@@ -831,3 +831,7 @@ QString Task::meanAsString(Task::Mean mean) {
 QStringList Task::validMeanStrings() {
   return _validMeans;
 }
+
+void Task::detach() {
+  detachedData<TaskData>();
+}

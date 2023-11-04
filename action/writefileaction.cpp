@@ -32,7 +32,7 @@ public:
     // LATER support binary payloads
     auto path = PercentEvaluator::eval_utf8(_path, context);
     ParametrizedFileWriter writer(
-          path, _params, context, instance.task().id(), instance.idAsLong());
+          path, _params, context, instance.taskId(), instance.idAsLong());
     writer.performWrite(_message, context);
   }
   Utf8String toString() const override {

@@ -32,7 +32,7 @@ public:
     if (instance.isNull())
       Log::log(_severity) << PercentEvaluator::eval_utf8(_message, context);
     else
-      Log::log(_severity, instance.task().id(), instance.idAsLong())
+      Log::log(_severity, instance.taskId(), instance.idAsLong())
           << PercentEvaluator::eval_utf8(_message, context);
   }
   PfNode toPfNode() const override {

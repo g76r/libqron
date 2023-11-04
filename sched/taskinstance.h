@@ -41,6 +41,7 @@ public:
   TaskInstance &operator=(const TaskInstance &other) {
     SharedUiItem::operator=(other); return *this; }
   Task task() const;
+  Utf8String taskId() const;
   void setParam(const Utf8String &key, const QVariant &value) const;
   /** Either set param if empty or append a space followed by value to current
    * value */
@@ -48,7 +49,7 @@ public:
   ParamSet params() const;
   quint64 idAsLong() const;
   /** @return string of the form "taskid/taskinstanceid" */
-  QString idSlashId() const { return task().id()+"/"+id(); }
+  QString idSlashId() const { return taskId()+"/"+id(); }
   quint64 groupId() const;
   QDateTime creationDatetime() const;
   QDateTime queueDatetime() const;
