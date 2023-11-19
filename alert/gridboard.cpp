@@ -285,7 +285,7 @@ void Gridboard::applyNewConfig(const Gridboard &other) {
   d->_dimensions = o->_dimensions;
   d->_params = o->_params;
   d->_warningDelay = o->_warningDelay;
-  qDebug() << "apply new config" << d->_id << clear;
+  //qDebug() << "apply new config" << d->_id << clear;
   if (clear)
     this->clear();
 }
