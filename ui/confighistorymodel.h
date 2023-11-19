@@ -23,7 +23,7 @@ class LIBQRONSHARED_EXPORT ConfigHistoryModel : public SharedUiItemsTableModel {
   Q_DISABLE_COPY(ConfigHistoryModel)
 
 public:
-  explicit ConfigHistoryModel(QObject *parent = 0);
+  explicit ConfigHistoryModel(QObject *parent = 0, int maxrows = 100);
 
 public slots:
   void historyReset(QList<ConfigHistoryEntry> history);

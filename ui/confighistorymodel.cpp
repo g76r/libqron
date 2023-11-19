@@ -13,9 +13,10 @@
  */
 #include "confighistorymodel.h"
 
-ConfigHistoryModel::ConfigHistoryModel(QObject *parent)
+ConfigHistoryModel::ConfigHistoryModel(QObject *parent, int maxrows)
   : SharedUiItemsTableModel(parent) {
   setHeaderDataFromTemplate(ConfigHistoryEntry({}, {}, {}, {}));
+  setMaxrows(maxrows);
 }
 
 void ConfigHistoryModel::historyReset(QList<ConfigHistoryEntry> history) {
