@@ -480,14 +480,11 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
         case 2:
           return TaskInstance::statusAsString(status());
         case 3:
-          return creationDatetime().toString(
-                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+          return creationDatetime().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
         case 4:
-          return startDatetime().toString(
-                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+          return startDatetime().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
         case 5:
-          return stopDatetime().toString(
-                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+          return stopDatetime().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
         case 6:
           return startDatetime().isNull() || queueDatetime().isNull()
               ? QVariant() : QString::number(queuedMillis()/1000.0);
@@ -495,7 +492,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
           return stopDatetime().isNull() || startDatetime().isNull()
               ? QVariant() : QString::number(runningMillis()/1000.0);
         case 8:
-          return QVariant(); // custom actions, handled by the model, if needed
+          return {}; // custom actions, handled by the model, if needed
         case 9:
           return _abortable;
         case 10:
@@ -503,8 +500,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
         case 11:
           return _herdedTasksCaption.detachedData();
         case 12:
-          return finishDatetime().toString(
-                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+          return finishDatetime().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
         case 13:
           return finishDatetime().isNull() || stopDatetime().isNull()
               ? QVariant() : QString::number(waitingMillis()/1000.0);
@@ -512,8 +508,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
           return finishDatetime().isNull() || queueDatetime().isNull()
               ? QVariant() : QString::number(durationMillis()/1000.0);
         case 15:
-          return queueDatetime().toString(
-                QStringLiteral("yyyy-MM-dd hh:mm:ss,zzz"));
+          return queueDatetime().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
         case 16:
           return queueDatetime().isNull() || creationDatetime().isNull()
               ? QVariant() : QString::number(plannedMillis()/1000.0);
