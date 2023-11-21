@@ -187,10 +187,7 @@ Task TaskInstance::task() const {
   const TaskInstanceData *d = data();
   if (!d)
     return {};
-  auto ld = d->_task.lockedData();
-  auto t = *ld;
-  t.detach();
-  return t;
+  return d->_task.data();
 }
 
 Utf8String TaskInstance::taskId() const {

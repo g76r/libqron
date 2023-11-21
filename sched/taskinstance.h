@@ -84,7 +84,7 @@ public:
   static QString statusAsString(TaskInstance::TaskInstanceStatus status);
   QString statusAsString() const {
     return statusAsString(status()); }
-  /** @return true iff status != Queued or Running */
+  /** @return true iff status is Success Failure or Canceled */
   bool isFinished() const {
     switch(status()) {
     case Planned:
