@@ -295,7 +295,8 @@ void QronConfigDocumentManager::commitChangeItem(
 }
 
 void QronConfigDocumentManager::changeParams(
-    ParamSet newParams, ParamSet oldParams, QByteArray setId) {
+    const ParamSet &newParams, const ParamSet &oldParams,
+    const Utf8String &setId) {
   Q_UNUSED(newParams)
   Q_UNUSED(oldParams)
   Q_UNUSED(setId)

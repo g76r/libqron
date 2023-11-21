@@ -48,20 +48,22 @@ public:
   int taskGroupsCount() const { return _config.taskgroups().count(); }
   int maxtotaltaskinstances() const { return _config.maxtotaltaskinstances(); }
   int maxqueuedrequests() const { return _config.maxqueuedrequests(); }
-  Calendar calendarByName(QByteArray name) const {
+  Calendar calendarByName(const Utf8String &name) const {
     return _config.namedCalendars().value(name); }
   ParamSet globalParams() const { return _config.params(); }
   ParamSet globalVars() const { return _config.vars(); }
   /** This method is threadsafe */
-  bool taskExists(QByteArray taskId) {
+  bool taskExists(const Utf8String &taskId) {
     return _config.tasks().contains(taskId); }
   /** This method is threadsafe */
-  Task task(QByteArray taskId) { return _config.tasks().value(taskId); }
-  void changeParams(ParamSet newParams, ParamSet oldParams, QByteArray setId);
+  Task task(const Utf8String &taskId) { return _config.tasks().value(taskId); }
+  void changeParams(const ParamSet &newParams, const ParamSet &oldParams,
+                    const Utf8String &setId);
 
 signals:
   void logConfigurationChanged(SharedUiItemList logfiles);
-  void paramsChanged(ParamSet newParams, ParamSet oldParams, QByteArray setId);
+  void paramsChanged(const ParamSet &newParams, const ParamSet &oldParams,
+                     const Utf8String &setId);
   void accessControlConfigurationChanged(bool enabled);
   void globalEventSubscriptionsChanged(
       QList<EventSubscription> onstart, QList<EventSubscription> onsuccess,
