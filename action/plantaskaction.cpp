@@ -36,10 +36,13 @@ public:
     if (!_scheduler)
       return;
     auto id = PercentEvaluator::eval_utf8(_id, context);
-    auto parentTask = parentInstance.task();
+    auto parent_taskid = parentInstance.taskId();
+    auto last_dot = parent_taskid.lastIndexOf('.');
+    auto parent_taskgroupid_dot = parent_taskid.left(last_dot+1);
+    auto parent_localid = parent_taskid.mid(last_dot);
     if (!parentInstance.isNull()) {
-      QString idIfLocalToGroup = parentTask.taskGroup().id()+"."+id;
-      if (_scheduler->taskExists(idIfLocalToGroup.toUtf8()))
+      auto idIfLocalToGroup = parent_taskgroupid_dot+id;
+      if (_scheduler->taskExists(idIfLocalToGroup))
         id = idIfLocalToGroup;
     }
     quint64 herdid = _lone ? 0 : parentInstance.herdid();
@@ -52,8 +55,7 @@ public:
     if (!parentInstance.isNull()) {
       overridingParams.insert("!parenttaskinstanceid", parentInstance.id());
       overridingParams.insert("!parenttaskid", parentInstance.taskId());
-      overridingParams.insert("!parenttasklocalid",
-                              parentTask.localId());
+      overridingParams.insert("!parenttasklocalid", parent_localid);
     }
     TaskInstanceList instances = _scheduler->planTask(
       id, overridingParams, _force, herdid, _queuewhen, _cancelwhen);
