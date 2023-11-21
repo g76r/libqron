@@ -221,7 +221,7 @@ static bool planOrRequestCommonPreProcess(
 void Scheduler::planOrRequestCommonPostProcess(
     TaskInstance instance, TaskInstance herder,
     ParamSet overridingParams) {
-  auto instanceparams = instance.task().instanceparams();
+  auto instanceparams = task(instance.taskId()).instanceparams();
   auto ipm = ParamsProviderMerger(&instance)(instanceparams);
   for (auto key: instanceparams.paramKeys()) {
     auto value = instanceparams.paramValue(key, &ipm);
@@ -407,8 +407,8 @@ TaskInstanceList Scheduler::doPlanTask(
 }
 
 TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
-  auto task = instance.task();
-  auto taskId = task.id();
+  auto taskId = instance.taskId();
+  auto task = Scheduler::task(taskId);
   if (_shutingDown) {
     Log::warning(taskId, instance.idAsLong())
         << "cannot queue task because scheduler is shuting down";
@@ -872,8 +872,8 @@ void Scheduler::startAsManyTaskInstancesAsPossible() {
 }
 
 void Scheduler::startTaskInstance(TaskInstance instance) {
-  Task task(instance.task());
-  auto taskId = task.id();
+  auto taskId = instance.taskId();
+  auto task = Scheduler::task(taskId);
   Executor *executor = 0;
   if (!task.enabled())
     return; // do not start disabled tasks
@@ -1062,10 +1062,11 @@ void Scheduler::taskInstanceStoppedOrCanceled(
 }
 
 static void recomputeHerderSuccess(
-  TaskInstance &herder, QSet<TaskInstance> herdedTasks) {
+  TaskInstance &herder, const Task &task,
+    const QSet<TaskInstance> &herdedTasks) {
   if (herdedTasks.isEmpty())
     return; // keep own status
-  switch(herder.task().herdingPolicy()) {
+  switch(task.herdingPolicy()) {
     case Task::AllSuccess:
       if (!herder.success())
         return;
@@ -1101,7 +1102,7 @@ static void recomputeHerderSuccess(
 
 void Scheduler::taskInstanceFinishedOrCanceled(
     TaskInstance instance, bool markCanceledAsFailure) {
-  Task requestedTask = instance.task();
+  Task requestedTask = task(instance.taskId());
   auto taskId = requestedTask.id();
   // configured and requested tasks are different if config was reloaded
   Task configuredTask = config().tasks().value(taskId);
@@ -1117,7 +1118,7 @@ void Scheduler::taskInstanceFinishedOrCanceled(
       _alerter->cancelAlert("task.maxinstancesreached."+taskId);
   } else {
     auto herdedTasks = this->herdedTasks(instance.idAsLong());
-    recomputeHerderSuccess(instance, herdedTasks);
+    recomputeHerderSuccess(instance, requestedTask, herdedTasks);
     configuredTask.fetchAndAddRunningCount(-1);
     auto taskResources = requestedTask.resources();
     auto hostConsumedResources =
@@ -1212,8 +1213,8 @@ void Scheduler::enableAllTasks(bool enable) {
 
 void Scheduler::periodicChecks() {
   // detect queued or running tasks that exceeded their max expected duration
-  for (auto i: _unfinishedTasks) {
-    switch (i.status()) {
+  for (auto instance: _unfinishedTasks) {
+    switch (instance.status()) {
     case TaskInstance::Planned:
     case TaskInstance::Success:
     case TaskInstance::Failure:
@@ -1224,9 +1225,9 @@ void Scheduler::periodicChecks() {
     case TaskInstance::Waiting:
         ;
     }
-    auto t = i.task();
-    if (t.maxExpectedDuration() < i.durationMillis())
-      _alerter->raiseAlert("task.toolong."+t.id());
+    auto task = Scheduler::task(instance.taskId());
+    if (task.maxExpectedDuration() < instance.durationMillis())
+      _alerter->raiseAlert("task.toolong."+task.id());
   }
   // restart timer for triggers if any was lost, this is never usefull apart
   // if current system time goes back (which btw should never occur on well
@@ -1308,7 +1309,7 @@ void Scheduler::doShutdown(QDeadlineTimer deadline) {
 
 void Scheduler::triggerPlanActions(TaskInstance instance) {
   auto ppm = ParamsProviderMerger(&instance);
-  auto task = instance.task();
+  auto task = Scheduler::task(instance.taskId());
   for (auto subs: config().tasksRoot().onplan()
        + task.taskGroup().onplan() + task.onplan())
     if (subs.triggerActions(&ppm, instance))
@@ -1317,7 +1318,7 @@ void Scheduler::triggerPlanActions(TaskInstance instance) {
 
 void Scheduler::triggerStartActions(TaskInstance instance) {
   auto ppm = ParamsProviderMerger(&instance);
-  auto task = instance.task();
+  auto task = Scheduler::task(instance.taskId());
   for (auto subs: config().tasksRoot().onstart()
        + task.taskGroup().onstart() + task.onstart())
     if (subs.triggerActions(&ppm, instance))
@@ -1327,7 +1328,7 @@ void Scheduler::triggerStartActions(TaskInstance instance) {
 void Scheduler::triggerFinishActions(
     TaskInstance instance, std::function<bool(Action)> filter) {
   QList<EventSubscription> subs;
-  auto task = instance.task();
+  auto task = Scheduler::task(instance.taskId());
   if (instance.success())
     subs = config().tasksRoot().onsuccess()
         + task.taskGroup().onsuccess() + task.onsuccess();
