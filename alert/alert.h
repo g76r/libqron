@@ -28,18 +28,15 @@ public:
                      Canceled };
 
   Alert();
-  explicit Alert(QByteArray id,
-                 QDateTime riseDate = QDateTime::currentDateTime());
-  explicit Alert(QString id,
-                 QDateTime riseDate = QDateTime::currentDateTime())
-    : Alert(id.toUtf8(), riseDate) { }
-  Alert(const Alert&other);
+  explicit Alert(const Utf8String &id,
+                 const QDateTime &riseDate = QDateTime::currentDateTime());
+  Alert(const Alert &other);
   Alert &operator=(const Alert &other) {
     SharedUiItem::operator=(other); return *this; }
   Alert::AlertStatus status() const;
   void setStatus(Alert::AlertStatus status);
-  static Alert::AlertStatus statusFromString(QString string);
-  static QString statusAsString(Alert::AlertStatus status);
+  static Alert::AlertStatus statusFromString(const Utf8String &string);
+  static Utf8String statusAsString(Alert::AlertStatus status);
   QString statusAsString() const { return statusAsString(status()); }
   /** Initial raise() call date, before rising period.
    * Won't change in the alert lifetime. */

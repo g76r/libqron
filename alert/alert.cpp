@@ -25,8 +25,8 @@ public:
   QDateTime _riseDate, _visibilityDate, _cancellationDate, _lastReminderDate;
   AlertSubscription _subscription;
   int _count;
-  AlertData(const QByteArray id = {},
-            QDateTime riseDate = QDateTime::currentDateTime())
+  AlertData(const Utf8String &id = {},
+            const QDateTime &riseDate = QDateTime::currentDateTime())
     : _id(id), _status(Alert::Nonexistent), _riseDate(riseDate), _count(1) { }
   Utf8String id() const override { return _id; }
   QVariant uiData(int section, int role) const override;
@@ -72,7 +72,7 @@ QVariant AlertData::uiData(int section, int role) const {
 Alert::Alert() : SharedUiItem() {
 }
 
-Alert::Alert(QByteArray id, QDateTime datetime)
+Alert::Alert(const Utf8String &id, const QDateTime &datetime)
   : SharedUiItem(new AlertData(id, datetime)) {
 }
 
@@ -149,43 +149,24 @@ AlertData *Alert::data() {
   return detachedData<AlertData>();
 }
 
-static QString nonexistentStatus("nonexistent");
-static QString risingStatus("rising");
-static QString mayRiseStatus("may_rise");
-static QString raisedStatus("raised");
-static QString droppingStatus("dropping");
-static QString canceledStatus("canceled");
+static QMap<Alert::AlertStatus,Utf8String> _statusToText {
+  { Alert::Nonexistent, "nonexistent" },
+  { Alert::Rising, "rising" },
+  { Alert::MayRise, "may_rise" },
+  { Alert::Raised, "raised" },
+  { Alert::Dropping, "dropping" },
+  { Alert::Canceled, "canceled" },
+};
 
-Alert::AlertStatus Alert::statusFromString(QString string) {
-  if (string == risingStatus)
-    return Alert::Rising;
-  if (string == mayRiseStatus)
-    return Alert::MayRise;
-  if (string == raisedStatus)
-    return Alert::Raised;
-  if (string == droppingStatus)
-    return Alert::Dropping;
-  if (string == canceledStatus)
-    return Alert::Canceled;
-  return Alert::Nonexistent;
+static RadixTree<Alert::AlertStatus> _statusFromText =
+    RadixTree<Alert::AlertStatus>::reversed(_statusToText);
+
+Alert::AlertStatus Alert::statusFromString(const Utf8String &string) {
+  return _statusFromText.value(string, Alert::Nonexistent);
 }
 
-QString Alert::statusAsString(Alert::AlertStatus status) {
-  switch(status) {
-  case Alert::Rising:
-    return risingStatus;
-  case Alert::MayRise:
-    return mayRiseStatus;
-  case Alert::Raised:
-    return raisedStatus;
-  case Alert::Dropping:
-    return droppingStatus;
-  case Alert::Canceled:
-    return canceledStatus;
-  case Alert::Nonexistent:
-    ;
-  }
-  return nonexistentStatus;
+Utf8String Alert::statusAsString(Alert::AlertStatus status) {
+  return _statusToText.value(status, "nonexistent"_u8);
 }
 
 int Alert::count() const {
