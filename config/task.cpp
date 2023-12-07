@@ -375,7 +375,7 @@ QString Task::deduplicateStrategy() const {
   return d ? d->_deduplicateStrategy : QString{};
 }
 
-static QHash<Task::HerdingPolicy,QString> _herdingPolicyAsString {
+static QMap<Task::HerdingPolicy,QString> _herdingPolicyToText {
   { Task::AllSuccess, "allsuccess" },
   { Task::NoFailure, "nofailure" },
   { Task::OneSuccess, "onesuccess" },
@@ -383,9 +383,8 @@ static QHash<Task::HerdingPolicy,QString> _herdingPolicyAsString {
   { Task::NoWait, "nowait" },
 };
 
-static QHash<QString,Task::HerdingPolicy> _herdingPolicyFromString {
-  ContainerUtils::reversed(_herdingPolicyAsString)
-};
+static RadixTree<Task::HerdingPolicy> _herdingPolicyFromText =
+    RadixTree<Task::HerdingPolicy>::reversed(_herdingPolicyToText);
 
 Task::HerdingPolicy Task::herdingPolicy() const {
   auto d = data();
@@ -393,11 +392,11 @@ Task::HerdingPolicy Task::herdingPolicy() const {
 }
 
 QString Task::herdingPolicyAsString(Task::HerdingPolicy v) {
-  return _herdingPolicyAsString.value(v, QStringLiteral("unknown"));
+  return _herdingPolicyToText.value(v, QStringLiteral("unknown"));
 }
 
 Task::HerdingPolicy Task::herdingPolicyFromString(QString v) {
-  return _herdingPolicyFromString.value(v, Task::HerdingPolicyUnknown);
+  return _herdingPolicyFromText.value(v, Task::HerdingPolicyUnknown);
 }
 
 QList<RequestFormField> Task::requestFormFields() const {
@@ -800,7 +799,7 @@ PfNode TaskData::toPfNode() const {
   return node;
 }
 
-static QHash<Task::Mean,QString> _meansAsString {
+static QMap<Task::Mean,QString> _meansAsString {
   { Task::DoNothing, "donothing" },
   { Task::Local, "local" },
   { Task::Background, "background" },
@@ -811,7 +810,7 @@ static QHash<Task::Mean,QString> _meansAsString {
 };
 
 static QHash<QString,Task::Mean> _meansFromString {
-  ContainerUtils::reversed(_meansAsString)
+  ContainerUtils::reversed_hash(_meansAsString)
 };
 
 static QStringList _validMeans {

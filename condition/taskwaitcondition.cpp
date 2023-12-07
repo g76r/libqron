@@ -14,7 +14,7 @@
 #include "taskwaitcondition.h"
 #include "condition_p.h"
 
-static QHash<TaskWaitOperator,QString> _operatorsAsString {
+static QMap<TaskWaitOperator,Utf8String> _operatorsToText {
   { AllFinished, "allfinished" },
   { AnyFinished, "anyfinished" },
   { AllSuccess, "allsuccess" },
@@ -40,7 +40,7 @@ static QHash<TaskWaitOperator,QString> _operatorsAsString {
   { False, "false" },
 };
 
-static QHash<TaskWaitOperator,TaskWaitOperator>
+static QMap<TaskWaitOperator,TaskWaitOperator>
 _cancelOperatorFromQueueOperator {
   { AllFinished, False },
   { AnyFinished, IsEmpty },
@@ -67,16 +67,15 @@ _cancelOperatorFromQueueOperator {
   { False, True },
 };
 
-static QHash<QString,TaskWaitOperator> _operatorsFromString {
-  ContainerUtils::reversed(_operatorsAsString)
-};
+static RadixTree<TaskWaitOperator> _operatorsFromText =
+    RadixTree<TaskWaitOperator>::reversed(_operatorsToText);
 
-TaskWaitOperator TaskWaitCondition::operatorFromString(QString op) {
-  return _operatorsFromString.value(op, UnknownOperator);
+TaskWaitOperator TaskWaitCondition::operatorFromString(const Utf8String &op) {
+  return _operatorsFromText.value(op, UnknownOperator);
 }
 
-QString TaskWaitCondition::operatorAsString(TaskWaitOperator op) {
-  return _operatorsAsString.value(op, QString());
+Utf8String TaskWaitCondition::operatorAsString(TaskWaitOperator op) {
+  return _operatorsToText.value(op, {});
 }
 
 TaskWaitOperator TaskWaitCondition::cancelOperatorFromQueueOperator(

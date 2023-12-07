@@ -39,8 +39,8 @@ public:
   void appendHost(Host host);
   QList<Host> hosts() const;
   Cluster::Balancing balancing() const;
-  static Cluster::Balancing balancingFromString(QString balancing);
-  static QString balancingAsString(Cluster::Balancing balancing);
+  static Cluster::Balancing balancingFromString(const Utf8String &balancing);
+  static Utf8String balancingAsString(Cluster::Balancing balancing);
   QString balancingAsString() const { return balancingAsString(balancing()); }
   void setId(QByteArray id);
   PfNode toPfNode() const;

@@ -40,8 +40,8 @@ public:
   ~TaskWaitCondition();
   TaskWaitOperator op() const;
   QString expr() const;
-  static TaskWaitOperator operatorFromString(QString op);
-  static QString operatorAsString(TaskWaitOperator op);
+  static TaskWaitOperator operatorFromString(const Utf8String &op);
+  static Utf8String operatorAsString(TaskWaitOperator op);
   static TaskWaitOperator cancelOperatorFromQueueOperator(TaskWaitOperator op);
 };
 

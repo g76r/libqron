@@ -184,22 +184,21 @@ void Cluster::setHosts(QList<Host> hosts) {
     d->_hosts = hosts;
 }
 
-static QHash<Cluster::Balancing,QString> _balancingtoText {
+static QMap<Cluster::Balancing,Utf8String> _balancingToText {
   { Cluster::First, "first" },
   { Cluster::Each, "each" },
   { Cluster::RoundRobin, "roundrobin" },
   { Cluster::Random, "random" },
 };
 
-static QHash<QString,Cluster::Balancing> _balancingFromText {
-  ContainerUtils::reversed(_balancingtoText)
-};
+static RadixTree<Cluster::Balancing> _balancingFromText =
+    RadixTree<Cluster::Balancing>::reversed(_balancingToText);
 
-QString Cluster::balancingAsString(Cluster::Balancing balancing) {
-  return _balancingtoText.value(balancing);
+Utf8String Cluster::balancingAsString(Cluster::Balancing balancing) {
+  return _balancingToText.value(balancing);
 }
 
-Cluster::Balancing Cluster::balancingFromString(QString balancing) {
+Cluster::Balancing Cluster::balancingFromString(const Utf8String &balancing) {
   return _balancingFromText.value(balancing, UnknownBalancing);
 }
 
