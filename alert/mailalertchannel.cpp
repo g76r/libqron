@@ -344,9 +344,11 @@ void MailAlertChannel::processQueue(QVariant address) {
       if (_config.params().paramNumber<bool>("mail.enablehtml", true)) {
         headers.insert("Content-Type",
                        "multipart/alternative; boundary="+boundary);
-        body = "--"+boundary+"\r\nContent-Type: text/plain\r\n\r\n"+text
-            +"\r\n\r\n--"+boundary+"\r\nContent-Type: text/html\r\n\r\n"+html
-            +"\r\n\r\n--"+boundary+"--\r\n";
+        body = "--"+boundary
+               +"\r\nContent-Type: text/plain;charset=utf-8\r\n\r\n"+text
+               +"\r\n\r\n--"+boundary
+               +"\r\nContent-Type: text/html;charset=utf-8\r\n\r\n"+html
+               +"\r\n\r\n--"+boundary+"--\r\n";
       } else
         body = text;
       // queuing
