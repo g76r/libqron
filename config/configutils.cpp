@@ -49,7 +49,7 @@ void ConfigUtils::writeParamSet(PfNode *parentnode, ParamSet params,
 void ConfigUtils::writeEventSubscriptions(PfNode *parentnode,
                                           QList<EventSubscription> list,
                                           QStringList exclusionList) {
-  foreach (EventSubscription es, list)
+  for (const EventSubscription &es: list)
     if (!exclusionList.contains(es.eventName())
         && !es.actions().isEmpty())
       parentnode->appendChild(es.toPfNode());
@@ -145,7 +145,7 @@ void ConfigUtils::loadEventSubscription(
     QList<EventSubscription> *list, Scheduler *scheduler) {
   if (!list)
     return;
-  foreach (PfNode listnode, parentNode.childrenByName(childName))
+  for (const PfNode &listnode: parentNode.childrenByName(childName))
     list->append(EventSubscription(subscriberId, listnode, scheduler));
 }
 
@@ -155,7 +155,7 @@ void ConfigUtils::loadComments(
   if (!commentsList)
     return;
   int newMaxDepth = maxDepth < 0 ? maxDepth : (maxDepth-1);
-  foreach (const PfNode &child, node.children()) {
+  for (const PfNode &child: node.children()) {
     if (child.isComment())
       commentsList->append(child.contentAsUtf8());
     if (maxDepth && !excludedDescendants.contains(child.name()))

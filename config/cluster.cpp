@@ -84,8 +84,8 @@ QVariant ClusterData::uiData(int section, int role) const {
       return _id;
     case 1: {
       QStringList hosts;
-      foreach (Host h, _hosts)
-        hosts.append(h.id());
+      for (const Host &host: _hosts)
+        hosts.append(host.id());
       return hosts.join(" ");
     }
     case 2:
@@ -172,7 +172,7 @@ PfNode Cluster::toPfNode() const {
     node.appendChild(PfNode("label", d->_label));
   node.appendChild(PfNode("balancing", balancingAsString(d->_balancing)));
   QStringList hosts;
-  foreach (const Host &host, d->_hosts)
+  for (const Host &host: d->_hosts)
     hosts.append(host.id());
   node.appendChild(PfNode("hosts", hosts.join(' ')));
   return node;

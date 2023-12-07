@@ -76,7 +76,7 @@ public:
   }
   ~TreeItem() { qDeleteAll(_children); }
   void merge(const TreeItem *source) {
-    foreach (const QString &dimensionValue, source->_children.keys()) {
+    for (auto dimensionValue: source->_children.keys()) {
       if (!_children.contains(dimensionValue)) {
         _children.insert(dimensionValue, new TreeItem(dimensionValue));
       }
@@ -226,7 +226,7 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
   d->_patternRegexp = QRegularExpression(d->_pattern);
   if (!d->_patternRegexp.isValid())
     Log::warning() << "gridboard with invalid pattern: " << node.toString();
-  foreach (const PfNode &child, node.childrenByName("dimension")) {
+  for (const PfNode &child: node.childrenByName("dimension")) {
     Dimension dimension(child);
     if (dimension.isNull()) {
       Log::warning() << "gridboard " << d->_id << " with invalid dimension: "
@@ -301,7 +301,7 @@ PfNode Gridboard::toPfNode() const {
   if (!d->_info.isEmpty())
     node.setAttribute("info"_u8, d->_info);
   node.setAttribute("pattern"_u8, d->_pattern);
-  foreach (const Dimension &dimension, d->_dimensions)
+  for (const Dimension &dimension: d->_dimensions)
     node.appendChild(dimension.toPfNode());
   // LATER initvalues
   ConfigUtils::writeParamSet(&node, d->_params, u"param"_s);

@@ -49,7 +49,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   qint64 _execCount, _runningTasksHwm, _queuedTasksHwm;
   QFileSystemWatcher *_accessControlFilesWatcher;
   PfNode _accessControlNode;
-  QMap<QString,QMap<QString,qint64>> _consumedResources; // <host,<resource,quantity>>
+  QMap<Utf8String,QMap<Utf8String,qint64>> _consumedResources; // <host,<resource,quantity>>
   std::random_device _randomDevice;
   std::mt19937 _uniformRandomNumberGenerator;
   QMutex _configGuard;

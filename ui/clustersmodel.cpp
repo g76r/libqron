@@ -77,7 +77,7 @@ void ClustersModel::changeItem(
     if (newIndex.isValid()) {
       auto cluster = newItem.casted<const Cluster>();
       SharedUiItem nullItem;
-      foreach (const Host &host, cluster.hosts()) {
+      for (const Host &host: cluster.hosts()) {
         SharedUiItemsTreeModel::changeItem(
               HostReference(cluster.id(), host.id()), nullItem,
               "hostreference"_u8);
@@ -106,15 +106,12 @@ bool ClustersModel::canDropMimeData(
     return false; // cannot change data w/o dm
   if (!targetParent.isValid())
     return false; // cannot drop on root
-  QList<QByteArray> idsArrays =
-      data->data(_suiQualifiedIdsListMimeType).split(' ');
-  if (idsArrays.isEmpty())
+  Utf8StringList ids = data->data(_suiQualifiedIdsListMimeType).split(' ');
+  if (ids.isEmpty())
     return false; // nothing to drop
-  foreach (const QByteArray &qualifiedId, idsArrays) {
-    QString qualifier = QString::fromUtf8(
-          qualifiedId.left(qualifiedId.indexOf(':')));
-    if (qualifier != "host"_u8
-        && qualifier != "hostreference"_u8)
+  for (auto qualified_id: ids) {
+    auto qualifier = qualified_id.left(qualified_id.indexOf(':'));
+    if (qualifier != "host"_u8 && qualifier != "hostreference"_u8)
       return false; // can only drop hosts
   }
   return true;
@@ -143,18 +140,17 @@ bool ClustersModel::dropMimeData(
   Cluster &oldCluster = static_cast<Cluster&>(clusterSui);
   //qDebug() << "  dropping on:" << oldCluster.id() << targetRow;
   // build new hosts id list
-  QList<QByteArray> idsArrays =
-      data->data(_suiQualifiedIdsListMimeType).split(' ');
-  QStringList oldHostsIds, droppedHostsIds, newHostsIds;
-  foreach (const Host &host, oldCluster.hosts())
+  Utf8StringList ids = data->data(_suiQualifiedIdsListMimeType).split(' ');
+  Utf8StringList oldHostsIds, droppedHostsIds, newHostsIds;
+  for (const Host &host: oldCluster.hosts())
     oldHostsIds << host.id();
-  foreach (const QByteArray &qualifiedId, idsArrays) {
-    QByteArray hostId;
-    if (qualifiedId.contains('~'))
-      hostId = qualifiedId.mid(qualifiedId.indexOf('~')+1);
+  for (auto qualified_id: ids) {
+    Utf8String hostId;
+    if (qualified_id.contains('~'))
+      hostId = qualified_id.mid(qualified_id.indexOf('~')+1);
     else
-      hostId = qualifiedId.mid(qualifiedId.indexOf(':')+1);
-    droppedHostsIds += QString::fromUtf8(hostId);
+      hostId = qualified_id.mid(qualified_id.indexOf(':')+1);
+    droppedHostsIds += hostId;
   }
   int oldIndex = 0;
   for (; oldIndex < targetRow && oldIndex < oldHostsIds.size(); ++oldIndex) {
@@ -174,8 +170,8 @@ bool ClustersModel::dropMimeData(
   //qDebug() << "  old one:" << oldHostsIds << "dropped one:" << droppedHostsIds;
   // update actual data item
   QList<Host> newHosts;
-  foreach (const QString &id, newHostsIds) {
-    SharedUiItem hostSui = documentManager()->itemById("host"_u8, id.toUtf8());
+  for (auto id: newHostsIds) {
+    SharedUiItem hostSui = documentManager()->itemById("host"_u8, id);
     Host &host = static_cast<Host&>(hostSui);
     newHosts << host;
   }

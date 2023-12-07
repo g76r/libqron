@@ -69,7 +69,7 @@ RequestFormField::RequestFormField(PfNode node) {
     if (!d->_allowedValues.isEmpty()) {
       format = "(?:";
       bool first = true;
-      foreach (const QStringList &row, d->_allowedValues) {
+      for (const QStringList &row: d->_allowedValues) {
         if (row.isEmpty())
           continue; // should never happen
         if (first)
@@ -149,7 +149,7 @@ QString RequestFormField::toHtmlFormFragment(
         rows.clear();
       }
     }
-    foreach (const QStringList &row, rows) {
+    for (const QStringList &row: rows) {
       options.append("<option");
       QString value = row.value(0);
       QString label = row.value(1);

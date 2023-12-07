@@ -130,14 +130,12 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   QMetaObject::invokeMethod(this, [this](){
     checkTriggersForAllTasks();
   }, Qt::QueuedConnection);
-  foreach (const QString &host, _consumedResources.keys()) {
-    auto hostConsumedResources = _consumedResources[host];
-    auto hostAvailableResources
-        = newConfig.hosts().value(host.toUtf8()).resources();
-    foreach (const QString &kind, hostConsumedResources.keys())
-      hostAvailableResources.insert(kind, hostAvailableResources.value(kind)
-                                    - hostConsumedResources.value(kind));
-    emit hostsResourcesAvailabilityChanged(host, hostAvailableResources);
+  for (auto hostid: _consumedResources.keys()) {
+    auto hostConsumedResources = _consumedResources[hostid];
+    auto hostAvailableResources = newConfig.hosts().value(hostid).resources();
+    for (auto [kind,v]: hostConsumedResources.asKeyValueRange())
+      hostAvailableResources.insert(kind, hostAvailableResources.value(kind)-v);
+    emit hostsResourcesAvailabilityChanged(hostid, hostAvailableResources);
   }
   reevaluateQueuedTaskInstances();
   // inspect queued requests to replace Task objects or remove request
@@ -263,7 +261,7 @@ TaskInstanceList Scheduler::doRequestTask(
   Cluster cluster = config().clusters().value(task.target().toUtf8());
   if (cluster.balancing() == Cluster::Each) {
     quint64 groupId = 0;
-    foreach (Host host, cluster.hosts()) {
+    for (const Host &host: cluster.hosts()) {
       TaskInstance instance(task, groupId, force, overridingParams, herdid);
       if (!groupId) { // first iteration
         groupId = instance.groupId();
@@ -658,16 +656,16 @@ TaskInstanceList Scheduler::doAbortTaskInstanceByTaskId(QByteArray taskId) {
 void Scheduler::checkTriggersForTask(QByteArray taskId) {
   //Log::debug() << "Scheduler::checkTriggersForTask " << taskId;
   Task task = config().tasks().value(taskId);
-  foreach (const CronTrigger trigger, task.cronTriggers())
+  for (const CronTrigger &trigger: task.cronTriggers())
     checkTrigger(trigger, task, taskId);
 }
 
 void Scheduler::checkTriggersForAllTasks() {
   //Log::debug() << "Scheduler::checkTriggersForAllTasks ";
   QList<Task> tasksWithoutTimeTrigger;
-  foreach (Task task, config().tasks().values()) {
+  for (const Task &task: config().tasks().values()) {
     auto taskId = task.id();
-    foreach (const CronTrigger trigger, task.cronTriggers())
+    for (const CronTrigger &trigger: task.cronTriggers())
       checkTrigger(trigger, task, taskId);
     if (task.cronTriggers().isEmpty()) {
       task.setNextScheduledExecution(QDateTime());
@@ -675,7 +673,7 @@ void Scheduler::checkTriggersForAllTasks() {
     }
   }
   // LATER if this is usefull only to remove next exec time when reloading config w/o time trigger, this should be called in reloadConfig
-  foreach (const Task task, tasksWithoutTimeTrigger)
+  for (const Task &task: tasksWithoutTimeTrigger)
     emit itemChanged(task, task, "task"_u8);
 }
 
@@ -946,14 +944,13 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
     // LATER skip hosts currently down or disabled
     if (!taskResources.isEmpty()) {
       auto hostConsumedResources = _consumedResources.value(h.id());
-      auto hostAvailableResources
-          = config().hosts().value(h.id()).resources();
+      auto hostAvailableResources = config().hosts().value(h.id()).resources();
       if (!instance.force()) {
-        foreach (QString kind, taskResources.keys()) {
+        for (auto [kind,needed]: taskResources.asKeyValueRange()) {
           qint64 alreadyConsumed = hostConsumedResources.value(kind);
-          qint64 stillAvailable = hostAvailableResources.value(kind)-alreadyConsumed;
-          qint64 needed = taskResources.value(kind);
-          if (stillAvailable < needed ) {
+          qint64 stillAvailable =
+              hostAvailableResources.value(kind)-alreadyConsumed;
+          if (stillAvailable < needed) {
             Log::info(taskId, instance.idAsLong())
                 << "lacks resource '" << kind << "' on host '" << h.id()
                 << "' for task '" << task.id() << "' (need " << needed
@@ -1125,8 +1122,8 @@ void Scheduler::taskInstanceFinishedOrCanceled(
         _consumedResources.value(instance.target().id());
     auto hostAvailableResources =
         config().hosts().value(instance.target().id()).resources();
-    foreach (QString kind, taskResources.keys()) {
-      qint64 qty = hostConsumedResources.value(kind)-taskResources.value(kind);
+    for (auto [kind,used]: taskResources.asKeyValueRange()) {
+      qint64 qty = hostConsumedResources.value(kind)-used;
       hostConsumedResources.insert(kind, qty);
       hostAvailableResources.insert(kind, hostAvailableResources.value(kind)-qty);
     }
@@ -1202,8 +1199,7 @@ bool Scheduler::enableTask(QByteArray taskId, bool enable) {
 }
 
 void Scheduler::enableAllTasks(bool enable) {
-  QList<Task> tasks(config().tasks().values());
-  foreach (Task t, tasks) {
+  for (Task &t: config().tasks().values()) {
     t.setEnabled(enable);
     emit itemChanged(t, t, "task"_u8);
   }

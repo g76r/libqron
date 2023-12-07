@@ -177,10 +177,8 @@ PfNode Host::toPfNode() const {
     node.appendChild(PfNode("hostname", d->_hostname));
   if (!d->_sshhealthcheck.isEmpty())
     node.appendChild(PfNode("sshhealthcheck", d->_sshhealthcheck));
-  foreach (const QString &key, d->_resources.keys())
-    node.appendChild(
-          PfNode("resource",
-                 key+" "+QString::number(d->_resources.value(key))));
+  for (auto [k,v]: d->_resources.asKeyValueRange())
+    node.appendChild(PfNode("resource", k+" "+QString::number(v)));
   return node;
 }
 

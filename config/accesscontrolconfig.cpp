@@ -75,7 +75,7 @@ AccessControlConfig::~AccessControlConfig() {
 }
 
 AccessControlConfigData::AccessControlConfigData(PfNode node) {
-  foreach (PfNode child, node.childrenByName("user-file")) {
+  for (const PfNode &child: node.childrenByName("user-file")) {
     QString path = child.contentAsUtf16().trimmed();
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
@@ -93,7 +93,7 @@ AccessControlConfigData::AccessControlConfigData(PfNode node) {
       _userFiles.append(userFile);
     }
   }
-  foreach (PfNode child, node.childrenByName("user")) {
+  for (const PfNode &child: node.childrenByName("user")) {
     QString userId = child.contentAsUtf16().trimmed();
     QString encodedPassword = child.attribute("password");
     InMemoryAuthenticator::Encoding cipher
@@ -122,14 +122,14 @@ PfNode AccessControlConfig::toPfNode() const {
   if (!d)
     return node;
   ConfigUtils::writeComments(&node, d->_commentsList);
-  foreach (const AccessControlConfigData::UserFile &userFile, d->_userFiles) {
+  for (const AccessControlConfigData::UserFile &userFile: d->_userFiles) {
     PfNode child(QStringLiteral("user-file"), userFile._path);
     ConfigUtils::writeComments(&child, userFile._commentsList);
     child.appendChild(PfNode(QStringLiteral("cipher"), InMemoryAuthenticator
                              ::encodingToString(userFile._cipher)));
     node.appendChild(child);
   }
-  foreach (const AccessControlConfigData::User &user, d->_users) {
+  for (const AccessControlConfigData::User &user: d->_users) {
     PfNode child(QStringLiteral("user"), user._userId);
     ConfigUtils::writeComments(&child, user._commentsList);
     child.appendChild(PfNode(QStringLiteral("password"),
@@ -186,8 +186,7 @@ void AccessControlConfig::applyConfiguration(
       QString id = fields[0].trimmed();
       QString password = fields[1].trimmed();
       QSet<QString> roles;
-      foreach (const QString role,
-               fields[2].trimmed().split(',', Qt::SkipEmptyParts))
+      for (auto role: fields[2].trimmed().split(',', Qt::SkipEmptyParts))
         roles.insert(role.trimmed());
       if (id.isEmpty() || password.isEmpty() || roles.isEmpty()) {
         Log::error() << "access control user file '" << path

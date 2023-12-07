@@ -43,7 +43,7 @@ EventSubscription::EventSubscription(
   d->_filter = QRegularExpression(node.contentAsUtf16());
   if (scheduler)
     d->_globalParams = scheduler->globalParams();
-  foreach (PfNode child, node.children()) {
+  for (const PfNode &child: node.children()) {
     if (ignoredChildren.contains(child.name()) || child.isComment())
       continue;
     Action a = Action::createAction(child, scheduler);
@@ -131,7 +131,7 @@ PfNode EventSubscription::toPfNode() const {
     return PfNode();
   PfNode node(d->_eventName, d->_filter.pattern());
   ConfigUtils::writeComments(&node, d->_commentsList);
-  foreach(const Action &action, d->_actions)
+  for (const Action &action: d->_actions)
     node.appendChild(action.toPfNode());
   return node;
 }

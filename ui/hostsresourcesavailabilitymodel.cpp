@@ -76,8 +76,8 @@ void HostsResourcesAvailabilityModel::changeItem(
       auto &newHost = static_cast<const Host&>(newItem);
       auto hostResources = newHost.resources();
       _configured.insert(newId, hostResources);
-      foreach (QString kind, hostResources.keys()) {
-        QString configured = QString::number(hostResources.value(kind));
+      for (auto [kind,v]: hostResources.asKeyValueRange()) {
+        QString configured = QString::number(v);
         switch (_mode) {
         case Free:
         case Configured:

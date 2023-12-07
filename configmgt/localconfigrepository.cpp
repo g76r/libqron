@@ -59,7 +59,7 @@ void LocalConfigRepository::openRepository(QString basePath) {
       configsDir.entryInfoList(QDir::Files|QDir::NoSymLinks,
                                QDir::Time|QDir::Reversed);
   // TODO limit number of loaded config and/or purge oldest ones and/or move oldest into an 'archive' subdir
-  foreach (const QFileInfo &fi, fileInfos) {
+  for (const QFileInfo &fi: fileInfos) {
     QFile f(fi.filePath());
     //qDebug() << "LocalConfigRepository::openRepository" << fi.filePath();
     if (f.open(QIODevice::ReadOnly)) {

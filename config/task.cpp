@@ -409,7 +409,7 @@ QString Task::requestFormFieldsAsHtmlDescription() const {
   if (list.isEmpty())
     return "(none)";
   QString v;
-  foreach (const RequestFormField rff, list)
+  for (const RequestFormField &rff: list)
     v.append(rff.toHtmlHumanReadableDescription());
   return v;
 }
@@ -749,9 +749,9 @@ PfNode TaskData::toPfNode() const {
   }
   // triggering and constraints attributes
   PfNode triggers("trigger");
-  foreach (const Trigger &ct, _cronTriggers)
+  for (const Trigger &ct: _cronTriggers)
     triggers.appendChild(ct.toPfNode());
-  foreach (const Trigger &nt, _noticeTriggers)
+  for (const Trigger &nt: _noticeTriggers)
     triggers.appendChild(nt.toPfNode());
   node.appendChild(triggers);
   if (_maxQueuedInstances != "%!maxinstances")
@@ -761,10 +761,8 @@ PfNode TaskData::toPfNode() const {
   if (_maxInstances != 1)
     node.appendChild(PfNode("maxinstances",
                             QString::number(_maxInstances)));
-  foreach (const QString &key, _resources.keys())
-    node.appendChild(
-          PfNode("resource",
-                 key+" "+QString::number(_resources.value(key))));
+  for (auto [k,v]: _resources.asKeyValueRange())
+    node.appendChild(PfNode("resource",k+" "+QString::number(v)));
 
   // params and vars
   ConfigUtils::writeParamSet(&node, _params, "param");
@@ -795,7 +793,7 @@ PfNode TaskData::toPfNode() const {
   // user interface attributes
   if (!_requestFormFields.isEmpty()) {
     PfNode requestForm("requestform");
-    foreach (const RequestFormField &field, _requestFormFields)
+    for (const RequestFormField &field: _requestFormFields)
       requestForm.appendChild(field.toPfNode());
     node.appendChild(requestForm);
   }

@@ -74,16 +74,16 @@ AlerterConfigData::AlerterConfigData(PfNode root)
     _delayBeforeFirstSend(DEFAULT_DELAY_BEFORE_FIRST_SEND),
     _remindPeriod(DEFAULT_REMIND_PERIOD) {
   _channelNames << "mail" << "url" << "log" << "stop";
-  foreach (PfNode node, root.childrenByName("settings")) {
+  for (const PfNode &node: root.childrenByName("settings")) {
     AlertSettings settings(node);
     _alertSettings.append(settings);
     //Log::debug() << "configured alert settings " << settings.pattern() << " "
     //             << settings.patternRegexp().pattern() << " : "
     //             << settings.toPfNode().toString();
   }
-  foreach (PfNode subscriptionnode, root.childrenByName("subscription")) {
+  for (const PfNode &subscriptionnode: root.childrenByName("subscription")) {
     //Log::debug() << "found alert subscription section " << pattern << " " << stop;
-    foreach (PfNode channelnode, subscriptionnode.children()) {
+    for (const PfNode &channelnode: subscriptionnode.children()) {
       if (channelnode.name() == "pattern"
           || channelnode.name() == "param"
           || channelnode.isComment()) {
@@ -126,7 +126,7 @@ AlerterConfigData::AlerterConfigData(PfNode root)
         "remindperiod", DEFAULT_REMIND_PERIOD/1e3)*1e3;
   ConfigUtils::loadComments(root, &_commentsList,
                             excludedDescendantsForComments);
-  foreach (PfNode child, root.childrenByName("gridboard")) {
+  for (const PfNode &child: root.childrenByName("gridboard")) {
     Gridboard gridboard(child, Gridboard(), _params); // TODO load old gridboard state
     _gridboards.append(gridboard);
   }
@@ -209,11 +209,11 @@ PfNode AlerterConfig::toPfNode() const {
     node.setAttribute("delaybeforefirstsend", d->_delayBeforeFirstSend/1e3);
   if (d->_remindPeriod != DEFAULT_REMIND_PERIOD)
     node.setAttribute("remindperiod", d->_remindPeriod/1e3);
-  foreach (const AlertSettings &settings, d->_alertSettings)
+  for (const AlertSettings &settings: d->_alertSettings)
     node.appendChild(settings.toPfNode());
-  foreach (const AlertSubscription &sub, d->_alertSubscriptions)
+  for (const AlertSubscription &sub: d->_alertSubscriptions)
     node.appendChild(sub.toPfNode());
-  foreach (const Gridboard &gridboard, d->_gridboards)
+  for (const Gridboard &gridboard: d->_gridboards)
     node.appendChild(gridboard.toPfNode());
   return node;
 }

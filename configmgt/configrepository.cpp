@@ -38,7 +38,7 @@ SchedulerConfig ConfigRepository::parseConfig(
     return SchedulerConfig();
   }
   QList<PfNode> roots;
-  foreach (const PfNode &node, pdh.roots())
+  for (const PfNode &node: pdh.roots())
     if (!node.isComment())
       roots.append(node);
   if (roots.size() == 0) {

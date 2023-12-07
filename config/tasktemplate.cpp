@@ -105,14 +105,14 @@ bool TaskOrTemplateData::loadConfig(
       bool ok; double f = value.toDouble(&ok);
       return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
     });
-  foreach (PfNode child, node.childrenByName("trigger")) {
-    foreach (PfNode grandchild, child.children()) {
+  for (const PfNode &child: node.childrenByName("trigger")) {
+    for (PfNode grandchild: child.children()) {
       QList<PfNode> inheritedComments;
-      foreach (PfNode commentNode, child.children())
+      for (const PfNode &commentNode: child.children())
         if (commentNode.isComment())
           inheritedComments.append(commentNode);
       std::reverse(inheritedComments.begin(), inheritedComments.end());
-      foreach (PfNode commentNode, inheritedComments)
+      for (const PfNode &commentNode: inheritedComments)
         grandchild.prependChild(commentNode);
       QString content = grandchild.contentAsUtf16();
       QString triggerType = grandchild.name();
@@ -219,11 +219,11 @@ PfNode TaskTemplateData::toPfNode() const {
 
 QString TaskOrTemplateData::triggersAsString() const {
   QString s;
-  foreach (CronTrigger t, _cronTriggers)
+  for (const CronTrigger &t: _cronTriggers)
     s.append(t.humanReadableExpression()).append(' ');
-  foreach (NoticeTrigger t, _noticeTriggers)
+  for (const NoticeTrigger &t: _noticeTriggers)
     s.append(t.humanReadableExpression()).append(' ');
-  foreach (QString t, _otherTriggers)
+  for (const QString &t: _otherTriggers)
     s.append(t).append(' ');
   s.chop(1); // remove last space
   return s;
@@ -231,21 +231,21 @@ QString TaskOrTemplateData::triggersAsString() const {
 
 QString TaskOrTemplateData::triggersWithCalendarsAsString() const {
   QString s;
-  foreach (CronTrigger t, _cronTriggers)
+  for (const CronTrigger &t: _cronTriggers)
     s.append(t.humanReadableExpressionWithCalendar()).append(' ');
-  foreach (NoticeTrigger t, _noticeTriggers)
+  for (const NoticeTrigger &t: _noticeTriggers)
     s.append(t.humanReadableExpressionWithCalendar()).append(' ');
-  foreach (QString t, _otherTriggers)
+  for (const QString &t: _otherTriggers)
     s.append(t).append(" ");
   s.chop(1); // remove last space
   return s;
 }
 
 bool TaskOrTemplateData::triggersHaveCalendar() const {
-  foreach (CronTrigger t, _cronTriggers)
+  for (const CronTrigger &t: _cronTriggers)
     if (!t.calendar().isNull())
       return true;
-  foreach (NoticeTrigger t, _noticeTriggers)
+  for (const NoticeTrigger &t: _noticeTriggers)
     if (!t.calendar().isNull())
       return true;
   return false;
@@ -280,7 +280,7 @@ QVariant TaskOrTemplateData::uiData(int section, int role) const {
           ? _maxExpectedDuration*.001 : QVariant();
     case 25: {
       QString s;
-      foreach (const RequestFormField rff, _requestFormFields)
+      for (const RequestFormField &rff: _requestFormFields)
         s.append(rff.id()).append(' ');
       s.chop(1);
       return s;
@@ -409,9 +409,9 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
 
   // triggering and constraints attributes
   PfNode triggers("trigger");
-  foreach (const Trigger &ct, _cronTriggers)
+  for (const Trigger &ct: _cronTriggers)
     triggers.appendChild(ct.toPfNode());
-  foreach (const Trigger &nt, _noticeTriggers)
+  for (const Trigger &nt: _noticeTriggers)
     triggers.appendChild(nt.toPfNode());
   node.appendChild(triggers);
   if (_maxQueuedInstances != "%!maxinstances")
@@ -433,10 +433,8 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   if (_millisBetweenTries != 0)
     node.appendChild(PfNode("pausebetweentries",
                             QString::number(_millisBetweenTries*.001)));
-  foreach (const QString &key, _resources.keys())
-    node.appendChild(
-          PfNode("resource",
-                 key+" "+QString::number(_resources.value(key))));
+  for (auto [k,v]: _resources.asKeyValueRange())
+    node.appendChild(PfNode("resource", k+" "+QString::number(v)));
 
   // params vars and event subscriptions
   TaskOrGroupData::fillPfNode(node);
@@ -456,7 +454,7 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   // user interface attributes
   if (!_requestFormFields.isEmpty()) {
     PfNode requestForm("requestform");
-    foreach (const RequestFormField &field, _requestFormFields)
+    for (const RequestFormField &field: _requestFormFields)
       requestForm.appendChild(field.toPfNode());
     node.appendChild(requestForm);
   }

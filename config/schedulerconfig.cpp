@@ -19,6 +19,7 @@
 #include "modelview/templatedshareduiitemdata.h"
 #include <QMutexLocker>
 #include <QBuffer>
+#include "log/filelogger.h"
 
 #define DEFAULT_MAXTOTALTASKINSTANCES 16
 #define DEFAULT_MAXQUEUEDREQUESTS 128
@@ -117,7 +118,7 @@ static inline void recordTaskActionLinks(
   for (auto childName: childNames)
     for (auto listnode: parentNode.childrenByName(childName)) {
       EventSubscription sub("", listnode, 0, ignoredChildren);
-      foreach (Action a, sub.actions()) {
+      for (const Action &a: sub.actions()) {
         if (a.actionType() == "requesttask"
             || a.actionType() == "plantask") {
           requestTaskActionLinks
@@ -133,7 +134,7 @@ SchedulerConfigData::SchedulerConfigData(
   : _originalPfNode(root) {
   QList<RequestTaskActionLink> requestTaskActionLinks;
   QList<LogFile> logfiles;
-  foreach (PfNode node, root.childrenByName("log")) {
+  for (const PfNode &node: root.childrenByName("log")) {
     LogFile logfile(node);
     if (logfile.isNull()) {
       Log::warning() << "invalid log file declaration in configuration: "
@@ -148,7 +149,7 @@ SchedulerConfigData::SchedulerConfigData(
     this->applyLogConfig();
   _tasksRoot = TasksRoot(root, scheduler);
   _namedCalendars.clear();
-  foreach (PfNode node, root.childrenByName("calendar")) {
+  for (const PfNode &node: root.childrenByName("calendar")) {
     auto name = node.contentAsUtf8();
     Calendar calendar(node);
     if (name.isEmpty())
@@ -167,7 +168,7 @@ SchedulerConfigData::SchedulerConfigData(
       _externalParams.insert(name, node);
   }
   _hosts.clear();
-  foreach (PfNode node, root.childrenByName("host")) {
+  for (const PfNode &node: root.childrenByName("host")) {
     Host host(node, _tasksRoot.params());
     if (_hosts.contains(host.id())) {
       Log::error() << "ignoring duplicate host: " << host.id();
@@ -180,9 +181,9 @@ SchedulerConfigData::SchedulerConfigData(
     _hosts.insert("localhost", Host(PfNode("host", "localhost"),
                                     _tasksRoot.params()));
   _clusters.clear();
-  foreach (PfNode node, root.childrenByName("cluster")) {
+  for (const PfNode &node: root.childrenByName("cluster")) {
     Cluster cluster(node);
-    foreach (PfNode child, node.childrenByName("hosts")) {
+    for (const PfNode &child: node.childrenByName("hosts")) {
       for (auto hostId: child.contentAsUtf8List()) {
         Host host = _hosts.value(hostId);
         if (!host.isNull())
@@ -244,7 +245,7 @@ ignore_tasktemplate:;
   }
   auto oldTasks = _tasks;
   _tasks.clear();
-  foreach (PfNode node, root.childrenByName("task")) {
+  for (const PfNode &node: root.childrenByName("task")) {
     auto taskGroupId = node.utf16attribute("taskgroup");
     TaskGroup taskGroup = _taskgroups.value(taskGroupId);
     Task task(node, scheduler, taskGroup, _namedCalendars, _tasktemplates);
@@ -276,7 +277,7 @@ ignore_tasktemplate:;
 ignore_task:;
   }
   int maxtotaltaskinstances = 0;
-  foreach (PfNode node, root.childrenByName("maxtotaltaskinstances")) {
+  for (const PfNode &node: root.childrenByName("maxtotaltaskinstances")) {
     int n = node.contentAsUtf16().toInt(0, 0);
     if (n > 0) {
       if (maxtotaltaskinstances > 0)
@@ -294,7 +295,7 @@ ignore_task:;
   }
   _maxtotaltaskinstances = maxtotaltaskinstances;
   int maxqueuedrequests = 0;
-  foreach (PfNode node, root.childrenByName("maxqueuedrequests")) {
+  for (const PfNode &node: root.childrenByName("maxqueuedrequests")) {
     int n = node.contentAsUtf16().toInt(0, 0);
     if (n > 0) {
       if (maxqueuedrequests > 0) {
@@ -333,7 +334,7 @@ ignore_task:;
                 "onnotice", "onschedulerstart", "onconfigload" },
         &requestTaskActionLinks, "*");
   // LATER onschedulershutdown
-  foreach (const RequestTaskActionLink &link, requestTaskActionLinks) {
+  for (const RequestTaskActionLink &link: requestTaskActionLinks) {
     auto targetName = link._action.targetName();
     auto taskId = link._contextTask.id();
     if (!link._contextTask.isNull() && !targetName.contains('.')) { // id to group
@@ -590,19 +591,19 @@ PfNode SchedulerConfig::toPfNode() const {
   ConfigUtils::writeEventSubscriptions(&node, d->_onconfigload);
   QList<TaskGroup> taskGroups = d->_taskgroups.values();
   std::sort(taskGroups.begin(), taskGroups.end());
-  foreach(const TaskGroup &taskGroup, taskGroups)
+  for (const TaskGroup &taskGroup: taskGroups)
     node.appendChild(taskGroup.toPfNode());
   QList<Task> tasks = d->_tasks.values();
   std::sort(tasks.begin(), tasks.end());
-  foreach(const Task &task, tasks)
+  for (const Task &task: tasks)
     node.appendChild(task.toPfNode());
   QList<Host> hosts = d->_hosts.values();
   std::sort(hosts.begin(), hosts.end());
-  foreach (const Host &host, hosts)
+  for (const Host &host: hosts)
     node.appendChild(host.toPfNode());
   QList<Cluster> clusters = d->_clusters.values();
   std::sort(clusters.begin(), clusters.end());
-  foreach (const Cluster &cluster, clusters)
+  for (const Cluster &cluster: clusters)
     node.appendChild(cluster.toPfNode());
   if (d->_maxtotaltaskinstances != DEFAULT_MAXTOTALTASKINSTANCES)
     node.setAttribute(QStringLiteral("maxtotaltaskinstances"),
@@ -624,7 +625,7 @@ PfNode SchedulerConfig::toPfNode() const {
   node.appendChild(d->_alerterConfig.toPfNode());
   if (!d->_accessControlConfig.isEmpty())
     node.appendChild(d->_accessControlConfig.toPfNode());
-  foreach (const LogFile &logfile, d->_logfiles)
+  for (const LogFile &logfile: d->_logfiles)
     node.appendChild(logfile.toPfNode());
   return node;
 }
@@ -652,7 +653,7 @@ QVariant SchedulerConfigData::uiData(int section, int role) const {
 
 void SchedulerConfigData::applyLogConfig() const {
   QList<Logger*> loggers;
-  foreach (LogFile logfile, _logfiles) {
+  for (const LogFile &logfile: _logfiles) {
     loggers.append(new FileLogger(
                      logfile.pathPattern(), logfile.minimumSeverity(), 60,
                      logfile.buffered()));

@@ -328,7 +328,7 @@ void Alerter::doEmitAlert(QByteArray alertId) {
 
 void Alerter::asyncProcessing() {
   QDateTime now = QDateTime::currentDateTime();
-  foreach (Alert oldAlert, _statefulAlerts) {
+  for (Alert oldAlert: _statefulAlerts) {
     switch(oldAlert.status()) {
     case Alert::Nonexistent: // should never happen
     case Alert::Canceled: // should never happen
@@ -369,7 +369,7 @@ void Alerter::asyncProcessing() {
       break;
     }
   }
-  foreach (Alert alert, _oneshotAlerts) {
+  for (const Alert &alert: _oneshotAlerts) {
     if (alert.visibilityDate() <= now) {
       if (alert.count() > 0) {
         notifyChannels(alert);
@@ -427,7 +427,7 @@ void Alerter::notifyChannels(Alert newAlert) {
     ;
   }
   Alert newAlertWithoutSubscription = newAlert;
-  foreach (const AlertSubscription &sub, alertSubscriptions(newAlert.id())) {
+  for (const AlertSubscription &sub: alertSubscriptions(newAlert.id())) {
     AlertChannel *channel = _channels.value(sub.channelName());
     if (channel) { // should never be false
       ++_totalChannelsNotificationsCounter;
@@ -463,7 +463,7 @@ void Alerter::commitChange(Alert *newAlert, Alert *oldAlert) {
 QList<AlertSubscription> Alerter::alertSubscriptions(QByteArray alertId) {
   if (!_alertSubscriptionsCache.contains(alertId)) {
     QList<AlertSubscription> list;
-    foreach (const AlertSubscription &sub, _config.alertSubscriptions()) {
+    for (const AlertSubscription &sub: _config.alertSubscriptions()) {
       if (sub.patternRegexp().match(alertId).hasMatch()) {
         auto channelName = sub.channelName();
         if (channelName == "stop"_u8)
@@ -480,7 +480,7 @@ QList<AlertSubscription> Alerter::alertSubscriptions(QByteArray alertId) {
 
 AlertSettings Alerter::alertSettings(QByteArray alertId) {
   if (!_alertSettingsCache.contains(alertId)) {
-    foreach (const AlertSettings &settings, _config.alertSettings()) {
+    for (const AlertSettings &settings: _config.alertSettings()) {
       if (settings.patternRegexp().match(alertId).hasMatch()) {
         _alertSettingsCache.insert(alertId, settings);
         goto found;

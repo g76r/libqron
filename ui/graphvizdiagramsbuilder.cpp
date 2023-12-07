@@ -83,7 +83,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   //   with at less one displayed event subscription (e.g. requesttask,
   //   postnotice, emitalert)
   // * resources defined in either tasks or hosts
-  foreach (const Task &task, tasks.values()) {
+  for (const Task &task: tasks.values()) {
     QString s = task.taskGroup().id();
     displayedGroups.insert(s);
     for (int i = 0; (i = s.indexOf('.', i+1)) > 0; )
@@ -93,22 +93,22 @@ QHash<QString,QString> GraphvizDiagramsBuilder
       displayedHosts.insert(s);
     taskIds.insert(task.id());
   }
-  foreach (const Cluster &cluster, clusters.values())
-    foreach (const Host &host, cluster.hosts())
+  for (const Cluster &cluster: clusters.values())
+    for (const Host &host: cluster.hosts())
       if (!host.isNull())
         displayedHosts.insert(host.id());
-  foreach (const Task &task, tasks.values()) {
-    foreach (const NoticeTrigger &trigger, task.noticeTriggers())
+  for (const Task &task: tasks.values()) {
+    for (const NoticeTrigger &trigger: task.noticeTriggers())
       notices.insert(trigger.expression());
     for (auto sub: rootEventsSubscriptions + task.allEventsSubscriptions()
                         + task.taskGroup().allEventSubscriptions())
-      foreach (const Action &action, sub.actions()) {
+      for (const Action &action: sub.actions()) {
         if (action.actionType() == "postnotice")
           notices.insert(action.targetName());
       }
   }
-  foreach (const EventSubscription &sub, schedulerEventsSubscriptions) {
-    foreach (const Action &action, sub.actions()) {
+  for (const EventSubscription &sub: schedulerEventsSubscriptions) {
+    for (const Action &action: sub.actions()) {
       QString actionType = action.actionType();
       if (actionType == "postnotice")
         notices.insert(action.targetName());
@@ -131,40 +131,40 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   gv.append("graph \"tasks deployment diagram\" {\n"
             "graph[" GLOBAL_GRAPH "]\n"
             "subgraph{graph[rank=max]\n");
-  foreach (const Host &host, hosts.values())
+  for (const Host &host: hosts.values())
     if (displayedHosts.contains(host.id()))
       gv.append("\"").append(host.id()).append("\"").append("[label=\"")
           .append(host.id()).append(" (")
           .append(host.hostname()).append(")\"," HOST_NODE "]\n");
   gv.append("}\n");
-  foreach (const Cluster &cluster, clusters.values())
+  for (const Cluster &cluster: clusters.values())
     if (!cluster.isNull()) {
       gv.append("\"").append(cluster.id()).append("\"")
           .append("[label=\"").append(cluster.id()).append("\\n(")
           .append(cluster.balancingAsString())
           .append(")\"," CLUSTER_NODE "]\n");
-      foreach (const Host &host, cluster.hosts())
+      for (const Host &host: cluster.hosts())
         gv.append("\"").append(cluster.id()).append("\"--\"").append(host.id())
             .append("\"[" CLUSTER_HOST_EDGE "]\n");
     }
   gv.append("subgraph{graph[rank=min]\n");
-  foreach (const QString &id, displayedGroups) {
+  for (auto id: displayedGroups) {
     if (!id.contains('.')) // root groups
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
   gv.append("}\n");
-  foreach (const QString &id, displayedGroups) {
+  for (auto id: displayedGroups) {
     if (id.contains('.')) // non root groups
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
-  foreach (const QString &parent, displayedGroups) {
-    foreach (const QString &child, displayedGroups) {
+  for (auto parent: displayedGroups) {
+    for (auto child: displayedGroups) {
       if (child == parent+child.mid(child.lastIndexOf('.')))
         gv.append("\"").append(parent).append("\" -- \"")
             .append(child).append("\" [" TASKGROUP_EDGE "]\n");
     }
   }
-  foreach (const Task &task, tasks.values()) {
+  for (const Task &task: tasks.values()) {
     // draw task node and group--task edge
     gv.append("\""+task.id()+"\" [label=\""+task.localId()+"\","
               +TASK_NODE+",tooltip=\""+task.id()+"\"]\n");
@@ -184,12 +184,12 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   gv.append("graph \"tasks trigger diagram\" {\n"
             "graph[" GLOBAL_GRAPH "]\n"
             "subgraph{graph[rank=max]\n");
-  foreach (const QString &cause, displayedGlobalEventsName)
+  for (const QString &cause: displayedGlobalEventsName)
     gv.append("\"$global_").append(cause).append("\" [label=\"")
         .append(cause).append("\"," GLOBAL_EVENT_NODE "]\n");
   gv.append("}\n"
             "subgraph{graph[rank=max]\n");
-  foreach (QString notice, notices) {
+  for (auto notice: notices) {
     notice.remove('"');
     gv.append("\"$notice_").append(notice).append("\"")
         .append("[label=\"^").append(notice).append("\"," NOTICE_NODE "]\n");
@@ -197,21 +197,21 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   gv.append("}\n");
   // root groups
   gv.append("subgraph{graph[rank=min]\n");
-  foreach (const QString &id, displayedGroups) {
+  for (auto id: displayedGroups) {
     if (!id.contains('.')) // root groups
       gv.append("\"").append(id).append("\" [group=\"").append(id)
           .append("\"" TASKGROUP_NODE "]\n");
   }
   gv.append("}\n");
   // other groups
-  foreach (const QString &id, displayedGroups) {
+  for (auto id: displayedGroups) {
     if (id.contains('.')) // non root groups
       gv.append("\"").append(id).append("\" [group=\"").append(id)
           .append("\"" TASKGROUP_NODE "]\n");
   }
   // groups edges
-  foreach (const QString &parent, displayedGroups) {
-    foreach (const QString &child, displayedGroups) {
+  for (auto parent: displayedGroups) {
+    for (auto child: displayedGroups) {
       if (child == parent+child.mid(child.lastIndexOf('.')))
         gv.append("\"").append(parent).append("\" -- \"")
             .append(child).append("\" [" TASKGROUP_EDGE "]\n");
@@ -219,7 +219,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   }
   // tasks
   int cronid = 0;
-  foreach (const Task &task, tasks.values()) {
+  for (const Task &task: tasks.values()) {
     // task nodes and group--task edges
     gv.append("\""+task.id()+"\" [label=\""+task.localId()+"\","
               +TASK_NODE+",group=\""+task.taskGroup().id()+"\""
@@ -228,7 +228,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
         .append("\"").append(task.id())
         .append("\" [" TASKGROUP_TASK_EDGE "]\n");
     // cron triggers
-    foreach (const CronTrigger &cron, task.cronTriggers()) {
+    for (const CronTrigger &cron: task.cronTriggers()) {
       gv.append("\"$cron_").append(QString::number(++cronid))
           .append("\" [label=\"(").append(cron.expression())
           .append(")\"," CRON_TRIGGER_NODE "]\n");
@@ -237,7 +237,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
           .append("\" [" TASK_TRIGGER_EDGE "]\n");
     }
     // notice triggers
-    foreach (const NoticeTrigger &trigger, task.noticeTriggers())
+    for (const NoticeTrigger &trigger: task.noticeTriggers())
       gv.append("\"").append(task.id()).append("\"--\"$notice_")
           .append(trigger.expression().remove('"'))
           .append("\" [" TASK_TRIGGER_EDGE "]\n");
@@ -254,7 +254,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
     QSet<QString> edges;
     for (auto sub: rootEventsSubscriptions + task.allEventsSubscriptions()
                         + task.taskGroup().allEventSubscriptions()) {
-      foreach (const Action &action, sub.actions()) {
+      for (const Action &action: sub.actions()) {
         QString actionType = action.actionType();
         if (actionType == "postnotice") {
           gv.append("\"").append(task.id()).append("\"--\"$notice_")
@@ -274,12 +274,12 @@ QHash<QString,QString> GraphvizDiagramsBuilder
         }
       }
     }
-    foreach (const QString &edge, edges)
+    for (auto edge: edges)
       gv.append(edge);
   }
   // events defined globally
-  foreach (const EventSubscription &sub, schedulerEventsSubscriptions) {
-    foreach (const Action &action, sub.actions()) {
+  for (const EventSubscription &sub: schedulerEventsSubscriptions) {
+    for (const Action &action: sub.actions()) {
       QString actionType = action.actionType();
       if (actionType == "postnotice") {
         gv.append("\"$notice_").append(action.targetName().remove('"'))
@@ -335,23 +335,23 @@ QHash<QString,QString> GraphvizDiagramsBuilder
     for (int i = 0; (i = s.indexOf('.', i+1)) > 0; )
       displayedGroups.insert(s.mid(0, i));
   }
-  foreach (const QString &id, displayedGroups) {
+  for (auto id: displayedGroups) {
     if (!id.contains('.')) // root groups
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
   gv.append("}\n");
-  foreach (const QString &id, displayedGroups) {
+  for (auto id: displayedGroups) {
     if (id.contains('.')) // non root groups
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
-  foreach (const QString &parent, displayedGroups) {
-    foreach (const QString &child, displayedGroups) {
+  for (auto parent: displayedGroups) {
+    for (auto child: displayedGroups) {
       if (child == parent+child.mid(child.lastIndexOf('.')))
         gv.append("\"").append(parent).append("\" -- \"")
             .append(child).append("\" [" TASKGROUP_EDGE "]\n");
     }
   }
-  foreach (const Task &task, tasks.values()) {
+  for (const Task &task: tasks.values()) {
     if (task.resources().isEmpty())
       continue;
     // draw task node and group--task edge

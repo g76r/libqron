@@ -73,8 +73,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
         SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
     Q_UNUSED(qualifier)
     // cannot be a fk because target can reference either a host or a cluster
-    foreach (const SharedUiItem &oldTaskItem,
-             transaction->foreignKeySources("task", 5, oldItem.id())) {
+    for (const SharedUiItem &oldTaskItem:
+         transaction->foreignKeySources("task", 5, oldItem.id())) {
       const Task &oldTask = static_cast<const Task&>(oldTaskItem);
       Task newTask = oldTask;
       newTask.setTarget(newItem->id());
@@ -82,8 +82,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
         return false;
     }
     // on host change, upgrade every cluster it belongs to
-    foreach (const SharedUiItem &oldClusterItem,
-             transaction->itemsByQualifier("cluster")) {
+    for (const SharedUiItem &oldClusterItem:
+         transaction->itemsByQualifier("cluster")) {
       auto &oldCluster = static_cast<const Cluster &>(oldClusterItem);
       auto hosts = oldCluster.hosts();
       for (int i = 0; i < hosts.size(); ++i) {
@@ -126,8 +126,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
     Q_UNUSED(oldItem)
     Q_UNUSED(qualifier)
     // cannot be a fk because target can reference either a host or a cluster
-    foreach (const SharedUiItem &oldTaskItem,
-             transaction->foreignKeySources("task", 5, oldItem.id())) {
+    for (const SharedUiItem &oldTaskItem:
+         transaction->foreignKeySources("task", 5, oldItem.id())) {
       const Task &oldTask = static_cast<const Task&>(oldTaskItem);
       Task newTask = oldTask;
       newTask.setTarget(newItem->id());
@@ -178,10 +178,10 @@ template<class T>
 void inline QronConfigDocumentManager::emitSignalForItemTypeChanges(
     const QMap<Utf8String, T> &newItems, const QMap<Utf8String, T> &oldItems,
     const Utf8String &qualifier) {
-  foreach (const T &oldItem, oldItems)
+  for (const T &oldItem: oldItems)
     if (!newItems.contains(oldItem.id()))
       emit itemChanged(_nullItem, oldItem, qualifier);
-  foreach (const T &newItem, newItems)
+  for (const T &newItem: newItems)
     emit itemChanged(newItem, oldItems.value(newItem.id()), qualifier);
 }
 
@@ -209,14 +209,14 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<Task>(
     const QMap<Utf8String,Task> &newItems,
     const QMap<Utf8String,Task> &oldItems,
     const Utf8String &qualifier) {
-  foreach (const Task &oldItem, oldItems) {
+  for (const Task &oldItem: oldItems) {
     if (!newItems.contains(oldItem.id())) {
       emit itemChanged(_nullItem, oldItem, qualifier);
     }
   }
   QList<Task> newList = newItems.values();
   std::sort(newList.begin(), newList.end());
-  foreach (const Task &newItem, newList) {
+  for (const Task &newItem: newList) {
     const Task &oldItem = oldItems.value(newItem.id());
     emit itemChanged(newItem, oldItem, qualifier);
   }

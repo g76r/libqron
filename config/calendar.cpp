@@ -58,7 +58,7 @@ Calendar::Calendar(PfNode node) {
   CalendarData *d = new CalendarData(node.contentAsUtf8());
   bool atLessOneExclude = false;
   //qDebug() << "*** Calendar(PfNode): " << node.toPf();
-  foreach(PfNode child, node.children()) {
+  for (const PfNode &child: node.children()) {
     if (child.isComment())
       continue;
     bool include;
@@ -112,7 +112,7 @@ bool Calendar::isIncluded(QDate date) const {
   const CalendarData *d = data();
   if (!d)
     return true;
-  foreach (const CalendarData::Rule &r, d->_rules) {
+  for (const CalendarData::Rule &r: d->_rules) {
     if ((!r._begin.isValid() || r._begin <= date)
         && (!r._end.isValid() || r._end <= date))
       return r._include;
@@ -128,7 +128,7 @@ PfNode Calendar::toPfNode(bool useNameOnlyIfSet) const {
   if (!d->_name.isEmpty() && useNameOnlyIfSet)
     return node;
   ConfigUtils::writeComments(&node, d->_commentsList);
-  foreach (const CalendarData::Rule &r, d->_rules) {
+  for (const CalendarData::Rule &r: d->_rules) {
     QString s;
     s.append(r._begin.isNull() ? "" : r._begin.toString("yyyy-MM-dd"));
     if (r._begin != r._end)
@@ -146,7 +146,7 @@ Utf8String Calendar::toCommaSeparatedRulesString() const {
 
 Utf8String CalendarData::toCommaSeparatedRulesString() const {
   QString s;
-  foreach (const CalendarData::Rule &r, _rules) {
+  for (const CalendarData::Rule &r: _rules) {
     s.append(r._include ? "include" : "exclude");
     if (!r._begin.isNull() || !r._end.isNull())
       s.append(" ");

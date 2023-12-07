@@ -24,25 +24,25 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
   auto clusters = config.clusters();
   auto hosts = config.hosts().values();
   QMap<Utf8String,QMap<Utf8String,qint64>> configured;
-  foreach (const Host &host, config.hosts())
+  for (const Host &host: config.hosts())
     configured.insert(host.id(), host.resources());
   std::sort(tasks.begin(), tasks.end());
   std::sort(hosts.begin(), hosts.end());
   auto min = configured;
-  foreach (const Host &host, hosts)
+  for (const Host &host: hosts)
     setCellValue(MINIMUM_CAPTION, host.id(), QString());
-  foreach (const Task &task, tasks) {
+  for (const Task &task: tasks) {
     Utf8StringList targets;
     if (clusters.contains(task.target().toUtf8()))
-      foreach (const Host &host, clusters.value(task.target().toUtf8()).hosts())
+      for (const Host &host: clusters.value(task.target().toUtf8()).hosts())
         targets.append(host.id());
     else
       targets.append(task.target());
-    foreach (const Host &host, hosts) {
+    for (const Host &host: hosts) {
       if (targets.contains(host.id()) && !task.resources().isEmpty()) {
         QString s;
-        foreach (const QString &kind, task.resources().keys()) {
-          qint64 consumed = task.resources().value(kind)*task.maxInstances();
+        for (auto [kind,v]: task.resources().asKeyValueRange()) {
+          qint64 consumed = v*task.maxInstances();
           qint64 available = configured.value(host.id()).value(kind);
           s.append(kind).append(": ").append(QString::number(consumed))
               .append(' ');
@@ -66,9 +66,9 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
       }
     }
   }
-  foreach (const Host &host, hosts) {
+  for (const Host &host: hosts) {
     QString s;
-    foreach (const QString &kind, host.resources().keys()) {
+    for (auto [kind,_]: host.resources().asKeyValueRange()) {
       qint64 lowest = min.value(host.id()).value(kind);
       qint64 available = configured.value(host.id()).value(kind);
       s.append(kind).append(": ").append(QString::number(lowest))

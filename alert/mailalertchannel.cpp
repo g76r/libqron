@@ -39,13 +39,13 @@ public:
   }
   QString toString() const {
     QString s = "{\n  address: "+_address+"\n  alerts: [ ";
-    foreach(const Alert &alert, _alerts)
+    for (const Alert &alert: _alerts)
       s.append(alert.id()).append(' ');
     s.append("]\n  cancellations: [ ");
-    foreach(const Alert &alert, _cancellations)
+    for (const Alert &alert: _cancellations)
       s.append(alert.id()).append(' ');
     s.append("]\n  reminders: [ ");
-    foreach(const Alert &alert, _reminders)
+    for (const Alert &alert: _reminders)
       s.append(alert.id()).append(' ');
     s.append("]\n  last mail: ").append(_lastMail.toString())
         .append("\n  next processing: ").append(_nextProcessing.toString());
@@ -85,7 +85,7 @@ void MailAlertChannel::setConfig(AlerterConfig config) {
         configuredAddresses.insert(address);
   QDateTime maxLastMailDate = // date until when an empty queue can be removed
       QDateTime::currentDateTime().addMSecs(-_config.remindPeriod());
-  foreach(const MailAlertQueue *queue, _queues.values()) {
+  for (const MailAlertQueue *queue: _queues) {
     queuesBeforeReload.append(queue->toString()).append("\n");
     if ((queue->_alerts.size() + queue->_cancellations.size()
          + queue->_reminders.size() == 0
@@ -112,7 +112,7 @@ void MailAlertChannel::setConfig(AlerterConfig config) {
 MailAlertChannel::~MailAlertChannel() {
   if (_mailSender)
     delete _mailSender;
-  foreach (MailAlertQueue *queue, _queues)
+  for (MailAlertQueue *queue: _queues)
     delete queue;
 }
 
@@ -132,8 +132,8 @@ QStringList MailAlertChannel::splittedAddresses(
 }
 
 void MailAlertChannel::doNotifyAlert(Alert alert) {
-  foreach (QString address,
-           splittedAddresses(alert.subscription().address(alert))) {
+  for (QString address:
+       splittedAddresses(alert.subscription().address(alert))) {
     address = address.trimmed();
     MailAlertQueue *queue = _queues.value(address);
     if (!queue) {
@@ -185,7 +185,7 @@ void MailAlertChannel::processQueue(QVariant address) {
   if (queue->_alerts.size() || queue->_cancellations.size())
     haveJob = true;
   else {
-    foreach (const Alert &alert, queue->_reminders) {
+    for (const Alert &alert: queue->_reminders) {
       QDateTime dt = alert.lastRemindedDate();
       if (dt.isValid() && dt.msecsTo(now) > _config.remindPeriod()) {
         haveJob = true;
@@ -195,7 +195,7 @@ void MailAlertChannel::processQueue(QVariant address) {
   }
   if (haveJob) {
     QList<Alert> reminders;
-    foreach (Alert alert, queue->_reminders) {
+    for (Alert alert: queue->_reminders) {
       if (!queue->_alerts.contains(alert)) // ignore alerts also reported as new ones
         reminders.append(alert);
       alert.setLastRemindedDate(now);
@@ -271,7 +271,7 @@ void MailAlertChannel::processQueue(QVariant address) {
         text.append("(none)\r\n");
         html.append("<li>(none)</li>\n");
       } else {
-        foreach (Alert alert, queue->_alerts) {
+        for (const Alert &alert: queue->_alerts) {
           s = alert.riseDate().toString("yyyy-MM-dd hh:mm:ss,zzz");
           s.append(" ").append(alert.subscription().emitMessage(alert))
               .append("\r\n");
@@ -291,7 +291,7 @@ void MailAlertChannel::processQueue(QVariant address) {
         text.append("(none)\r\n");
         html.append("<li>(none)</li>\n");
       } else {
-        foreach (Alert alert, queue->_cancellations) {
+        for (const Alert &alert: queue->_cancellations) {
           s = alert.cancellationDate().toString("yyyy-MM-dd hh:mm:ss,zzz");
           s.append(" ").append(alert.subscription().cancelMessage(alert))
               .append(" (raised on ").append(
@@ -313,7 +313,7 @@ void MailAlertChannel::processQueue(QVariant address) {
         text.append("(none)\r\n");
         html.append("<li>(none)</li>\n");
       } else {
-        foreach (Alert alert, reminders) {
+        for (const Alert &alert: reminders) {
           s = alert.riseDate().toString("yyyy-MM-dd hh:mm:ss,zzz");
           s.append(" ").append(alert.subscription().reminderMessage(alert))
               .append("\r\n");
@@ -384,7 +384,7 @@ void MailAlertChannel::asyncProcessing() {
   QDateTime now = QDateTime::currentDateTime();
   QDateTime tenSecondsAgo = now.addSecs(-10);
   QDateTime remindFrequencyAgo = now.addMSecs(-_config.remindPeriod());
-  foreach(const MailAlertQueue *queue, _queues.values()) {
+  for (const MailAlertQueue *queue: _queues) {
     // check for queues with processing scheduled in the past
     // this should not happen but if time is not monotonic and some timers
     // cannot fire
