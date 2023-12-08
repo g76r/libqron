@@ -122,7 +122,7 @@ QStringList MailAlertChannel::splittedAddresses(
   static const QRegularExpression _whitespace{ "\\s+" };
   for (auto s: commaSeparatedAddresses.split(_whitespace)) {
     MailAddress addr(s);
-    if (addr.isValid())
+    if (!!addr)
       addresses.append(s);
     else
       Log::error() << "MailAlertChannel ignoring invalid recipient email "
