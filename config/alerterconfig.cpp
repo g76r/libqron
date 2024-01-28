@@ -74,14 +74,14 @@ AlerterConfigData::AlerterConfigData(PfNode root)
     _delayBeforeFirstSend(DEFAULT_DELAY_BEFORE_FIRST_SEND),
     _remindPeriod(DEFAULT_REMIND_PERIOD) {
   _channelNames << "mail" << "url" << "log" << "stop";
-  for (const PfNode &node: root.childrenByName("settings")) {
+  for (const PfNode &node: root/"settings") {
     AlertSettings settings(node);
     _alertSettings.append(settings);
     //Log::debug() << "configured alert settings " << settings.pattern() << " "
     //             << settings.patternRegexp().pattern() << " : "
     //             << settings.toPfNode().toString();
   }
-  for (const PfNode &subscriptionnode: root.childrenByName("subscription")) {
+  for (const PfNode &subscriptionnode: root/"subscription") {
     //Log::debug() << "found alert subscription section " << pattern << " " << stop;
     for (const PfNode &channelnode: subscriptionnode.children()) {
       if (channelnode.name() == "pattern"
@@ -102,31 +102,29 @@ AlerterConfigData::AlerterConfigData(PfNode root)
       }
     }
   }
-  _riseDelay = root.doubleAttribute("risedelay", DEFAULT_RISE_DELAY/1e3)*1e3;
+  _riseDelay = root["risedelay"].toDouble(DEFAULT_RISE_DELAY/1e3)*1e3;
   if (_riseDelay < 1000) // hard coded 1 second minmimum
     _riseDelay = DEFAULT_RISE_DELAY;
-  _mayriseDelay = root.doubleAttribute(
-        "mayrisedelay", DEFAULT_MAYRISE_DELAY/1e3)*1e3;
+  _mayriseDelay = root["mayrisedelay"].toDouble(DEFAULT_MAYRISE_DELAY/1e3)*1e3;
   if (_mayriseDelay < 1000) // hard coded 1 second minmimum
     _mayriseDelay = DEFAULT_MAYRISE_DELAY;
-  _dropDelay = root.doubleAttribute("dropdelay", DEFAULT_DROP_DELAY/1e3)*1e3;
+  _dropDelay = root["dropdelay"].toDouble(DEFAULT_DROP_DELAY/1e3)*1e3;
   if (_dropDelay < 1000) // hard coded 1 second minmimum
     _dropDelay = DEFAULT_DROP_DELAY;
-  _duplicateEmitDelay = root.doubleAttribute(
-        "duplicateemitdelay", DEFAULT_DUPLICATE_EMIT_DELAY/1e3)*1e3;
+  _duplicateEmitDelay = root["duplicateemitdelay"]
+                        .toDouble(DEFAULT_DUPLICATE_EMIT_DELAY/1e3)*1e3;
   if (_duplicateEmitDelay < 1000) // hard coded 1 second minmimum
     _duplicateEmitDelay = DEFAULT_DUPLICATE_EMIT_DELAY;
-  _minDelayBetweenSend = root.doubleAttribute(
-        "mindelaybetweensend", DEFAULT_MIN_DELAY_BETWEEN_SEND/1e3)*1e3;
+  _minDelayBetweenSend = root["mindelaybetweensend"]
+                         .toDouble(DEFAULT_MIN_DELAY_BETWEEN_SEND/1e3)*1e3;
   if (_minDelayBetweenSend < 60000) // hard coded 1 minute minimum
     _minDelayBetweenSend = 60000;
-  _delayBeforeFirstSend = root.doubleAttribute(
-        "delaybeforefirstsend", DEFAULT_DELAY_BEFORE_FIRST_SEND/1e3)*1e3;
-  _remindPeriod = root.doubleAttribute(
-        "remindperiod", DEFAULT_REMIND_PERIOD/1e3)*1e3;
+  _delayBeforeFirstSend = root["delaybeforefirstsend"]
+                          .toDouble(DEFAULT_DELAY_BEFORE_FIRST_SEND/1e3)*1e3;
+  _remindPeriod = root["remindperiod"].toDouble(DEFAULT_REMIND_PERIOD/1e3)*1e3;
   ConfigUtils::loadComments(root, &_commentsList,
                             excludedDescendantsForComments);
-  for (const PfNode &child: root.childrenByName("gridboard")) {
+  for (const PfNode &child: root/"gridboard") {
     Gridboard gridboard(child, Gridboard(), _params); // TODO load old gridboard state
     _gridboards.append(gridboard);
   }

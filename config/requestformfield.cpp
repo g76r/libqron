@@ -46,15 +46,17 @@ RequestFormField::RequestFormField(PfNode node) {
   d->_placeholder = node.utf16attribute("placeholder", d->_label);
   d->_suggestion = node.utf16attribute("suggestion");
   d->_mandatory = node.hasChild("mandatory");
-  QList<PfNode> nodes = node.childrenByName("allowedvalues");
-  if (!nodes.isEmpty()) {
-    // LATER warn if several
-    PfNode av = nodes.last();
-    if (av.isArray()) {
-      d->_allowedValues = av.contentAsArray().rows();
+  auto [child,unwanted] = node.first_two_children("allowedvalues");
+  if (!!child) {
+    if (child.isArray()) {
+      d->_allowedValues = child.contentAsArray().rows();
     } else {
-      d->_allowedValuesSource = av.contentAsUtf16();
+      d->_allowedValuesSource = child.contentAsUtf16();
     }
+  }
+  if (!!unwanted) {
+    Log::error() << "request form field with several allowedvalues: "
+                 << node.toString();
   }
   // LATER remove duplicates in allowedvalues ?
   QString format = node.utf16attribute("format");

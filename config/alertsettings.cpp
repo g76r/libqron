@@ -50,15 +50,13 @@ AlertSettings::AlertSettings(PfNode node) {
   if (d->_pattern.isEmpty() || !d->_patternRegexp.isValid())
     Log::warning() << "unsupported alert settings match pattern '"
                    << d->_pattern << "': " << node.toString();
-  d->_riseDelay = node.doubleAttribute("risedelay"_u8, 0)*1e3;
-  d->_mayriseDelay = node.doubleAttribute("mayrisedelay"_u8, 0)*1e3;
-  d->_dropDelay = node.doubleAttribute("dropdelay"_u8, 0)*1e3;
-  d->_duplicateEmitDelay = node.doubleAttribute("duplicateemitdelay"_u8, 0)*1e3;
+  d->_riseDelay = node["risedelay"_u8].toDouble()*1e3;
+  d->_mayriseDelay = node["mayrisedelay"_u8].toDouble()*1e3;
+  d->_dropDelay = node["dropdelay"_u8].toDouble()*1e3;
+  d->_duplicateEmitDelay = node["duplicateemitdelay"_u8].toDouble()*1e3;
   ConfigUtils::loadComments(node, &d->_commentsList);
-  d->_visibilityWindow = CronTrigger(
-        node.utf16attribute("visibilitywindow"_u8));
-  d->_acceptabilityWindow = CronTrigger(
-        node.utf16attribute("acceptabilitywindow"_u8));
+  d->_visibilityWindow = CronTrigger(node["visibilitywindow"_u8]);
+  d->_acceptabilityWindow = CronTrigger(node["acceptabilitywindow"_u8]);
   setData(d);
 }
 

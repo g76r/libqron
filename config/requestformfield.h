@@ -38,6 +38,7 @@ public:
   QString toHtmlHumanReadableDescription() const;
   bool validate(QString value) const;
   bool isNull() const;
+  inline bool operator!() const { return isNull(); }
   QString id() const;
   QString format() const;
   bool mandatory() const;

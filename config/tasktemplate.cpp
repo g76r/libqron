@@ -105,7 +105,7 @@ bool TaskOrTemplateData::loadConfig(
       bool ok; double f = value.toDouble(&ok);
       return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
     });
-  for (const PfNode &child: node.childrenByName("trigger")) {
+  for (const PfNode &child: node/"trigger") {
     for (PfNode grandchild: child.children()) {
       QList<PfNode> inheritedComments;
       for (const PfNode &commentNode: child.children())
@@ -162,18 +162,16 @@ bool TaskOrTemplateData::loadConfig(
                  << node.toPf();
     return false;
   }
-  QList<PfNode> children = node.childrenByName("requestform");
-  if (!children.isEmpty()) {
-    if (children.size() > 1) {
-      Log::error() << qualifier()+" with several requestform: "
-                   << node.toString();
-      return false;
-    }
-    for (auto child: children.last().childrenByName("field")) {
-      RequestFormField field(child);
-      if (!field.isNull())
-        _requestFormFields.append(field);
-    }
+  auto [child,unwanted] = node.first_two_children("requestform");
+  if (!!child) {
+    RequestFormField field(child);
+    if (!!field)
+      _requestFormFields.append(field);
+  }
+  if (!!unwanted) {
+    Log::error() << qualifier()+" with several requestform: "
+                 << node.toString();
+    return false;
   }
   return true;
 }

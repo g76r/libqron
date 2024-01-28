@@ -122,8 +122,8 @@ PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
           ParamSet(node, "param"), node.hasChild("force"),
           node.hasChild("lone"),
           ParamSet(node, "paramappend").toUtf8Hash(),
-          DisjunctionCondition(node.grandChildrenByChildrenName("queuewhen")),
-          DisjunctionCondition(node.grandChildrenByChildrenName("cancelwhen"))
+          DisjunctionCondition(node.grandchildren_list("queuewhen")),
+          DisjunctionCondition(node.grandchildren_list("cancelwhen"))
           )) {
 }
 

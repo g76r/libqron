@@ -110,7 +110,7 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
     auto name = node.contentAsUtf8();
     auto file_name = node.attribute("file");
     // FIXME it's not the right way to split a command line, see executor
-    auto cmdline = node.childrenByName("command").value(0).contentAsStringList();
+    auto cmdline = node.first_child("command").contentAsStringList();
     ParamSet ext;
     if (!file_name.isEmpty())
       ext = ParamSet::fromFile(file_name); // TODO support options

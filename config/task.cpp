@@ -63,7 +63,7 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
                                         ConfigUtils::LocalId).toUtf8();
   d->_id = taskGroup.id()+"."+d->_localId;
   d->_group = taskGroup;
-  for (auto child: node.childrenByName("apply")) {
+  for (auto child: node/"apply") {
     for (auto name: child.contentAsStringList()) {
       auto tmpl = taskTemplates.value(name.toUtf8());
       if (tmpl.isNull()) {

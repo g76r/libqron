@@ -145,7 +145,7 @@ void ConfigUtils::loadEventSubscription(
     QList<EventSubscription> *list, Scheduler *scheduler) {
   if (!list)
     return;
-  for (const PfNode &listnode: parentNode.childrenByName(childName))
+  for (const PfNode &listnode: parentNode/childName)
     list->append(EventSubscription(subscriberId, listnode, scheduler));
 }
 

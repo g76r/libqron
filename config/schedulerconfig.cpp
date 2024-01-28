@@ -116,7 +116,7 @@ static inline void recordTaskActionLinks(
   QStringList ignoredChildren;
   ignoredChildren << "cron" << "notice";
   for (auto childName: childNames)
-    for (auto listnode: parentNode.childrenByName(childName)) {
+    for (auto listnode: parentNode/childName) {
       EventSubscription sub("", listnode, 0, ignoredChildren);
       for (const Action &a: sub.actions()) {
         if (a.actionType() == "requesttask"
@@ -134,7 +134,7 @@ SchedulerConfigData::SchedulerConfigData(
   : _originalPfNode(root) {
   QList<RequestTaskActionLink> requestTaskActionLinks;
   QList<LogFile> logfiles;
-  for (const PfNode &node: root.childrenByName("log")) {
+  for (const PfNode &node: root/"log") {
     LogFile logfile(node);
     if (logfile.isNull()) {
       Log::warning() << "invalid log file declaration in configuration: "
@@ -149,7 +149,7 @@ SchedulerConfigData::SchedulerConfigData(
     this->applyLogConfig();
   _tasksRoot = TasksRoot(root, scheduler);
   _namedCalendars.clear();
-  for (const PfNode &node: root.childrenByName("calendar")) {
+  for (const PfNode &node: root/"calendar") {
     auto name = node.contentAsUtf8();
     Calendar calendar(node);
     if (name.isEmpty())
@@ -160,7 +160,7 @@ SchedulerConfigData::SchedulerConfigData(
       _namedCalendars.insert(name, calendar);
   }
   _externalParams.clear();
-  for (auto node: root.childrenByName("externalparams")) {
+  for (auto node: root/"externalparams") {
     auto name = node.contentAsUtf8();
     if (name.isEmpty() || (!node.hasChild("file") && !node.hasChild("command")))
       Log::error() << "ignoring invalid externalparams: " << node.toPf();
@@ -168,7 +168,7 @@ SchedulerConfigData::SchedulerConfigData(
       _externalParams.insert(name, node);
   }
   _hosts.clear();
-  for (const PfNode &node: root.childrenByName("host")) {
+  for (const PfNode &node: root/"host") {
     Host host(node, _tasksRoot.params());
     if (_hosts.contains(host.id())) {
       Log::error() << "ignoring duplicate host: " << host.id();
@@ -181,9 +181,9 @@ SchedulerConfigData::SchedulerConfigData(
     _hosts.insert("localhost", Host(PfNode("host", "localhost"),
                                     _tasksRoot.params()));
   _clusters.clear();
-  for (const PfNode &node: root.childrenByName("cluster")) {
+  for (const PfNode &node: root/"cluster") {
     Cluster cluster(node);
-    for (const PfNode &child: node.childrenByName("hosts")) {
+    for (const PfNode &child: node/"hosts") {
       for (auto hostId: child.contentAsUtf8List()) {
         Host host = _hosts.value(hostId);
         if (!host.isNull())
@@ -205,8 +205,9 @@ SchedulerConfigData::SchedulerConfigData(
       _clusters.insert(cluster.id(), cluster);
   }
   _taskgroups.clear();
-  QList<PfNode> taskGroupNodes = root.childrenByName("taskgroup");
-  std::sort(taskGroupNodes.begin(), taskGroupNodes.end());
+  auto taskGroupNodes = root.children_as_list("taskgroup");
+  // C++23: auto taskGroupNodes = root/"taskgroup" | std::ranges::to<QList<PfNode>>();
+  std::stable_sort(taskGroupNodes.begin(), taskGroupNodes.end());
   for (auto node: taskGroupNodes) {
     QByteArray id = ConfigUtils::sanitizeId(
           node.contentAsUtf16(), ConfigUtils::FullyQualifiedId).toUtf8();
@@ -230,7 +231,7 @@ SchedulerConfigData::SchedulerConfigData(
     _taskgroups.insert(taskGroup.id(), taskGroup);
   }
   _tasktemplates.clear();
-  for (auto node: root.childrenByName("tasktemplate")) {
+  for (auto node: root/"tasktemplate") {
     TaskTemplate tmpl(node, scheduler, _tasksRoot, _namedCalendars);
     if (tmpl.isNull()) { // cstr detected an error
       Log::error() << "ignoring invalid tasktemplate: " << node.toString();
@@ -245,7 +246,7 @@ ignore_tasktemplate:;
   }
   auto oldTasks = _tasks;
   _tasks.clear();
-  for (const PfNode &node: root.childrenByName("task")) {
+  for (const PfNode &node: root/"task") {
     auto taskGroupId = node.utf16attribute("taskgroup");
     TaskGroup taskGroup = _taskgroups.value(taskGroupId);
     Task task(node, scheduler, taskGroup, _namedCalendars, _tasktemplates);
@@ -277,7 +278,7 @@ ignore_tasktemplate:;
 ignore_task:;
   }
   int maxtotaltaskinstances = 0;
-  for (const PfNode &node: root.childrenByName("maxtotaltaskinstances")) {
+  for (const PfNode &node: root/"maxtotaltaskinstances") {
     int n = node.contentAsUtf16().toInt(0, 0);
     if (n > 0) {
       if (maxtotaltaskinstances > 0)
@@ -295,7 +296,7 @@ ignore_task:;
   }
   _maxtotaltaskinstances = maxtotaltaskinstances;
   int maxqueuedrequests = 0;
-  for (const PfNode &node: root.childrenByName("maxqueuedrequests")) {
+  for (const PfNode &node: root/"maxqueuedrequests") {
     int n = node.contentAsUtf16().toInt(0, 0);
     if (n > 0) {
       if (maxqueuedrequests > 0) {
@@ -311,13 +312,14 @@ ignore_task:;
   if (maxqueuedrequests <= 0)
     maxqueuedrequests = DEFAULT_MAXQUEUEDREQUESTS;
   _maxqueuedrequests = maxqueuedrequests;
-  QList<PfNode> alerts = root.childrenByName("alerts");
-  if (alerts.size() > 1)
-    Log::error() << "multiple alerts configuration (ignoring all but last one)";
-  if (alerts.size())
-    _alerterConfig = AlerterConfig(alerts.last());
+  auto [child_alerts,unwanted_alerts] = root.first_two_children("alerts");
+  if (!!unwanted_alerts)
+    Log::error() << "multiple alerts configuration (ignoring all but first"
+                    " one)";
+  if (!!child_alerts)
+    _alerterConfig = AlerterConfig(child_alerts);
   else // build an empty but not null AlerterConfig
-    _alerterConfig = AlerterConfig(PfNode(QStringLiteral("alerts")));
+    _alerterConfig = AlerterConfig(PfNode("alerts"));
   _onlog.clear();
   ConfigUtils::loadEventSubscription(root, "onlog", "*", &_onlog, scheduler);
   _onnotice.clear();
@@ -353,13 +355,11 @@ ignore_task:;
                    << " for task '" << targetName << "'";
     }
   }
-  QList<PfNode> accessControl = root.childrenByName("access-control");
-  if (accessControl.size() > 0) {
-    _accessControlConfig = AccessControlConfig(accessControl.first());
-    if (accessControl.size() > 1) {
-      Log::error() << "ignoring multiple 'access-control' in configuration";
-    }
-  }
+  auto [child,unwanted] = root.first_two_children("access-control");
+  if (!!child)
+    _accessControlConfig = AccessControlConfig(child);
+  if (!!unwanted)
+    Log::error() << "ignoring multiple 'access-control' in configuration";
   _lastLoadTime = QDateTime::currentDateTime();
   ConfigUtils::loadComments(root, &_commentsList,
                             excludedDescendantsForComments);

@@ -75,7 +75,7 @@ AccessControlConfig::~AccessControlConfig() {
 }
 
 AccessControlConfigData::AccessControlConfigData(PfNode node) {
-  for (const PfNode &child: node.childrenByName("user-file")) {
+  for (const PfNode &child: node/"user-file") {
     QString path = child.contentAsUtf16().trimmed();
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
@@ -93,7 +93,7 @@ AccessControlConfigData::AccessControlConfigData(PfNode node) {
       _userFiles.append(userFile);
     }
   }
-  for (const PfNode &child: node.childrenByName("user")) {
+  for (const PfNode &child: node/"user") {
     QString userId = child.contentAsUtf16().trimmed();
     QString encodedPassword = child.attribute("password");
     InMemoryAuthenticator::Encoding cipher

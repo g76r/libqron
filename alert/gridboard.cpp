@@ -226,7 +226,7 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
   d->_patternRegexp = QRegularExpression(d->_pattern);
   if (!d->_patternRegexp.isValid())
     Log::warning() << "gridboard with invalid pattern: " << node.toString();
-  for (const PfNode &child: node.childrenByName("dimension")) {
+  for (const PfNode &child: node/"dimension") {
     Dimension dimension(child);
     if (dimension.isNull()) {
       Log::warning() << "gridboard " << d->_id << " with invalid dimension: "
@@ -257,8 +257,8 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
   }
   for (int i = 0; i < d->_dimensions.size(); ++i)
     d->_dataIndexesByDimension.append(QHash<Utf8String,TreeItem*>());
-  d->_warningDelay = node.doubleAttribute(
-        "warningdelay"_u8, DEFAULT_WARNING_DELAY/1e3)*1e3;
+  d->_warningDelay = node["warningdelay"_u8]
+                     .toDouble(DEFAULT_WARNING_DELAY/1e3)*1e3;
   d->_params.setParent(parentParams);
   d->_params = ParamSet(node, "param"_u8);
   ConfigUtils::loadComments(node, &d->_commentsList);
