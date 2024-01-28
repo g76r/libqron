@@ -3,7 +3,7 @@ stages:
 
 build:
   stage: build
-  image: g76r/qt6-builder:20230708
+  image: g76r/qt6-builder:20240113
   script:
     - cd ..
     - git clone https://gitlab.com/g76r/libp6core.git
