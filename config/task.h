@@ -129,7 +129,7 @@ public:
     return herdingPolicyAsString(herdingPolicy()); }
   static QString herdingPolicyAsString(HerdingPolicy v);
   static HerdingPolicy herdingPolicyFromString(QString v);
-  QList<RequestFormField> requestFormFields() const;
+  QMap<QString, RequestFormField> requestFormFields() const;
   QString requestFormFieldsAsHtmlDescription() const;
   /** Cron triggers */
   QList<CronTrigger> cronTriggers() const;

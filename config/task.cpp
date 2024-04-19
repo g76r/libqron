@@ -399,12 +399,13 @@ Task::HerdingPolicy Task::herdingPolicyFromString(QString v) {
   return _herdingPolicyFromText.value(v, Task::HerdingPolicyUnknown);
 }
 
-QList<RequestFormField> Task::requestFormFields() const {
-  return !isNull() ? data()->_requestFormFields : QList<RequestFormField>();
+QMap<QString, RequestFormField> Task::requestFormFields() const {
+  return !isNull() ? data()->_requestFormFields
+                   : QMap<QString, RequestFormField>{};
 }
 
 QString Task::requestFormFieldsAsHtmlDescription() const {
-  QList<RequestFormField> list = requestFormFields();
+  auto list = requestFormFields();
   if (list.isEmpty())
     return "(none)";
   QString v;

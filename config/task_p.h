@@ -86,7 +86,7 @@ public:
   long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
   QString _maxQueuedInstances, _deduplicateCriterion, _deduplicateStrategy;
   Task::HerdingPolicy _herdingPolicy;
-  QList<RequestFormField> _requestFormFields;
+  QMap<QString, RequestFormField> _requestFormFields;
   QStringList _otherTriggers; // guessed indirect triggers resulting from events
   mutable bool _enabled;
 

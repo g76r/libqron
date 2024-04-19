@@ -167,7 +167,7 @@ bool TaskOrTemplateData::loadConfig(
     for (auto child: child/"field") {
       RequestFormField field(child);
       if (!!field)
-        _requestFormFields.append(field);
+        _requestFormFields.insert(field.id(), field);
     }
   }
   if (!!unwanted) {
