@@ -164,9 +164,11 @@ bool TaskOrTemplateData::loadConfig(
   }
   auto [child,unwanted] = node.first_two_children("requestform");
   if (!!child) {
-    RequestFormField field(child);
-    if (!!field)
-      _requestFormFields.append(field);
+    for (auto child: child/"field") {
+      RequestFormField field(child);
+      if (!!field)
+        _requestFormFields.append(field);
+    }
   }
   if (!!unwanted) {
     Log::error() << qualifier()+" with several requestform: "
