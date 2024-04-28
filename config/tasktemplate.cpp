@@ -1,4 +1,4 @@
-/* Copyright 2021-2023 Gregoire Barbier and others.
+/* Copyright 2021-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -44,7 +44,7 @@ bool TaskOrTemplateData::loadConfig(
     return false;
   }
   auto root = static_cast<const TasksRoot&>(parent);
-  _mergeStderrIntoStdout = root.mergeStderrIntoStdout();
+  _mergeStdoutIntoStderr = root.mergeStdoutIntoStderr();
   if (!TaskOrGroupData::loadConfig(node, parent, scheduler))
     return false;
   if (!ConfigUtils::loadAttribute<Task::Mean>(

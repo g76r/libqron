@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -64,7 +64,7 @@ bool TaskOrGroupData::loadConfig(
   _params.setParent(root.params());
   _vars.setParent(root.vars());
   _instanceparams.setParent(root.instanceparams());
-  _mergeStderrIntoStdout = root.mergeStderrIntoStdout();
+  _mergeStdoutIntoStderr = root.mergeStdoutIntoStderr();
   if (!TasksRootData::loadConfig(node, scheduler))
     return false;
   return true;

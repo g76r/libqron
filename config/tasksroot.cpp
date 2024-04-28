@@ -1,4 +1,4 @@
-/* Copyright 2022-2023 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -37,8 +37,8 @@ bool TasksRootData::loadConfig(
   _vars.setScope("var");
   _instanceparams += ParamSet(node, "instanceparam");
   _instanceparams.setScope("instanceparams");
-  ConfigUtils::loadBoolean(node, "mergestderrintostdout",
-                           &_mergeStderrIntoStdout);
+  ConfigUtils::loadBoolean(node, "mergestdoutintostderr",
+                           &_mergeStdoutIntoStderr);
   ConfigUtils::loadEventSubscription(
       node, "onplan", TASKSROOTID, &_onplan, scheduler);
   ConfigUtils::loadEventSubscription(
@@ -105,8 +105,8 @@ QList<EventSubscription> TasksRoot::allEventSubscriptions() const {
                    : QList<EventSubscription>();
 }
 
-bool TasksRoot::mergeStderrIntoStdout() const {
-  return !isNull() ? data()->_mergeStderrIntoStdout : false;
+bool TasksRoot::mergeStdoutIntoStderr() const {
+  return !isNull() ? data()->_mergeStdoutIntoStderr : false;
 }
 
 QVariant TasksRootData::uiData(int section, int role) const {
@@ -129,7 +129,7 @@ QVariant TasksRootData::uiData(int section, int role) const {
     case 36:
       return EventSubscription::toStringList(_onplan).join("\n");
     case 38:
-      return _mergeStderrIntoStdout;
+      return _mergeStdoutIntoStderr;
     case 39:
       return EventSubscription::toStringList(_onstderr).join("\n");
     case 40:

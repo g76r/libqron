@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -102,7 +102,7 @@ public:
   /** Events hash with "onsuccess", "onfailure"... key, mainly for UI purpose.
    * Not including group events subscriptions. */
   QList<EventSubscription> allEventsSubscriptions() const;
-  bool mergeStderrIntoStdout() const;
+  bool mergeStdoutIntoStderr() const;
   bool enabled() const;
   void setEnabled(bool enabled) const;
   bool lastSuccessful() const;

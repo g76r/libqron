@@ -45,7 +45,7 @@ public:
       _onstdout;
   Utf8StringList _commentsList;
   PfNode _originalPfNode;
-  bool _mergeStderrIntoStdout = false;
+  bool _mergeStdoutIntoStderr = false;
 
   TasksRootData(const Utf8String &id = TASKSROOTID) : _id(id) {
     _params.setScope(qualifier()); }

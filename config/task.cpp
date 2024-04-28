@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -292,8 +292,8 @@ QList<EventSubscription> Task::allEventsSubscriptions() const {
                    : QList<EventSubscription>();
 }
 
-bool Task::mergeStderrIntoStdout() const {
-  return !isNull() ? data()->_mergeStderrIntoStdout : false;
+bool Task::mergeStdoutIntoStderr() const {
+  return !isNull() ? data()->_mergeStdoutIntoStderr : false;
 }
 
 bool Task::enabled() const {

@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Grégoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -553,10 +553,15 @@ void Executor::readyReadStandardOutput() {
   _process->setReadChannel(QProcess::StandardOutput);
   bool isStderr = false;
   const auto task = _instance.task();
-  if (task.mergeStderrIntoStdout()
-      || (task.mean() == Task::Ssh
-          && _instance.paramBool("ssh.disablepty", false)))
+  // process stdout as if it were stderr if
+  // - mergestdoutinstderr is set
+  // - or for ssh mean with pty allocation enabled (the default)
+  if (task.mergeStdoutIntoStderr()
+      || (task.mean() == Task::Ssh && !_instance.paramBool("ssh.disablepty"))) {
+    Log::debug(_instance.taskId(), _instance.idAsLong())
+        << "pretends stdout is stderr";
     isStderr = true;
+  }
   processProcessOutput(isStderr);
 }
 
@@ -798,7 +803,6 @@ void Executor::scatterMean() {
   //taskInstanceStopping(false, -1);
   stopOrRetry(true, 0);
 }
-
 
 void Executor::noticePosted(QString notice, ParamSet params) {
   params.insert(QStringLiteral("!notice"), notice);
