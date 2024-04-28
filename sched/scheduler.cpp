@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -231,7 +231,7 @@ void Scheduler::planOrRequestCommonPostProcess(
   }
   if (herder.isNull() || herder == instance)
     return;
-  _awaitedTasks[herder.idAsLong()] << instance.idAsLong();
+  _unfinishedHerdedTasks[herder.idAsLong()] << instance.idAsLong();
   QSet<quint64> &herdedTasks = _unfinishedHerds[herder.idAsLong()];
   herdedTasks << instance.idAsLong();
   herder.appendToHerdedTasksCaption(instance.idSlashId());
@@ -816,7 +816,7 @@ QSet<TaskInstance> Scheduler::herdedTasks(
   quint64 herdid, bool includeFinished) {
   QSet<TaskInstance> tasks;
   for (auto id: includeFinished ? _unfinishedHerds.value(herdid)
-                                : _awaitedTasks.value(herdid)) {
+                                : _unfinishedHerdedTasks.value(herdid)) {
     auto i = _unfinishedTasks.value(id);
     if (!i.isNull())
       tasks << i;
@@ -1020,8 +1020,8 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   auto herder = _unfinishedTasks.value(instance.herdid());
   if (!instance.isHerder()) {
     taskInstanceFinishedOrCanceled(instance, markCanceledAsFailure);
-    if (_awaitedTasks.contains(herder.idAsLong())) {
-      QSet<quint64> &awaitedTasks = _awaitedTasks[herder.idAsLong()];
+    if (_unfinishedHerdedTasks.contains(herder.idAsLong())) {
+      QSet<quint64> &awaitedTasks = _unfinishedHerdedTasks[herder.idAsLong()];
       awaitedTasks.remove(instance.idAsLong());
       Log::info(herder.taskId(), herder.id())
           << "herded task finished: " << instance.idSlashId()
@@ -1045,7 +1045,7 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   }
   // configured and requested tasks are different if config was reloaded
   Task configuredTask = config().tasks().value(instance.taskId());
-  auto waitingTasks = _awaitedTasks[instance.idAsLong()];
+  auto waitingTasks = _unfinishedHerdedTasks[instance.idAsLong()];
   if (instance.status() == TaskInstance::Canceled || waitingTasks.isEmpty()
       || configuredTask.herdingPolicy() == Task::NoWait) {
     taskInstanceFinishedOrCanceled(instance, markCanceledAsFailure);
@@ -1156,14 +1156,24 @@ void Scheduler::taskInstanceFinishedOrCanceled(
         _alerter->cancelAlert("task.tooshort."+taskId);
     }
   }
-  _awaitedTasks.remove(instance.idAsLong());
-  // forget herded tasks only when the whole herd is finished
+  // if instance is a herder remove it and its herded tasks from memory indexes
   if (instance.herdid() == instance.idAsLong()) {
+    // forget finished herded tasks when the whole herd is finished
+    // because we must keep them in memory for herder's purpose (e.g. computing
+    // herder's end status)
+    for (auto i: _unfinishedHerds.value(instance.idAsLong())) {
+      if (_unfinishedTasks[i].isFinished())
+        _unfinishedTasks.remove(i);
+    }
+    // forget herder
     _unfinishedTasks.remove(instance.idAsLong());
-    for (auto i: _unfinishedHerds.value(instance.idAsLong()))
-      _unfinishedTasks.remove(i);
+    // no longer wait for any task herded by instance
+    _unfinishedHerdedTasks.remove(instance.idAsLong());
+    _unfinishedHerds.remove(instance.idAsLong());
+  } else if (!_unfinishedTasks.contains(instance.herdid())) {
+    // forget herded task since its herder no longer waits for it
+    _unfinishedTasks.remove(instance.idAsLong());
   }
-  _unfinishedHerds.remove(instance.idAsLong());
   auto success = instance.success();
   Log::log(success ? Log::Info : Log::Warning, taskId, instance.idAsLong())
     << "task '" << taskId << "' finished "

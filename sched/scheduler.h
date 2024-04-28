@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,9 +35,12 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   Q_OBJECT
   Q_DISABLE_COPY(Scheduler)
   QThread *_thread;
-  QMap<quint64,TaskInstance> _unfinishedTasks; // task instances repository
-  QMap<quint64,QSet<quint64>> _unfinishedHerds; // herders -> herded tasks
-  QMap<quint64,QSet<quint64>> _awaitedTasks; // herders waiting lists
+  /// task instances repository: any unfinished task
+  QMap<quint64,TaskInstance> _unfinishedTasks;
+  /// unfinished herders -> any herded tasks
+  QMap<quint64,QSet<quint64>> _unfinishedHerds;
+  /// unfinished herded tasks (for which the herder is likely to be waiting for)
+  QMap<quint64,QSet<quint64>> _unfinishedHerdedTasks;
   QMap<quint64,Executor*> _runningExecutors;
   QSet<quint64> _dirtyHerds; // for which planned tasks must be reevaluated
   QList<Executor*> _availableExecutors;
