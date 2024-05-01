@@ -1177,6 +1177,11 @@ void Scheduler::taskInstanceFinishedOrCanceled(
     // forget herded task since its herder no longer waits for it
     _unfinishedTasks.remove(instance.idAsLong());
   }
+  Log::debug(taskId, instance.idAsLong())
+      << "In memory tasks indexes size after task finished: unfinishedherds "
+      << _unfinishedHerds.size() << " herds; unfinishedtasks: "
+      << _unfinishedTasks.size() << " tasks; awaitedtasks: "
+      << _unfinishedHerdedTasks.size() << " herds.";
   auto success = instance.success();
   Log::log(success ? Log::Info : Log::Warning, taskId, instance.idAsLong())
     << "task '" << taskId << "' finished "
