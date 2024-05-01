@@ -262,17 +262,20 @@ TaskInstanceList Scheduler::doRequestTask(
   if (cluster.balancing() == Cluster::Each) {
     quint64 groupId = 0;
     for (const Host &host: cluster.hosts()) {
-      TaskInstance instance(task, groupId, force, overridingParams, herdid);
+      TaskInstance instance(task, groupId, force, overridingParams, 0);
       if (!groupId) { // first iteration
         groupId = instance.groupId();
-        if (herder.isNull())
-          herder = instance;
       }
       instance.setTarget(host);
       instance = enqueueTaskInstance(instance);
-      if (!instance.isNull())
+      if (!!instance)
         instances.append(instance);
+      if (!!herder)
+        Log::warning(instance.taskId(), instance.idAsLong())
+            << "ignoring herd and running as standalone task because "
+               "it's targeting a cluster with balancing method 'each'.";
     }
+    herder = {}; // force tasks on (balancing each) cluster to be standalone
   } else {
     TaskInstance instance(task, force, overridingParams, herdid);
     instance = enqueueTaskInstance(instance);
