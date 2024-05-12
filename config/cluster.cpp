@@ -39,7 +39,7 @@ Cluster::Cluster() {
 Cluster::Cluster(const Cluster &other) : SharedUiItem(other) {
 }
 
-Cluster::Cluster(PfNode node) {
+Cluster::Cluster(PfNode node) : SharedUiItem() {
   ClusterData *d = new ClusterData;
   d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
                                    ConfigUtils::FullyQualifiedId).toUtf8();
@@ -49,6 +49,7 @@ Cluster::Cluster(PfNode node) {
   if (d->_balancing == UnknownBalancing) {
     Log::error() << "invalid cluster balancing method: " << node.toString();
     delete d;
+    return;
   }
   ConfigUtils::loadComments(node, &d->_commentsList);
   setData(d);
