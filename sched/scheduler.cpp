@@ -246,69 +246,9 @@ void Scheduler::planOrRequestCommonPostProcess(
       << "task appended to herded tasks: " << instance.idSlashId();
 }
 
-TaskInstanceList Scheduler::requestTask(
-    QByteArray taskId, ParamSet overridingParams, bool force, quint64 herdid) {
-  if (this->thread() == QThread::currentThread())
-    return doRequestTask(taskId, overridingParams, force, herdid);
-  TaskInstanceList instances;
-  QMetaObject::invokeMethod(this, [this,&instances,taskId,overridingParams,
-                            force,herdid](){
-      instances = doRequestTask(taskId, overridingParams, force, herdid);
-    }, Qt::BlockingQueuedConnection);
-  return instances;
-}
-
-TaskInstanceList Scheduler::doRequestTask(
-  QByteArray taskId, ParamSet overridingParams, bool force, quint64 herdid) {
-  TaskInstance herder = _unfinishedTasks.value(herdid);
-  TaskInstanceList instances;
-  Task task = config().tasks().value(taskId);
-  if (!planOrRequestCommonPreProcess(taskId, task, overridingParams))
-    return instances;
-  Cluster cluster = config().clusters().value(task.target().toUtf8());
-  if (cluster.balancing() == Cluster::Each) {
-    quint64 groupId = 0;
-    for (const Host &host: cluster.hosts()) {
-      TaskInstance instance(task, groupId, force, overridingParams, 0);
-      if (!groupId) { // first iteration
-        groupId = instance.groupId();
-      }
-      instance.setTarget(host);
-      instance = enqueueTaskInstance(instance);
-      if (!!instance)
-        instances.append(instance);
-      if (!!herder)
-        Log::warning(instance.taskId(), instance.idAsLong())
-            << "ignoring herd and running as standalone task because "
-               "it's targeting a cluster with balancing method 'each'.";
-    }
-    herder = {}; // force tasks on (balancing each) cluster to be standalone
-  } else {
-    TaskInstance instance(task, force, overridingParams, herdid);
-    instance = enqueueTaskInstance(instance);
-    if (!instance.isNull())
-      instances.append(instance);
-  }
-  if (!instances.isEmpty()) {
-    for (auto sui: instances) {
-      auto instance = sui.casted<TaskInstance>();
-      planOrRequestCommonPostProcess(instance, herder, overridingParams);
-      emit itemChanged(instance, instance, "taskinstance"_u8);
-      triggerPlanActions(instance);
-      Log::debug(taskId, instance.idAsLong())
-          << "task instance params after planning" << instance.params();
-      if (!herder.isNull() && herder != instance) {
-        emit itemChanged(herder, herder, "taskinstance"_u8);
-        reevaluatePlannedTaskInstancesForHerd(herder.idAsLong());
-      }
-    }
-  }
-  return instances;
-}
-
 TaskInstanceList Scheduler::planTask(
-  QByteArray taskId, ParamSet overridingParams, bool force, quint64 herdid,
-    Condition queuewhen, Condition cancelwhen) {
+    const Utf8String &taskId, ParamSet overridingParams, bool force,
+    quint64 herdid, Condition queuewhen, Condition cancelwhen) {
   if (this->thread() == QThread::currentThread())
     return doPlanTask(taskId, overridingParams, force, herdid, queuewhen,
                       cancelwhen);
@@ -354,12 +294,6 @@ TaskInstanceList Scheduler::doPlanTask(
   Task task = config().tasks().value(taskId);
   if (!planOrRequestCommonPreProcess(taskId, task, overridingParams))
     return instances;
-  Cluster cluster = config().clusters().value(task.target().toUtf8());
-  if (cluster.balancing() == Cluster::Each) {
-    Log::error() << "cannot plan task when its target is a each balancing "
-                    "cluster: " << taskId;
-    return instances;
-  }
   if (herder.isNull()) { // no herder -> no conditions
     if (!queuewhen.isEmpty()) {
       Log::warning() << "ignoring queuewhen condition when planning a task out"
@@ -703,7 +637,7 @@ bool Scheduler::checkTrigger(
             key, PercentEvaluator::escape(
               trigger.overridingParams().paramUtf8(key, &task)));
     }
-    TaskInstanceList instances = requestTask(taskId, overridingParams);
+    TaskInstanceList instances = planTask(taskId, overridingParams, false, 0, {}, {});
     if (!instances.isEmpty())
       for (auto ti : instances)
         Log::info(taskId, ti.id())
@@ -773,7 +707,7 @@ void Scheduler::postNotice(
                   PercentEvaluator::eval(
                     trigger_overridingparams.paramRawUtf8(key), &ppm)));
         }
-        TaskInstanceList instances = requestTask(task.id(), overridingParams);
+        TaskInstanceList instances = planTask(task.id(), overridingParams, false, 0, {}, {});
         if (!instances.isEmpty())
           for (auto ti: instances)
             Log::info(task.id(), ti.id())
@@ -923,7 +857,6 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
         hosts += host;
     switch (cluster.balancing()) {
     case Cluster::First:
-    case Cluster::Each: // should never happen
     case Cluster::UnknownBalancing:
       // nothing to do
       break;

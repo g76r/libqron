@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -186,7 +186,6 @@ void Cluster::setHosts(QList<Host> hosts) {
 
 static QMap<Cluster::Balancing,Utf8String> _balancingToText {
   { Cluster::First, "first" },
-  { Cluster::Each, "each" },
   { Cluster::RoundRobin, "roundrobin" },
   { Cluster::Random, "random" },
 };

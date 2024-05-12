@@ -77,36 +77,14 @@ public:
   qint64 queuedTasksHwm() const { return _queuedTasksHwm; }
 
 public slots:
-  /** Request task execution as soon as possible (create and queue it for
-   * execution).
-   * This method is thread-safe.
-   * This method will block current thread until the request is either
-   * queued either denied by Scheduler thread.
-   * @param taskId fully qualified task name, on the form "taskGroupId.taskId"
-   * @param params override params, using RequestFormField semantics
-   * @param force if true, any constraints or ressources are ignored
-   * @return isEmpty() if task cannot be queued
-   * @see RequestFormField */
-  TaskInstanceList requestTask(
-    QByteArray taskId, ParamSet overridingParams, bool force = false,
-    quint64 herdid = 0);
-  TaskInstanceList requestTask(
-    QString taskId, ParamSet overridingParams, bool force = false,
-      quint64 herdid = 0) {
-    return requestTask(taskId.toUtf8(), overridingParams, force, herdid); }
   /** Plan task execution with conditions that must be met to queue it or
    * cancel it.
    * This method is thread-safe.
    * This method will block current thread until the request is either
    * queued either denied by Scheduler thread. */
-  TaskInstanceList planTask(QByteArray taskId, ParamSet overridingParams,
+  TaskInstanceList planTask(const Utf8String &taskId, ParamSet overridingParams,
                             bool force, quint64 herdid,
                             Condition queuewhen, Condition cancelwhen);
-  TaskInstanceList planTask(QString taskId, ParamSet overridingParams,
-                            bool force, quint64 herdid,
-                            Condition queuewhen, Condition cancelwhen) {
-    return planTask(taskId.toUtf8(), overridingParams, force, herdid, queuewhen,
-                    cancelwhen); }
   /** Cancel a planned or queued request.
    * @return TaskInstance.isNull() iff error (e.g. request not found or no
    * longer queued) */
