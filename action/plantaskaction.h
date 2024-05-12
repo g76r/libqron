@@ -1,4 +1,4 @@
-/* Copyright 2022-2023 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,7 @@
 
 class PlanTaskActionData;
 class Scheduler;
+class DisjunctionCondition;
 
 /** Action planning a task execution for queuing when a condition will be
  * reached.
@@ -33,6 +34,8 @@ public:
   PlanTaskAction(Scheduler *scheduler, QByteArray taskId);
   PlanTaskAction(const PlanTaskAction &);
   ~PlanTaskAction();
+  DisjunctionCondition queuewhen() const;
+  DisjunctionCondition cancelwhen() const;
 };
 
 Q_DECLARE_TYPEINFO(PlanTaskAction, Q_MOVABLE_TYPE);

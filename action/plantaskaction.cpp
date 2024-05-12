@@ -1,4 +1,4 @@
-/* Copyright 2022-2023 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -138,4 +138,14 @@ PlanTaskAction::PlanTaskAction(const PlanTaskAction &rhs) : Action(rhs) {
 }
 
 PlanTaskAction::~PlanTaskAction() {
+}
+
+DisjunctionCondition PlanTaskAction::queuewhen() const {
+  auto d = specializedData<PlanTaskActionData>();
+  return d ? d->_queuewhen : DisjunctionCondition();
+}
+
+DisjunctionCondition PlanTaskAction::cancelwhen() const {
+  auto d = specializedData<PlanTaskActionData>();
+  return d ? d->_cancelwhen : DisjunctionCondition();
 }

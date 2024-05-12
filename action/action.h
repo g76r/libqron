@@ -55,6 +55,14 @@ public:
 
 protected:
   explicit Action(ActionData *data);
+  /** Helper template to provide a const pointer to specialized data,
+   * e.g. const FooBarData *data = foobar.specializedData<FooBarData>(); */
+  template <class T,
+            std::enable_if_t<std::is_base_of_v<ActionData,T>,bool> = true>
+  inline const T *specializedData() const {
+    auto ptr = reinterpret_cast<const QSharedDataPointer<T>*>(&d);
+    return ptr->constData();
+  }
 };
 
 Q_DECLARE_TYPEINFO(Action, Q_MOVABLE_TYPE);
