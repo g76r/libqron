@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,8 +22,11 @@ public:
   static const Utf8StringIndexedConstList _sectionNames;
   static const Utf8StringIndexedConstList _headerNames;
   Utf8String _id, _label, _hostname, _sshhealthcheck;
+  qint64 _healthcheckinterval;
   QMap<Utf8String,qint64> _resources; // configured max resources available
+  mutable QAtomicInteger<bool> _is_available;
   Utf8StringList _commentsList;
+  HostData() : _is_available(true) {}
   QVariant uiData(int section, int role) const override;
   Utf8String id() const override { return _id; }
   void setId(Utf8String id) { _id = id; }
@@ -49,6 +52,8 @@ Host::Host(PfNode node, ParamSet globalParams) {
         PercentEvaluator::eval_utf8(node.attribute("hostname"), &globalParams),
         ConfigUtils::Hostname);
   d->_sshhealthcheck = node.attribute("sshhealthcheck");
+  d->_healthcheckinterval =
+      node["healthcheckinterval"].toNumber<double>(60)*1e3;
   ConfigUtils::loadResourcesSet(node, &d->_resources, "resource");
   ConfigUtils::loadComments(node, &d->_commentsList);
   setData(d);
@@ -72,6 +77,22 @@ Utf8String Host::sshhealthcheck() const {
   return d ? d->_sshhealthcheck : Utf8String{};
 }
 
+qint64 Host::healthcheckinterval() const {
+  auto d = data();
+  return d ? d->_healthcheckinterval : 0;
+}
+
+bool Host::is_available() const {
+  auto d = data();
+  return d ? d->_is_available.loadAcquire() : false;
+}
+
+void Host::set_available(bool is_available) const {
+  auto d = data();
+  if (d)
+    d->_is_available.storeRelease(is_available);
+}
+
 QVariant HostData::uiData(int section, int role) const {
   switch(role) {
   case Qt::DisplayRole:
@@ -91,6 +112,10 @@ QVariant HostData::uiData(int section, int role) const {
       return _label | _id;
     case 4:
       return _sshhealthcheck;
+    case 5:
+      return _healthcheckinterval/1e3;
+    case 6:
+      return _is_available.loadRelaxed();
     }
     break;
   default:
@@ -135,6 +160,12 @@ bool HostData::setUiData(
     return true;
   case 4:
     _sshhealthcheck = s;
+    return true;
+  case 5:
+    _healthcheckinterval = s.toDouble()*1e3;
+    return true;
+  case 6:
+    _is_available = s.toBool();
     return true;
   }
   return SharedUiItemData::setUiData(section, value, errorString, transaction,
@@ -190,6 +221,8 @@ const Utf8StringIndexedConstList HostData::_sectionNames {
   "resources",
   "label",
   "sshhealthcheck",
+  "healthcheckinterval", // 5
+  "is_available",
 };
 
 const Utf8StringIndexedConstList HostData::_headerNames {
@@ -198,4 +231,6 @@ const Utf8StringIndexedConstList HostData::_headerNames {
   "Resources",
   "Label",
   "SSH Healthcheck",
+  "Healthcheck Interval", // 5
+  "Available",
 };

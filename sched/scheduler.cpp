@@ -25,6 +25,7 @@
 #include "action/action.h"
 #include "executor.h"
 #include "alert/alerter.h"
+#include "hostmonitor.h"
 #include <QCoreApplication>
 #include <QThread>
 #include <QTimer>
@@ -36,7 +37,8 @@
 static SharedUiItem _nullItem;
 
 Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
-  _alerter(new Alerter), _authenticator(new InMemoryAuthenticator(this)),
+  _alerter(new Alerter), _hostMonitor(new HostMonitor(_alerter)),
+  _authenticator(new InMemoryAuthenticator(this)),
   _usersDatabase(new InMemoryUsersDatabase(this)),
   _firstConfigurationLoad(true),
   _startdate(QDateTime::currentDateTime().toMSecsSinceEpoch()),
@@ -53,12 +55,15 @@ Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
   timer->start(PERIODIC_CHECKS_INTERVAL_MS);
   connect(_accessControlFilesWatcher, &QFileSystemWatcher::fileChanged,
           this, &Scheduler::reloadAccessControlConfig);
+  connect(_hostMonitor, &HostMonitor::itemChanged,
+          this, &Scheduler::itemChanged);
   moveToThread(_thread);
 }
 
 Scheduler::~Scheduler() {
   //Log::removeLoggers();
-  _alerter->deleteLater(); // TODO delete alerter only when last executor is deleted
+  // TODO when to delete host monitor ?
+  //_alerter->deleteLater(); // TODO delete alerter only when last executor is deleted
 }
 
 void Scheduler::activateConfig(SchedulerConfig newConfig) {
@@ -123,9 +128,11 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
                 << "' with these keys: " << ext.paramKeys().toSortedList();
   }
   newConfig.copyLiveAttributesFromOldTasks(oldConfig.tasks());
+  newConfig.copyLiveAttributesFromOldHosts(oldConfig.hosts());
   QMutexLocker ml(&_configGuard);
   setConfig(newConfig, &ml);
   _alerter->setConfig(newConfig.alerterConfig());
+  _hostMonitor->setConfig(newConfig);
   reloadAccessControlConfig();
   QMetaObject::invokeMethod(this, [this](){
     checkTriggersForAllTasks();
@@ -911,10 +918,12 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
   Host host = config().hosts().value(target);
   if (host.isNull()) {
     Cluster cluster = config().clusters().value(target);
-    hosts = cluster.hosts();
+    for (auto host: cluster.hosts())
+      if (host.is_available())
+        hosts += host;
     switch (cluster.balancing()) {
     case Cluster::First:
-    case Cluster::Each:
+    case Cluster::Each: // should never happen
     case Cluster::UnknownBalancing:
       // nothing to do
       break;
@@ -944,7 +953,12 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
   auto taskResources = task.resources();
   for (auto sui: hosts) {
     auto h = sui.casted<Host>();
-    // LATER skip hosts currently down or disabled
+    if (!h.is_available()) {
+      Log::info(taskId, instance.idAsLong())
+          << "skipping unavailable host '"_u8 << h.id() << "' for task '"_u8
+          << task.id() << "'"_u8;
+      goto nexthost;
+    }
     if (!taskResources.isEmpty()) {
       auto hostConsumedResources = _consumedResources.value(h.id());
       auto hostAvailableResources = config().hosts().value(h.id()).resources();
@@ -1000,13 +1014,12 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
     return;
 nexthost:;
   }
-  // no host has enough resources to execute the task
+  // no available host has enough resources to execute the task
   task.fetchAndAddRunningCount(-1);
   Log::warning(taskId, instance.idAsLong())
       << "cannot execute task '" << taskId
-      << "' now because there is not enough resources on target '"
+      << "' now because there is not enough available resources on target '"
       << target << "'";
-  // LATER suffix alert with resources kind (one alert per exhausted kind)
   _alerter->raiseAlert("task.resource_exhausted."+taskId);
   return;
 }

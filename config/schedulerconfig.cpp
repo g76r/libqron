@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -563,6 +563,21 @@ void SchedulerConfig::copyLiveAttributesFromOldTasks(
     d->_tasks.insert(task.id(), task);
   }
 }
+
+void SchedulerConfig::copyLiveAttributesFromOldHosts(
+    const QMap<Utf8String, Host> &old_hosts) {
+  SchedulerConfigData *d = data();
+  if (!d)
+    return;
+  for (auto old_host: old_hosts) {
+    auto host = d->_hosts.value(old_host.id());
+    if (host.isNull())
+      continue;
+    host.set_available(old_host.is_available());
+    d->_hosts.insert(host.id(), host);
+  }
+}
+
 
 PfNode SchedulerConfig::originalPfNode() const {
   const SchedulerConfigData *d = data();

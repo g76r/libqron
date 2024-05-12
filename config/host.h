@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,7 +33,17 @@ public:
   Utf8String hostname() const;
   /** Configured max resources available. */
   QMap<Utf8String, qint64> resources() const;
+  /** healthcheck ssh command
+   *  default: no healthcheck
+   *  examples: true, /bin/true */
   Utf8String sshhealthcheck() const;
+  /** healthcheck interval (milliseconds)
+   *  default: 60'000 */
+  qint64 healthcheckinterval() const;
+  /** thread-safe */
+  bool is_available() const;
+  /** thread-safe */
+  void set_available(bool is_available) const;
   void detach();
   PfNode toPfNode() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,

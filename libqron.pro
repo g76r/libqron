@@ -84,6 +84,7 @@ SOURCES *= \
     config/tasksroot.cpp \
     config/tasktemplate.cpp \
     sched/eventthread.cpp \
+    sched/hostmonitor.cpp \
     sched/scheduler.cpp \
     trigger/crontrigger.cpp \
     config/host.cpp \
@@ -154,6 +155,7 @@ HEADERS *= \
     config/tasktemplate.h \
     libqron_stable.h \
     sched/eventthread.h \
+    sched/hostmonitor.h \
     sched/scheduler.h \
     trigger/crontrigger.h \
     config/host.h \

@@ -24,6 +24,7 @@ class QFileSystemWatcher;
 class CronTrigger;
 class Executor;
 class Alerter;
+class HostMonitor;
 class Authenticator;
 class InMemoryAuthenticator;
 class UsersDatabase;
@@ -45,6 +46,7 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   QSet<quint64> _dirtyHerds; // for which planned tasks must be reevaluated
   QList<Executor*> _availableExecutors;
   Alerter *_alerter;
+  HostMonitor *_hostMonitor;
   InMemoryAuthenticator *_authenticator;
   InMemoryUsersDatabase *_usersDatabase;
   bool _firstConfigurationLoad;

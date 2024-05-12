@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -78,6 +78,7 @@ public:
    * tree, usefull for a configuration repository in a running scheduler. */
   PfNode originalPfNode() const;
   void copyLiveAttributesFromOldTasks(const QMap<Utf8String, Task> &oldTasks);
+  void copyLiveAttributesFromOldHosts(const QMap<Utf8String, Host> &old_hosts);
   void changeItem(SharedUiItem newItem, SharedUiItem oldItem,
                   QByteArray qualifier);
   void changeParams(ParamSet newParams, ParamSet oldParams, QByteArray setId);
