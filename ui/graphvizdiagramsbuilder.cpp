@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,6 +17,11 @@
 #include "trigger/crontrigger.h"
 #include "trigger/noticetrigger.h"
 #include "config/eventsubscription.h"
+#include "sched/taskinstance.h"
+#include "action/plantaskaction.h"
+#include "condition/taskwaitcondition.h"
+#include "condition/disjunctioncondition.h"
+#include "sched/scheduler.h"
 
 GraphvizDiagramsBuilder::GraphvizDiagramsBuilder() {
 }
@@ -47,6 +52,33 @@ static QString actionEdgeStyle(
       || sub.eventName() == "onconfigload")
     return ",color=\"/paired12/8\",fontcolor=\"/paired12/8\"";
   return QString();
+}
+
+static QString instanceNodeStyle(TaskInstance instance) {
+  QString style=TASK_NODE;
+  switch(instance.status()) {
+  case TaskInstance::Planned:
+    style += " fillcolor=\"/paired12/1\"";
+    break;
+  case TaskInstance::Queued:
+    style += " fillcolor=\"/paired12/11\"";
+    break;
+  case TaskInstance::Running:
+  case TaskInstance::Waiting:
+    style += " fillcolor=\"/paired12/3\"";
+    break;
+  case TaskInstance::Canceled:
+  case TaskInstance::Success:
+    style += " fillcolor=\"white\"";
+    break;
+  case TaskInstance::Failure:
+    style += " fillcolor=\"/paired12/5\"";
+    break;
+  }
+  if (instance.idAsLong() == instance.herdid()) {
+    style += " peripheries=2";
+  }
+  return style;
 }
 
 QHash<QString,QString> GraphvizDiagramsBuilder
@@ -372,4 +404,92 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   diagrams.insert("tasksResourcesHostsDiagram", gv);
   return diagrams;
   // LATER add a full events diagram with log, udp, etc. events
+}
+
+class PredecessorGroup {
+public:
+  QString _queuecondition, _cancelcondition;
+  QList<QString> _instances;
+};
+
+QList<QString> predecessors(Condition cond) {
+  QList<QString> p;
+  if (cond.conditionType() == "disjunction") {
+    auto dc = static_cast<const DisjunctionCondition&>(cond);
+    for (auto inner: dc.conditions())
+      p += predecessors(inner);
+  } else if (cond.conditionType() == "taskwait") {
+    auto twc = static_cast<const TaskWaitCondition&>(cond);
+    // FIXME
+  }
+  return p;
+}
+
+QList<PredecessorGroup> predecessors(TaskInstance sheep) {
+  QList<PredecessorGroup> pg;
+  // FIXME TaskInstance herder = sheep.herder();
+  Condition qw = sheep.queuewhen();
+  return pg;
+}
+
+QList<PredecessorGroup> predecessors(Task sheep) {
+  QList<PredecessorGroup> pg;
+  for (auto sub: sheep.onplan()) {
+    for (auto a: sub.actions()) {
+      if (a.actionType() != "plantask")
+        continue;
+      auto pta = static_cast<const PlanTaskAction &>(a);
+    }
+  }
+  return pg;
+}
+
+Utf8String GraphvizDiagramsBuilder::herdDiagram(
+    Scheduler *scheduler, quint64 tii) {
+  Q_ASSERT(scheduler);
+  Utf8String gv;
+  quint64 herdid = scheduler->taskInstanceById(tii).herdid();
+  if (!herdid)
+    return {};
+  auto herder = scheduler->taskInstanceById(herdid);
+  gv.append("graph herd {\n" "graph[" GLOBAL_GRAPH
+            ",concentrate=true,bgcolor=grey95,"
+            "label=\"herd diagram for "_u8+herder.idSlashId()+"\"]\n"_u8);
+  QMap<quint64,TaskInstance> instances;
+  instances.insert(herdid, herder);
+  auto herderparentid = herder.parentid();
+  if (herderparentid) {
+    auto parent = scheduler->taskInstanceById(herderparentid);
+    if (!!parent)
+      instances.insert(herderparentid, parent);
+  }
+  for (auto [taskid, tii]: herder.herdedTasksIdsPairs()) {
+    // taking any instance belonging to the herd or parent to a task belonging
+    // to the herd
+    auto instance = instances[tii];
+    if (!instance)
+      instance = scheduler->taskInstanceById(tii);
+    if (!instance)
+      continue;
+    instances.insert(tii, instance);
+    auto parentid = instance.parentid();
+    if (parentid && !instances.contains(parentid))
+      instances.insert(parentid, scheduler->taskInstanceById(parentid));
+  }
+  for (auto instance: instances) { // instance nodes
+    gv.append("  \""+instance.id()+"\" [label=\""+instance.taskId()+"\n"
+              +instance.id()+"\" "+instanceNodeStyle(instance)+"]\n");
+  }
+  gv.append("  node[shape=plain]\n"); // FIXME non instance parent nodes
+  gv.append("  edge[dir=forward,arrowhead=vee]\n"); // FIXME use styles
+  for (auto instance: instances) { // cause edges
+    auto parent = instances[instance.parentid()];
+    if (!!parent) // parent edges
+      gv.append("  \""+parent.id()+"\" -- \""+instance.id()+"\" [label=\""
+                +instance.cause()+"\"]\n");
+    else if (!instance.cause().isEmpty()) // non parent cause edges
+      gv.append("  \""+instance.cause()+"\" -- \""+instance.id()+"\"\n");
+  }
+  gv.append("}\n");
+  return gv;
 }

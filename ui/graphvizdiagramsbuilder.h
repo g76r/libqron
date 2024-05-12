@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,8 +24,11 @@ public:
   /** Configuration global diagrams, each one being associated in the returned
    * QHash with one of the following keys:
    * - tasksDeploymentDiagram
-   * - tasksTriggerDiagram */
+   * - tasksTriggerDiagram
+   * - tasksResourcesHostsDiagram
+   */
   static QHash<QString,QString> configDiagrams(SchedulerConfig config);
+  static Utf8String herdDiagram(Scheduler *scheduler, quint64 tii);
 };
 
 #endif // GRAPHVIZDIAGRAMSBUILDER_H
