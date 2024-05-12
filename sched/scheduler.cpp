@@ -170,6 +170,7 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
              "configuration";
       instance.setTask(t);
       _unfinishedTasks.insert(instance.idAsLong(), instance);
+      _allTasks.lockedData()->insert(instance.idAsLong(), instance);
     }
   }
   _configdate = QDateTime::currentDateTime().toMSecsSinceEpoch();
@@ -241,24 +242,24 @@ void Scheduler::planOrRequestCommonPostProcess(
   _unfinishedHerdedTasks[herder.idAsLong()] << instance.idAsLong();
   QSet<quint64> &herdedTasks = _unfinishedHerds[herder.idAsLong()];
   herdedTasks << instance.idAsLong();
-  herder.appendToHerdedTasksCaption(instance.idSlashId());
+  herder.appendToHerd(instance.taskId(), instance.idAsLong());
   Log::info(herder.taskId(), herder.id())
       << "task appended to herded tasks: " << instance.idSlashId();
 }
 
-TaskInstanceList Scheduler::planTask(
+TaskInstance Scheduler::planTask(
     const Utf8String &taskId, ParamSet overridingParams, bool force,
-    quint64 herdid, Condition queuewhen, Condition cancelwhen) {
+    quint64 herdid, Condition queuewhen, Condition cancelwhen,
+    quint64 parentid, const Utf8String &cause) {
   if (this->thread() == QThread::currentThread())
     return doPlanTask(taskId, overridingParams, force, herdid, queuewhen,
-                      cancelwhen);
-  TaskInstanceList instances;
-  QMetaObject::invokeMethod(this, [this,&instances,taskId,overridingParams,
-             force,herdid,queuewhen,cancelwhen](){
-        instances = doPlanTask(taskId, overridingParams, force, herdid,
-                               queuewhen, cancelwhen);
-      }, Qt::BlockingQueuedConnection);
-  return instances;
+                      cancelwhen, parentid, cause);
+  TaskInstance instance;
+  QMetaObject::invokeMethod(this, [&](){
+    instance = doPlanTask(taskId, overridingParams, force, herdid,
+                          queuewhen, cancelwhen, parentid, cause);
+  }, Qt::BlockingQueuedConnection);
+  return instance;
 }
 
 static Condition guessCancelwhenCondition(
@@ -286,14 +287,14 @@ static Condition guessCancelwhenCondition(
   return cancelwhen;
 }
 
-TaskInstanceList Scheduler::doPlanTask(
-    QByteArray taskId, ParamSet overridingParams, bool force, quint64 herdid,
-  Condition queuewhen, Condition cancelwhen) {
+TaskInstance Scheduler::doPlanTask(
+    const Utf8String &taskId, ParamSet overridingParams, bool force,
+    quint64 herdid, Condition queuewhen, Condition cancelwhen,
+    quint64 parentid, const Utf8String &cause) {
   TaskInstance herder = _unfinishedTasks.value(herdid);
-  TaskInstanceList instances;
   Task task = config().tasks().value(taskId);
   if (!planOrRequestCommonPreProcess(taskId, task, overridingParams))
-    return instances;
+    return {};
   if (herder.isNull()) { // no herder -> no conditions
     if (!queuewhen.isEmpty()) {
       Log::warning() << "ignoring queuewhen condition when planning a task out"
@@ -322,8 +323,9 @@ TaskInstanceList Scheduler::doPlanTask(
   if (cancelwhen.isEmpty())
     cancelwhen = guessCancelwhenCondition(queuewhen, cancelwhen);
   TaskInstance instance(task, force, overridingParams, herdid, queuewhen,
-                        cancelwhen);
+                        cancelwhen, parentid, cause);
   _unfinishedTasks.insert(instance.idAsLong(), instance);
+  _allTasks.lockedData()->insert(instance.idAsLong(), instance);
   Log::debug(taskId, instance.idAsLong())
       << "planning task " << instance.idSlashId() << " "
       << overridingParams << " with herdid " << instance.herdid()
@@ -343,9 +345,7 @@ TaskInstanceList Scheduler::doPlanTask(
     emit itemChanged(herder, herder, "taskinstance"_u8);
   Log::debug(taskId, instance.idAsLong())
       << "task instance params after planning" << instance.params();
-  if (!instance.isNull())
-    instances.append(instance);
-  return instances;
+  return instance;
 }
 
 TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
@@ -359,7 +359,7 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
   if (!instance.force()) {
     if (!task.enabled()) {
       doCancelTaskInstance(instance, false,
-                           "canceling task because it is disabled : "
+                           "canceling task because it is disabled : "_u8
                                + instance.idSlashId());
       return {};
     }
@@ -368,14 +368,12 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
     if (max_queued_instances > 0) {
       auto criterion = task.deduplicateCriterion();
       auto strategy = task.deduplicateStrategy();
-      auto self_crit = PercentEvaluator::eval_utf16(criterion, &instance);
+      auto self_crit = PercentEvaluator::eval_utf8(criterion, &instance);
       TaskInstanceList duplicates;
       for (auto other: _unfinishedTasks) {
         if (other.status() != TaskInstance::Queued)
           continue;
         if (other.taskId() != taskId)
-          continue;
-        if (other.groupId() == instance.groupId())
           continue;
         auto other_crit = PercentEvaluator::eval_utf16(criterion, &other);
         if (other_crit == self_crit)
@@ -424,10 +422,11 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
   }
   instance.setQueueDatetime(QDateTime::currentDateTime());
   _unfinishedTasks.insert(instance.idAsLong(), instance);
+  _allTasks.lockedData()->insert(instance.idAsLong(), instance);
   _alerter->cancelAlert("scheduler.maxqueuedrequests.reached"_u8);
   Log::debug(taskId, instance.idAsLong())
       << "queuing task " << instance.idSlashId()
-      << " with request group id " << instance.groupId()
+      << " with parentid " << instance.parentid()
       << " and herdid " << instance.herdid();
   // note: a request must always be queued even if the task can be started
   // immediately, to avoid the new tasks being started before queued ones
@@ -637,15 +636,13 @@ bool Scheduler::checkTrigger(
             key, PercentEvaluator::escape(
               trigger.overridingParams().paramUtf8(key, &task)));
     }
-    TaskInstanceList instances = planTask(taskId, overridingParams, false, 0, {}, {});
-    if (!instances.isEmpty())
-      for (auto ti : instances)
-        Log::info(taskId, ti.id())
-            << "cron trigger " << trigger.humanReadableExpression()
-            << " triggered task " << taskId;
-    //else
-    //Log::debug(taskId) << "cron trigger " << trigger.humanReadableExpression()
-    //                   << " failed to trigger task " << taskId;
+    auto cause = "cron trigger "+trigger.humanReadableExpression();
+    TaskInstance instance =
+        planTask(taskId, overridingParams, false, 0, {}, {}, 0, cause);
+    if (!!instance)
+      Log::info(taskId, instance.id()) << cause << " triggered task " << taskId;
+    else
+      Log::warning(taskId) << cause << " failed to trigger task " << taskId;
     trigger.setLastTriggered(now);
     next = trigger.nextTriggering();
     fired = true;
@@ -707,16 +704,15 @@ void Scheduler::postNotice(
                   PercentEvaluator::eval(
                     trigger_overridingparams.paramRawUtf8(key), &ppm)));
         }
-        TaskInstanceList instances = planTask(task.id(), overridingParams, false, 0, {}, {});
-        if (!instances.isEmpty())
-          for (auto ti: instances)
-            Log::info(task.id(), ti.id())
-                << "notice " << trigger.humanReadableExpression()
-                << " triggered task " << task.id();
+        auto cause = "notice trigger "+trigger.humanReadableExpression();
+        TaskInstance instance =
+            planTask(task.id(), overridingParams, false, 0, {}, {}, 0, cause);
+        if (!!instance)
+          Log::info(task.id(), instance.id())
+              << cause << " triggered task " << task.id();
         else
-          Log::debug(task.id())
-              << "notice " << trigger.humanReadableExpression()
-              << " failed to trigger task " << task.id();
+          Log::warning(task.id())
+              << cause << " failed to trigger task " << task.id();
       }
     }
   }
@@ -1127,7 +1123,8 @@ void Scheduler::taskInstanceFinishedOrCanceled(
       << "In memory tasks indexes size after task finished: unfinishedherds "
       << _unfinishedHerds.size() << " herds; unfinishedtasks: "
       << _unfinishedTasks.size() << " tasks; awaitedtasks: "
-      << _unfinishedHerdedTasks.size() << " herds.";
+      << _unfinishedHerdedTasks.size() << " herds; alltasks: "
+      << _allTasks.lockedData()->size() << " tasks.";
   auto success = instance.success();
   Log::log(success ? Log::Info : Log::Warning, taskId, instance.idAsLong())
     << "task '" << taskId << "' finished "

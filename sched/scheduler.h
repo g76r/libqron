@@ -18,6 +18,7 @@
 #include "taskinstance.h"
 #include "condition/condition.h"
 #include <random>
+#include "thread/atomicvalue.h"
 
 class QThread;
 class QFileSystemWatcher;
@@ -36,12 +37,14 @@ class LIBQRONSHARED_EXPORT Scheduler : public QronConfigDocumentManager {
   Q_OBJECT
   Q_DISABLE_COPY(Scheduler)
   QThread *_thread;
-  /// task instances repository: any unfinished task
+  /// task instances live repository: any unfinished task
   QMap<quint64,TaskInstance> _unfinishedTasks;
   /// unfinished herders -> any herded tasks
   QMap<quint64,QSet<quint64>> _unfinishedHerds;
   /// unfinished herded tasks (for which the herder is likely to be waiting for)
   QMap<quint64,QSet<quint64>> _unfinishedHerdedTasks;
+  /// task instances history repository: any not too old finished task
+  AtomicValue<QMap<quint64,TaskInstance>> _allTasks;
   QMap<quint64,Executor*> _runningExecutors;
   QSet<quint64> _dirtyHerds; // for which planned tasks must be reevaluated
   QList<Executor*> _availableExecutors;
@@ -82,14 +85,15 @@ public slots:
    * This method is thread-safe.
    * This method will block current thread until the request is either
    * queued either denied by Scheduler thread. */
-  TaskInstanceList planTask(const Utf8String &taskId, ParamSet overridingParams,
-                            bool force, quint64 herdid,
-                            Condition queuewhen, Condition cancelwhen);
+  TaskInstance planTask(
+      const Utf8String &taskId, ParamSet overridingParams, bool force,
+      quint64 herdid, Condition queuewhen, Condition cancelwhen,
+      quint64 parentid, const Utf8String &cause);
   /** Cancel a planned or queued request.
    * @return TaskInstance.isNull() iff error (e.g. request not found or no
    * longer queued) */
   TaskInstance cancelTaskInstance(quint64 id);
-  TaskInstance cancelTaskInstance(TaskInstance instance) {
+  TaskInstance cancelTaskInstance(const TaskInstance &instance) {
     return cancelTaskInstance(instance.idAsLong()); }
   /** Cancel all planned or queued requests of a given task. */
   TaskInstanceList cancelTaskInstancesByTaskId(QByteArray taskId);
@@ -158,6 +162,9 @@ public:
     return QronConfigDocumentManager::config(); }
   /** Thread-safe. */
   QMap<quint64,TaskInstance> unfinishedTaskInstances();
+  /** Thread-safe. */
+  inline TaskInstance taskInstanceById(quint64 tii) {
+    return _allTasks.lockedData()->value(tii); }
 
 signals:
   void hostsResourcesAvailabilityChanged(
@@ -189,17 +196,13 @@ private:
   bool checkTrigger(CronTrigger trigger, Task task, QByteArray taskId);
   void setTimerForCronTrigger(CronTrigger trigger, QDateTime previous
                               = QDateTime::currentDateTime());
-  TaskInstanceList doRequestTask(
-      QByteArray taskId, ParamSet overridingParams, bool force, quint64 herdid);
-  TaskInstanceList doPlanTask(
-      QByteArray taskId, ParamSet overridingParams, bool force, quint64 herdid,
-      Condition queuewhen, Condition cancelwhen);
+  TaskInstance doPlanTask(
+      const Utf8String &taskId, ParamSet overridingParams, bool force,
+      quint64 herdid, Condition queuewhen, Condition cancelwhen,
+      quint64 parentid, const Utf8String &cause);
   TaskInstance enqueueTaskInstance(TaskInstance request);
   TaskInstance doCancelTaskInstance(
       TaskInstance instance, bool warning, const char *reason);
-  TaskInstance doCancelTaskInstance(
-      TaskInstance instance, bool warning, QString reason) {
-    return doCancelTaskInstance(instance, warning, reason.toUtf8().constData()); }
   TaskInstanceList doCancelTaskInstancesByTaskId(QByteArray taskId);
   TaskInstanceList doAbortTaskInstanceByTaskId(QByteArray taskId);
   TaskInstance doAbortTaskInstance(quint64 id);

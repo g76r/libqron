@@ -1,4 +1,4 @@
-/* Copyright 2022-2023 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -35,11 +35,11 @@ Condition::~Condition() {
 ConditionData::~ConditionData() {
 }
 
-QString ConditionData::toString() const {
+Utf8String ConditionData::toString() const {
   return "Condition"; // should never happen
 }
 
-QString ConditionData::conditionType() const {
+Utf8String ConditionData::conditionType() const {
   return "unknown"; // should never happen
 }
 
@@ -56,12 +56,12 @@ bool ConditionData::isEmpty() const {
   return true; // right: a Condition() is an empty condition
 }
 
-QString Condition::toString() const {
-  return d ? d->toString() : QString();
+Utf8String Condition::toString() const {
+  return d ? d->toString() : Utf8String{};
 }
 
-QString Condition::conditionType() const {
-  return d ? d->conditionType() : QString();
+Utf8String Condition::conditionType() const {
+  return d ? d->conditionType() : Utf8String{};
 }
 
 bool Condition::isEmpty() const {

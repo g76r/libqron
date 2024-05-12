@@ -52,39 +52,33 @@ public:
             key, PercentEvaluator::escape(
               PercentEvaluator::eval(
                 _overridingParams.paramRawUtf8(key), context)));
-    if (!parentInstance.isNull()) {
-      overridingParams.insert("!parenttaskinstanceid", parentInstance.id());
+    if (!!parentInstance) {
       overridingParams.insert("!parenttaskid", parentInstance.taskId());
       overridingParams.insert("!parenttasklocalid", parent_localid);
     }
-    TaskInstanceList instances = _scheduler->planTask(
-      id, overridingParams, _force, herdid, _queuewhen, _cancelwhen);
-    if (instances.isEmpty()) {
+    auto cause = subscription.eventName();
+    TaskInstance instance =
+        _scheduler->planTask(id, overridingParams, _force, herdid, _queuewhen,
+                             _cancelwhen, parentInstance.idAsLong(), cause);
+    if (!instance) {
       Log::error(parentInstance.taskId(), parentInstance.idAsLong())
           << "plantask action failed to plan execution of task "
           << id << " within event subscription context "
           << subscription.subscriberName() << "|" << subscription.eventName();
       return;
     }
-    for (auto sui: instances) {
-      auto childInstance = sui.casted<TaskInstance>();
-      Log::info(parentInstance.taskId(), parentInstance.idAsLong())
-          << "plantask action planned execution of task "
-          << childInstance.taskId() << "/" << childInstance.groupId()
-          << " with queue condition " << _queuewhen.toString()
-          << " and cancel condition " << _cancelwhen.toString();
-      if (_paramappend.isEmpty())
-        continue;
-      context->prepend(&childInstance);
-      if (herdid != 0) {
-        for (auto key: _paramappend.keys()) {
-          auto value =
-              PercentEvaluator::eval_utf8(_paramappend.value(key), context);
-          _scheduler->taskInstanceParamAppend(
-                herdid, key, PercentEvaluator::escape(value));
-        }
-      }
-      context->pop_front();
+    Log::info(parentInstance.taskId(), parentInstance.idAsLong())
+        << "plantask action planned execution of task "
+        << instance.taskId()
+        << " with queue condition " << _queuewhen.toString()
+        << " and cancel condition " << _cancelwhen.toString();
+    if (_paramappend.isEmpty() || !herdid)
+      return;
+    context->prepend(&instance);
+    for (auto [key,rawvalue]: _paramappend.asKeyValueRange()) {
+      auto value = PercentEvaluator::eval_utf8(rawvalue, context);
+      _scheduler->taskInstanceParamAppend(
+            herdid, key, PercentEvaluator::escape(value));
     }
   }
   Utf8String toString() const override {

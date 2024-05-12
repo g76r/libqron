@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,8 +21,8 @@ class LIBQRONSHARED_EXPORT ConditionData : public QSharedData {
 public:
   explicit ConditionData() { }
   virtual ~ConditionData();
-  virtual QString toString() const;
-  virtual QString conditionType() const;
+  virtual Utf8String toString() const;
+  virtual Utf8String conditionType() const;
   virtual bool evaluate(TaskInstance instance, TaskInstance herder,
                         QSet<TaskInstance> herdedTasks) const;
   virtual PfNode toPfNode() const;

@@ -735,7 +735,6 @@ void Executor::scatterMean() {
   // LATER const auto mean = params.value("scatter.mean", "plantask", &_instance);
   // LATER queuewhen ?
   TaskInstanceList instances;
-
   emit taskInstanceStarted(_instance);
   int rank = -1;
   for (auto input: inputs) {
@@ -756,10 +755,10 @@ void Executor::scatterMean() {
       overridingParams.insert(
             key, PercentEvaluator::escape(
               PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm)));
-    auto instance = _scheduler->planTask(
-        taskid, overridingParams, force, lone ? 0 : _instance.herdid(),
-          Condition(), Condition())
-        .value(0).casted<TaskInstance>();
+    auto instance =
+        _scheduler->planTask(
+          taskid, overridingParams, force, lone ? 0 : _instance.herdid(), {},
+          {}, _instance.idAsLong(), "scatter"_u8);
     if (instance.isNull()) {
       Log::error(_instance.taskId(), _instance.idAsLong())
           << "scatter failed to plan task : " << taskid << overridingParams
@@ -782,11 +781,12 @@ void Executor::scatterMean() {
         auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm);
         overridingParams.insert(key, PercentEvaluator::escape(value));
       }
-      auto onlastinstance = _scheduler->planTask(
+      auto onlastinstance =
+          _scheduler->planTask(
             taskid, overridingParams, force,
             lone ? instance.herdid() : _instance.herdid(),
             DisjunctionCondition({PfNode(onlast_condition, "%"+tiiparam)}),
-            Condition()).value(0);
+            {}, _instance.idAsLong(), "onlastinstance"_u8);
       if (onlastinstance.isNull()) {
         Log::error(_instance.taskId(), _instance.idAsLong())
             << "scatter failed to plan onlast task : " << taskid

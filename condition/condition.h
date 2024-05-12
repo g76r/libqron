@@ -1,4 +1,4 @@
-/* Copyright 2022-2023 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,6 +15,8 @@
 #define CONDITION_H
 
 #include "libqron_global.h"
+#include "pf/pfnode.h"
+#include <QSharedDataPointer>
 
 class ConditionData;
 class TaskInstance;
@@ -35,9 +37,9 @@ public:
   bool evaluate(TaskInstance instance, TaskInstance herder,
                 QSet<TaskInstance> herdedTasks) const;
   /** Human readable description of action */
-  QString toString() const;
+  Utf8String toString() const;
   /** Type of action for programmatic test, e.g. "anyfinished" */
-  QString conditionType() const;
+  Utf8String conditionType() const;
   PfNode toPfNode() const;
   /** Create the appropriate Condition subclass according to configuration
    *  fragment. */

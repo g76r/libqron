@@ -1,4 +1,4 @@
-/* Copyright 2022-2023 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -187,11 +187,11 @@ public:
   TaskWaitConditionData(TaskWaitOperator op, QString expr)
     : _op(op), _expr(expr) { }
   TaskWaitConditionData() : _op(UnknownOperator) { }
-  QString toString() const override {
+  Utf8String toString() const override {
     return TaskWaitCondition::operatorAsString(_op)+' '+_expr;
   }
-  QString conditionType() const override {
-    return "taskwait";
+  Utf8String conditionType() const override {
+    return "taskwait"_u8;
   }
   bool evaluate(TaskInstance instance, TaskInstance herder,
                 QSet<TaskInstance> herdedTasks) const override {

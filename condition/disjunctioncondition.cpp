@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,14 +21,14 @@ public:
   DisjunctionConditionData(
       QList<Condition> conditions = QList<Condition>())
     : _conditions(conditions) { }
-  QString toString() const override {
-    QString s = "anyof {";
+  Utf8String toString() const override {
+    Utf8String s = "anyof {";
     for (auto c: _conditions)
       s += ' ' + c.toString();
     s += " }";
     return s;
   }
-  QString conditionType() const override { return "disjunction"; }
+  Utf8String conditionType() const override { return "disjunction"_u8; }
   bool evaluate(TaskInstance instance, TaskInstance herder,
                 QSet<TaskInstance> herdedTasks) const override {
     if (_conditions.isEmpty())

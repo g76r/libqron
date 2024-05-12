@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,8 +26,8 @@ public:
   static const Utf8StringIndexedConstList _sectionNames;
   static const Utf8StringIndexedConstList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
-  quint64 _id, _herdid, _groupId;
-  Utf8String _idAsString, _taskId;
+  quint64 _id, _herdid, _parentid;
+  Utf8String _idAsString, _taskId, _cause;
   mutable AtomicValue<Task> _task;
   QDateTime _creationDateTime;
   bool _force;
@@ -48,20 +48,18 @@ public:
   // be the case forever.
   mutable Host _target;
   mutable bool _abortable;
-  mutable AtomicValue<QString> _herdedTasksCaption;
+  mutable AtomicValue<QList<QPair<Utf8String,quint64>>> _herdedTasksIdsPairs;
   mutable AtomicValue<int> _remainingTries;
   Condition _queuewhen, _cancelwhen;
 
   TaskInstanceData(Task task, ParamSet params, bool force,
-                   quint64 herdid, quint64 groupId = 0,
-                   Condition queuewhen = Condition(),
-                   Condition cancelwhen = Condition())
+                   quint64 herdid, Condition queuewhen, Condition cancelwhen,
+                   quint64 parentid, const Utf8String &cause)
     : SharedUiItemDataWithMutableParams<TaskInstanceData,true>(
         params.withParent(task.params())),
-      _id(newId()), _herdid(herdid == 0 ? _id : herdid),
-      _groupId(groupId ? groupId : _id),
+      _id(newId()), _herdid(herdid == 0 ? _id : herdid), _parentid(parentid),
       _idAsString(Utf8String::number(_id)),
-      _taskId(task.id()), _task(task),
+      _taskId(task.id()), _cause(cause), _task(task),
       _creationDateTime(QDateTime::currentDateTime()), _force(force),
       _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
       _finish(LLONG_MIN),
@@ -69,10 +67,8 @@ public:
       _remainingTries(task.maxTries()),
       _queuewhen(queuewhen), _cancelwhen(cancelwhen) {}
   TaskInstanceData()
-    : _id(0), _herdid(0), _groupId(0), _force(false),
-      _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
-      _finish(LLONG_MIN), _success(false), _returnCode(0),
-      _abortable(false), _remainingTries(0) {}
+    : _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
+      _finish(LLONG_MIN) {}
 
 private:
   static quint64 newId() {
@@ -171,16 +167,13 @@ TaskInstance::TaskInstance() {
 TaskInstance::TaskInstance(const TaskInstance &other) : SharedUiItem(other) {
 }
 
-TaskInstance::TaskInstance(Task task, bool force, ParamSet params, quint64 herdid,
-    Condition queuewhen, Condition cancelwhen)
+TaskInstance::TaskInstance(
+    Task task, bool force, ParamSet params, quint64 herdid,
+    Condition queuewhen, Condition cancelwhen,
+    quint64 parentid, const Utf8String &cause)
   : SharedUiItem(new TaskInstanceData(
-          task, params, force, herdid, 0, queuewhen, cancelwhen)) {
-}
-
-TaskInstance::TaskInstance(Task task, quint64 groupId,
-                           bool force,
-                           ParamSet params, quint64 herdid)
-  : SharedUiItem(new TaskInstanceData(task, params, force, herdid, groupId)) {
+                   task, params, force, herdid, queuewhen, cancelwhen,
+                   parentid, cause)) {
 }
 
 Task TaskInstance::task() const {
@@ -227,11 +220,6 @@ ParamSet TaskInstance::params() const {
 quint64 TaskInstance::idAsLong() const {
   const TaskInstanceData *d = data();
   return d ? d->_id : 0;
-}
-
-quint64 TaskInstance::groupId() const {
-  const TaskInstanceData *d = data();
-  return d ? d->_groupId : 0;
 }
 
 QDateTime TaskInstance::creationDatetime() const {
@@ -393,14 +381,27 @@ quint64 TaskInstance::herdid() const {
   return d ? d->_herdid : 0;
 }
 
-void TaskInstance::appendToHerdedTasksCaption(QString text) const {
+void TaskInstance::appendToHerd(const Utf8String &taskid, quint64 tii) const {
   const TaskInstanceData *d = data();
   if (!d)
     return;
-  auto caption = d->_herdedTasksCaption.lockedData();
-  if (!caption->isEmpty())
-    *caption += ' ';
-  *caption += text;
+  d->_herdedTasksIdsPairs.lockedData()->append({taskid, tii});
+}
+
+QList<QPair<Utf8String,quint64>> TaskInstance::herdedTasksIdsPairs() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_herdedTasksIdsPairs.detachedData()
+           : QList<QPair<Utf8String,quint64>>{};
+}
+
+quint64 TaskInstance::parentid() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_parentid : 0;
+}
+
+Utf8String TaskInstance::cause() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_cause : Utf8String{};
 }
 
 void TaskInstance::consumeOneTry() const {
@@ -494,8 +495,14 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
           return _abortable;
         case 10:
           return _herdid;
-        case 11:
-          return _herdedTasksCaption.detachedData();
+        case 11: {
+          auto ids = _herdedTasksIdsPairs.lockedData();
+          QString s;
+          for (const QPair<Utf8String,quint64> &id: *ids)
+            s += id.first + "/" + QString::number(id.second) + " ";
+          s.chop(1);
+          return s;
+        }
         case 12:
           return finishDatetime().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
         case 13:
@@ -541,9 +548,13 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
         const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)->_herdid;
     } },
-  { "!taskinstancegroupid", [](const SharedUiItemData *data, const Utf8String &,
+  { "!parenttaskinstanceid", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
-      return reinterpret_cast<const TaskInstanceData*>(data)->_groupId;
+      return reinterpret_cast<const TaskInstanceData*>(data)->_parentid;
+    } },
+  { "!taskinstancecause", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)->_cause;
     } },
   { "!runningms", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
@@ -721,7 +732,9 @@ const Utf8StringIndexedConstList TaskInstanceData::_sectionNames {
   "time_planned",
   "queue_when",
   "cancel_when",
-  "deduplicate_criterion", // 19
+  "deduplicate_criterion",
+  "parentid", // 20
+  "cause",
 };
 
 const Utf8StringIndexedConstList TaskInstanceData::_headerNames {
@@ -744,5 +757,7 @@ const Utf8StringIndexedConstList TaskInstanceData::_headerNames {
   "Time planned",
   "Queue when",
   "Cancel when",
-  "Deduplicate criterion", // 19
+  "Deduplicate criterion",
+  "Parent Id", // 20
+  "Cause",
 };

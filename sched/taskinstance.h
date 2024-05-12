@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -34,10 +34,8 @@ public:
 #endif
   TaskInstance(const TaskInstance &);
   TaskInstance(Task task, bool force, ParamSet params, quint64 herdid,
-               Condition queuewhen = Condition(),
-               Condition cancelwhen = Condition());
-  TaskInstance(Task task, quint64 groupId, bool force,
-               ParamSet params, quint64 herdid);
+               Condition queuewhen, Condition cancelwhen,
+               quint64 parentid, const Utf8String &cause);
   TaskInstance &operator=(const TaskInstance &other) {
     SharedUiItem::operator=(other); return *this; }
   Task task() const;
@@ -49,8 +47,7 @@ public:
   ParamSet params() const;
   quint64 idAsLong() const;
   /** @return string of the form "taskid/taskinstanceid" */
-  QString idSlashId() const { return taskId()+"/"+id(); }
-  quint64 groupId() const;
+  Utf8String idSlashId() const { return taskId()+"/"+id(); }
   QDateTime creationDatetime() const;
   QDateTime queueDatetime() const;
   void setQueueDatetime(QDateTime datetime) const;
@@ -104,7 +101,12 @@ public:
   void setAbortable(bool abortable = true) const;
   quint64 herdid() const;
   bool isHerder() const { return herdid() == idAsLong(); }
-  void appendToHerdedTasksCaption(QString text) const;
+  /** Thread-safe. */
+  void appendToHerd(const Utf8String &taskid, quint64 tii) const;
+  /** Thread-safe deep copy. List of {taskid, tii}. */
+  QList<QPair<Utf8String,quint64>> herdedTasksIdsPairs() const;
+  quint64 parentid() const;
+  Utf8String cause() const;
   void consumeOneTry() const;
   void consumeAllTries() const;
   int remainingTries() const;
