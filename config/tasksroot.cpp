@@ -172,8 +172,6 @@ Qt::ItemFlags TasksRootData::uiFlags(int section) const {
   return flags;
 }
 
-const Utf8String TasksRootData::_qualifier = "dummy";// b/c of subclassing
-
 const Utf8StringIndexedConstList TasksRootData::_sectionNames = {
   "tasklocalid", // 0
   "parent_group",

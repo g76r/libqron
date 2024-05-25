@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,9 +33,8 @@ static QStringList excludeOnfinishSubscriptions { "onfinish" };
 #define TASKSROOTID "*"
 
 class TasksRootData
-    : public SharedUiItemDataWithImmutableParams<TasksRootData,true> {
+    : public SharedUiItemDynamicDataWithImmutableParams<TasksRootData,true> {
 public:
-  static const Utf8String _qualifier; // dummy b/c of subclassing
   static const Utf8StringIndexedConstList _sectionNames;
   static const Utf8StringIndexedConstList _headerNames;
   static const SharedUiItemDataFunctions _paramFunctions;
