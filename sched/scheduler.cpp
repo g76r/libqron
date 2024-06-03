@@ -57,6 +57,8 @@ Scheduler::Scheduler() : QronConfigDocumentManager(0), _thread(new QThread()),
           this, &Scheduler::reloadAccessControlConfig);
   connect(_hostMonitor, &HostMonitor::itemChanged,
           this, &Scheduler::itemChanged);
+  connect(_hostMonitor, &HostMonitor::itemChanged,
+          this, &Scheduler::reevaluateQueuedTaskInstances);
   moveToThread(_thread);
 }
 
