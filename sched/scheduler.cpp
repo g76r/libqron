@@ -382,7 +382,6 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
           duplicates.append(other);
       }
       duplicates.append(instance);
-      int canceled = 0;
       bool self_canceled = false;
       while (duplicates.size() > max_queued_instances) {
         TaskInstance duplicate;
@@ -403,7 +402,6 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
                 "queued : with same deduplicate criterion : " + self_crit
                 + " : " + instance.idSlashId());
         }
-        ++canceled;
       }
       if (self_canceled) {
         reevaluateQueuedTaskInstances();

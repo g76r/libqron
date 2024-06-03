@@ -1,4 +1,4 @@
-/* Copyright 2015-2023 Hallowyn and others.
+/* Copyright 2015-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,20 +21,6 @@
 namespace {
 
 enum GridStatus { Unknown, Ok, Long, Raised };
-
-inline Utf8String statusToHumanReadableString(GridStatus status) {
-  switch (status) {
-  case Ok:
-    return "ok"_u8;
-  case Long:
-    return "OK BUT LONG"_u8;
-  case Raised:
-    return "ALERT"_u8;
-  case Unknown:
-    ;
-  }
-  return "unknown"_u8;
-}
 
 inline Utf8String statusToHtmlHumanReadableString(GridStatus status) {
   switch (status) {
