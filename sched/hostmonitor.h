@@ -15,6 +15,7 @@
 #define HOSTMONITOR_H
 
 #include <QThread>
+#include <QProcess>
 #include "config/schedulerconfig.h"
 
 class Alerter;

@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,6 +13,7 @@
  */
 #include "parametrizedudpsender.h"
 #include "util/paramsprovidermerger.h"
+#include <QUrl>
 
 const Utf8StringSet ParametrizedUdpSender::supportedParamNames {
   "connecttimeout", "disconnecttimeout", "payload" };

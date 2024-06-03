@@ -20,6 +20,7 @@
 #include <QMutexLocker>
 #include <QBuffer>
 #include "log/filelogger.h"
+#include <QCryptographicHash>
 
 #define DEFAULT_MAXTOTALTASKINSTANCES 16
 #define DEFAULT_MAXQUEUEDREQUESTS 128

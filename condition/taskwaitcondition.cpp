@@ -13,6 +13,7 @@
  */
 #include "taskwaitcondition.h"
 #include "condition_p.h"
+#include "util/paramsprovidermerger.h"
 
 static QMap<TaskWaitOperator,Utf8String> _operatorsToText {
   { AllFinished, "allfinished" },

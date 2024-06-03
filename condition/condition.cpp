@@ -13,6 +13,7 @@
  */
 #include "condition_p.h"
 #include "taskwaitcondition.h"
+#include "log/log.h"
 
 Condition::Condition() {
 }

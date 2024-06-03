@@ -15,6 +15,7 @@
 #include "config/configutils.h"
 #include "modelview/templatedshareduiitemdata.h"
 #include "util/regexpparamsprovider.h"
+#include "util/paramsprovidermerger.h"
 
 #define DEFAULT_WARNING_DELAY 0 /* 0 means disabled */
 

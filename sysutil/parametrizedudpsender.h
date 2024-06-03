@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -17,6 +17,7 @@
 #include "libqron_global.h"
 #include "util/paramsprovider.h"
 #include <QUdpSocket>
+#include "util/paramset.h"
 
 class LIBQRONSHARED_EXPORT ParametrizedUdpSender : public QUdpSocket {
   Q_OBJECT

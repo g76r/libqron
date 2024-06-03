@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,6 +16,7 @@
 
 #include "libqron_global.h"
 #include <QAbstractTableModel>
+#include <QDateTime>
 
 // LATER move to libp6core
 /** Model holding generic text events along with the date their occured, one

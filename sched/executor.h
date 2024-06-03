@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,10 +19,10 @@
 #include "eventthread.h"
 #include <QProcessEnvironment>
 #include <QProcess>
+#include <QNetworkReply>
 
 class QThread;
 class QNetworkAccessManager;
-class QNetworkReply;
 class Alerter;
 class Scheduler;
 class QTimer;

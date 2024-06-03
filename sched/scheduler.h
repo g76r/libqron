@@ -19,6 +19,7 @@
 #include "condition/condition.h"
 #include <random>
 #include "thread/atomicvalue.h"
+#include <QDeadlineTimer>
 
 class QThread;
 class QFileSystemWatcher;

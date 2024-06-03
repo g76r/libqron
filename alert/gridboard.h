@@ -1,4 +1,4 @@
-/* Copyright 2015-2023 Hallowyn and others.
+/* Copyright 2015-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -15,6 +15,7 @@
 #define GRIDBOARD_H
 
 #include "alert.h"
+#include "pf/pfnode.h"
 
 class GridboardData;
 

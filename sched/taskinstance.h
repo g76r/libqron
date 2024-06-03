@@ -131,16 +131,18 @@ private:
 Q_DECLARE_METATYPE(TaskInstance)
 Q_DECLARE_TYPEINFO(TaskInstance, Q_MOVABLE_TYPE);
 
-class LIBQRONSHARED_EXPORT TaskInstanceList
-    : public SharedUiItemList {
+class LIBQRONSHARED_EXPORT TaskInstanceList : public SharedUiItemList {
+  TaskInstanceList(const SharedUiItemList &other)
+    : SharedUiItemList(other) { }
+
 public:
   TaskInstanceList() { }
   TaskInstanceList(const TaskInstanceList &other)
     : SharedUiItemList(other) { }
-  TaskInstanceList(const SharedUiItemList &other)
-    : SharedUiItemList(other) { }
   TaskInstanceList(const QList<TaskInstance> &other)
     : SharedUiItemList(other) { }
+  TaskInstanceList &operator =(const TaskInstanceList &other) {
+    SharedUiItemList::operator=(other); return *this; }
   operator QList<quint64>() const {
     QList<quint64> list;
     for (auto sui : *this)

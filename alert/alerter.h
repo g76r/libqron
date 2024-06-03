@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,6 +18,7 @@
 #include "alertchannel.h"
 #include "config/alerterconfig.h"
 #include "gridboard.h"
+#include "thread/atomicvalue.h"
 
 class QThread;
 class PfNode;

@@ -26,9 +26,13 @@
 #include "executor.h"
 #include "alert/alerter.h"
 #include "hostmonitor.h"
+#include "auth/inmemoryauthenticator.h"
+#include "auth/inmemoryusersdatabase.h"
+#include "thread/blockingtimer.h"
 #include <QCoreApplication>
 #include <QThread>
 #include <QTimer>
+#include <QFileSystemWatcher>
 
 #define REEVALUATE_QUEUED_INSTANCES_EVENT (QEvent::Type(QEvent::User+1))
 #define REEVALUATE_PLANNED_INSTANCES_EVENT (QEvent::Type(QEvent::User+2))

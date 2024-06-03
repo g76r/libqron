@@ -15,6 +15,8 @@
 #define REQUESTFORMFIELD_H
 
 #include "libqron_global.h"
+#include <QSharedDataPointer>
+#include "io/readonlyresourcescache.h"
 
 class RequestFormFieldData;
 class PfNode;

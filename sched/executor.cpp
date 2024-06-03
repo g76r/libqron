@@ -19,6 +19,10 @@
 #include "scheduler.h"
 #include "condition/disjunctioncondition.h"
 #include <QTimer>
+#include "pf/pfdomhandler.h"
+#include "log/qterrorcodes.h"
+#include "thread/blockingtimer.h"
+#include "util/regexpparamsprovider.h"
 
 #define PROCESS_OUTPUT_CHUNK_SIZE 16384
 #define DEFAULT_STATUS_POLLING_INTERVAL 5000

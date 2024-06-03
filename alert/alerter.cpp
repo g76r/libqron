@@ -17,6 +17,7 @@
 #include "mailalertchannel.h"
 #include "config/configutils.h"
 #include "alert.h"
+#include "thread/circularbuffer.h"
 #include <QTimer>
 #include <QThread>
 
