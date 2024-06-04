@@ -37,6 +37,7 @@
 #define REEVALUATE_QUEUED_INSTANCES_EVENT (QEvent::Type(QEvent::User+1))
 #define REEVALUATE_PLANNED_INSTANCES_EVENT (QEvent::Type(QEvent::User+2))
 #define PERIODIC_CHECKS_INTERVAL_MS 60000
+#define MAX_ALLTASKS_SIZE 100'000
 
 static SharedUiItem _nullItem;
 
@@ -1194,6 +1195,23 @@ void Scheduler::periodicChecks() {
   // if current system time goes back (which btw should never occur on well
   // managed production servers, however it with naive sysops)
   checkTriggersForAllTasks();
+  // forget old task instances if there are too many
+  auto all_tasks = _allTasks.lockedData();
+  auto size = all_tasks->size();
+  if (size > MAX_ALLTASKS_SIZE) {
+    auto it = all_tasks->keyBegin();
+    while (size-- > MAX_ALLTASKS_SIZE)
+      ++it;
+    auto oldest = *it;
+    if (oldest > 0) [[likely]] { // should always be true
+      auto forgotten = all_tasks->removeIf<>([oldest](std::pair<const quint64 &, TaskInstance &> pair){
+        return pair.first < oldest;
+      });
+      Log::debug() << "forgot " << forgotten
+                   << " old task instances from alltasks, remaining: "
+                   << all_tasks->size();
+    }
+  }
 }
 
 void Scheduler::propagateTaskInstanceChange(TaskInstance instance) {
