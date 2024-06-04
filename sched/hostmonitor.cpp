@@ -26,6 +26,7 @@ HostMonitor::HostMonitor(Alerter *alerter)
   _thread->start();
   QTimer *timer = new QTimer(this);
   connect(timer, &QTimer::timeout, this, &HostMonitor::asyncProcessing);
+  connect(this, &QObject::destroyed, timer, &QObject::deleteLater);
   timer->start(ASYNC_PROCESSING_INTERVAL);
   moveToThread(_thread);
 }
