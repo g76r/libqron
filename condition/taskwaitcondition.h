@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -42,6 +42,9 @@ public:
   QString expr() const;
   static TaskWaitOperator operatorFromString(const Utf8String &op);
   static Utf8String operatorAsString(TaskWaitOperator op);
+  inline Utf8String operatorAsString() {
+    return operatorAsString(op());
+  }
   static TaskWaitOperator cancelOperatorFromQueueOperator(TaskWaitOperator op);
 };
 

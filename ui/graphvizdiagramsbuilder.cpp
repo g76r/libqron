@@ -39,19 +39,16 @@ static QString humanReadableActionEdgeLabel(
   return label;
 }
 
-static QString actionEdgeStyle(
-    const EventSubscription &sub, const Action &action) {
-  Q_UNUSED(action)
-  if (sub.eventName() == "onplan")
-    return ",color=\"/paired12/4\",fontcolor=\"/paired12/4\"";
-  if (sub.eventName() == "onstart")
+static Utf8String actionEdgeStyle(const Utf8String &cause) {
+  if (cause == "onplan" || cause == "allfinished")
     return ",color=\"/paired12/2\",fontcolor=\"/paired12/2\"";
-  if (sub.eventName() == "onfailure")
+  if (cause == "onstart" || cause == "allsuccess")
+    return ",color=\"/paired12/4\",fontcolor=\"/paired12/4\"";
+  if (cause == "onfailure" || cause == "anyfailure" || cause == "anynonsuccess")
     return ",color=\"/paired12/6\",fontcolor=\"/paired12/6\"";
-  if (sub.eventName() == "onschedulerstart"
-      || sub.eventName() == "onconfigload")
+  if (cause == "onschedulerstart" || cause == "onconfigload")
     return ",color=\"/paired12/8\",fontcolor=\"/paired12/8\"";
-  return QString();
+  return {};
 }
 
 static QString instanceNodeStyle(TaskInstance instance) {
@@ -79,6 +76,29 @@ static QString instanceNodeStyle(TaskInstance instance) {
     style += " peripheries=2";
   }
   return style;
+}
+
+struct WaitCondition {
+  Utf8String op, expr;
+  inline bool operator!() const { return !op || !expr; }
+};
+
+/** Take expr from TaskWaitCondition or unique TWC embeded in a
+ *  DisjunctionCondition (which is the default in many cases) */
+static inline WaitCondition taskWaitConditionExpression(Condition cond) {
+  if (cond.conditionType() == "disjunction"_u8) {
+    // try to open a condition list and take the only item if size is 1
+    auto dc = static_cast<const DisjunctionCondition&>(cond);
+    if (dc.size() != 1)
+      return {};
+    cond = dc.conditions().first();
+  }
+  if (cond.conditionType() == "taskwait"_u8) {
+    // if TaskWaitCondition, use conjugate operator
+    auto twc = static_cast<const TaskWaitCondition&>(cond);
+    return {twc.operatorAsString(), twc.expr()};
+  }
+  return {};
 }
 
 QHash<QString,QString> GraphvizDiagramsBuilder
@@ -112,7 +132,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   // * task ids, which are usefull to detect inexisting tasks and avoid drawing
   //   edges to or from them
   // * displayed global event names, i.e. global event names (e.g. onstartup)
-  //   with at less one displayed event subscription (e.g. requesttask,
+  //   with at less one displayed event subscription (e.g. plantask,
   //   postnotice, emitalert)
   // * resources defined in either tasks or hosts
   for (const Task &task: tasks.values()) {
@@ -144,7 +164,7 @@ QHash<QString,QString> GraphvizDiagramsBuilder
       QString actionType = action.actionType();
       if (actionType == "postnotice")
         notices.insert(action.targetName());
-      if (actionType == "postnotice" || actionType == "requesttask")
+      if (actionType == "postnotice" || actionType == "plantask")
         displayedGlobalEventsName.insert(sub.eventName());
     }
   }
@@ -292,8 +312,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
           gv.append("\"").append(task.id()).append("\"--\"$notice_")
               .append(action.targetName().remove('"')).append("\" [xlabel=\"")
               .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
-              .append("\"," TASK_POSTNOTICE_EDGE + actionEdgeStyle(sub, action)
-                      + "]\n");
+              .append("\"," TASK_POSTNOTICE_EDGE
+                      +actionEdgeStyle(sub.eventName())+"]\n");
         } else if (actionType == "plantask") {
           QString target = action.targetName();
           if (!target.contains('.'))
@@ -301,8 +321,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
           if (taskIds.contains(target))
             edges.insert("\""+task.id()+"\"--\""+target+"\" [xlabel=\""
                          +humanReadableActionEdgeLabel(sub, action).remove('"')
-                         +"\"," TASK_REQUESTTASK_EDGE
-                         + actionEdgeStyle(sub, action) +  "]\n");
+                         +"\"," TASK_PLANTASK_EDGE
+                         +actionEdgeStyle(sub.eventName())+"]\n");
         }
       }
     }
@@ -317,16 +337,16 @@ QHash<QString,QString> GraphvizDiagramsBuilder
         gv.append("\"$notice_").append(action.targetName().remove('"'))
             .append("\"--\"$global_").append(sub.eventName())
             .append("\" [" GLOBAL_POSTNOTICE_EDGE
-                    + actionEdgeStyle(sub, action) + ",xlabel=\"")
+                    +actionEdgeStyle(sub.eventName())+",xlabel=\"")
             .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
             .append("\"]\n");
-      } else if (actionType == "requesttask") {
+      } else if (actionType == "plantask") {
         QString target = action.targetName();
         if (taskIds.contains(target)) {
           gv.append("\"").append(target).append("\"--\"$global_")
               .append(sub.eventName())
-              .append("\" [" GLOBAL_REQUESTTASK_EDGE
-                      + actionEdgeStyle(sub, action) + ",xlabel=\"")
+              .append("\" [" GLOBAL_PLANTASK_EDGE
+                      +actionEdgeStyle(sub.eventName())+",xlabel=\"")
               .append(humanReadableActionEdgeLabel(sub, action).remove('"'))
               .append("\"]\n");
         }
@@ -444,7 +464,7 @@ QList<PredecessorGroup> predecessors(Task sheep) {
   return pg;
 }
 
-Utf8String GraphvizDiagramsBuilder::herdDiagram(
+Utf8String GraphvizDiagramsBuilder::herdInstanceDiagram(
     Scheduler *scheduler, quint64 tii) {
   Q_ASSERT(scheduler);
   Utf8String gv;
@@ -453,19 +473,21 @@ Utf8String GraphvizDiagramsBuilder::herdDiagram(
     return {};
   auto herder = scheduler->taskInstanceById(herdid);
   gv.append("graph herd {\n" "graph[" GLOBAL_GRAPH
-            ",concentrate=true,bgcolor=grey95,"
+            ",bgcolor=grey95,rankdir=TB,"
             "label=\"herd diagram for "_u8+herder.idSlashId()+"\"]\n"_u8);
+  // selecting instances to show on diagram
   QMap<quint64,TaskInstance> instances;
+  // herder
   instances.insert(herdid, herder);
+  // its parent
   auto herderparentid = herder.parentid();
   if (herderparentid) {
     auto parent = scheduler->taskInstanceById(herderparentid);
     if (!!parent)
       instances.insert(herderparentid, parent);
   }
+  // instances belonging to the herd and their parent
   for (auto [taskid, tii]: herder.herdedTasksIdsPairs()) {
-    // taking any instance belonging to the herd or parent to a task belonging
-    // to the herd
     auto instance = instances[tii];
     if (!instance)
       instance = scheduler->taskInstanceById(tii);
@@ -476,20 +498,77 @@ Utf8String GraphvizDiagramsBuilder::herdDiagram(
     if (parentid && !instances.contains(parentid))
       instances.insert(parentid, scheduler->taskInstanceById(parentid));
   }
-  for (auto instance: instances) { // instance nodes
+  // their prerequisites
+  struct WaitConditionInstance {
+    Utf8String op;
+    QSet<quint64> tiis;
+  };
+  QMap<quint64,WaitConditionInstance> prerequisites; // tii -> awaited instances
+  for (auto instance: instances) {
+    auto twc = taskWaitConditionExpression(instance.queuewhen());
+    if (twc.expr.isEmpty())
+      continue;
+    auto herder = instances[instance.herdid()];
+    if (!herder)
+      continue;
+    auto tiis = Utf8String{twc.expr % herder}.split(' ', Qt::SkipEmptyParts);
+    for (auto tii: tiis) {
+      auto dep = tii.toNumber<quint64>();
+      if (!dep)
+        continue;
+      auto &twci = prerequisites[instance.idAsLong()];
+      twci.op = twc.op;
+      twci.tiis.insert(dep);
+    }
+  }
+  for (auto [tii,twci]: prerequisites.asKeyValueRange()) {
+    for (auto dep: twci.tiis) {
+      auto instance = instances[dep];
+      if (!instance)
+        instance = scheduler->taskInstanceById(tii);
+      if (!instance)
+        continue;
+      instances.insert(dep, instance);
+    }
+  }
+  // drawing instance nodes
+  for (auto instance: instances) {
     gv.append("  \""+instance.id()+"\" [label=\""+instance.taskId()+"\n"
               +instance.id()+"\" "+instanceNodeStyle(instance)+"]\n");
   }
+  // drawing cause edges (and non parent cause nodes)
   gv.append("  node[shape=plain]\n"); // FIXME non instance parent nodes
-  gv.append("  edge[dir=forward,arrowhead=vee]\n"); // FIXME use styles
-  for (auto instance: instances) { // cause edges
+  gv.append("  edge[dir=forward,arrowhead=vee]\n"); // FIXME use styles TASK_TRIGGER_EDGE
+  for (auto instance: instances) {
     auto parent = instances[instance.parentid()];
     if (!!parent) // parent edges
       gv.append("  \""+parent.id()+"\" -- \""+instance.id()+"\" [label=\""
-                +instance.cause()+"\"]\n");
+                +instance.cause()+"\""+actionEdgeStyle(instance.cause())+"]\n");
     else if (!instance.cause().isEmpty()) // non parent cause edges
-      gv.append("  \""+instance.cause()+"\" -- \""+instance.id()+"\"\n");
+      gv.append("  \""+instance.cause()+"\" -- \""+instance.id()+"\"[a=a"
+                +actionEdgeStyle(instance.cause())+"]\n");
+  }
+  // drawing condition edges
+  gv.append("  edge[dir=forward,arrowhead=dot,style=dashed]\n"); // FIXME use styles
+  gv.append("  # instances "+Utf8String::number(instances.size())+" prerequisites "+Utf8String::number(prerequisites.size())+"\n");
+  for (auto instance: instances) {
+    auto twci = prerequisites[instance.idAsLong()];
+    auto tiis = twci.tiis.values();
+    std::sort(tiis.begin(), tiis.end());
+    gv.append("  # prereq "+instance.id()+" "+Utf8String::number(tiis.size())+" first "+Utf8String::number(tiis.value(0))+"\n");
+    for (auto dep: tiis)
+      gv.append("  \""+Utf8String::number(dep)+"\" -- \""+instance.id()
+                +"\"[label=\""+twci.op+"\""+actionEdgeStyle(twci.op)+"]\n");
   }
   gv.append("}\n");
   return gv;
+}
+
+Utf8String GraphvizDiagramsBuilder::herdConfigDiagram(
+    const SchedulerConfig &config, const Utf8String &taskid) {
+  auto task = config.tasks()[taskid];
+  if (!task)
+    return {};
+  config.tasks().first().onplan().first().actions().first().actionType();
+  return {};
 }

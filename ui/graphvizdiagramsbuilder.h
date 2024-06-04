@@ -28,7 +28,9 @@ public:
    * - tasksResourcesHostsDiagram
    */
   static QHash<QString,QString> configDiagrams(SchedulerConfig config);
-  static Utf8String herdDiagram(Scheduler *scheduler, quint64 tii);
+  static Utf8String herdInstanceDiagram(Scheduler *scheduler, quint64 tii);
+  static Utf8String herdConfigDiagram(
+      const SchedulerConfig &config, const Utf8String &taskid);
 };
 
 #endif // GRAPHVIZDIAGRAMSBUILDER_H
