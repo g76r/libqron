@@ -26,6 +26,8 @@
 GraphvizDiagramsBuilder::GraphvizDiagramsBuilder() {
 }
 
+namespace {
+
 static QString humanReadableActionEdgeLabel(
     const EventSubscription &sub, const Action &action) {
   QString label = sub.eventName();
@@ -40,13 +42,14 @@ static QString humanReadableActionEdgeLabel(
 }
 
 static Utf8String actionEdgeStyle(const Utf8String &cause) {
-  if (cause == "onplan" || cause == "allfinished")
+  if (cause == "onplan")
     return ",color=\"/paired12/2\",fontcolor=\"/paired12/2\"";
   if (cause == "onstart" || cause == "allsuccess")
     return ",color=\"/paired12/4\",fontcolor=\"/paired12/4\"";
   if (cause == "onfailure" || cause == "anyfailure" || cause == "anynonsuccess")
     return ",color=\"/paired12/6\",fontcolor=\"/paired12/6\"";
-  if (cause == "onschedulerstart" || cause == "onconfigload")
+  if (cause == "onschedulerstart" || cause == "onconfigload"
+      || cause == "onfinished" || cause == "allfinished")
     return ",color=\"/paired12/8\",fontcolor=\"/paired12/8\"";
   return {};
 }
@@ -100,6 +103,8 @@ static inline WaitCondition taskWaitConditionExpression(Condition cond) {
   }
   return {};
 }
+
+} // unnamed namespace
 
 QHash<QString,QString> GraphvizDiagramsBuilder
 ::configDiagrams(SchedulerConfig config) {
