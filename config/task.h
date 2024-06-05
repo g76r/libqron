@@ -81,6 +81,7 @@ public:
   /** Maximum allowed simultaneous instances (includes running and queued
     * instances). Default: 1. */
   int maxInstances() const;
+  int maxPerHost() const;
   /** Current running intances count (includes running and queued instances). */
   int runningCount() const;
   /** Max time to try to execute task if it fails. */

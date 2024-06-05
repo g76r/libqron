@@ -147,6 +147,15 @@ bool TaskOrTemplateData::loadConfig(
     }
   }
   ConfigUtils::loadResourcesSet(node, &_resources, "resource");
+  if (!ConfigUtils::loadAttribute<int>(
+        node, "maxperhost", &_maxPerHost,
+        [](QString value) { return value.toInt(0,0); },
+        [](int value) { return value > 0; })) {
+    Log::error() << "invalid "+qualifier()+" maxperhost: " << node.toPf();
+    return false;
+  }
+  if (_maxPerHost > 0)
+    _resources["<maxperhost>"+_id] = 1;
   ConfigUtils::loadAttribute(node, "maxqueuedinstances", &_maxQueuedInstances);
   ConfigUtils::loadAttribute(node, "deduplicatecriterion",
                              &_deduplicateCriterion);
@@ -427,6 +436,9 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   if (_maxInstances != 1)
     node.appendChild(PfNode("maxinstances",
                             QString::number(_maxInstances)));
+  if (_maxPerHost > 0)
+    node.appendChild(PfNode("maxperhost",
+                            QString::number(_maxPerHost)));
   if (_maxTries != 1)
     node.appendChild(PfNode("maxtries",
                             QString::number(_maxTries)));
@@ -434,7 +446,8 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
     node.appendChild(PfNode("pausebetweentries",
                             QString::number(_millisBetweenTries*.001)));
   for (auto [k,v]: _resources.asKeyValueRange())
-    node.appendChild(PfNode("resource", k+" "+QString::number(v)));
+    if (!k.startsWith("<maxperhost>"))
+      node.appendChild(PfNode("resource", k+" "+QString::number(v)));
 
   // params vars and event subscriptions
   TaskOrGroupData::fillPfNode(node);

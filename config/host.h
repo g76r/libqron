@@ -33,6 +33,7 @@ public:
   Utf8String hostname() const;
   /** Configured max resources available. */
   QMap<Utf8String, qint64> resources() const;
+  void set_resource(const Utf8String &key, qint64 value);
   /** healthcheck ssh command
    *  default: no healthcheck
    *  examples: true, /bin/true */

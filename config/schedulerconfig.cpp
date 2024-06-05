@@ -276,6 +276,9 @@ ignore_tasktemplate:;
               "onstderr", "onstdout" },
             &requestTaskActionLinks, task.id(), task);
     }
+    if (task.maxPerHost() > 0)
+      for (auto &host: _hosts)
+        host.set_resource("<maxperhost>"+task.id(), task.maxPerHost());
 ignore_task:;
   }
   int maxtotaltaskinstances = 0;

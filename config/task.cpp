@@ -235,6 +235,10 @@ int Task::maxInstances() const {
   return !isNull() ? data()->_maxInstances : 0;
 }
 
+int Task::maxPerHost() const {
+  return !isNull() ? data()->_maxPerHost : 0;
+}
+
 int Task::maxTries() const {
   return !isNull() ? data()->_maxTries : 0;
 }

@@ -72,6 +72,12 @@ QMap<Utf8String,qint64> Host::resources() const {
   return d ? d->_resources : QMap<Utf8String,qint64>{};
 }
 
+void Host::set_resource(const Utf8String &key, qint64 value) {
+  auto d = detachedData<HostData>();
+  if (d)
+    d->_resources.insert(key, value);
+}
+
 Utf8String Host::sshhealthcheck() const {
   auto d = data();
   return d ? d->_sshhealthcheck : Utf8String{};
@@ -209,7 +215,8 @@ PfNode Host::toPfNode() const {
   if (!d->_sshhealthcheck.isEmpty())
     node.appendChild(PfNode("sshhealthcheck", d->_sshhealthcheck));
   for (auto [k,v]: d->_resources.asKeyValueRange())
-    node.appendChild(PfNode("resource", k+" "+QString::number(v)));
+    if (!k.startsWith("<maxperhost>"))
+      node.appendChild(PfNode("resource", k+" "+QString::number(v)));
   return node;
 }
 

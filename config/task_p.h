@@ -79,7 +79,7 @@ public:
   Task::Mean _mean;
   QList<NoticeTrigger> _noticeTriggers;
   QMap<Utf8String,qint64> _resources;
-  int _maxInstances, _maxTries;
+  int _maxInstances, _maxPerHost, _maxTries;
   long long _millisBetweenTries;
   QList<CronTrigger> _cronTriggers;
   long long _maxExpectedDuration, _minExpectedDuration, _maxDurationBeforeAbort;
@@ -89,8 +89,8 @@ public:
   QStringList _otherTriggers; // guessed indirect triggers resulting from events
   mutable bool _enabled;
 
-  TaskOrTemplateData() : _maxInstances(1), _maxTries(1), _millisBetweenTries(0),
-    _maxExpectedDuration(LLONG_MAX),
+  TaskOrTemplateData() : _maxInstances(1), _maxPerHost(0), _maxTries(1),
+    _millisBetweenTries(0), _maxExpectedDuration(LLONG_MAX),
     _minExpectedDuration(0), _maxDurationBeforeAbort(LLONG_MAX),
     _maxQueuedInstances("%!maxinstances"),
     _herdingPolicy(Task::AllSuccess), _enabled(true) { }
