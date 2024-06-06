@@ -80,6 +80,7 @@ public:
       _scheduler->taskInstanceParamAppend(
             herdid, key, PercentEvaluator::escape(value));
     }
+    context->pop_front();
   }
   Utf8String toString() const override {
     return "*" + _id;
