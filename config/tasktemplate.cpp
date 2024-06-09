@@ -195,11 +195,11 @@ const TaskTemplateData *TaskTemplate::data() const {
   return specializedData<TaskTemplateData>();
 }
 
-PfNode TaskTemplate::originalPfNode() const {
+QList<PfNode> TaskTemplate::originalPfNodes() const {
   const TaskTemplateData *d = data();
   if (!d)
-    return PfNode();
-  return d->_originalPfNode;
+    return QList<PfNode>{};
+  return d->_originalPfNodes;
 }
 
 PfNode TaskTemplate::toPfNode() const {

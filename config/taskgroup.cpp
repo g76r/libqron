@@ -173,11 +173,11 @@ const TaskGroupData *TaskGroup::data() const {
   return specializedData<TaskGroupData>();
 }
 
-PfNode TaskGroup::originalPfNode() const {
+QList<PfNode> TaskGroup::originalPfNodes() const {
   const TaskGroupData *d = data();
   if (!d)
-    return PfNode();
-  return d->_originalPfNode;
+    return QList<PfNode>{};
+  return d->_originalPfNodes;
 }
 
 PfNode TaskGroup::toPfNode() const {

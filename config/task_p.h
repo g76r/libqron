@@ -43,7 +43,7 @@ public:
   QList<EventSubscription> _onstart, _onsuccess, _onfailure, _onplan, _onstderr,
       _onstdout;
   Utf8StringList _commentsList;
-  PfNode _originalPfNode;
+  QList<PfNode> _originalPfNodes;
   bool _mergeStdoutIntoStderr = false;
 
   TasksRootData(const Utf8String &id = TASKSROOTID) : _id(id) {

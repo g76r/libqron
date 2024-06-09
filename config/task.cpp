@@ -71,9 +71,9 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
                           "in task definition: " << node.toString();
         continue;
       }
-      if (!d->loadConfig(tmpl.data()->_originalPfNode, scheduler, taskGroup,
-                         namedCalendars)) { // should never happen
-        delete d;
+      auto tmpl_node = tmpl.data()->_originalPfNodes.value(0);
+      if (!d->loadConfig(tmpl_node, scheduler, taskGroup, namedCalendars)) {
+        delete d; // should never happen
         return;
       }
       d->_appliedTemplates.append(tmpl);
@@ -83,6 +83,7 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
     delete d;
     return;
   }
+  d->_originalPfNodes.prepend(d->_originalPfNodes.takeLast());
   // default mean: local
   if (d->_mean == UnknownMean)
     d->_mean = Local;
@@ -698,11 +699,11 @@ const TaskData *Task::data() const {
   return specializedData<TaskData>();
 }
 
-PfNode Task::originalPfNode() const {
+QList<PfNode> Task::originalPfNodes() const {
   const TaskData *d = data();
   if (!d)
-    return PfNode();
-  return d->_originalPfNode;
+    return QList<PfNode>{};
+  return d->_originalPfNodes;
 }
 
 PfNode Task::toPfNode() const {

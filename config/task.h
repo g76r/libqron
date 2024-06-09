@@ -145,7 +145,7 @@ public:
   void appendOtherTriggers(QString text);
   void clearOtherTriggers();
   SharedUiItemList appliedTemplates() const;
-  PfNode originalPfNode() const;
+  QList<PfNode> originalPfNodes() const;
   PfNode toPfNode() const;
   /** to be called when activating a new configuration, to keep live attributes
    * such as lastReturnCode() or enabled() */

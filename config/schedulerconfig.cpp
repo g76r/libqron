@@ -271,7 +271,7 @@ ignore_tasktemplate:;
     for (auto tmpl:
          task.appliedTemplates().filtered<TaskTemplate>("tasktemplate")) {
       recordTaskActionLinks(
-            tmpl.originalPfNode(),
+            tmpl.originalPfNodes().value(0),
             { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
               "onstderr", "onstdout" },
             &requestTaskActionLinks, task.id(), task);

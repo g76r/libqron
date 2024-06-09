@@ -31,7 +31,7 @@ TasksRoot::TasksRoot(PfNode node, Scheduler *scheduler) {
 
 bool TasksRootData::loadConfig(
     PfNode node, Scheduler *scheduler) {
-  _originalPfNode = node;
+  _originalPfNodes += node;
   _params += ParamSet(node, "param");
   _vars += ParamSet(node, "var");
   _vars.setScope("var");

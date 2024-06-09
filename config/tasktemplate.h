@@ -31,7 +31,7 @@ public:
   int maxInstances() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
-  PfNode originalPfNode() const;
+  QList<PfNode> originalPfNodes() const;
   PfNode toPfNode() const;
 
 private:

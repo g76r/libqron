@@ -54,7 +54,7 @@ public:
   ParamSet vars() const;
   ParamSet instanceparams() const;
   QList<EventSubscription> allEventSubscriptions() const;
-  PfNode originalPfNode() const;
+  QList<PfNode> originalPfNodes() const;
   PfNode toPfNode() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
