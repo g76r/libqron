@@ -68,6 +68,8 @@ static QString instanceNodeStyle(TaskInstance instance) {
     style += " fillcolor=\"/paired12/3\"";
     break;
   case TaskInstance::Canceled:
+      style += " fillcolor=\"grey85\"";
+      break;
   case TaskInstance::Success:
     style += " fillcolor=\"white\"";
     break;
@@ -431,6 +433,8 @@ QHash<QString,QString> GraphvizDiagramsBuilder
   // LATER add a full events diagram with log, udp, etc. events
 }
 
+namespace {
+
 class PredecessorGroup {
 public:
   QString _queuecondition, _cancelcondition;
@@ -469,17 +473,23 @@ QList<PredecessorGroup> predecessors(Task sheep) {
   return pg;
 }
 
-Utf8String GraphvizDiagramsBuilder::herdInstanceDiagram(
-    Scheduler *scheduler, quint64 tii) {
-  Q_ASSERT(scheduler);
-  Utf8String gv;
+struct WaitConditionInstance {
+  Utf8String op;
+  QSet<quint64> tiis;
+};
+
+struct RelatedTasks {
+  quint64 herdid;
+  QMap<quint64,TaskInstance> instances;
+  QMap<quint64,WaitConditionInstance> prerequisites;
+};
+
+static RelatedTasks findRelatedTasks(
+    Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
   quint64 herdid = scheduler->taskInstanceById(tii).herdid();
   if (!herdid)
     return {};
   auto herder = scheduler->taskInstanceById(herdid);
-  gv.append("graph herd {\n" "graph[" GLOBAL_GRAPH
-            ",bgcolor=grey95,rankdir=TB,"
-            "label=\"herd diagram for "_u8+herder.idSlashId()+"\"]\n"_u8);
   // selecting instances to show on diagram
   QMap<quint64,TaskInstance> instances;
   // herder
@@ -492,22 +502,22 @@ Utf8String GraphvizDiagramsBuilder::herdInstanceDiagram(
       instances.insert(herderparentid, parent);
   }
   // instances belonging to the herd and their parent
-  for (auto [taskid, tii]: herder.herdedTasksIdsPairs()) {
-    auto instance = instances[tii];
-    if (!instance)
-      instance = scheduler->taskInstanceById(tii);
-    if (!instance)
-      continue;
-    instances.insert(tii, instance);
-    auto parentid = instance.parentid();
-    if (parentid && !instances.contains(parentid))
-      instances.insert(parentid, scheduler->taskInstanceById(parentid));
-  }
+  auto include_parents = options->paramBool("include_parents", true);
+  if (options->paramBool("include_herd", true))
+    for (auto [taskid, tii]: herder.herdedTasksIdsPairs()) {
+      auto instance = instances[tii];
+      if (!instance)
+        instance = scheduler->taskInstanceById(tii);
+      if (!instance)
+        continue;
+      instances.insert(tii, instance);
+      if (!include_parents)
+        continue;
+      auto parentid = instance.parentid();
+      if (parentid && !instances.contains(parentid))
+        instances.insert(parentid, scheduler->taskInstanceById(parentid));
+    }
   // their prerequisites
-  struct WaitConditionInstance {
-    Utf8String op;
-    QSet<quint64> tiis;
-  };
   QMap<quint64,WaitConditionInstance> prerequisites; // tii -> awaited instances
   for (auto instance: instances) {
     auto twc = taskWaitConditionExpression(instance.queuewhen());
@@ -526,16 +536,38 @@ Utf8String GraphvizDiagramsBuilder::herdInstanceDiagram(
       twci.tiis.insert(dep);
     }
   }
-  for (auto [tii,twci]: prerequisites.asKeyValueRange()) {
-    for (auto dep: twci.tiis) {
-      auto instance = instances[dep];
-      if (!instance)
-        instance = scheduler->taskInstanceById(tii);
-      if (!instance)
-        continue;
-      instances.insert(dep, instance);
-    }
-  }
+  if (options->paramBool("include_prerequisites", true))
+    for (auto [tii,twci]: prerequisites.asKeyValueRange())
+      for (auto dep: twci.tiis) {
+        auto instance = instances[dep];
+        if (!instance)
+          instance = scheduler->taskInstanceById(tii);
+        if (!instance)
+          continue;
+        instances.insert(dep, instance);
+      }
+  // their children even outside the herd
+  if (options->paramBool("include_children", true))
+    for (auto tii: instances.keys())
+      for (auto child: instances[tii].children())
+        if (!instances.contains(child))
+          instances[child] = scheduler->taskInstanceById(child);
+  return {herdid, instances, prerequisites};
+}
+
+} // unnamed namespace
+
+Utf8String GraphvizDiagramsBuilder::herdInstanceDiagram(
+    Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
+  auto [herdid, instances, prerequisites]
+      = findRelatedTasks(scheduler, tii, options);
+  if (!herdid) // means tii is invalid
+    return {};
+  auto herder = instances[herdid];
+  Utf8String gv;
+  gv.append("graph herd {\n" "graph[" GLOBAL_GRAPH
+            ",bgcolor=grey95,"
+            "label=\"herd diagram for "_u8+herder.idSlashId()+"\"]\n"_u8);
   // drawing instance nodes
   for (auto instance: instances) {
     gv.append("  \""+instance.id()+"\" [label=\""+instance.taskId()+"\n"
