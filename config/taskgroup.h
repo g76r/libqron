@@ -15,7 +15,7 @@
 #define TASKGROUP_H
 
 #include "libqron_global.h"
-#include "modelview/shareduiitem.h"
+#include "tasksroot.h"
 #include "util/paramset.h"
 
 class TaskGroupData;
@@ -43,6 +43,8 @@ public:
   QByteArray parentGroupId() const { return parentGroupId(id()); }
   /** return "foo.bar" for group "foo.bar.baz" and {} for group "foo". */
   static QByteArray parentGroupId(QByteArray groupId);
+  TaskGroup parentGroup() const;
+  TasksRoot tasksRoot() const;
   QString label() const;
   ParamSet params() const;
   QList<EventSubscription> onplan() const;

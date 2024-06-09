@@ -59,12 +59,18 @@ bool TaskOrGroupData::loadConfig(
     qWarning() << "internal error in TaskOrGroupData::loadConfig";
     return false;
   }
-  auto root = static_cast<const TasksRoot&>(parent);
+  auto root = parent.casted<TasksRoot>();
   ConfigUtils::loadAttribute(node, "label", &_label);
   _params.setParent(root.params());
   _vars.setParent(root.vars());
   _instanceparams.setParent(root.instanceparams());
   _mergeStdoutIntoStderr = root.mergeStdoutIntoStderr();
+  if (parent.qualifier() == "taskgroup") {
+    _group = parent.casted<TaskGroup>();
+    _root = _group.tasksRoot();
+  } else {
+    _root = root;
+  }
   if (!TasksRootData::loadConfig(node, scheduler))
     return false;
   return true;
@@ -79,6 +85,14 @@ TaskGroup::TaskGroup(QByteArray id) {
 QByteArray TaskGroup::parentGroupId(QByteArray groupId) {
   int i = groupId.lastIndexOf('.');
   return (i >= 0) ? groupId.left(i) : QByteArray{};
+}
+
+TaskGroup TaskGroup::parentGroup() const {
+  return !isNull() ? data()->_group : TaskGroup{};
+}
+
+TasksRoot TaskGroup::tasksRoot() const {
+  return !isNull() ? data()->_root : TasksRoot{};
 }
 
 QString TaskGroup::label() const {
@@ -174,10 +188,8 @@ const TaskGroupData *TaskGroup::data() const {
 }
 
 QList<PfNode> TaskGroup::originalPfNodes() const {
-  const TaskGroupData *d = data();
-  if (!d)
-    return QList<PfNode>{};
-  return d->_originalPfNodes;
+  auto d = data();
+  return d ? d->_originalPfNodes : QList<PfNode>{};
 }
 
 PfNode TaskGroup::toPfNode() const {
@@ -186,24 +198,11 @@ PfNode TaskGroup::toPfNode() const {
 }
 
 void TaskOrGroupData::fillPfNode(PfNode &node) const {
-  // params and vars
-  ConfigUtils::writeParamSet(&node, _params, "param");
-  ConfigUtils::writeParamSet(&node, _vars, "var");
-  ConfigUtils::writeParamSet(&node, _instanceparams, "instanceparam");
-
-  // event subcription
-  ConfigUtils::writeEventSubscriptions(&node, _onplan);
-  ConfigUtils::writeEventSubscriptions(&node, _onstart);
-  ConfigUtils::writeEventSubscriptions(&node, _onsuccess);
-  ConfigUtils::writeEventSubscriptions(&node, _onfailure,
-                                       excludeOnfinishSubscriptions);
-  ConfigUtils::writeEventSubscriptions(&node, _onstderr);
-  ConfigUtils::writeEventSubscriptions(&node, _onstdout);
+  TasksRootData::fillPfNode(node);
 }
 
 PfNode TaskGroupData::toPfNode() const {
   PfNode node("taskgroup", _id);
-  ConfigUtils::writeComments(&node, _commentsList);
   TaskOrGroupData::fillPfNode(node);
   return node;
 }

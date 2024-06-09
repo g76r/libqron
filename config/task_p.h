@@ -57,11 +57,14 @@ public:
   bool loadConfig(PfNode node, Scheduler *scheduler);
   void fillPfNode(PfNode &node) const;
   Utf8String qualifier() const override { return "tasksroot"_u8; }
+  PfNode toPfNode() const;
 };
 
 class TaskOrGroupData : public TasksRootData {
 public:
   Utf8String _label;
+  TaskGroup _group;
+  TasksRoot _root;
 
   QVariant uiData(int section, int role) const override;
   bool setUiData(

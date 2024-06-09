@@ -28,7 +28,6 @@ public:
                QMap<Utf8String, Calendar> namedCalendars);
   TaskTemplate &operator=(const TaskTemplate &other) {
     SharedUiItem::operator=(other); return *this; }
-  int maxInstances() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);
   QList<PfNode> originalPfNodes() const;

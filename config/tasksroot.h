@@ -42,6 +42,8 @@ public:
   QList<EventSubscription> onstdout() const;
   QList<EventSubscription> allEventSubscriptions() const;
   bool mergeStdoutIntoStderr() const;
+  QList<PfNode> originalPfNodes() const;
+  PfNode toPfNode() const;
 
 private:
   inline TasksRootData *data();

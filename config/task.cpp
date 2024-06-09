@@ -20,7 +20,6 @@
 class TaskData : public TaskOrTemplateData {
 public:
   QByteArray _localId;
-  TaskGroup _group;
   SharedUiItemList _appliedTemplates;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
   // be used in a mutable QSharedData field as soon as the object embedding the
@@ -46,6 +45,7 @@ public:
   Qt::ItemFlags uiFlags(int section) const override;
   Utf8String qualifier() const override { return "task"_u8; }
   PfNode toPfNode() const;
+  void fillPfNode(PfNode &node) const;
   void setTaskGroup(TaskGroup taskGroup);
 };
 
@@ -84,6 +84,9 @@ Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
     return;
   }
   d->_originalPfNodes.prepend(d->_originalPfNodes.takeLast());
+  for (auto group = taskGroup; !!group; group = group.parentGroup())
+    d->_originalPfNodes.append(group.originalPfNodes().value(0));
+  d->_originalPfNodes.append(taskGroup.tasksRoot().toPfNode());
   // default mean: local
   if (d->_mean == UnknownMean)
     d->_mean = Local;
@@ -707,101 +710,21 @@ QList<PfNode> Task::originalPfNodes() const {
 }
 
 PfNode Task::toPfNode() const {
-  const TaskData *d = data();
+  auto d = data();
   return d ? d->toPfNode() : PfNode();
+}
+
+void TaskData::fillPfNode(PfNode &node) const {
+  TaskOrTemplateData::fillPfNode(node);
+
+  // applied templates
+  if (!_appliedTemplates.isEmpty())
+    node.setAttribute("apply", _appliedTemplates.join(' '));
 }
 
 PfNode TaskData::toPfNode() const {
   PfNode node("task", _localId);
-
-  // comments
-  ConfigUtils::writeComments(&node, _commentsList);
-
-  // description and execution attributes
-  node.setAttribute("taskgroup", _group.id());
-  if (!_label.isEmpty() && _label != _localId)
-    node.setAttribute("label", _label);
-  if (!_info.isEmpty())
-    node.setAttribute("info", _info);
-  node.setAttribute("mean", Task::meanAsString(_mean));
-  // do not set target attribute if it is empty,
-  // or in case it is implicit ("localhost" for targetless means)
-  if (!_target.isEmpty()) {
-    switch(_mean) {
-    case Task::Local:
-    case Task::Background:
-    case Task::DoNothing:
-    case Task::Docker:
-    case Task::Scatter:
-      break;
-    case Task::UnknownMean: [[unlikely]] // should never happen
-    case Task::Ssh:
-    case Task::Http:
-      if (_target != "localhost")
-        node.setAttribute("target", _target);
-    }
-  }
-  // do not set command attribute if it is empty
-  // or for means that do not use it (DoNothing)
-  if (!_command.isEmpty()
-      && _mean != Task::DoNothing) {
-    // TODO this behavior is probably buggy/out of date and the following comment is probably wrong
-    // LATER store _command as QStringList _commandArgs instead, to make model consistent rather than splitting the \ escaping policy between here, uiData() and executor.cpp
-    // moreover this is not consistent between means (luckily there are no backslashes nor spaces in http uris)
-    QString escaped = _command;
-    escaped.replace('\\', "\\\\");
-    node.setAttribute("command", escaped);
-  }
-  // triggering and constraints attributes
-  PfNode triggers("trigger");
-  for (const Trigger &ct: _cronTriggers)
-    triggers.appendChild(ct.toPfNode());
-  for (const Trigger &nt: _noticeTriggers)
-    triggers.appendChild(nt.toPfNode());
-  node.appendChild(triggers);
-  if (_maxQueuedInstances != "%!maxinstances")
-    node.setAttribute("maxqueuedinstances", _maxQueuedInstances);
-  if (!_deduplicateCriterion.isEmpty())
-    node.setAttribute("deduplicatecriterion", _deduplicateCriterion);
-  if (_maxInstances != 1)
-    node.appendChild(PfNode("maxinstances",
-                            QString::number(_maxInstances)));
-  for (auto [k,v]: _resources.asKeyValueRange())
-    node.appendChild(PfNode("resource",k+" "+QString::number(v)));
-
-  // params and vars
-  ConfigUtils::writeParamSet(&node, _params, "param");
-  ConfigUtils::writeParamSet(&node, _vars, "var");
-  ConfigUtils::writeParamSet(&node, _instanceparams, "instanceparam");
-
-  // monitoring and alerting attributes
-  if (_maxExpectedDuration < LLONG_MAX)
-    node.appendChild(PfNode("maxexpectedduration",
-                            QString::number((double)_maxExpectedDuration/1e3)));
-  if (_minExpectedDuration > 0)
-    node.appendChild(PfNode("minexpectedduration",
-                            QString::number((double)_minExpectedDuration/1e3)));
-  if (_maxDurationBeforeAbort < LLONG_MAX)
-    node.appendChild(PfNode("maxdurationbeforeabort",
-                            QString::number((double)_maxDurationBeforeAbort
-                                            /1e3)));
-
-  // events
-  ConfigUtils::writeEventSubscriptions(&node, _onplan);
-  ConfigUtils::writeEventSubscriptions(&node, _onstart);
-  ConfigUtils::writeEventSubscriptions(&node, _onsuccess);
-  ConfigUtils::writeEventSubscriptions(&node, _onfailure,
-                                       excludeOnfinishSubscriptions);
-  ConfigUtils::writeEventSubscriptions(&node, _onstderr);
-  ConfigUtils::writeEventSubscriptions(&node, _onstdout);
-
-  // user interface attributes
-  if (!_requestFormFields.isEmpty()) {
-    PfNode requestForm("requestform");
-    for (const RequestFormField &field: _requestFormFields)
-      requestForm.appendChild(field.toPfNode());
-    node.appendChild(requestForm);
-  }
+  TaskData::fillPfNode(node);
   return node;
 }
 

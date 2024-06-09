@@ -150,6 +150,38 @@ const TasksRootData *TasksRoot::data() const {
   return specializedData<TasksRootData>();
 }
 
+QList<PfNode> TasksRoot::originalPfNodes() const {
+  auto d = data();
+  return d ? d->_originalPfNodes : QList<PfNode>{};
+}
+
+PfNode TasksRoot::toPfNode() const {
+  auto d = data();
+  return d ? d->toPfNode() : PfNode();
+}
+
+void TasksRootData::fillPfNode(PfNode &node) const {
+  // params and vars
+  ConfigUtils::writeParamSet(&node, _params, "param");
+  ConfigUtils::writeParamSet(&node, _vars, "var");
+  ConfigUtils::writeParamSet(&node, _instanceparams, "instanceparam");
+
+  // event subcription
+  ConfigUtils::writeEventSubscriptions(&node, _onplan);
+  ConfigUtils::writeEventSubscriptions(&node, _onstart);
+  ConfigUtils::writeEventSubscriptions(&node, _onsuccess);
+  ConfigUtils::writeEventSubscriptions(&node, _onfailure,
+                                       excludeOnfinishSubscriptions);
+  ConfigUtils::writeEventSubscriptions(&node, _onstderr);
+  ConfigUtils::writeEventSubscriptions(&node, _onstdout);
+}
+
+PfNode TasksRootData::toPfNode() const {
+  PfNode node("tasksroot");
+  TasksRootData::fillPfNode(node);
+  return node;
+}
+
 bool TasksRoot::setUiData(
     int section, const QVariant &value, QString *errorString,
     SharedUiItemDocumentTransaction *transaction, int role) {

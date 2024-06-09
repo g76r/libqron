@@ -377,8 +377,7 @@ Qt::ItemFlags TaskOrTemplateData::uiFlags(int section) const {
 }
 
 void TaskOrTemplateData::fillPfNode(PfNode &node) const {
-  // comments
-  ConfigUtils::writeComments(&node, _commentsList);
+  TaskOrGroupData::fillPfNode(node);
 
   // description and execution attributes
   if (!_info.isEmpty())
