@@ -22,6 +22,7 @@
 #include "condition/taskwaitcondition.h"
 #include "condition/disjunctioncondition.h"
 #include "sched/scheduler.h"
+#include "format/svgwriter.h"
 
 GraphvizDiagramsBuilder::GraphvizDiagramsBuilder() {
 }
@@ -608,4 +609,83 @@ Utf8String GraphvizDiagramsBuilder::herdConfigDiagram(
     return {};
   config.tasks().first().onplan().first().actions().first().actionType();
   return {};
+}
+
+Utf8String GraphvizDiagramsBuilder::taskInstanceChronogram(
+    Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
+  auto [herdid, instances, prerequisites]
+      = findRelatedTasks(scheduler, tii, options);
+  if (!herdid || instances.isEmpty()) // means tii is invalid
+    return {};
+  QDateTime min = instances.first().creationDatetime(),
+      max, now = QDateTime::currentDateTime();
+  for (auto [tii, instance]: instances.asKeyValueRange()) {
+    min = std::min(instance.creationDatetime(), min);
+    auto last = instance.finishDatetime();
+    if (!last.isValid())
+      last = now;/*instance.stopDatetime();
+    if (!last.isValid())
+      last = instance.startDatetime();
+    if (!last.isValid())
+      last = instance.queueDatetime();
+    if (last.isValid())*/
+    max = std::max(last, max);
+  }
+  if (!max.isValid())
+    max = min;
+  auto label = options->paramRawUtf8("label");
+  auto fontname = options->paramUtf8("fontname", "Sans");
+  int width = options->paramNumber<int>("width", 1920);
+  int hmargin = 4, vmargin = 4;
+  int iconsize = 8, lineh = 12, fontsize = 8, textw = 80;
+  auto secspan = std::max(min.secsTo(max), 1LL);
+  double pps = (double)(width-iconsize-2*hmargin-textw)/secspan;
+  SvgWriter sw;
+  sw.setViewport(0, 0, width, lineh*(instances.size()+1)+2*vmargin);
+  sw.drawText(hmargin, vmargin, textw, lineh, 0,
+              "min: "+Utf8String{min}+" max: "+Utf8String{max}+" pps:"
+              +Utf8String::number(pps),
+              "black", fontname, fontsize);
+  int i = 0;
+  for (auto [tii, instance]: instances.asKeyValueRange()) {
+    int y0 = vmargin+lineh*(i+1), ym = y0+lineh/2;
+    int x0 = hmargin+(int)(pps*min.secsTo(instance.creationDatetime()));
+    int x = x0, xp = x0;
+    Utf8String color = "black";
+    auto last = instance.queueDatetime();
+    if (last.isValid()) {
+      xp = x;
+      x = hmargin+(int)(pps*min.secsTo(last));
+      color = "blue";
+      sw.drawLine(xp, ym, x-xp, ym, color, 1);
+      last = instance.startDatetime();
+      if (last.isValid()) {
+        xp = x;
+        x = hmargin+(int)(pps*min.secsTo(last));
+        color = "yellow";
+        sw.drawLine(xp, ym, x-xp, ym, color, 1);
+        last = instance.stopDatetime();
+        if (last.isValid()) {
+          xp = x;
+          x = hmargin+(int)(pps*min.secsTo(last));
+          color = "green";
+          sw.drawLine(xp, ym, x-xp, ym, color, 3);
+          last = instance.finishDatetime();
+          if (last.isValid()) {
+            xp = x;
+            x = hmargin+(int)(pps*min.secsTo(last));
+            color = "gray";
+            sw.drawLine(xp, ym, x-xp, ym, color, 1);
+          }
+        }
+      }
+    }
+    sw.drawSmallIcon(x+iconsize/2, ym, icon, color, color);
+    auto text = label.isEmpty() ? instance.idSlashId()
+                                : Utf8String{label % instance};
+    sw.drawText(x+iconsize, y0, textw, lineh, 0, text, color, fontname,
+                fontsize);
+    ++i;
+  }
+  return sw.data();
 }

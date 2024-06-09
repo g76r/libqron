@@ -32,6 +32,8 @@ public:
       Scheduler *scheduler, quint64 tii, const ParamsProvider *options);
   static Utf8String herdConfigDiagram(
       const SchedulerConfig &config, const Utf8String &taskid);
+  static Utf8String taskInstanceChronogram(
+      Scheduler *scheduler, quint64 tii, const ParamsProvider *options);
 };
 
 #endif // GRAPHVIZDIAGRAMSBUILDER_H
