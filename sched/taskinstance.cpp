@@ -49,6 +49,7 @@ public:
   mutable Host _target;
   mutable bool _abortable;
   mutable AtomicValue<QList<QPair<Utf8String,quint64>>> _herdedTasksIdsPairs;
+  mutable AtomicValue<QList<quint64>> _children;
   mutable AtomicValue<int> _remainingTries;
   Condition _queuewhen, _cancelwhen;
 
@@ -392,6 +393,18 @@ QList<QPair<Utf8String,quint64>> TaskInstance::herdedTasksIdsPairs() const {
   const TaskInstanceData *d = data();
   return d ? d->_herdedTasksIdsPairs.detachedData()
            : QList<QPair<Utf8String,quint64>>{};
+}
+
+void TaskInstance::appendToChildren(quint64 tii) const {
+  const TaskInstanceData *d = data();
+  if (!d)
+    return;
+  d->_children.lockedData()->append(tii);
+}
+
+QList<quint64> TaskInstance::children() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_children.detachedData() : QList<quint64>{};
 }
 
 quint64 TaskInstance::parentid() const {

@@ -105,6 +105,10 @@ public:
   void appendToHerd(const Utf8String &taskid, quint64 tii) const;
   /** Thread-safe deep copy. List of {taskid, tii}. */
   QList<QPair<Utf8String,quint64>> herdedTasksIdsPairs() const;
+  /** Thread-safe. */
+  void appendToChildren(quint64 tii) const;
+  /** Thread-safe deep copy. */
+  QList<quint64> children() const;
   quint64 parentid() const;
   Utf8String cause() const;
   void consumeOneTry() const;

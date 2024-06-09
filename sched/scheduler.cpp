@@ -252,6 +252,10 @@ void Scheduler::planOrRequestCommonPostProcess(
   herder.appendToHerd(instance.taskId(), instance.idAsLong());
   Log::info(herder.taskId(), herder.id())
       << "task appended to herded tasks: " << instance.idSlashId();
+  auto all = _allTasks.lockedData();
+  auto parent = all->value(instance.parentid());
+  if (!!parent)
+    parent.appendToChildren(instance.idAsLong());
 }
 
 TaskInstance Scheduler::planTask(
