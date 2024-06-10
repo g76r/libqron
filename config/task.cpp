@@ -19,7 +19,7 @@
 
 class TaskData : public TaskOrTemplateData {
 public:
-  QByteArray _localId;
+  Utf8String _localId;
   SharedUiItemList _appliedTemplates;
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
   // be used in a mutable QSharedData field as soon as the object embedding the
@@ -148,13 +148,14 @@ QList<NoticeTrigger> Task::noticeTriggers() const {
   return !isNull() ? data()->_noticeTriggers : QList<NoticeTrigger>();
 }
 
-QByteArray Task::localId() const {
-  return !isNull() ? data()->_localId : QByteArray{};
+Utf8String Task::localId() const {
+  auto d = data();
+  return d ? d->_localId : Utf8String{};
 }
 
-QString Task::label() const {
-  return !isNull() ? (data()->_label.isNull() ? data()->_localId : data()->_label)
-                   : QString();
+Utf8String Task::label() const {
+  auto d = data();
+  return d ? d->_label | d->_localId : Utf8String{};
 }
 
 Task::Mean Task::mean() const {

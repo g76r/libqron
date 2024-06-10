@@ -56,8 +56,8 @@ public:
   ParamSet params() const;
   void setParentParams(ParamSet parentParams);
   /** local id within group */
-  QByteArray localId() const;
-  QString label() const;
+  Utf8String localId() const;
+  Utf8String label() const;
   Task::Mean mean() const;
   static Task::Mean meanFromString(QString mean);
   static QString meanAsString(Task::Mean mean);
