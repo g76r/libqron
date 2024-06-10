@@ -15,7 +15,7 @@
 #include "taskgroup.h"
 #include "sched/scheduler.h"
 #include "action/action.h"
-#include "ui/graphvizdiagramsbuilder.h"
+#include "ui/diagramsbuilder.h"
 
 class TaskData : public TaskOrTemplateData {
 public:

@@ -92,6 +92,7 @@ SOURCES *= \
     sched/executor.cpp \
     config/cluster.cpp \
     ui/clustersmodel.cpp \
+    ui/diagramsbuilder.cpp \
     ui/hostsresourcesavailabilitymodel.cpp \
     alert/alerter.cpp \
     alert/alert.cpp \
@@ -121,7 +122,6 @@ SOURCES *= \
     config/schedulerconfig.cpp \
     config/alerterconfig.cpp \
     config/accesscontrolconfig.cpp \
-    ui/graphvizdiagramsbuilder.cpp \
     ui/qronuiutils.cpp \
     configmgt/configrepository.cpp \
     configmgt/localconfigrepository.cpp \
@@ -163,6 +163,8 @@ HEADERS *= \
     sched/executor.h \
     config/cluster.h \
     ui/clustersmodel.h \
+    ui/diagrams_styles.h \
+    ui/diagramsbuilder.h \
     ui/hostsresourcesavailabilitymodel.h \
     alert/alerter.h \
     alert/alert.h \
@@ -191,11 +193,9 @@ HEADERS *= \
     trigger/trigger.h \
     trigger/trigger_p.h \
     trigger/noticetrigger.h \
-    ui/graphviz_styles.h \
     config/schedulerconfig.h \
     config/alerterconfig.h \
     config/accesscontrolconfig.h \
-    ui/graphvizdiagramsbuilder.h \
     libqron_global.h \
     ui/qronuiutils.h \
     config/task_p.h \

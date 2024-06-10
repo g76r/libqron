@@ -11,8 +11,8 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "graphvizdiagramsbuilder.h"
-#include "graphviz_styles.h"
+#include "diagramsbuilder.h"
+#include "diagrams_styles.h"
 #include "action/action.h"
 #include "trigger/crontrigger.h"
 #include "trigger/noticetrigger.h"
@@ -23,8 +23,9 @@
 #include "condition/disjunctioncondition.h"
 #include "sched/scheduler.h"
 #include "format/svgwriter.h"
+#include "config/schedulerconfig.h"
 
-GraphvizDiagramsBuilder::GraphvizDiagramsBuilder() {
+DiagramsBuilder::DiagramsBuilder() {
 }
 
 namespace {
@@ -109,8 +110,8 @@ static inline WaitCondition taskWaitConditionExpression(Condition cond) {
 
 } // unnamed namespace
 
-QHash<QString,QString> GraphvizDiagramsBuilder
-::configDiagrams(SchedulerConfig config) {
+QHash<QString,QString> DiagramsBuilder::configDiagrams(
+    const SchedulerConfig &config) {
   auto tasks = config.tasks();
   auto clusters = config.clusters();
   auto hosts = config.hosts();
@@ -558,7 +559,7 @@ static RelatedTasks findRelatedTasks(
 
 } // unnamed namespace
 
-Utf8String GraphvizDiagramsBuilder::herdInstanceDiagram(
+Utf8String DiagramsBuilder::herdInstanceDiagram(
     Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
   auto [herdid, instances, prerequisites]
       = findRelatedTasks(scheduler, tii, options);
@@ -602,7 +603,7 @@ Utf8String GraphvizDiagramsBuilder::herdInstanceDiagram(
   return gv;
 }
 
-Utf8String GraphvizDiagramsBuilder::herdConfigDiagram(
+Utf8String DiagramsBuilder::herdConfigDiagram(
     const SchedulerConfig &config, const Utf8String &taskid) {
   auto task = config.tasks()[taskid];
   if (!task)
@@ -611,7 +612,7 @@ Utf8String GraphvizDiagramsBuilder::herdConfigDiagram(
   return {};
 }
 
-Utf8String GraphvizDiagramsBuilder::taskInstanceChronogram(
+Utf8String DiagramsBuilder::taskInstanceChronogram(
     Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
   auto [herdid, instances, prerequisites]
       = findRelatedTasks(scheduler, tii, options);
@@ -623,68 +624,101 @@ Utf8String GraphvizDiagramsBuilder::taskInstanceChronogram(
     min = std::min(instance.creationDatetime(), min);
     auto last = instance.finishDatetime();
     if (!last.isValid())
-      last = now;/*instance.stopDatetime();
-    if (!last.isValid())
-      last = instance.startDatetime();
-    if (!last.isValid())
-      last = instance.queueDatetime();
-    if (last.isValid())*/
+      last = now;
     max = std::max(last, max);
   }
   if (!max.isValid())
     max = min;
   auto label = options->paramRawUtf8("label");
   auto fontname = options->paramUtf8("fontname", "Sans");
-  int width = options->paramNumber<int>("width", 1920);
+  auto width = options->paramNumber<int>("width", 1920);
+  auto label_width = options->paramNumber<int>("label_width", 400);
   int hmargin = 4, vmargin = 4;
-  int iconsize = 8, lineh = 12, fontsize = 8, textw = 80;
+  int iconsize = 8, lineh = 12, fontsize = 8;
   auto secspan = std::max(min.secsTo(max), 1LL);
-  double pps = (double)(width-iconsize-2*hmargin-textw)/secspan;
+  double pps = (double)(width-iconsize-2*hmargin-label_width)/secspan;
   SvgWriter sw;
   sw.setViewport(0, 0, width, lineh*(instances.size()+1)+2*vmargin);
-  sw.drawText(hmargin, vmargin, textw, lineh, 0,
+  sw.drawText(hmargin, vmargin, label_width, lineh, 0,
               "min: "+Utf8String{min}+" max: "+Utf8String{max}+" pps:"
               +Utf8String::number(pps),
-              "black", fontname, fontsize);
+              SVG_NEUTRAL_COLOR, fontname, fontsize);
   int i = 0;
-  for (auto [tii, instance]: instances.asKeyValueRange()) {
-    int y0 = vmargin+lineh*(i+1), ym = y0+lineh/2;
-    int x0 = hmargin+(int)(pps*min.secsTo(instance.creationDatetime()));
-    int x = x0, xp = x0;
-    Utf8String color = "black";
-    auto last = instance.queueDatetime();
-    if (last.isValid()) {
-      xp = x;
-      x = hmargin+(int)(pps*min.secsTo(last));
-      color = "blue";
-      sw.drawLine(xp, ym, x-xp, ym, color, 1);
-      last = instance.startDatetime();
-      if (last.isValid()) {
-        xp = x;
-        x = hmargin+(int)(pps*min.secsTo(last));
-        color = "yellow";
-        sw.drawLine(xp, ym, x-xp, ym, color, 1);
-        last = instance.stopDatetime();
-        if (last.isValid()) {
-          xp = x;
-          x = hmargin+(int)(pps*min.secsTo(last));
-          color = "green";
-          sw.drawLine(xp, ym, x-xp, ym, color, 3);
-          last = instance.finishDatetime();
-          if (last.isValid()) {
-            xp = x;
-            x = hmargin+(int)(pps*min.secsTo(last));
-            color = "gray";
-            sw.drawLine(xp, ym, x-xp, ym, color, 1);
-          }
-        }
-      }
+  auto status_icon = [](TaskInstance::TaskInstanceStatus status)
+      -> std::tuple<Utf8String,Utf8String,Utf8String> {
+    switch (status) {
+      case TaskInstance::Planned:
+        return {"board22", SVG_PLANNED_COLOR, SVG_PLANNED_COLOR}; // or moon
+      case TaskInstance::Queued:
+        return {"funnel", SVG_QUEUED_COLOR, "none"};
+      case TaskInstance::Canceled:
+        return {"times", SVG_NEUTRAL_COLOR, "none"};
+      case TaskInstance::Running:
+        return {"arrowr", SVG_RUNNING_COLOR, SVG_RUNNING_COLOR};
+      case TaskInstance::Waiting:
+        return {"hourglass", SVG_RUNNING_COLOR, "none"};
+      case TaskInstance::Failure:
+        return {"square", SVG_FAILURE_COLOR, SVG_FAILURE_COLOR};
+      case TaskInstance::Success:
+        return {"osquare", SVG_SUCCESS_COLOR, "none"};
     }
-    sw.drawSmallIcon(x+iconsize/2, ym, icon, color, color);
-    auto text = label.isEmpty() ? instance.idSlashId()
+    return {"square", SVG_NEUTRAL_COLOR, SVG_NEUTRAL_COLOR};
+  };
+  auto draw_segment = [min,pps,&sw,hmargin](
+                      const QDateTime &end, int &xp, int &x,
+                      int ym, Utf8String &color, int width,
+                      const Utf8String &next_color) {
+    if (end.isValid()) {
+      x = hmargin+(int)(pps*min.secsTo(end));
+      sw.comment("     draw_segment "+Utf8String::number(x)+" "
+                 +Utf8String::number(pps*min.secsTo(end))+" "+color);
+      sw.drawLine(xp, ym, x, ym, color, width);
+      sw.drawLine(x, ym-2, x, ym+2, next_color, 1);
+      xp = x;
+      color = next_color;
+    }
+  };
+  for (auto [tii, instance]: instances.asKeyValueRange()) {
+    QDateTime creation = instance.creationDatetime(),
+        queue = instance.queueDatetime(), start = instance.startDatetime(),
+        stop = instance.stopDatetime(), finish = instance.finishDatetime();
+    int y0 = vmargin+lineh*(i+1), ym = y0+lineh/2;
+    int x0 = hmargin+(int)(pps*min.secsTo(creation));
+    int x = x0, xp = x0;
+    Utf8String color = SVG_PLANNED_COLOR;
+    sw.comment("taskinstance "+instance.idSlashId()
+               +" creation:"+creation.toString()
+               +" queue:"+queue.toString()
+               +" start:"+start.toString()
+               +" stop:"+stop.toString()
+               +" finish:"+finish.toString());
+    sw.drawLine(x0, ym-2, x0, ym+2, color, 1);
+    draw_segment(queue, xp, x, ym, color, 2, SVG_QUEUED_COLOR);
+    draw_segment(start, xp, x, ym, color, 2, SVG_RUNNING_COLOR);
+    Utf8String finish_color = start.isValid() ? SVG_RUNNING_COLOR // waiting
+                                              : SVG_CANCELED_COLOR;
+    draw_segment(stop, xp, x, ym, color, 4, finish_color);
+    if (finish.isValid())
+      draw_segment(finish, xp, x, ym, color, 2, finish_color);
+    else {
+      //x = x0+secspan;
+      x = width-iconsize-hmargin-label_width;
+      sw.drawLine(xp, ym, x, ym, color, 2);
+    }
+    if (finish.isValid())
+      color = instance.success() ? SVG_SUCCESS_COLOR : SVG_FAILURE_COLOR;
+    auto status = instance.status();
+    auto [icon,stroke,fill] = status_icon(status);
+    auto icons = SvgWriter::iconNames();
+    std::reverse(icons.begin(), icons.end());
+    //icon = icons.value(i % icons.size());
+    sw.drawSmallIcon(x+iconsize/2, ym, icon, stroke, fill);
+    //sw.drawSmallIcon(x+iconsize/2+iconsize, ym, icon, stroke, stroke);
+    auto text = label.isEmpty() ? instance.task().localId()+"/"+instance.id()
                                 : Utf8String{label % instance};
-    sw.drawText(x+iconsize, y0, textw, lineh, 0, text, color, fontname,
-                fontsize);
+    // TODO make text position works correctly and without magic numbers
+    sw.drawText(x+iconsize, y0-3, label_width, lineh, 0, text, SVG_NEUTRAL_COLOR,
+                fontname, fontsize);
     ++i;
   }
   return sw.data();
