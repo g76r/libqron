@@ -486,6 +486,10 @@ struct RelatedTasks {
   QMap<quint64,WaitConditionInstance> prerequisites;
 };
 
+struct VerticalLine {
+  int x, y1, y2;
+};
+
 static RelatedTasks findRelatedTasks(
     Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
   quint64 herdid = scheduler->taskInstanceById(tii).herdid();
@@ -588,13 +592,15 @@ Utf8String DiagramsBuilder::herdInstanceDiagram(
                 +actionEdgeStyle(instance.cause())+"]\n");
   }
   // drawing condition edges
-  gv.append("  edge[dir=forward,arrowhead=dot,style=dashed]\n"); // FIXME use styles
-  gv.append("  # instances "+Utf8String::number(instances.size())+" prerequisites "+Utf8String::number(prerequisites.size())+"\n");
+  gv.append("  edge[" PREREQUISITE_EDGE "]\n");
+  gv.append("  # instances "+Utf8String::number(instances.size())+
+            " prerequisites "+Utf8String::number(prerequisites.size())+"\n");
   for (auto instance: instances) {
     auto twci = prerequisites[instance.idAsLong()];
     auto tiis = twci.tiis.values();
     std::sort(tiis.begin(), tiis.end());
-    gv.append("  # prereq "+instance.id()+" "+Utf8String::number(tiis.size())+" first "+Utf8String::number(tiis.value(0))+"\n");
+    gv.append("  # prereq "+instance.id()+" "+Utf8String::number(tiis.size())+
+              " first "+Utf8String::number(tiis.value(0))+"\n");
     for (auto dep: tiis)
       gv.append("  \""+Utf8String::number(dep)+"\" -- \""+instance.id()
                 +"\"[label=\""+twci.op+"\""+actionEdgeStyle(twci.op)+"]\n");
@@ -650,13 +656,14 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
       case TaskInstance::Planned:
         return {"board22", SVG_PLANNED_COLOR, SVG_PLANNED_COLOR}; // or moon
       case TaskInstance::Queued:
-        return {"funnel", SVG_QUEUED_COLOR, "none"};
+        return {"blockedarrow", SVG_QUEUED_COLOR, SVG_QUEUED_COLOR};
+        //return {"funnel", SVG_QUEUED_COLOR, "none"};
       case TaskInstance::Canceled:
         return {"times", SVG_NEUTRAL_COLOR, "none"};
       case TaskInstance::Running:
         return {"arrowr", SVG_RUNNING_COLOR, SVG_RUNNING_COLOR};
       case TaskInstance::Waiting:
-        return {"hourglass", SVG_RUNNING_COLOR, "none"};
+        return {"hourglass", SVG_RUNNING_COLOR, SVG_RUNNING_COLOR};
       case TaskInstance::Failure:
         return {"square", SVG_FAILURE_COLOR, SVG_FAILURE_COLOR};
       case TaskInstance::Success:
@@ -678,6 +685,7 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
       color = next_color;
     }
   };
+  QMap<quint64,int> tiy; // tii -> ym
   for (auto [tii, instance]: instances.asKeyValueRange()) {
     QDateTime creation = instance.creationDatetime(),
         queue = instance.queueDatetime(), start = instance.startDatetime(),
@@ -717,9 +725,40 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
     auto text = label.isEmpty() ? instance.task().localId()+"/"+instance.id()
                                 : Utf8String{label % instance};
     // TODO make text position works correctly and without magic numbers
-    sw.drawText(x+iconsize, y0-3, label_width, lineh, 0, text, SVG_NEUTRAL_COLOR,
+    sw.drawText(x+iconsize, y0-3, label_width, lineh, 0, text, SVG_LABEL_COLOR,
                 fontname, fontsize);
+    tiy[tii] = ym;
     ++i;
+  }
+  QList<VerticalLine> vertical_lines;
+  for (auto [tii,twci]: prerequisites.asKeyValueRange())
+    for (auto dep: twci.tiis) {
+      if (tiy[tii] && tiy[dep]) {
+        auto instance = instances[tii];
+        auto ts = instance.queueDatetime();
+        if (!ts.isValid())
+          ts = instance.creationDatetime();
+        vertical_lines.append({hmargin+(int)(pps*min.secsTo(ts)), tiy[tii],
+                               tiy[dep]});
+      }
+    }
+  for (int i = 0; i < vertical_lines.size(); i++) {
+    for (int j = 0; j < i; j++) {
+      if (vertical_lines[i].x == vertical_lines[j].x) {
+        vertical_lines[i].x += 3;
+        j = 0;
+      }
+    }
+  }
+  for (auto line: vertical_lines) {
+    sw.drawLine(line.x, line.y1, line.x, line.y2, SVG_NEUTRAL_COLOR, 1);
+    if (line.y1 < line.y2) {
+      sw.drawLine(line.x-2, line.y2-2, line.x, line.y2, SVG_NEUTRAL_COLOR, 1);
+      sw.drawLine(line.x+2, line.y2-2, line.x, line.y2, SVG_NEUTRAL_COLOR, 1);
+    } else {
+      sw.drawLine(line.x-2, line.y2+2, line.x, line.y2, SVG_NEUTRAL_COLOR, 1);
+      sw.drawLine(line.x+2, line.y2+2, line.x, line.y2, SVG_NEUTRAL_COLOR, 1);
+    }
   }
   return sw.data();
 }

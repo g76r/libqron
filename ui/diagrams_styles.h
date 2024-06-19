@@ -43,7 +43,7 @@
 #define ORJOIN_NODE "shape=circle,label=or"
 #define START_NODE "shape=circle,style=\"filled\",width=.2,label=\"\",fillcolor=black"
 #define END_NODE "shape=doublecircle,style=\"filled\",width=.2,label=\"\",fillcolor=black"
-
+#define PREREQUISITE_EDGE "dir=forward,arrowhead=dot,style=dashed"
 // svg
 #define SVG_PLANNED_COLOR "#1d72ab"
 #define SVG_QUEUED_COLOR "#fdbf6f"
@@ -52,5 +52,6 @@
 #define SVG_SUCCESS_COLOR "#30982a"
 #define SVG_FAILURE_COLOR "#d7191b"
 #define SVG_NEUTRAL_COLOR "black"
+#define SVG_LABEL_COLOR "#444"
 
 #endif // DIAGRAMS_STYLES_H
