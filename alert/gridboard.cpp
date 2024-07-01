@@ -381,7 +381,7 @@ void Gridboard::detach() {
 
 inline static Utf8String formatted(
     const Utf8String &text, const Utf8String &key, const ParamSet &params) {
-  Utf8StringList slpp({text});
+  Utf8StringList slpp({text}); // provides %1
   return params.paramUtf8(key, text, &slpp);
 }
 
