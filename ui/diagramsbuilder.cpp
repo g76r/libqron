@@ -500,7 +500,8 @@ static RelatedTasks findRelatedTasks(
   // selecting instances to show on diagram
   QMap<quint64,TaskInstance> instances;
   // herder
-  instances.insert(herdid, herder);
+  if (!!herder)
+    instances.insert(herdid, herder);
   // its parent
   auto herderparentid = herder.parentid();
   if (herderparentid) {
@@ -512,7 +513,7 @@ static RelatedTasks findRelatedTasks(
   auto include_parents = options->paramBool("include_parents", true);
   if (options->paramBool("include_herd", true))
     for (auto [taskid, tii]: herder.herdedTasksIdsPairs()) {
-      auto instance = instances[tii];
+      auto instance = instances.value(tii);
       if (!instance)
         instance = scheduler->taskInstanceById(tii);
       if (!instance)
@@ -521,8 +522,11 @@ static RelatedTasks findRelatedTasks(
       if (!include_parents)
         continue;
       auto parentid = instance.parentid();
-      if (parentid && !instances.contains(parentid))
-        instances.insert(parentid, scheduler->taskInstanceById(parentid));
+      if (parentid && !instances.contains(parentid)) {
+        auto parent = scheduler->taskInstanceById(parentid);
+        if (!!parent)
+          instances.insert(parentid, parent);
+      }
     }
   // their prerequisites
   QMap<quint64,WaitConditionInstance> prerequisites; // tii -> awaited instances
@@ -530,7 +534,7 @@ static RelatedTasks findRelatedTasks(
     auto twc = taskWaitConditionExpression(instance.queuewhen());
     if (twc.expr.isEmpty())
       continue;
-    auto herder = instances[instance.herdid()];
+    auto herder = instances.value(instance.herdid());
     if (!herder)
       continue;
     auto tiis = Utf8String{twc.expr % herder}.split(' ', Qt::SkipEmptyParts);
@@ -546,7 +550,7 @@ static RelatedTasks findRelatedTasks(
   if (options->paramBool("include_prerequisites", true))
     for (auto [tii,twci]: prerequisites.asKeyValueRange())
       for (auto dep: twci.tiis) {
-        auto instance = instances[dep];
+        auto instance = instances.value(dep);
         if (!instance)
           instance = scheduler->taskInstanceById(tii);
         if (!instance)
@@ -556,9 +560,15 @@ static RelatedTasks findRelatedTasks(
   // their children even outside the herd
   if (options->paramBool("include_children", true))
     for (auto tii: instances.keys())
-      for (auto child: instances[tii].children())
-        if (!instances.contains(child))
-          instances[child] = scheduler->taskInstanceById(child);
+      for (auto child: instances.value(tii).children())
+        if (!instances.contains(child)) {
+          auto instance = scheduler->taskInstanceById(child);
+          if (!!instance)
+            instances.insert(child, instance);
+        }
+  instances.removeIf([](const std::pair<quint64,TaskInstance> &p){
+    return !p.second; // should never happen
+  });
   return {herdid, instances, prerequisites};
 }
 
@@ -570,7 +580,7 @@ Utf8String DiagramsBuilder::herdInstanceDiagram(
       = findRelatedTasks(scheduler, tii, options);
   if (!herdid) // means tii is invalid
     return {};
-  auto herder = instances[herdid];
+  auto herder = instances.value(herdid);
   Utf8String gv;
   gv.append("graph herd {\n" "graph[" GLOBAL_GRAPH
             ",bgcolor=grey95,"
@@ -585,13 +595,19 @@ Utf8String DiagramsBuilder::herdInstanceDiagram(
   gv.append("  node[shape=plain]\n"); // FIXME non instance parent nodes
   gv.append("  edge[dir=forward,arrowhead=vee]\n"); // FIXME use styles TASK_TRIGGER_EDGE
   for (auto instance: instances) {
-    auto parent = instances[instance.parentid()];
-    if (!!parent) // parent edges
+    auto parent = instances.value(instance.parentid());
+    if (!!parent) { // parent edges
       gv.append("  \""+parent.id()+"\" -- \""+instance.id()+"\" [label=\""
                 +instance.cause()+"\""+actionEdgeStyle(instance.cause())+"]\n");
-    else if (!instance.cause().isEmpty()) // non parent cause edges
-      gv.append("  \""+instance.cause()+"\" -- \""+instance.id()+"\"[a=a"
-                +actionEdgeStyle(instance.cause())+"]\n");
+      continue;
+    }
+    if (parent.herdid() != herdid && instance.herdid() != herdid)
+      continue; // don't display causes outside herd
+    if (instance.cause().isEmpty()) [[unlikely]]
+      continue; // don't display empty causes
+    // non parent cause edges
+    gv.append("  \""+instance.cause()+"\" -- \""+instance.id()+"\"[a=a"
+              +actionEdgeStyle(instance.cause())+"]\n");
   }
   // drawing condition edges
   gv.append("  edge[" PREREQUISITE_EDGE "]\n");
@@ -738,7 +754,7 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
   for (auto [tii,twci]: prerequisites.asKeyValueRange())
     for (auto dep: twci.tiis) {
       if (tiy[tii] && tiy[dep]) {
-        auto instance = instances[tii];
+        auto instance = instances.value(tii);
         auto ts = instance.queueDatetime();
         if (!ts.isValid())
           ts = instance.creationDatetime();
