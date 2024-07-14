@@ -536,6 +536,10 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
         case 19:
           return PercentEvaluator::eval(
                 _task.lockedData()->deduplicateCriterion(), this);
+        case 20:
+          return _parentid;
+        case 21:
+          return _cause;
       }
       break;
     default:
