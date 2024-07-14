@@ -537,6 +537,13 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
         return {};
       return td->_maxInstances;
     } },
+  { "!maxqueuedinstances", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_maxQueuedInstances;
+    } },
   { "!maxtries", [](const SharedUiItemData *data, const Utf8String &,
     const PercentEvaluator::EvalContext, int) -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
@@ -557,6 +564,34 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       if (!td)
         return {};
       return td->_deduplicateStrategy;
+    } },
+  { "!info", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_info;
+    } },
+  { "!mean", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return Task::meanAsString(td->_mean);
+    } },
+  { "!command", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+        return {};
+      return td->_command;
+    } },
+  { "!resources", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto td = dynamic_cast<const TaskData*>(data);
+      if (!td)
+      return {};
+      return QronUiUtils::resourcesAsString(td->_resources);
     } },
 };
 
