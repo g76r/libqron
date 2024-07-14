@@ -56,7 +56,7 @@ static Utf8String actionEdgeStyle(const Utf8String &cause) {
   return {};
 }
 
-static QString instanceNodeStyle(TaskInstance instance) {
+static QString instanceNodeStyle(TaskInstance instance, quint64 herdid) {
   QString style=TASK_NODE;
   switch(instance.status()) {
   case TaskInstance::Planned:
@@ -79,9 +79,10 @@ static QString instanceNodeStyle(TaskInstance instance) {
     style += " fillcolor=\"/paired12/5\"";
     break;
   }
-  if (instance.idAsLong() == instance.herdid()) {
+  if (instance.idAsLong() == instance.herdid())
     style += " peripheries=2";
-  }
+  if (instance.herdid() != herdid)
+    style += " style=\"rounded,filled,dashed\"";
   return style;
 }
 
@@ -578,7 +579,7 @@ Utf8String DiagramsBuilder::herdInstanceDiagram(
   for (auto instance: instances) {
     gv.append("  \""+instance.id()+"\" [label=\""+instance.task().localId()+"\n"
               +instance.id()+"\" tooltip=\""+instance.id()+"\" "
-              +instanceNodeStyle(instance)+"]\n");
+              +instanceNodeStyle(instance, herdid)+"]\n");
   }
   // drawing cause edges (and non parent cause nodes)
   gv.append("  node[shape=plain]\n"); // FIXME non instance parent nodes
