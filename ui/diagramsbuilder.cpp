@@ -576,8 +576,9 @@ Utf8String DiagramsBuilder::herdInstanceDiagram(
             "label=\"herd diagram for "_u8+herder.idSlashId()+"\"]\n"_u8);
   // drawing instance nodes
   for (auto instance: instances) {
-    gv.append("  \""+instance.id()+"\" [label=\""+instance.taskId()+"\n"
-              +instance.id()+"\" "+instanceNodeStyle(instance)+"]\n");
+    gv.append("  \""+instance.id()+"\" [label=\""+instance.task().localId()+"\n"
+              +instance.id()+"\" tooltip=\""+instance.id()+"\" "
+              +instanceNodeStyle(instance)+"]\n");
   }
   // drawing cause edges (and non parent cause nodes)
   gv.append("  node[shape=plain]\n"); // FIXME non instance parent nodes
@@ -725,8 +726,10 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
     auto text = label.isEmpty() ? instance.task().localId()+"/"+instance.id()
                                 : Utf8String{label % instance};
     // TODO make text position works correctly and without magic numbers
+    sw.startAnchor(instance.id());
     sw.drawText(x+iconsize, y0-3, label_width, lineh, 0, text, SVG_LABEL_COLOR,
                 fontname, fontsize);
+    sw.endAnchor();
     tiy[tii] = ym;
     ++i;
   }
