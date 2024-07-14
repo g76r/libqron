@@ -244,6 +244,11 @@ void Scheduler::planOrRequestCommonPostProcess(
     auto value = overridingParams.paramValue(key, &instance);
     instance.setParam(key, PercentEvaluator::escape(value));
   }
+  {
+    auto all = _allTasks.lockedData();
+    if (all->contains(instance.parentid()))
+      (*all)[instance.parentid()].appendToChildren(instance.idAsLong());
+  }
   if (herder.isNull() || herder == instance)
     return;
   _unfinishedHerdedTasks[herder.idAsLong()] << instance.idAsLong();
@@ -252,10 +257,6 @@ void Scheduler::planOrRequestCommonPostProcess(
   herder.appendToHerd(instance.taskId(), instance.idAsLong());
   Log::info(herder.taskId(), herder.id())
       << "task appended to herded tasks: " << instance.idSlashId();
-  auto all = _allTasks.lockedData();
-  auto parent = all->value(instance.parentid());
-  if (!!parent)
-    parent.appendToChildren(instance.idAsLong());
 }
 
 TaskInstance Scheduler::planTask(
