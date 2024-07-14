@@ -660,13 +660,21 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
   int hmargin = 4, vmargin = 4;
   int iconsize = 8, lineh = 12, fontsize = 8;
   auto secspan = std::max(min.secsTo(max), 1LL);
-  double pps = (double)(width-iconsize-2*hmargin-label_width)/secspan;
+  auto time_width = width-iconsize-2*hmargin-label_width;
+  double pps = (double)time_width/secspan;
   SvgWriter sw;
-  sw.setViewport(0, 0, width, lineh*(instances.size()+1)+2*vmargin);
+  sw.setViewport(0, 0, width, lineh*(instances.size()+2)+2*vmargin);
   sw.drawText(hmargin, vmargin, label_width, lineh, 0,
-              "min: "+Utf8String{min}+" max: "+Utf8String{max}+" pps:"
-              +Utf8String::number(pps),
+              Utf8String{min}, SVG_NEUTRAL_COLOR, fontname, fontsize);
+  sw.drawText(hmargin+time_width, vmargin, label_width, lineh, Qt::AlignRight,
+              Utf8String{max}, SVG_NEUTRAL_COLOR, fontname, fontsize);
+  sw.drawText(hmargin+time_width/2, vmargin, label_width, lineh,
+              Qt::AlignHCenter, "chronogram for task instance "+Utf8String{tii},
               SVG_NEUTRAL_COLOR, fontname, fontsize);
+  for (int i = 0; i <= 10; ++i) { // drawing time ticks
+    auto x = hmargin+time_width*i/10;
+    sw.drawLine(x, lineh*1.5, x, lineh*2, SVG_NEUTRAL_COLOR, 1);
+  }
   int i = 0;
   auto status_icon = [](TaskInstance::TaskInstanceStatus status)
       -> std::tuple<Utf8String,Utf8String,Utf8String> {
@@ -708,7 +716,7 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
     QDateTime creation = instance.creationDatetime(),
         queue = instance.queueDatetime(), start = instance.startDatetime(),
         stop = instance.stopDatetime(), finish = instance.finishDatetime();
-    int y0 = vmargin+lineh*(i+1), ym = y0+lineh/2;
+    int y0 = vmargin+lineh*(i+2), ym = y0+lineh/2;
     int x0 = hmargin+(int)(pps*min.secsTo(creation));
     int x = x0, xp = x0;
     Utf8String color = SVG_PLANNED_COLOR;
