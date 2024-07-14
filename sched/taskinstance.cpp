@@ -569,6 +569,16 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
         const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)->_parentid;
     } },
+  { "!childrenids", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
+      auto children = reinterpret_cast<const TaskInstanceData*>(data)
+                      ->_children.lockedData();
+      Utf8StringList list;
+      for (auto tii: *children)
+        list.append(Utf8String::number(tii));
+      children.unlock();
+      return list.join(' ');
+    } },
   { "!taskinstancecause", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)->_cause;
@@ -637,6 +647,11 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
         const PercentEvaluator::EvalContext&, int) -> QVariant {
       return reinterpret_cast<const TaskInstanceData*>(data)
           ->_target.id();
+    } },
+  { "!configuredtarget", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
+      auto tid = reinterpret_cast<const TaskInstanceData*>(data);
+      return tid->_task.lockedData()->target();
     } },
   { "!targethostname", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
