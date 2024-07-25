@@ -381,7 +381,7 @@ TaskInstance Scheduler::enqueueTaskInstance(TaskInstance instance) {
       auto criterion = task.deduplicateCriterion();
       auto strategy = task.deduplicateStrategy();
       auto self_crit = PercentEvaluator::eval_utf8(criterion, &instance);
-      TaskInstanceList duplicates;
+      SharedUiItemList duplicates;
       for (auto other: _unfinishedTasks) {
         if (other.status() != TaskInstance::Queued)
           continue;
@@ -508,18 +508,20 @@ TaskInstance Scheduler::doCancelTaskInstance(
   return TaskInstance();
 }
 
-TaskInstanceList Scheduler::cancelTaskInstancesByTaskId(QByteArray taskId) {
+SharedUiItemList Scheduler::cancelTaskInstancesByTaskId(
+    const Utf8String &taskId) {
   if (this->thread() == QThread::currentThread())
     return doCancelTaskInstancesByTaskId(taskId);
-  TaskInstanceList instances;
+  SharedUiItemList instances;
   QMetaObject::invokeMethod(this, [this,&instances,taskId](){
     instances = doCancelTaskInstancesByTaskId(taskId);
     }, Qt::BlockingQueuedConnection);
   return instances;
 }
 
-TaskInstanceList Scheduler::doCancelTaskInstancesByTaskId(QByteArray taskId) {
-  TaskInstanceList instances;
+SharedUiItemList Scheduler::doCancelTaskInstancesByTaskId(
+    const Utf8String &taskId) {
+  SharedUiItemList instances;
   for (auto i: _unfinishedTasks) {
     switch (i.status()) {
     case TaskInstance::Success:
@@ -582,18 +584,20 @@ TaskInstance Scheduler::doAbortTaskInstance(quint64 id) {
   return TaskInstance();
 }
 
-TaskInstanceList Scheduler::abortTaskInstanceByTaskId(QByteArray taskId) {
+SharedUiItemList Scheduler::abortTaskInstanceByTaskId(
+    const Utf8String &taskId) {
   if (this->thread() == QThread::currentThread())
     return doAbortTaskInstanceByTaskId(taskId);
-  TaskInstanceList instances;
+  SharedUiItemList instances;
   QMetaObject::invokeMethod(this, [this,&instances,taskId](){
     instances = doAbortTaskInstanceByTaskId(taskId);
     }, Qt::BlockingQueuedConnection);
   return instances;
 }
 
-TaskInstanceList Scheduler::doAbortTaskInstanceByTaskId(QByteArray taskId) {
-  TaskInstanceList instances;
+SharedUiItemList Scheduler::doAbortTaskInstanceByTaskId(
+    const Utf8String &taskId) {
+  SharedUiItemList instances;
   for (auto ti: detachedUnfinishedTaskInstances()) {
     if (ti.taskId() != taskId)
       continue;

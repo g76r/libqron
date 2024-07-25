@@ -97,10 +97,10 @@ public slots:
   TaskInstance cancelTaskInstance(const TaskInstance &instance) {
     return cancelTaskInstance(instance.idAsLong()); }
   /** Cancel all planned or queued requests of a given task. */
-  TaskInstanceList cancelTaskInstancesByTaskId(QByteArray taskId);
-  /** @see cancelRequestsByTaskId(QByteArray) */
-  TaskInstanceList cancelTaskInstancesByTaskId(QString taskId) {
-    return cancelTaskInstancesByTaskId(taskId.toUtf8()); }
+  SharedUiItemList cancelTaskInstancesByTaskId(const Utf8String &taskId);
+  [[deprecated]]
+  SharedUiItemList cancelTaskInstancesByTaskId(const QString &taskId) {
+    return cancelTaskInstancesByTaskId(Utf8String{taskId}); }
   /** Abort a running task instance.
    * For local tasks aborting means killing, for ssh tasks aborting means
    * killing ssh client hence most of time killing actual task, for http tasks
@@ -119,10 +119,10 @@ public slots:
    * Same limitations than abortTask().
    * @see abortTask(quint64)
    */
-  TaskInstanceList abortTaskInstanceByTaskId(QByteArray taskId);
-  /** @see abortTaskInstancesByTaskId(QByteArray) */
-  TaskInstanceList abortTaskInstanceByTaskId(QString taskId) {
-    return abortTaskInstanceByTaskId(taskId.toUtf8()); }
+  SharedUiItemList abortTaskInstanceByTaskId(const Utf8String &taskId);
+  [[deprecated]]
+  SharedUiItemList abortTaskInstanceByTaskId(const QString &taskId) {
+    return abortTaskInstanceByTaskId(Utf8String{taskId}); }
   /** Post a notice.
    * This method is thread-safe.
    * If params has no parent it will be set global params as parent */
@@ -204,8 +204,8 @@ private:
   TaskInstance enqueueTaskInstance(TaskInstance request);
   TaskInstance doCancelTaskInstance(
       TaskInstance instance, bool warning, const char *reason);
-  TaskInstanceList doCancelTaskInstancesByTaskId(QByteArray taskId);
-  TaskInstanceList doAbortTaskInstanceByTaskId(QByteArray taskId);
+  SharedUiItemList doCancelTaskInstancesByTaskId(const Utf8String &taskId);
+  SharedUiItemList doAbortTaskInstanceByTaskId(const Utf8String &taskId);
   TaskInstance doAbortTaskInstance(quint64 id);
   void propagateTaskInstanceChange(TaskInstance instance);
   QMap<quint64,TaskInstance> detachedUnfinishedTaskInstances();

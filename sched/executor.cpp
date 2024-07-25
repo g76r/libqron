@@ -738,7 +738,7 @@ void Executor::scatterMean() {
         "scatter.onlast.condition", "allfinished", &_instance);
   // LATER const auto mean = params.value("scatter.mean", "plantask", &_instance);
   // LATER queuewhen ?
-  TaskInstanceList instances;
+  SharedUiItemList instances;
   emit taskInstanceStarted(_instance);
   int rank = -1;
   for (auto input: inputs) {
