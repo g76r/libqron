@@ -54,7 +54,6 @@ public:
   Task &operator=(const Task &other) {
     SharedUiItem::operator=(other); return *this; }
   ParamSet params() const;
-  void setParentParams(ParamSet parentParams);
   /** local id within group */
   Utf8String localId() const;
   Utf8String label() const;
@@ -143,7 +142,6 @@ public:
    * are listed. */
   QStringList otherTriggers() const;
   void appendOtherTriggers(QString text);
-  void clearOtherTriggers();
   SharedUiItemList appliedTemplates() const;
   QList<PfNode> originalPfNodes() const;
   PfNode toPfNode() const;

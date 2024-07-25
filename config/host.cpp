@@ -198,10 +198,6 @@ const HostData *Host::data() const {
   return specializedData<HostData>();
 }
 
-void Host::detach() {
-  SharedUiItem::detachedData<HostData>();
-}
-
 PfNode Host::toPfNode() const {
   const HostData *d = this->data();
   if (!d)

@@ -608,11 +608,6 @@ void Task::appendOtherTriggers(QString text) {
     data()->_otherTriggers.append(text);
 }
 
-void Task::clearOtherTriggers() {
-  if (!isNull())
-    data()->_otherTriggers.clear();
-}
-
 SharedUiItemList Task::appliedTemplates() const {
   auto d = data();
   return d ? d->_appliedTemplates : SharedUiItemList{};
@@ -723,11 +718,6 @@ Qt::ItemFlags TaskData::uiFlags(int section) const {
     flags |= Qt::ItemIsEditable;
   }
   return flags;
-}
-
-void Task::setParentParams(ParamSet parentParams) {
-  if (!isNull())
-    data()->_params.setParent(parentParams);
 }
 
 TaskData *Task::data() {

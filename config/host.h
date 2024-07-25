@@ -45,7 +45,6 @@ public:
   bool is_available() const;
   /** thread-safe */
   void set_available(bool is_available) const;
-  void detach();
   PfNode toPfNode() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);

@@ -547,7 +547,7 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
   return QVariant{};
 }
 
-// TaskInstanceData *TaskInstance::data() {
+// TaskInstanceData *TaskInstance::data() { // should never detach/deep copy
 //   return detachedData<TaskInstanceData>();
 // }
 

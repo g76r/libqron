@@ -42,7 +42,6 @@ public:
   static Cluster::Balancing balancingFromString(const Utf8String &balancing);
   static Utf8String balancingAsString(Cluster::Balancing balancing);
   QString balancingAsString() const { return balancingAsString(balancing()); }
-  void setId(QByteArray id);
   PfNode toPfNode() const;
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);

@@ -71,11 +71,6 @@ Cluster::Balancing Cluster::balancing() const {
   return !isNull() ? data()->_balancing : UnknownBalancing;
 }
 
-void Cluster::setId(QByteArray id) {
-  if (!isNull())
-    data()->_id = id;
-}
-
 QVariant ClusterData::uiData(int section, int role) const {
   switch(role) {
   case Qt::DisplayRole:

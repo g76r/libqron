@@ -29,9 +29,6 @@ public:
   enum TaskInstanceStatus { Planned, Queued, Running, Waiting, Success, Failure,
                             Canceled };
   TaskInstance();
-#if 0
-  TaskInstance(TaskInstanceData *data);
-#endif
   TaskInstance(const TaskInstance &);
   TaskInstance(Task task, bool force, ParamSet params, quint64 herdid,
                Condition queuewhen, Condition cancelwhen,
