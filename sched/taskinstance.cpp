@@ -46,7 +46,7 @@ public:
   // deep copy (through Host.detach()) of original object, so there are no race
   // conditions as soon as target() return value is never modified, which should
   // be the case forever.
-  mutable Host _target;
+  mutable AtomicValue<Host> _target;
   mutable bool _abortable;
   mutable AtomicValue<QList<QPair<Utf8String,quint64>>> _herdedTasksIdsPairs;
   mutable AtomicValue<QList<quint64>> _children;
@@ -326,13 +326,13 @@ void TaskInstance::setReturnCode(int returnCode) const {
 
 Host TaskInstance::target() const {
   const TaskInstanceData *d = data();
-  return d ? d->_target : Host();
+  return d ? d->_target.data() : Host();
 }
 
 void TaskInstance::setTarget(Host target) const {
   const TaskInstanceData *d = data();
   if (d) {
-    target.detach();
+    target.detach(); // not sure this is needed
     d->_target = target;
   }
 }
@@ -645,8 +645,9 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
     } },
   { "!target", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
-      return reinterpret_cast<const TaskInstanceData*>(data)
-          ->_target.id();
+      auto target = reinterpret_cast<const TaskInstanceData*>(data)
+                  ->_target.lockedData();
+      return target->id();
     } },
   { "!configuredtarget", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
@@ -655,8 +656,9 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
     } },
   { "!targethostname", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
-      return reinterpret_cast<const TaskInstanceData*>(data)
-          ->_target.hostname();
+      auto target = reinterpret_cast<const TaskInstanceData*>(data)
+                  ->_target.lockedData();
+      return target->hostname();
     } },
   { "!requestdate", [](const SharedUiItemData *data, const Utf8String &key,
         const PercentEvaluator::EvalContext &context, int ml) -> QVariant {
