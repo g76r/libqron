@@ -332,7 +332,6 @@ Host TaskInstance::target() const {
 void TaskInstance::setTarget(Host target) const {
   const TaskInstanceData *d = data();
   if (d) {
-    target.detach(); // not sure this is needed
     d->_target = target;
   }
 }
