@@ -737,7 +737,9 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
     else {
       //x = x0+secspan;
       x = width-iconsize-hmargin-label_width;
-      sw.drawLine(xp, ym, x, ym, color, 2);
+      auto linew = stop.isValid() ? 2 // waiting
+                                  : 4; // running
+      sw.drawLine(xp, ym, x, ym, color, linew);
     }
     if (finish.isValid())
       color = instance.success() ? SVG_SUCCESS_COLOR : SVG_FAILURE_COLOR;
