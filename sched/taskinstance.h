@@ -75,7 +75,7 @@ public:
     * queued. */
   Host target() const;
   void setTarget(Host target) const;
-  void setTask(Task task);
+  void setTask(Task task) const;
   bool force() const;
   TaskInstanceStatus status() const;
   static QString statusAsString(TaskInstance::TaskInstanceStatus status);
@@ -128,7 +128,7 @@ public:
   QMap<QString,QString> varsAsHeaders() const;
 
 private:
-  inline TaskInstanceData *data();
+  //inline TaskInstanceData *data(); // should never detach/deep copy
   inline const TaskInstanceData *data() const;
 };
 

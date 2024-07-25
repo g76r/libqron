@@ -362,8 +362,8 @@ QMap<QString,QString> TaskInstance::varsAsHeaders() const {
   return env;
 }
 
-void TaskInstance::setTask(Task task) {
-  TaskInstanceData *d = data();
+void TaskInstance::setTask(Task task) const {
+  const TaskInstanceData *d = data();
   if (d) {
     auto p = d->_params.lockedData();
     d->_task = task;
@@ -548,9 +548,9 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
   return QVariant{};
 }
 
-TaskInstanceData *TaskInstance::data() {
-  return detachedData<TaskInstanceData>();
-}
+// TaskInstanceData *TaskInstance::data() {
+//   return detachedData<TaskInstanceData>();
+// }
 
 const TaskInstanceData *TaskInstance::data() const {
   return specializedData<TaskInstanceData>();
