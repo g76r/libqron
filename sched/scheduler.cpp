@@ -1244,6 +1244,24 @@ QMap<quint64,TaskInstance> Scheduler::detachedUnfinishedTaskInstances() {
   return unfinished;
 }
 
+QList<TaskInstance> Scheduler::lastInstancesByTaskId(
+    const Utf8String &taskid, int count) {
+  auto ld = _allTasks.lockedData();
+  auto all_instances = ld->values();
+  ld.unlock();
+  QList<TaskInstance> last_instances;
+  for (auto it = all_instances.rbegin(); it != all_instances.rend(); ++it) {
+    auto instance = *it;
+    if (count <= 0)
+      break;
+    if (instance.taskId() != taskid)
+      continue;
+    last_instances << instance;
+    --count;
+  }
+  return last_instances;
+}
+
 void Scheduler::shutdown(QDeadlineTimer deadline) {
   if (this->thread() == QThread::currentThread())
     doShutdown(deadline);

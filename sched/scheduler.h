@@ -161,11 +161,15 @@ public:
   SchedulerConfig config() {
     QMutexLocker ml(&_configGuard);
     return QronConfigDocumentManager::config(); }
-  /** Thread-safe. */
+  /** Thread-safe but expensive (deep copies unfinished instances map in
+   *  scheduler thread). */
   QMap<quint64,TaskInstance> unfinishedTaskInstances();
   /** Thread-safe. */
   inline TaskInstance taskInstanceById(quint64 tii) {
     return _allTasks.lockedData()->value(tii); }
+  /** Thread-safe but expensive (copies full instances map before searching). */
+  QList<TaskInstance> lastInstancesByTaskId(
+      const Utf8String &taskid, int count = 1);
 
 signals:
   void hostsResourcesAvailabilityChanged(
