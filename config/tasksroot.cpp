@@ -214,7 +214,7 @@ const Utf8StringIndexedConstList TasksRootData::_sectionNames = {
   "triggers",
   "parameters",
   "resources",
-  "last_execution",
+  "", // was: last_execution
   "next_execution", // 10
   "taskid",
   "max_instances",
@@ -224,20 +224,20 @@ const Utf8StringIndexedConstList TasksRootData::_sectionNames = {
   "on_failure",
   "running_slash_max",
   "actions",
-  "last_execution_status",
+  "", // was: last_execution_status
   "applied_templates", // was: System environment // 20
   "vars",
   "instance_params", // was: Unsetenv
   "min_expected_duration",
   "max_expected_duration",
   "overridable_params", // 25
-  "last_execution_duration",
+  "", // was: last_execution_duration
   "max_duration_before_abort",
   "triggers_incl_calendars",
   "enabled",
   "has_triggers_with_calendars", // 30
   "herding_policy", // was: Workflow task
-  "last_taskinstanceid",
+  "", // was: last_taskinstanceid
   "human_readable_info",
   "executions_count",
   "max_queued_instances", // 35 was: Enqueue policy
@@ -263,7 +263,7 @@ const Utf8StringIndexedConstList TasksRootData::_headerNames = {
   "Triggers",
   "Parameters",
   "Resources",
-  "Last execution",
+  "", // was: Last execution
   "Next execution", // 10
   "Id",
   "Max instances",
@@ -273,20 +273,20 @@ const Utf8StringIndexedConstList TasksRootData::_headerNames = {
   "On failure",
   "Running / max",
   "Actions",
-  "Last execution status",
+  "", // was: Last execution status
   "Applied templates", // was: System environment // 20
   "Vars",
   "Instance params", // was: Unsetenv
   "Min expected duration",
   "Max expected duration",
   "Overridable params", // 25
-  "Last execution duration",
+  "", // was: Last execution duration
   "Max duration before abort",
   "Triggers incl. calendars",
   "Enabled",
   "Has triggers with calendars", // 30
   "Herding policy", // was: Workflow task
-  "Last taskinstanceid",
+  "", // was: Last taskinstanceid
   "Human readable info",
   "Executions count",
   "Max queued instances", // 35 was: Enqueue policy

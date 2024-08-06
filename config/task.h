@@ -73,8 +73,6 @@ public:
   void setTaskGroup(TaskGroup taskGroup);
   /** Resources consumed. */
   QMap<Utf8String,qint64> resources() const;
-  QDateTime lastExecution() const;
-  void setLastExecution(QDateTime timestamp) const;
   QDateTime nextScheduledExecution() const;
   void setNextScheduledExecution(QDateTime timestamp) const;
   /** Maximum allowed simultaneous instances (includes running and queued
@@ -105,14 +103,6 @@ public:
   bool mergeStdoutIntoStderr() const;
   bool enabled() const;
   void setEnabled(bool enabled) const;
-  bool lastSuccessful() const;
-  void setLastSuccessful(bool successful) const;
-  int lastReturnCode() const;
-  void setLastReturnCode(int code) const;
-  int lastDurationMillis() const;
-  void setLastDurationMillis(int lastDurationMillis) const;
-  quint64 lastTaskInstanceId() const;
-  void setLastTaskInstanceId(quint64 lastTaskInstanceId) const;
   /** in millis, LLONG_MAX if not set */
   long long maxExpectedDuration() const;
   /** in millis, 0 if not set */
@@ -146,7 +136,7 @@ public:
   QList<PfNode> originalPfNodes() const;
   PfNode toPfNode() const;
   /** to be called when activating a new configuration, to keep live attributes
-   * such as lastReturnCode() or enabled() */
+   * such as enabled() */
   void copyLiveAttributesFromOldTask(const Task &oldTask);
   bool setUiData(int section, const QVariant &value, QString *errorString,
                  SharedUiItemDocumentTransaction *transaction, int role);

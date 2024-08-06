@@ -24,19 +24,13 @@ public:
   // note: since QDateTime (as most Qt classes) is not thread-safe, it cannot
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
-  mutable qint64 _lastExecution, _nextScheduledExecution;
+  mutable qint64 _nextScheduledExecution;
   // LATER QAtomicInt is not needed since only one thread changes these values (Scheduler's)
   mutable QAtomicInt _runningCount, _executionsCount;
-  mutable bool _lastSuccessful;
-  mutable int _lastReturnCode, _lastDurationMillis;
-  mutable quint64 _lastTaskInstanceId;
 
-  TaskData(): _lastExecution(LLONG_MIN), _nextScheduledExecution(LLONG_MIN),
-      _lastSuccessful(true), _lastReturnCode(-1),
-      _lastDurationMillis(-1), _lastTaskInstanceId(0) {
+  TaskData(): _nextScheduledExecution(LLONG_MIN) {
     _params.setScope(qualifier());
   }
-  QDateTime lastExecution() const;
   QDateTime nextScheduledExecution() const;
   QVariant uiData(int section, int role) const override;
   bool setUiData(int section, const QVariant &value, QString *errorString,
@@ -113,14 +107,8 @@ void Task::copyLiveAttributesFromOldTask(const Task &oldTask) {
   if (!d || oldTask.isNull())
     return;
   // copy mutable fields from old task (excepted _nextScheduledExecution)
-  d->_lastExecution = oldTask.lastExecution().isValid()
-      ? oldTask.lastExecution().toMSecsSinceEpoch() : LLONG_MIN;
   d->_runningCount = oldTask.runningCount();
   d->_executionsCount = oldTask.executionsCount();
-  d->_lastSuccessful = oldTask.lastSuccessful();
-  d->_lastReturnCode = oldTask.lastReturnCode();
-  d->_lastDurationMillis = oldTask.lastDurationMillis();
-  d->_lastTaskInstanceId = oldTask.lastTaskInstanceId();
   d->_enabled = oldTask.enabled();
   // keep last triggered timestamp from previously defined trigger
   QMap<QByteArray,CronTrigger> oldCronTriggers;
@@ -206,15 +194,6 @@ QMap<Utf8String,qint64> Task::resources() const {
   return !isNull() ? data()->_resources : QMap<Utf8String,qint64>{};
 }
 
-QDateTime Task::lastExecution() const {
-  return !isNull() ? data()->lastExecution() : QDateTime();
-}
-
-QDateTime TaskData::lastExecution() const {
-  return _lastExecution != LLONG_MIN
-      ? QDateTime::fromMSecsSinceEpoch(_lastExecution) : QDateTime();
-}
-
 QDateTime Task::nextScheduledExecution() const {
   return !isNull() ? data()->nextScheduledExecution() : QDateTime();
 }
@@ -222,12 +201,6 @@ QDateTime Task::nextScheduledExecution() const {
 QDateTime TaskData::nextScheduledExecution() const {
   return _nextScheduledExecution != LLONG_MIN
       ? QDateTime::fromMSecsSinceEpoch(_nextScheduledExecution) : QDateTime();
-}
-
-void Task::setLastExecution(QDateTime timestamp) const {
-  if (!isNull())
-    data()->_lastExecution = timestamp.isValid()
-        ? timestamp.toMSecsSinceEpoch() : LLONG_MIN;
 }
 
 void Task::setNextScheduledExecution(QDateTime timestamp) const {
@@ -311,42 +284,6 @@ bool Task::enabled() const {
 void Task::setEnabled(bool enabled) const {
   if (!isNull())
     data()->_enabled = enabled;
-}
-
-bool Task::lastSuccessful() const {
-  return !isNull() ? data()->_lastSuccessful : false;
-}
-
-void Task::setLastSuccessful(bool successful) const {
-  if (!isNull())
-    data()->_lastSuccessful = successful;
-}
-
-int Task::lastReturnCode() const {
-  return !isNull() ? data()->_lastReturnCode : -1;
-}
-
-void Task::setLastReturnCode(int code) const {
-  if (!isNull())
-    data()->_lastReturnCode = code;
-}
-
-int Task::lastDurationMillis() const {
-  return !isNull() ? data()->_lastDurationMillis : -1;
-}
-
-void Task::setLastDurationMillis(int lastDurationMillis) const {
-  if (!isNull())
-    data()->_lastDurationMillis = lastDurationMillis;
-}
-
-quint64 Task::lastTaskInstanceId() const {
-  return !isNull() ? data()->_lastTaskInstanceId : 0;
-}
-
-void Task::setLastTaskInstanceId(quint64 lastTaskInstanceId) const {
-  if (!isNull())
-    data()->_lastTaskInstanceId = lastTaskInstanceId;
 }
 
 long long Task::maxExpectedDuration() const {
@@ -628,8 +565,6 @@ QVariant TaskData::uiData(int section, int role) const {
       if (role == Qt::EditRole)
         return _label == _localId ? QVariant() : _label;
       return _label.isEmpty() ? _localId : _label;
-    case 9:
-      return lastExecution().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
     case 10:
       return nextScheduledExecution().toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s);
     case 13:
@@ -637,27 +572,8 @@ QVariant TaskData::uiData(int section, int role) const {
     case 17:
       return QByteArray::number(_runningCount.loadRelaxed())+" / "
           +QByteArray::number(_maxInstances);
-    case 19: {
-      QDateTime dt = lastExecution();
-      if (dt.isNull())
-        return {};
-      auto returnCode = Utf8String::number(_lastReturnCode);
-      auto returnCodeLabel = _params.paramUtf8("return.code."+returnCode
-                                               +".label");
-      Utf8String s = Utf8String(dt.toString(u"yyyy-MM-dd hh:mm:ss,zzz"_s))
-          + (_lastSuccessful ? " success"_u8 : " failure"_u8)
-          +" (code "_u8 + returnCode;
-      if (!returnCodeLabel.isEmpty())
-        s = s + " : "_u8 + returnCodeLabel;
-      s += ')';
-      return s;
-    }
     case 20:
       return _appliedTemplates.join(' ');
-    case 26:
-      return _lastDurationMillis >= 0 ? _lastDurationMillis/1000.0 : QVariant{};
-    case 32:
-      return _lastTaskInstanceId > 0 ? _lastTaskInstanceId : QVariant{};
     case 34:
       return _executionsCount.loadRelaxed();
     }

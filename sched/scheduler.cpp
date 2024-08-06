@@ -1093,11 +1093,6 @@ void Scheduler::taskInstanceFinishedOrCanceled(
       _alerter->cancelAlert("task.failure."+taskId);
     else
       _alerter->raiseAlert("task.failure."+taskId);
-    configuredTask.setLastExecution(instance.startDatetime());
-    configuredTask.setLastSuccessful(instance.success());
-    configuredTask.setLastReturnCode(instance.returnCode());
-    configuredTask.setLastDurationMillis((int)instance.durationMillis());
-    configuredTask.setLastTaskInstanceId(instance.idAsLong());
     triggerFinishActions(instance, [instance](Action a) {
       return instance.idAsLong() != instance.herdid()
           || !a.mayCreateTaskInstances();
