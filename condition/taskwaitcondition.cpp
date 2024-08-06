@@ -87,6 +87,8 @@ TaskWaitOperator TaskWaitCondition::cancelOperatorFromQueueOperator(
 namespace {
 
 class Counters {
+  friend QDebug operator<<(QDebug dbg, const Counters &c);
+
   quint32 unstarted = 0;
   quint32 unfinished = 0;
   quint32 canceled = 0;
@@ -178,6 +180,12 @@ public:
   }
 };
 
+QDebug operator<<(QDebug dbg, const Counters &c) {
+  return dbg << "{ unstarted:" << c.unstarted << "unfinished:"
+             << c.unfinished << "canceled:" << c.canceled
+             << "failure:" << c.failure << "success:" << c.success;
+}
+
 } // unnamed namespace
 
 class TaskWaitConditionData : public ConditionData {
@@ -238,7 +246,7 @@ QString TaskWaitCondition::expr() const {
 QSet<quint64> TaskWaitConditionData::evaluateIds(
   TaskInstance instance, TaskInstance herder) const {
   QSet<quint64> ids;
-  auto ppm = ParamsProviderMerger(&herder)(&instance);
+  auto ppm = ParamsProviderMerger(&instance)(&herder);
   auto value = PercentEvaluator::eval_utf8(_expr, &ppm);
   auto list = value.split(' ', Qt::SkipEmptyParts);
   for (auto item: list) {

@@ -724,7 +724,7 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
 #endif
   // this is needed b/c otherwise the "!" prefix passthrough below would hide
   // params starting with a !
-  { { "!parenttaskinstanceid", "!parenttaskid", "!parenttasklocalid" },
+  { { "!parenttaskid", "!parenttasklocalid" },
     [](const SharedUiItemData *data, const Utf8String &key,
         const PercentEvaluator::EvalContext &context, int) -> QVariant {
       auto tid = reinterpret_cast<const TaskInstanceData*>(data);
