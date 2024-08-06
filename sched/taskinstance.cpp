@@ -558,7 +558,7 @@ const TaskInstanceData *TaskInstance::data() const {
 const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
   { "!taskinstanceid", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
-      return reinterpret_cast<const TaskInstanceData*>(data)->_idAsString;
+      return reinterpret_cast<const TaskInstanceData*>(data)->_id;
     } },
   { "!herdid", [](const SharedUiItemData *data, const Utf8String &,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
