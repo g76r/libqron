@@ -39,7 +39,7 @@ public:
     auto parent_taskid = parentInstance.taskId();
     auto last_dot = parent_taskid.lastIndexOf('.');
     auto parent_taskgroupid_dot = parent_taskid.left(last_dot+1);
-    auto parent_localid = parent_taskid.mid(last_dot);
+    auto parent_localid = parent_taskid.mid(last_dot+1);
     if (!parentInstance.isNull()) {
       auto idIfLocalToGroup = parent_taskgroupid_dot+id;
       if (_scheduler->taskExists(idIfLocalToGroup))
