@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -68,10 +68,10 @@ void UrlAlertChannel::doNotifyAlert(Alert alert) {
     /*if (reply) {
     QObject::connect(reply, (void (QNetworkReply::*)(QNetworkReply::NetworkError))&QNetworkReply::error,
                      [=](QNetworkReply::NetworkError error){
-      qDebug() << "network reply error for alert:" << (long)reply << address << error;
+      qDebug() << "network reply error for alert:" << (size_t)reply << address << error;
     });
     QObject::connect(reply, &QNetworkReply::finished, [=](){
-      qDebug() << "network reply finished for alert:" << (long)reply << address;
+      qDebug() << "network reply finished for alert:" << (size_t)reply << address;
     });
   }*/
   }

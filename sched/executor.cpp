@@ -50,8 +50,8 @@ Executor::Executor(Scheduler *scheduler) : QObject(0), _isTemporary(false),
   _scheduler(scheduler), _eventThread(new EventThread) {
   _baseenv = QProcessEnvironment::systemEnvironment();
   _thread->setObjectName(QString("Executor-%1")
-                         .arg(reinterpret_cast<long long>(_thread),
-                              sizeof(long)*2, 16, QLatin1Char('0')));
+                         .arg(reinterpret_cast<size_t>(_thread),
+                              sizeof(size_t)*2, 16, QLatin1Char('0')));
   connect(this, &QObject::destroyed, _thread, &QThread::quit);
   connect(_thread, &QThread::finished, _thread, &QObject::deleteLater);
   _thread->start();

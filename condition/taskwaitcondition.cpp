@@ -180,11 +180,13 @@ public:
   }
 };
 
+/*
 QDebug operator<<(QDebug dbg, const Counters &c) {
   return dbg << "{ unstarted:" << c.unstarted << "unfinished:"
              << c.unfinished << "canceled:" << c.canceled
              << "failure:" << c.failure << "success:" << c.success;
 }
+*/
 
 } // unnamed namespace
 
