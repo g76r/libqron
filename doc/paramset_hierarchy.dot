@@ -7,6 +7,7 @@ external [label="External Params",style=dashed,color=""]
 { rank=min; global; external; } // sticked at the top
 taskgroup [label="Task Group Params"]
 task [label="Task Params"]
+host [label="Host Params"]
 noticetrigger [label="Notice Trigger\nOverriding Params"]
 crontrigger [label="Cron Trigger\nOverriding Params"]
 plantaskaction [label="PlantTask Action Params"]
@@ -29,10 +30,13 @@ node [shape=hexagon,style=dashed,color=""]
 restapi [label="REST API"]
 time [label="time"]
 { rank=min; restapi; time; } // sticked at the top
+hostmonitor [label="Host Monitor"]
+alertchan [label="Alert Channel"]
 
 // ParamSet inheritage (mostly in configuration)
 edge [dir=back,arrowtail=onormal,color=navy,fontcolor=navy]
 global -- taskgroup -- taskgroup -- task
+global -- host
 task -- taskinstance
 global -- alerts -- alertsub
 alerts -- gridboard
@@ -40,14 +44,14 @@ alerts -- gridboard
 
 // parameter injection at runtime
 edge [dir=forward,arrowhead=vee,color=black,fontcolor=black]
-crontrigger -- taskinstance
-noticetrigger -- taskinstance
+host -- taskinstance [headlabel=2]
+crontrigger -- taskinstance [headlabel=1]
+noticetrigger -- taskinstance [headlabel=1]
 notice -- event [label="onnotice\nevent"]
-restapi [label="rest api"]
 restapi -- notice [label="postnotice\ncall"]
 plantaskaction -- taskinstance
 postnoticeaction -- notice
-restapi -- taskinstance [label="requesttask\ncall"]
+restapi -- taskinstance [label="requesttask\ncall",headlabel=1]
 
 // triggering w/o params
 time -- crontrigger [style=dashed]
@@ -69,4 +73,6 @@ taskinstance -- postnoticeaction [taillabel="%!",headlabel=2]
 event -- otheraction [headlabel=1]
 taskinstance -- otheraction [taillabel="%!",headlabel=2]
 external -- global [label="%=ext"]
+host -- hostmonitor
+alertsub -- alertchan
 }

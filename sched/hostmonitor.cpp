@@ -58,7 +58,8 @@ void HostMonitor::asyncProcessing() {
     auto sshhealthcheck = host.sshhealthcheck();
     if (sshhealthcheck.isEmpty())
       continue;
-    ParamSet params{{"hostid", hostid }};
+    auto params = host.params();
+    params.insert("hostid"_u8, host.id());
     auto command = new OpensshCommand(
                      sshhealthcheck, host.hostname(), params, {},
                      "SshMonitorThread");

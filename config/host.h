@@ -34,6 +34,7 @@ public:
   /** Configured max resources available. */
   QMap<Utf8String, qint64> resources() const;
   void set_resource(const Utf8String &key, qint64 value);
+  ParamSet params() const;
   /** healthcheck ssh command
    *  default: no healthcheck
    *  examples: true, /bin/true */

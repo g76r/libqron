@@ -823,6 +823,19 @@ void Scheduler::startAsManyTaskInstancesAsPossible() {
   }
 }
 
+static void override_instance_params_with_host_params(
+    TaskInstance *instance, const Host &host) {
+  // override task params with host params only if they are not already
+  // overriden by triggers (notice, cron, api) because trigger > host
+  // (also ignoring host params parent, which are global params and should
+  // not prevail on task or taskgroup params)
+  auto already_overriden_params = instance->params().withParent({});
+  auto orphan_host_params = host.params().withParent({});
+  for (auto key : orphan_host_params.paramKeys())
+    if (!already_overriden_params.paramContains(key))
+      instance->setParam(key, orphan_host_params.paramRawValue(key));
+}
+
 void Scheduler::startTaskInstance(TaskInstance instance) {
   auto taskId = instance.taskId();
   auto task = Scheduler::task(taskId);
@@ -929,6 +942,7 @@ void Scheduler::startTaskInstance(TaskInstance instance) {
       emit hostsResourcesAvailabilityChanged(h.id(), hostAvailableResources);
     }
     _alerter->cancelAlert("task.resource_exhausted."+taskId);
+    override_instance_params_with_host_params(&instance, h);
     instance.setTarget(h);
     instance.setStartDatetime();
     executor = _availableExecutors.takeFirst();

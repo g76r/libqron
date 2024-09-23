@@ -16,11 +16,13 @@
 #include "ui/qronuiutils.h"
 #include "modelview/templatedshareduiitemdata.h"
 
-class HostData : public SharedUiItemDataBase<HostData> {
+class HostData
+    : public SharedUiItemDataWithImmutableParams<HostData, false> {
 public:
   static const Utf8String _qualifier;
   static const Utf8StringIndexedConstList _sectionNames;
   static const Utf8StringIndexedConstList _headerNames;
+  static const SharedUiItemDataFunctions _paramFunctions;
   Utf8String _id, _label, _hostname, _sshhealthcheck;
   qint64 _healthcheckinterval;
   QMap<Utf8String,qint64> _resources; // configured max resources available
@@ -46,10 +48,11 @@ Host::Host(PfNode node, ParamSet globalParams) {
   HostData *d = new HostData;
   d->_id = ConfigUtils::sanitizeId(
         node.contentAsUtf16(), ConfigUtils::FullyQualifiedId).toUtf8();
+  d->_params =  ParamSet(node, "param", "constparam", globalParams);
   d->_label = PercentEvaluator::eval_utf8(
-                node.attribute("label"), &globalParams);
+                node.attribute("label"), &d->_params);
   d->_hostname = ConfigUtils::sanitizeId(
-        PercentEvaluator::eval_utf8(node.attribute("hostname"), &globalParams),
+        PercentEvaluator::eval_utf8(node.attribute("hostname"), &d->_params),
         ConfigUtils::Hostname);
   d->_sshhealthcheck = node.attribute("sshhealthcheck");
   d->_healthcheckinterval =
@@ -76,6 +79,11 @@ void Host::set_resource(const Utf8String &key, qint64 value) {
   auto d = detachedData<HostData>();
   if (d)
     d->_resources.insert(key, value);
+}
+
+ParamSet Host::params() const {
+  auto d = data();
+  return d ? d->_params : ParamSet{};
 }
 
 Utf8String Host::sshhealthcheck() const {
@@ -122,6 +130,8 @@ QVariant HostData::uiData(int section, int role) const {
       return _healthcheckinterval/1e3;
     case 6:
       return _is_available.loadRelaxed();
+    case 7:
+      return _params.toString(false, false);
     }
     break;
   default:
@@ -216,6 +226,16 @@ PfNode Host::toPfNode() const {
   return node;
 }
 
+const SharedUiItemDataFunctions HostData::_paramFunctions = {
+  { "!hostid", [](const SharedUiItemData *data, const Utf8String &,
+    const PercentEvaluator::EvalContext, int) -> QVariant {
+      auto hd = dynamic_cast<const HostData*>(data);
+      if (!hd)
+        return {};
+      return hd->_id;
+    } },
+};
+
 const Utf8String HostData::_qualifier = "host";
 
 const Utf8StringIndexedConstList HostData::_sectionNames {
@@ -226,6 +246,7 @@ const Utf8StringIndexedConstList HostData::_sectionNames {
   "sshhealthcheck",
   "healthcheckinterval", // 5
   "is_available",
+  "params", // 7
 };
 
 const Utf8StringIndexedConstList HostData::_headerNames {
@@ -236,4 +257,5 @@ const Utf8StringIndexedConstList HostData::_headerNames {
   "SSH Healthcheck",
   "Healthcheck Interval", // 5
   "Available",
+  "Params", // 7
 };
