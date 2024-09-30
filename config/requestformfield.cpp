@@ -23,11 +23,7 @@ static QStringList _allowedValuesCsvHeaders { "value", "label", "flags" };
 class RequestFormFieldData : public QSharedData {
 public:
   QString _id, _label, _placeholder, _suggestion;
-  QRegularExpression _format;
-  QList<QStringList> _allowedValues;
-  QString _allowedValuesSource;
-  bool _mandatory;
-  RequestFormFieldData() : _mandatory(false) { }
+  QRegularExpression _format, _cause;
 };
 
 RequestFormField::RequestFormField() : d(new RequestFormFieldData) {
@@ -48,47 +44,7 @@ RequestFormField::RequestFormField(PfNode node) {
   d->_label = node.utf16attribute("label", d->_id);
   d->_placeholder = node.utf16attribute("placeholder", d->_label);
   d->_suggestion = node.utf16attribute("suggestion");
-  d->_mandatory = node.hasChild("mandatory");
-  auto [child,unwanted] = node.first_two_children("allowedvalues");
-  if (!!child) {
-    if (child.isArray()) {
-      d->_allowedValues = child.contentAsArray().rows();
-    } else {
-      d->_allowedValuesSource = child.contentAsUtf16();
-    }
-  }
-  if (!!unwanted) {
-    Log::error() << "request form field with several allowedvalues: "
-                 << node.toString();
-  }
-  // LATER remove duplicates in allowedvalues ?
-  QString format = node.utf16attribute("format");
-  if (!d->_allowedValues.isEmpty() || !d->_allowedValuesSource.isEmpty()) {
-    // allowedvalues is set, therefore format must be generated from allowed
-    // values, and ignored if found in config
-    if (!format.isEmpty()) {
-      Log::warning() << "request form field with both allowedvalues and "
-                        "format, ignoring format"
-                     << node.toString();
-    }
-    if (!d->_allowedValues.isEmpty()) {
-      format = "(?:";
-      bool first = true;
-      for (const QStringList &row: d->_allowedValues) {
-        if (row.isEmpty())
-          continue; // should never happen
-        if (first)
-          first = false;
-        else
-          format.append('|');
-        format.append(QRegularExpression::escape(row[0]));
-      }
-      format.append(')');
-    } else {
-      // LATER check allowed values when dynamic
-      format = QString();
-    }
-  }
+  auto format = node.utf16attribute("format");
   if (!format.isEmpty()) {
     if (!format.startsWith('^'))
       format.prepend('^');
@@ -100,9 +56,11 @@ RequestFormField::RequestFormField(PfNode node) {
                    << d->_format.errorString() << " : " << node.toString();
       return;
     }
+    d->_cause =
+        QRegularExpression(node.first_child("format")
+                           .utf16attribute("cause","^api|notice"));
   }
   this->d = d;
-  //Log::fatal() << "RequestFormField: " << node.toString() << " " << toHtml();
 }
 
 RequestFormField::~RequestFormField() {
@@ -123,78 +81,16 @@ QString RequestFormField::toHtmlFormFragment(
   html = "<div class=\"from-group\">\n"
          "  <label class=\"control-label\" for=\""+d->_id+"\">"+d->_label
          +"</label>";
-  if (d->_mandatory)
-    html.append(" <small>(mandatory)</small>");
   html.append("\n");
-  if (!d->_allowedValues.isEmpty() || !d->_allowedValuesSource.isEmpty()) {
-    // combobox field
-    bool hasDefault = false;
-    QString options;
-    QList<QStringList> rows = d->_allowedValues;
-    if (!d->_allowedValuesSource.isEmpty()) {
-      QString errorString;
-      QByteArray data = resourcesCache->fetchResource(d->_allowedValuesSource,
-                                                      &errorString);
-      if (!data.isEmpty()) {
-        CsvFile csvfile;
-        csvfile.setFieldSeparator(';'); // consistent with pf data
-        csvfile.openReadonly(data);
-        rows = csvfile.rows();
-      } else {
-        Log::warning() << "cannot fetch request form field allowed values list "
-                          "from " << d->_allowedValuesSource << " : "
-                       << errorString;
-        html.append("<p class=\"bg-warning\"><i class=\"icon-warning\"></i> "
-                    "error: could not fetch allowed values list");
-        options = "<option value=\"\" selected>error: could not fetch allowed "
-                  "values list</option>";
-        hasDefault = true;
-        if (errorOccured)
-          *errorOccured = true;
-        rows.clear();
-      }
-    }
-    for (const QStringList &row: rows) {
-      options.append("<option");
-      QString value = row.value(0);
-      QString label = row.value(1);
-      options.append(" value=\"")
-          .append(StringUtils::htmlEncode(value, false, false))
-          .append("\"");
-      QString s;
-      if (value == d->_suggestion || row.value(2).contains('d')) {
-        options.append(" selected");
-        hasDefault = true;
-      }
-      options.append(">");
-      options.append(StringUtils::htmlEncode(label.isEmpty() ? value : label,
-                                             false, false))
-          .append("</option>");
-    }
-    if (!d->_mandatory) {
-      // add an empty string option to allow empty == null value
-      if (!hasDefault)
-        options.append("<option selected></option>");
-      else
-        options.append("<option></option>");
-    }
-    html.append(
-          "  <div>\n"
-          "    <select id=\""+d->_id+"\" name=\""+d->_id+"\" value=\""
-          +d->_suggestion+"\" class=\"form-control\">\n"
-          "      "+options+"\n"
-          "    </select>\n"
-          "  </div>\n");
-  } else {
-    // text field
-    html.append(
-          "  <div>\n"
-          "    <input id=\""+d->_id+"\" name=\""+d->_id+"\" type=\"text\" "
-          "placeholder=\""+d->_placeholder+"\" value=\""+d->_suggestion+"\""
-          "class=\"form-control\""+(d->_mandatory?"required":"")+">\n"
-          "  </div>\n");
-  }
-  html.append("  </div>\n");
+  // text field
+  html.append(
+        "  <div>\n"
+        "    <input id=\""+d->_id+"\" name=\""+d->_id+
+        "\" type=\"text\" placeholder=\""+d->_placeholder+
+        "\" value=\""+d->_suggestion+
+        "\"class=\"form-control\">\n"
+        "  </div>\n");
+  html.append("</div>\n");
   return html;
 }
 
@@ -208,34 +104,25 @@ QString RequestFormField::toHtmlHumanReadableDescription() const {
     if (!d->_suggestion.isEmpty())
       v.append("<dt>suggestion</dt><dd>")
           .append(StringUtils::htmlEncode(d->_suggestion)).append("</dd>");
-    if (!d->_mandatory)
-      v.append("<dt>mandatory</dt><dd>true</dd>");
     if (!d->_placeholder.isEmpty())
       v.append("<dt>placeholder</dt><dd>")
           .append(StringUtils::htmlEncode(d->_placeholder)).append("</dd>");
-    if (!d->_allowedValues.isEmpty()) {
-      v.append("<dt>allowed values</dt><dd>")
-          .append(StringUtils::htmlEncode(
-                    StringUtils::columnFromRows(d->_allowedValues, 0)
-                    .join(' ')))
-          .append("</dd>");
-    }
-    if (!d->_allowedValuesSource.isEmpty()) {
-      v.append("<dt>allowed values source</dt><dd>")
-          .append(StringUtils::htmlEncode(d->_allowedValuesSource))
-          .append("</dd>");
-    }
     if (d->_format.isValid())
-      v.append("<dt>format</dt><dd>")
-          .append(StringUtils::htmlEncode(d->_format.pattern()))
-          .append("</dd>");
+      v = v+"<dt>format</dt><dd>"+StringUtils::htmlEncode(d->_format.pattern())+
+          " with cause filter "+StringUtils::htmlEncode(d->_cause.pattern())+
+          "</dd>";
     v.append("</dl>");
   }
   return v;
 }
 
-bool RequestFormField::validate(QString value) const {
-  return d && d->_format.match(value).hasMatch();
+bool RequestFormField::validate(
+    const Utf8String &value, const Utf8String &cause) const {
+  if (!d) [[unlikely]] // should never happen
+    return false;
+  if (!d->_cause.match(cause).hasMatch()) // no format or invalid cause filter
+    return true;
+  return d->_format.match(value).hasMatch();
 }
 
 bool RequestFormField::isNull() const {
@@ -260,15 +147,10 @@ PfNode RequestFormField::toPfNode() const {
     node.appendChild(PfNode("placeholder", d->_placeholder));
   if (!d->_suggestion.isEmpty())
     node.appendChild(PfNode("suggestion", d->_suggestion));
-  if (d->_mandatory)
-    node.appendChild(PfNode("mandatory"));
-  if (!d->_allowedValues.isEmpty())
-    node.appendChild(PfNode("allowedvalues",
-                            PfArray(_allowedValuesCsvHeaders,
-                                    d->_allowedValues)));
-  else if (!d->_allowedValuesSource.isEmpty())
-    node.setAttribute("allowedvalues", d->_allowedValuesSource);
-  else if (d->_format.isValid() && !d->_format.pattern().isEmpty())
-    node.appendChild(PfNode("format", d->_format.pattern()));
+  else if (d->_format.isValid() && !d->_format.pattern().isEmpty()) {
+    auto child = PfNode("format", d->_format.pattern());
+    child.setAttribute("cause",d->_cause.pattern());
+    node.appendChild(child);
+  }
   return node;
 }

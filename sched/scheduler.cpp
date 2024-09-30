@@ -202,7 +202,8 @@ void Scheduler::reloadAccessControlConfig() {
 }
 
 static bool planOrRequestCommonPreProcess(
-    QByteArray taskId, Task task, ParamSet overridingParams) {
+    const Utf8String &taskId, const Task &task,
+    const ParamSet &overridingParams, const Utf8String &cause) {
   if (task.isNull()) {
     Log::error() << "requested task not found: " << taskId;
     return false;
@@ -214,10 +215,9 @@ static bool planOrRequestCommonPreProcess(
   bool fieldsValidated = true;
   for (auto field: task.requestFormFields()) {
     auto name = field.id();
-    if (!overridingParams.paramContains(name))
-      continue;
-    auto value = overridingParams.paramUtf8(name);
-    if (!field.validate(value)) {
+    auto value = overridingParams.paramContains(name)
+                 ? overridingParams.paramUtf8(name) : task.paramUtf8(name);
+    if (!field.validate(value, cause)) {
       Log::error() << "task " << taskId
                    << " requested with an invalid parameter override: '"
                    << name << "'' set to '"
@@ -305,7 +305,7 @@ TaskInstance Scheduler::doPlanTask(
     quint64 parentid, const Utf8String &cause) {
   TaskInstance herder = _unfinishedTasks.value(herdid);
   Task task = config().tasks().value(taskId);
-  if (!planOrRequestCommonPreProcess(taskId, task, overridingParams))
+  if (!planOrRequestCommonPreProcess(taskId, task, overridingParams, cause))
     return {};
   if (herder.isNull()) { // no herder -> no conditions
     if (!queuewhen.isEmpty()) {
