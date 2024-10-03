@@ -18,8 +18,6 @@
 #include "log/log.h"
 #include "csv/csvfile.h"
 
-static QStringList _allowedValuesCsvHeaders { "value", "label", "flags" };
-
 class RequestFormFieldData : public QSharedData {
 public:
   QString _id, _label, _placeholder, _suggestion;
@@ -73,7 +71,7 @@ RequestFormField &RequestFormField::operator=(const RequestFormField &rhs) {
 }
 
 QString RequestFormField::toHtmlFormFragment(
-    ReadOnlyResourcesCache *resourcesCache, bool *errorOccured) const {
+    ReadOnlyResourcesCache *, bool *) const {
   QString html;
   if (!d)
     return html;
@@ -147,7 +145,7 @@ PfNode RequestFormField::toPfNode() const {
     node.appendChild(PfNode("placeholder", d->_placeholder));
   if (!d->_suggestion.isEmpty())
     node.appendChild(PfNode("suggestion", d->_suggestion));
-  else if (d->_format.isValid() && !d->_format.pattern().isEmpty()) {
+  if (d->_format.isValid() && !d->_format.pattern().isEmpty()) {
     auto child = PfNode("format", d->_format.pattern());
     child.setAttribute("cause",d->_cause.pattern());
     node.appendChild(child);

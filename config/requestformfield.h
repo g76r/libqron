@@ -43,7 +43,6 @@ public:
   inline bool operator!() const { return isNull(); }
   QString id() const;
   QString format() const;
-  bool mandatory() const;
   PfNode toPfNode() const;
 };
 
