@@ -85,8 +85,9 @@ QString RequestFormField::toHtmlFormFragment(
         "  <div>\n"
         "    <input id=\""+d->_id+"\" name=\""+d->_id+
         "\" type=\"text\" placeholder=\""+d->_placeholder+
-        "\" value=\""+d->_suggestion+
-        "\"class=\"form-control\">\n"
+        "\" value=\""+d->_suggestion+"\""+
+        (d->_format.isValid() ? " pattern=\""+d->_format.pattern()+"\"" : "")+
+        " class=\"form-control\">\n"
         "  </div>\n");
   html.append("</div>\n");
   return html;
