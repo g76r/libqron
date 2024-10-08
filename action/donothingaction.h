@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2024 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -19,11 +19,11 @@
 class LIBQRONSHARED_EXPORT DoNothingAction : public Action {
 public:
   DoNothingAction(QString actionType);
-  DoNothingAction(DoNothingAction &other)
+  DoNothingAction(const DoNothingAction &other)
       : DoNothingAction(other.actionType()) { }
   ~DoNothingAction();
 };
 
-Q_DECLARE_TYPEINFO(DoNothingAction, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(DoNothingAction, Q_RELOCATABLE_TYPE);
 
 #endif // DONOTHINGACTION_H

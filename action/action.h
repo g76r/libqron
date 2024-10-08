@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,6 +33,8 @@ public:
   Action();
   Action(const Action &);
   Action &operator=(const Action &);
+  QT_MOVE_ASSIGNMENT_OPERATOR_IMPL_VIA_PURE_SWAP(Action)
+  void swap(Action &other) noexcept { d.swap(other.d); }
   ~Action();
   bool isNull() const { return !d; }
   void trigger(EventSubscription subscription, ParamsProviderMerger *context,
@@ -65,6 +67,6 @@ protected:
   }
 };
 
-Q_DECLARE_TYPEINFO(Action, Q_MOVABLE_TYPE);
+Q_DECLARE_SHARED(Action);
 
 #endif // ACTION_H

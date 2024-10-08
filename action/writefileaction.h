@@ -1,4 +1,4 @@
-/* Copyright 2017 Hallowyn and others.
+/* Copyright 2017-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,5 +24,7 @@ public:
   explicit WriteFileAction(Scheduler *scheduler = 0, PfNode node = PfNode());
   WriteFileAction(const WriteFileAction&);
 };
+
+Q_DECLARE_TYPEINFO(WriteFileAction, Q_RELOCATABLE_TYPE);
 
 #endif // WRITEFILEACTION_H

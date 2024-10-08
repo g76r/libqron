@@ -38,6 +38,6 @@ public:
   DisjunctionCondition cancelwhen() const;
 };
 
-Q_DECLARE_TYPEINFO(PlanTaskAction, Q_MOVABLE_TYPE);
+Q_DECLARE_TYPEINFO(PlanTaskAction, Q_RELOCATABLE_TYPE);
 
 #endif // PLANTASKACTION_H
