@@ -55,6 +55,8 @@ bool TasksRootData::loadConfig(
       node, "onstderr", TASKSROOTID, &_onstderr, scheduler);
   ConfigUtils::loadEventSubscription(
       node, "onstdout", TASKSROOTID, &_onstdout, scheduler);
+  ConfigUtils::loadEventSubscription(
+      node, "onnostderr", TASKSROOTID, &_onnostderr, scheduler);
   ConfigUtils::loadComments(
       node, &_commentsList, excludedDescendantsForComments);
   return true;
@@ -96,12 +98,16 @@ QList<EventSubscription> TasksRoot::onstdout() const {
   return !isNull() ? data()->_onstdout : QList<EventSubscription>();
 }
 
+QList<EventSubscription> TasksRoot::onnostderr() const {
+  return !isNull() ? data()->_onnostderr : QList<EventSubscription>();
+}
 
 QList<EventSubscription> TasksRoot::allEventSubscriptions() const {
   // LATER avoid creating the collection at every call
   return !isNull() ? data()->_onplan + data()->_onstart + data()->_onsuccess
                          + data()->_onfailure
                          + data()->_onstderr + data()->_onstdout
+                         + data()->_onnostderr
                    : QList<EventSubscription>();
 }
 
@@ -122,6 +128,8 @@ QVariant TasksRootData::uiData(int section, int role) const {
       return EventSubscription::toStringList(_onsuccess).join("\n");
     case 16:
       return EventSubscription::toStringList(_onfailure).join("\n");
+    case 19:
+      return EventSubscription::toStringList(_onnostderr).join("\n");
     case 21:
       return _vars.toString(false, false);
     case 22:
@@ -174,6 +182,7 @@ void TasksRootData::fillPfNode(PfNode &node) const {
                                        excludeOnfinishSubscriptions);
   ConfigUtils::writeEventSubscriptions(&node, _onstderr);
   ConfigUtils::writeEventSubscriptions(&node, _onstdout);
+  ConfigUtils::writeEventSubscriptions(&node, _onnostderr);
 }
 
 PfNode TasksRootData::toPfNode() const {
@@ -273,7 +282,7 @@ const Utf8StringIndexedConstList TasksRootData::_headerNames = {
   "On failure",
   "Running / max",
   "Actions",
-  "", // was: Last execution status
+  "On nostderr", // was: Last execution status
   "Applied templates", // was: System environment // 20
   "Vars",
   "Instance params", // was: Unsetenv

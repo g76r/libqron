@@ -63,6 +63,8 @@ public:
   qint64 durationMillis() const;
   bool success() const;
   void setSuccess(bool success) const;
+  bool had_stderr() const;
+  void set_had_stderr(bool had_stderr = true) const;
   int returnCode() const;
   void setReturnCode(int returnCode) const;
   /** Note that this is the exact target on which the task is running/has been

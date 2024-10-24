@@ -97,6 +97,7 @@ public:
   QList<EventSubscription> onfailure() const;
   QList<EventSubscription> onstderr() const;
   QList<EventSubscription> onstdout() const;
+  QList<EventSubscription> onnostderr() const;
   /** Events hash with "onsuccess", "onfailure"... key, mainly for UI purpose.
    * Not including group events subscriptions. */
   QList<EventSubscription> allEventsSubscriptions() const;

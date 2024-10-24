@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2024 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,8 +25,8 @@ public:
   QList<Action> _actions;
   ParamSet _globalParams;
   Utf8StringList _commentsList;
-  EventSubscriptionData(QString subscriberName = QString(),
-                        QString eventName = QString(),
+  EventSubscriptionData(QString subscriberName = {},
+                        QString eventName = {},
                         ParamSet globalParams = ParamSet())
     : _subscriberName(subscriberName), _eventName(eventName),
       _globalParams(globalParams) { }
@@ -86,7 +86,7 @@ bool EventSubscription::triggerActions(
   if (!instance.isNull())
     context->append(&instance);
   for (Action a: d->_actions) {
-    if (a.actionType() == "stop")
+    if (a.actionType() == "stop"_u8)
       return true;
     if (filter(a))
       a.trigger(*this, context, instance);

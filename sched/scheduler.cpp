@@ -1350,6 +1350,9 @@ void Scheduler::triggerFinishActions(
   else
     subs = config().tasksRoot().onfailure()
         + task.taskGroup().onfailure() + task.onfailure();
+  if (!instance.had_stderr())
+    subs = subs + config().tasksRoot().onnostderr()
+            + task.taskGroup().onnostderr() + task.onnostderr();
   auto ppm = ParamsProviderMerger(&instance);
   for (auto es: subs)
     if (es.triggerActions(&ppm, instance, filter))

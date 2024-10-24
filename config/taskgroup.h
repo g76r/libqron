@@ -53,6 +53,7 @@ public:
   QList<EventSubscription> onfailure() const;
   QList<EventSubscription> onstderr() const;
   QList<EventSubscription> onstdout() const;
+  QList<EventSubscription> onnostderr() const;
   ParamSet vars() const;
   ParamSet instanceparams() const;
   QList<EventSubscription> allEventSubscriptions() const;

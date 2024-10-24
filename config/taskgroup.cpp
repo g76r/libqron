@@ -128,6 +128,10 @@ QList<EventSubscription> TaskGroup::onstdout() const {
   return !isNull() ? data()->_onstdout : QList<EventSubscription>();
 }
 
+QList<EventSubscription> TaskGroup::onnostderr() const {
+  return !isNull() ? data()->_onnostderr : QList<EventSubscription>();
+}
+
 ParamSet TaskGroup::vars() const {
   return !isNull() ? data()->_vars : ParamSet();
 }

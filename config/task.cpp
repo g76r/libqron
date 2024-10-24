@@ -266,6 +266,10 @@ QList<EventSubscription> Task::onstdout() const {
   return !isNull() ? data()->_onstdout : QList<EventSubscription>();
 }
 
+QList<EventSubscription> Task::onnostderr() const {
+  return !isNull() ? data()->_onnostderr : QList<EventSubscription>();
+}
+
 QList<EventSubscription> Task::allEventsSubscriptions() const {
   // LATER avoid creating the collection at every call
   return !isNull() ? data()->_onplan + data()->_onstart + data()->_onsuccess

@@ -498,11 +498,11 @@ void Executor::processProcessOutput(bool isStderr) {
     while (!_process->read(PROCESS_OUTPUT_CHUNK_SIZE).isEmpty());
     return;
   }
-  auto ppm = ParamsProviderMerger(&_instance);
   while (!(ba = _process->read(PROCESS_OUTPUT_CHUNK_SIZE)).isEmpty()) {
     buf.append(ba);
     int i;
     while (((i = buf.indexOf('\n')) >= 0)) {
+      auto ppm = ParamsProviderMerger(&_instance);
       QString line;
       if (i > 0 && buf.at(i-1) == '\r')
         line = QString::fromUtf8(buf.mid(0, i-1)).trimmed();
@@ -512,8 +512,8 @@ void Executor::processProcessOutput(bool isStderr) {
       line.remove(_asciiControlCharsSeqRE);
       if (line.isEmpty())
         continue;
-      ppm.overrideParamValue("line", line);
-      if (parsecommands && line.startsWith("!qron:")) {
+      ppm.overrideParamValue("line"_u8, line);
+      if (parsecommands && line.startsWith(u"!qron:"_s)) {
         PfDomHandler pdh;
         PfParser pp(&pdh);
         pp.parse(line.sliced(6).toUtf8());
@@ -531,15 +531,20 @@ void Executor::processProcessOutput(bool isStderr) {
         (void)sub.triggerActions(&ppm, _instance);
         continue;
       }
-      QList<EventSubscription> filteredSubs;
+      QList<EventSubscription> filtered_subs;
       for (auto sub: subs) {
-        if (sub.filter().match(line).hasMatch())
-          filteredSubs.append(sub);
+        if (!sub.filter().match(line).hasMatch())
+          continue;
+        if (sub.actions().value(0).actionType() == "stop"_u8)
+          break;
+        filtered_subs.append(sub);
       }
-      if (filteredSubs.isEmpty())
+      if (filtered_subs.isEmpty())
         continue;
-      _eventThread->tryPut(
-          EventThread::Event{ filteredSubs, &ppm, _instance, line });
+      _eventThread->tryPut( // TODO don't copy every ppm param on every line
+          EventThread::Event{ filtered_subs, &ppm, _instance, line });
+      if (isStderr)
+        _instance.set_had_stderr();
     }
   }
 }

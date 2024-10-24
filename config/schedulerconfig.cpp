@@ -28,7 +28,8 @@
 static QSet<QString> excludedDescendantsForComments {
   "task", "taskgroup", "host", "cluster", "calendar", "alerts",
   "access-control", "onsuccess", "onfailure", "onfinish", "onstart",
-  "onstderr", "onstdout", "onschedulerstart", "onconfigload", "onnotice"
+  "onstderr", "onstdout", "onschedulerstart", "onconfigload", "onnotice",
+  "onnostderr",
 };
 
 static QStringList excludeOnfinishSubscriptions { "onfinish" };
@@ -227,7 +228,7 @@ SchedulerConfigData::SchedulerConfigData(
     }
     recordTaskActionLinks(
           node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
-               "onstderr", "onstdout" },
+               "onstderr", "onstdout", "onnostderr" },
           &requestTaskActionLinks, taskGroup.id()+".*");
     _taskgroups.insert(taskGroup.id(), taskGroup);
   }
@@ -266,14 +267,14 @@ ignore_tasktemplate:;
     _tasks.insert(task.id(), task);
     recordTaskActionLinks(
           node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
-               "onstderr", "onstdout" },
+               "onstderr", "onstdout", "onnostderr" },
           &requestTaskActionLinks, task.id(), task);
     for (auto tmpl:
          task.appliedTemplates().filtered<TaskTemplate>("tasktemplate")) {
       recordTaskActionLinks(
             tmpl.originalPfNodes().value(0),
             { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
-              "onstderr", "onstdout" },
+              "onstderr", "onstdout", "onnostderr" },
             &requestTaskActionLinks, task.id(), task);
     }
     if (task.maxPerHost() > 0)

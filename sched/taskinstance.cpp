@@ -35,7 +35,7 @@ public:
   // be used in a mutable QSharedData field as soon as the object embedding the
   // QSharedData is used by several thread at a time, hence the qint64
   mutable qint64 _queue, _start, _stop, _finish;
-  mutable bool _success;
+  mutable bool _success, _had_stderr;
   mutable int _returnCode;
   // note: Host is not thread-safe either, however setTarget() is not likely to
   // be called without at less one other reference of the Host object, therefore
@@ -64,7 +64,7 @@ public:
       _creationDateTime(QDateTime::currentDateTime()), _force(force),
       _queue(LLONG_MIN), _start(LLONG_MIN), _stop(LLONG_MIN),
       _finish(LLONG_MIN),
-      _success(false), _returnCode(0), _abortable(false),
+      _success(false), _had_stderr(false), _returnCode(0), _abortable(false),
       _remainingTries(task.maxTries()),
       _queuewhen(queuewhen), _cancelwhen(cancelwhen) {}
   TaskInstanceData()
@@ -313,6 +313,17 @@ void TaskInstance::setSuccess(bool success) const {
     d->_success = success;
 }
 
+bool TaskInstance::had_stderr() const {
+  const TaskInstanceData *d = data();
+  return d ? d->_had_stderr : false;
+}
+
+void TaskInstance::set_had_stderr(bool had_stderr) const {
+  const TaskInstanceData *d = data();
+  if (d)
+    d->_had_stderr = had_stderr;
+}
+
 int TaskInstance::returnCode() const {
   const TaskInstanceData *d = data();
   return d ? d->_returnCode : -1;
@@ -539,6 +550,8 @@ QVariant TaskInstanceData::uiData(int section, int role) const {
           return _parentid;
         case 21:
           return _cause;
+        case 22:
+          return _had_stderr;
       }
       break;
     default:
@@ -700,6 +713,11 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       return PercentEvaluator::eval_utf8(
             tid->_task.lockedData()->deduplicateCriterion(), tid);
     } },
+  { "!hadstderr", [](const SharedUiItemData *data, const Utf8String &,
+        const PercentEvaluator::EvalContext&, int) -> QVariant {
+      return reinterpret_cast<const TaskInstanceData*>(data)
+          ->_had_stderr;
+    } },
 #if 0
   { "!varsasenv", [](const SharedUiItemData *data, const Utf8String&,
         const PercentEvaluator::EvalContext&, int) -> QVariant {
@@ -768,6 +786,7 @@ const Utf8StringIndexedConstList TaskInstanceData::_sectionNames {
   "deduplicate_criterion",
   "parentid", // 20
   "cause",
+  "had_stderr",
 };
 
 const Utf8StringIndexedConstList TaskInstanceData::_headerNames {
@@ -793,4 +812,5 @@ const Utf8StringIndexedConstList TaskInstanceData::_headerNames {
   "Deduplicate criterion",
   "Parent Id", // 20
   "Cause",
+  "Had Stderr",
 };

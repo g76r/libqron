@@ -25,7 +25,7 @@
 
 static QSet<QString> excludedDescendantsForComments {
   "trigger", "onsuccess", "onfailure", "onfinish", "onstart", "onplan",
-  "onstderr", "onstdout"
+  "onstderr", "onstdout", "onnostderr"
 };
 
 static QStringList excludeOnfinishSubscriptions { "onfinish" };
@@ -41,7 +41,7 @@ public:
   Utf8String _id;
   ParamSet _vars, _instanceparams;
   QList<EventSubscription> _onstart, _onsuccess, _onfailure, _onplan, _onstderr,
-      _onstdout;
+      _onstdout, _onnostderr;
   Utf8StringList _commentsList;
   QList<PfNode> _originalPfNodes;
   bool _mergeStdoutIntoStderr = false;

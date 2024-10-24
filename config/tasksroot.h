@@ -40,6 +40,7 @@ public:
   QList<EventSubscription> onfailure() const;
   QList<EventSubscription> onstderr() const;
   QList<EventSubscription> onstdout() const;
+  QList<EventSubscription> onnostderr() const;
   QList<EventSubscription> allEventSubscriptions() const;
   bool mergeStdoutIntoStderr() const;
   QList<PfNode> originalPfNodes() const;
