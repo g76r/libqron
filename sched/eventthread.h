@@ -28,18 +28,18 @@ public:
   class Event {
   public:
     QList<EventSubscription> _subs;
-    ParamSet _context;
+    ParamsProviderMerger _context;
     TaskInstance _instance;
     QString _payload;
     Event() { }
-    Event(QList<EventSubscription> subs, ParamSet context,
+    Event(QList<EventSubscription> subs, const ParamSet &context,
           TaskInstance instance, QString payload)
-        : _subs(subs), _context(context), _instance(instance),
-          _payload(payload) { }
-    Event(QList<EventSubscription> subs, const ParamsProviderMerger *context,
-          TaskInstance instance, QString payload)
-        : Event(subs, context->paramSnapshot(), instance, payload) { }
-    bool isNull() { return _instance.isNull(); }
+      : _subs(subs), _context(context), _instance(instance),
+        _payload(payload) {
+      _context.append(&_instance);
+    }
+    bool isNull() const { return _instance.isNull(); }
+    bool operator!() const { return !isNull(); }
   };
 
 private:
