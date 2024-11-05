@@ -75,10 +75,13 @@ QString RequestFormField::toHtmlFormFragment(
   QString html;
   if (!d)
     return html;
+  auto has_pattern = !d->_format.pattern().isEmpty();
+  auto required = has_pattern && !d->_format.match(u""_s).hasMatch();
   // header and label
   html = "<div class=\"from-group\">\n"
-         "  <label class=\"control-label\" for=\""+d->_id+"\">"+d->_label
-         +"</label>";
+         "  <label class=\"control-label\" for=\""+d->_id+"\">"+d->_label+
+         (required ? "&nbsp;<i class=\"fa-solid fa-star-of-life\"></i>" : "")+
+         "</label>";
   html.append("\n");
   // text field
   html.append(
@@ -86,7 +89,8 @@ QString RequestFormField::toHtmlFormFragment(
         "    <input id=\""+d->_id+"\" name=\""+d->_id+
         "\" type=\"text\" placeholder=\""+d->_placeholder+
         "\" value=\""+d->_suggestion+"\""+
-        (d->_format.isValid() ? " pattern=\""+d->_format.pattern()+"\"" : "")+
+        (has_pattern ? " pattern=\""+d->_format.pattern()+"\"" : "")+
+        (required ? " required" : "")+
         " class=\"form-control\">\n"
         "  </div>\n");
   html.append("</div>\n");
@@ -106,7 +110,7 @@ QString RequestFormField::toHtmlHumanReadableDescription() const {
     if (!d->_placeholder.isEmpty())
       v.append("<dt>placeholder</dt><dd>")
           .append(StringUtils::htmlEncode(d->_placeholder)).append("</dd>");
-    if (d->_format.isValid())
+    if (!d->_format.pattern().isEmpty())
       v = v+"<dt>format</dt><dd>"+StringUtils::htmlEncode(d->_format.pattern())+
           " with cause filter "+StringUtils::htmlEncode(d->_cause.pattern())+
           "</dd>";
@@ -146,7 +150,7 @@ PfNode RequestFormField::toPfNode() const {
     node.appendChild(PfNode("placeholder", d->_placeholder));
   if (!d->_suggestion.isEmpty())
     node.appendChild(PfNode("suggestion", d->_suggestion));
-  if (d->_format.isValid() && !d->_format.pattern().isEmpty()) {
+  if (!d->_format.pattern().isEmpty() && !d->_format.pattern().isEmpty()) {
     auto child = PfNode("format", d->_format.pattern());
     child.setAttribute("cause",d->_cause.pattern());
     node.appendChild(child);
