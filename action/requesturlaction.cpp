@@ -37,7 +37,6 @@ public:
   }
   void trigger(EventSubscription, ParamsProviderMerger *context,
                TaskInstance instance) const override {
-    ParamsProviderMergerRestorer ppmr(context);
     context->prepend(_params);
     // LATER support binary payloads
     if (_address.startsWith("udp:", Qt::CaseInsensitive)) {
@@ -59,6 +58,7 @@ public:
                          reply, &QNetworkReply::deleteLater);
       }
     }
+    context->pop_front();
   }
   Utf8String toString() const override {
     return "requesturl{ "+_address+" }";

@@ -82,16 +82,20 @@ bool EventSubscription::triggerActions(
     std::function<bool(Action a)> filter) const {
   if (!d)
     return false;
-  ParamsProviderMergerRestorer ppmr(context);
-  if (!instance.isNull())
+  bool stopped = false;
+  if (!!instance)
     context->append(&instance);
   for (Action a: d->_actions) {
-    if (a.actionType() == "stop"_u8)
-      return true;
+    if (a.actionType() == "stop"_u8) {
+      stopped = true;
+      break;
+    }
     if (filter(a))
       a.trigger(*this, context, instance);
   }
-  return false;
+  if (!!instance)
+    context->pop_back();
+  return stopped;
 }
 
 Utf8StringList EventSubscription::toStringList(QList<EventSubscription> list) {

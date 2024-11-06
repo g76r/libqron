@@ -27,13 +27,13 @@ public:
   }
   void trigger(EventSubscription, ParamsProviderMerger *context,
                TaskInstance instance) const override {
-    ParamsProviderMergerRestorer ppmr(context);
     context->prepend(_params);
     // LATER support binary payloads
     auto path = PercentEvaluator::eval_utf8(_path, context);
     ParametrizedFileWriter writer(
           path, _params, context, instance.taskId(), instance.idAsLong());
     writer.performWrite(_message, context);
+    context->pop_front();
   }
   Utf8String toString() const override {
     return "writefile{ "+_path+" }";
