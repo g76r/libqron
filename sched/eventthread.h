@@ -26,17 +26,17 @@ class LIBQRONSHARED_EXPORT EventThread : public QThread {
 
 public:
   class Event {
-  public:
+    friend class EventThread;
     QList<EventSubscription> _subs;
-    ParamsProviderMerger _context;
+    ParamSet _context;
     TaskInstance _instance;
     QString _payload;
-    Event() { }
-    Event(QList<EventSubscription> subs, const ParamSet &context,
-          TaskInstance instance, QString payload)
-      : _subs(subs), _context(context), _instance(instance),
-        _payload(payload) {
-      _context.append(&_instance);
+
+  public:
+    Event() = default;
+    Event(const QList<EventSubscription> &subs, const ParamSet &context,
+          const TaskInstance &instance, const QString &payload)
+      : _subs(subs), _context(context), _instance(instance), _payload(payload) {
     }
     bool isNull() const { return _instance.isNull(); }
     bool operator!() const { return !isNull(); }

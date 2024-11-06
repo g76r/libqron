@@ -32,8 +32,7 @@ void EventThread::run() {
         if (!match.hasMatch())
           continue;
         RegexpParamsProvider rpp(match);
-        auto ppm = e._context;
-        ppm.prepend(&rpp);
+        auto ppm = ParamsProviderMerger(&rpp)(&e._context);
         if (sub.triggerActions(&ppm, e._instance))
           break;
       }
