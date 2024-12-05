@@ -21,6 +21,8 @@
 #include <QTimer>
 #include <QThread>
 
+using namespace std::chrono_literals;
+
 // LATER replace this 10" ugly batch with predictive timer (min(timestamps))
 // taking into account that it must be at less as precise as visibilitywindow
 #define ASYNC_PROCESSING_INTERVAL 10000
@@ -38,7 +40,7 @@ public:
   void run() override {
     while (!isInterruptionRequested()) {
       Alert alert;
-      if (_buffer.tryGet(&alert, 500)) {
+      if (_buffer.tryGet(&alert, 500ms)) {
         ++_gridboardsEvaluationsCounter;
         auto gridboards = _alerter->_gridboards.lockedData();
         for (Gridboard &gridboard: *gridboards) {

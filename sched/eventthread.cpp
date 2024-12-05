@@ -14,6 +14,8 @@
 #include "eventthread.h"
 #include "util/regexpparamsprovider.h"
 
+using namespace std::chrono_literals;
+
 EventThread::EventThread(unsigned sizePowerOf2, QObject *parent)
     : QThread(parent), _buffer(sizePowerOf2) {
 }
@@ -24,7 +26,7 @@ EventThread::~EventThread() {
 void EventThread::run() {
   while (!isInterruptionRequested()) {
     EventThread::Event e;
-    if (_buffer.tryGet(&e, 500)) {
+    if (_buffer.tryGet(&e, 500ms)) {
       if (e.isNull())
         break;
       for (auto sub: e._subs) {
