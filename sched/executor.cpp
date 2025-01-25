@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Grégoire Barbier and others.
+/* Copyright 2012-2025 Grégoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,8 +32,7 @@ static const QRegularExpression _asciiControlCharsSeqRE("[\\0-\\x1f]+");
 static const QRegularExpression _whitespace { "\\s+" };
 
 static int staticInit() {
-  auto value = qgetenv("SHELL");
-  _localDefaultShell = value | "/bin/sh"_u8;
+  _localDefaultShell = qEnvironmentVariable("SHELL", u"/bin/sh"_s);
   return 0;
 }
 Q_CONSTRUCTOR_FUNCTION(staticInit)
