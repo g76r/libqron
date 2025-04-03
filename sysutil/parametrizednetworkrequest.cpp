@@ -46,7 +46,7 @@ ParametrizedNetworkRequest::ParametrizedNetworkRequest(
   qurl.setUserName({});
   qurl.setPassword({});
   setUrl(qurl);
-  _method = HttpRequest::methodFromText(
+  _method = HttpRequest::method_from_text(
         params.paramUtf8("method"_u8, "GET"_u8,
                          paramsEvaluationContext).toUpper());
   auto contentType = params.paramUtf8(
@@ -83,7 +83,7 @@ QNetworkReply *ParametrizedNetworkRequest::performRequest(
   if (url.isValid()) {
     if (_method != HttpRequest::NONE) {
       Log::debug(_logTask, _logExecId)
-          << "exact "+HttpRequest::methodName(_method)+" URL to be called: "
+          << "exact "+HttpRequest::method_name(_method)+" URL to be called: "
           << url.toString(QUrl::RemovePassword);
       switch(_method) {
       case HttpRequest::GET:
