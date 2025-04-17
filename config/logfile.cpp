@@ -1,4 +1,4 @@
-/* Copyright 2013-2024 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -44,7 +44,7 @@ LogFile::LogFile(PfNode node) {
   if (!pathPattern.isEmpty()) {
     LogFileData *d = new LogFileData;
     d->_pathPattern = pathPattern;
-    d->_minimumSeverity = Log::severityFromString(node.attribute("level"_u8));
+    d->_minimumSeverity = p6::log::severity_from_text(node["level"_u8]);
     d->_buffered = !node.hasChild("unbuffered"_u8);
     setData(d);
   }
@@ -78,7 +78,7 @@ QVariant LogFileData::uiData(int section, int role) const {
     case 1:
       return _pathPattern;
     case 2:
-      return Log::severityToString(_minimumSeverity);
+      return p6::log::severity_as_text(_minimumSeverity);
     case 3:
       return _buffered;
     }
@@ -107,7 +107,8 @@ PfNode LogFile::toPfNode() const {
     return PfNode();
   PfNode node("log");
   node.appendChild(PfNode("file", d->_pathPattern));
-  node.appendChild(PfNode("level", Log::severityToString(d->_minimumSeverity)));
+  node.appendChild(
+        PfNode("level", p6::log::severity_as_text(d->_minimumSeverity)));
   if (!d->_buffered)
     node.appendChild(PfNode("unbuffered"));
   return node;

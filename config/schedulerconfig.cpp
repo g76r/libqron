@@ -672,14 +672,14 @@ QVariant SchedulerConfigData::uiData(int section, int role) const {
 }
 
 void SchedulerConfigData::applyLogConfig() const {
-  QList<Logger*> loggers;
-  for (const LogFile &logfile: _logfiles) {
-    loggers.append(new FileLogger(
+  QList<p6::log::Logger*> loggers;
+  for (auto logfile: _logfiles) {
+    loggers.append(new p6::log::FileLogger(
                      logfile.pathPattern(), logfile.minimumSeverity(), 60,
                      logfile.buffered()));
   }
   // LATER make console severity log level a parameter
-  Log::replaceLoggersPlusConsole(Log::Fatal, loggers);
+  p6::log::replaceLoggersPlusConsole(Log::Fatal, loggers);
 }
 
 void SchedulerConfig::applyLogConfig() const {

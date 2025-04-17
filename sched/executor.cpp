@@ -718,7 +718,7 @@ void Executor::replyHasFinished(QNetworkReply *reply,
       << status << " (" << reason << ") on host '"
       << _instance.target().hostname() << "' in "
       << _instance.runningMillis()
-      << " ms, with network error '" << networkErrorAsString(error)
+      << " ms, with network error '" << p6::network_error_as_text(error)
       << "' (QNetworkReply::NetworkError code " << error << ")";
   reply->deleteLater();
   _reply = 0;

@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,15 +26,13 @@ void LogAlertChannel::doNotifyAlert(Alert alert) {
     if (!alert.subscription().notifyEmit())
       return;
     Log::log(alert.subscription().emitMessage(alert),
-             Log::severityFromString(
-               alert.subscription().address(alert)));
+             p6::log::severity_from_text(alert.subscription().address(alert)));
     break;
   case Alert::Canceled:
     if (!alert.subscription().notifyCancel())
       return;
     Log::log(alert.subscription().cancelMessage(alert),
-             Log::severityFromString(
-               alert.subscription().address(alert)));
+             p6::log::severity_from_text(alert.subscription().address(alert)));
     break;
   case Alert::Rising:
   case Alert::MayRise:

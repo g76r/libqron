@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,28 +16,26 @@
 
 class LogActionData : public ActionData {
 public:
-  QString _message;
-  Log::Severity _severity;
-  LogActionData(QString logMessage = QString(),
-               Log::Severity severity = Log::Info)
-    : _message(logMessage), _severity(severity) { }
+  Utf8String _message;
+  p6::log::Severity _severity;
+
+  LogActionData(const Utf8String &message = {},
+               p6::log::Severity severity = p6::log::Info)
+    : _message(message), _severity(severity) { }
   Utf8String toString() const override {
-    return "log{ "+Log::severityToString(_severity)+" "+_message+" }";
+    return "log{ "+p6::log::severity_as_text(_severity)+" "+_message+" }";
   }
   Utf8String actionType() const override {
     return "log"_u8;
   }
-  void trigger(EventSubscription, ParamsProviderMerger *context,
+  void trigger(EventSubscription sub, ParamsProviderMerger *context,
                TaskInstance instance) const override {
-    if (instance.isNull())
-      Log::log(_severity) << PercentEvaluator::eval_utf8(_message, context);
-    else
-      Log::log(_severity, instance.taskId(), instance.idAsLong())
-          << PercentEvaluator::eval_utf8(_message, context);
+    p6::log::log(_severity, instance.taskId(), instance.id(),
+                 "logaction:"_u8+sub.eventName()) << _message % context;
   }
   PfNode toPfNode() const override {
     PfNode node(actionType(), _message);
-    node.appendChild(PfNode("severity", Log::severityToString(_severity)));
+    node.appendChild(PfNode("severity", p6::log::severity_as_text(_severity)));
     return node;
   }
 };
@@ -45,8 +43,8 @@ public:
 LogAction::LogAction(Scheduler *scheduler, PfNode node)
   : Action(new LogActionData(
              node.contentAsUtf16(),
-             Log::severityFromString(
-               node.utf16attribute("severity", "info").toUtf8()))) {
+             p6::log::severity_from_text(
+               node.attribute("severity", "info")))) {
   Q_UNUSED(scheduler)
 }
 
