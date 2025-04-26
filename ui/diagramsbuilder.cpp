@@ -1,4 +1,4 @@
-/* Copyright 2014-2024 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -455,25 +455,6 @@ QList<QString> predecessors(Condition cond) {
     // FIXME
   }
   return p;
-}
-
-QList<PredecessorGroup> predecessors(TaskInstance sheep) {
-  QList<PredecessorGroup> pg;
-  // FIXME TaskInstance herder = sheep.herder();
-  Condition qw = sheep.queuewhen();
-  return pg;
-}
-
-QList<PredecessorGroup> predecessors(Task sheep) {
-  QList<PredecessorGroup> pg;
-  for (auto sub: sheep.onplan()) {
-    for (auto a: sub.actions()) {
-      if (a.actionType() != "plantask")
-        continue;
-      auto pta = static_cast<const PlanTaskAction &>(a);
-    }
-  }
-  return pg;
 }
 
 struct WaitConditionInstance {
