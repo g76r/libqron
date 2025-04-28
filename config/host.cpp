@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,7 +27,6 @@ public:
   qint64 _healthcheckinterval;
   QMap<Utf8String,qint64> _resources; // configured max resources available
   mutable QAtomicInteger<bool> _is_available;
-  Utf8StringList _commentsList;
   HostData() : _is_available(true) {}
   QVariant uiData(int section, int role) const override;
   Utf8String id() const override { return _id; }
@@ -44,11 +43,11 @@ Host::Host() {
 Host::Host(const Host &other) : SharedUiItem(other) {
 }
 
-Host::Host(PfNode node, ParamSet globalParams) {
+Host::Host(const PfNode &node, const ParamSet &globalParams) {
   HostData *d = new HostData;
   d->_id = ConfigUtils::sanitizeId(
-        node.contentAsUtf16(), ConfigUtils::FullyQualifiedId).toUtf8();
-  d->_params =  ParamSet(node, "param", "constparam", globalParams);
+        node.content_as_text(), ConfigUtils::FullyQualifiedId).toUtf8();
+  d->_params = ParamSet(node, "param", "constparam", globalParams);
   d->_label = PercentEvaluator::eval_utf8(
                 node.attribute("label"), &d->_params);
   d->_hostname = ConfigUtils::sanitizeId(
@@ -58,7 +57,6 @@ Host::Host(PfNode node, ParamSet globalParams) {
   d->_healthcheckinterval =
       node["healthcheckinterval"].toNumber<double>(60)*1e3;
   ConfigUtils::loadResourcesSet(node, &d->_resources, "resource");
-  ConfigUtils::loadComments(node, &d->_commentsList);
   setData(d);
 }
 
@@ -213,16 +211,15 @@ PfNode Host::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode node("host", d->_id);
-  ConfigUtils::writeComments(&node, d->_commentsList);
   if (!d->_label.isEmpty() && d->_label != d->_id)
-    node.appendChild(PfNode("label", d->_label));
+    node.append_child({"label", d->_label});
   if (!d->_hostname.isEmpty() && d->_hostname != d->_id)
-    node.appendChild(PfNode("hostname", d->_hostname));
+    node.append_child({"hostname", d->_hostname});
   if (!d->_sshhealthcheck.isEmpty())
-    node.appendChild(PfNode("sshhealthcheck", d->_sshhealthcheck));
+    node.append_child({"sshhealthcheck", d->_sshhealthcheck});
   for (auto [k,v]: d->_resources.asKeyValueRange())
     if (!k.startsWith("<maxperhost>"))
-      node.appendChild(PfNode("resource", k+" "+QString::number(v)));
+      node.append_child({"resource", k+" "+QString::number(v)});
   return node;
 }
 

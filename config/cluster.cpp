@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,6 @@ public:
   Utf8String _label;
   Cluster::Balancing _balancing;
   QList<Host> _hosts;
-  Utf8StringList _commentsList;
   QVariant uiData(int section, int role) const override;
   Utf8String id() const override { return _id; }
   bool setUiData(
@@ -39,19 +38,18 @@ Cluster::Cluster() {
 Cluster::Cluster(const Cluster &other) : SharedUiItem(other) {
 }
 
-Cluster::Cluster(PfNode node) : SharedUiItem() {
+Cluster::Cluster(const PfNode &node) : SharedUiItem() {
   ClusterData *d = new ClusterData;
-  d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
+  d->_id = ConfigUtils::sanitizeId(node.content_as_text(),
                                    ConfigUtils::FullyQualifiedId).toUtf8();
-  d->_label = node.utf16attribute("label");
-  d->_balancing = balancingFromString(node.utf16attribute("balancing", "roundrobin")
+  d->_label = node.attribute("label");
+  d->_balancing = balancingFromString(node.attribute("balancing", "roundrobin")
                                       .trimmed().toLower());
   if (d->_balancing == UnknownBalancing) {
-    Log::error() << "invalid cluster balancing method: " << node.toString();
+    Log::error() << "invalid cluster balancing method: " << node.as_text();
     delete d;
     return;
   }
-  ConfigUtils::loadComments(node, &d->_commentsList);
   setData(d);
 }
 
@@ -163,14 +161,13 @@ PfNode Cluster::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode node("cluster", d->_id);
-  ConfigUtils::writeComments(&node, d->_commentsList);
   if (!d->_label.isEmpty() && d->_label != d->_id)
-    node.appendChild(PfNode("label", d->_label));
-  node.appendChild(PfNode("balancing", balancingAsString(d->_balancing)));
+    node.append_child({"label", d->_label});
+  node.append_child({"balancing", balancingAsString(d->_balancing)});
   QStringList hosts;
   for (const Host &host: d->_hosts)
     hosts.append(host.id());
-  node.appendChild(PfNode("hosts", hosts.join(' ')));
+  node.append_child({"hosts", hosts.join(' ')});
   return node;
 }
 

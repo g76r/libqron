@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -37,7 +37,6 @@ public:
   };
   Utf8String _id, _name;
   QList<Rule> _rules;
-  Utf8StringList _commentsList;
   CalendarData(const Utf8String &name = {})
     : _id(Utf8String::number(sequence.fetchAndAddOrdered(1))),
       _name(name.isEmpty() ? Utf8String{} : name) { }
@@ -54,13 +53,11 @@ CalendarData &CalendarData::append(QDate begin, QDate end, bool include) {
   return *this;
 }
 
-Calendar::Calendar(PfNode node) {
-  CalendarData *d = new CalendarData(node.contentAsUtf8());
+Calendar::Calendar(const PfNode &node) {
+  CalendarData *d = new CalendarData(node.content_as_text());
   bool atLessOneExclude = false;
   //qDebug() << "*** Calendar(PfNode): " << node.toPf();
   for (const PfNode &child: node.children()) {
-    if (child.isComment())
-      continue;
     bool include;
     //qDebug() << child.name() << ": " << child.contentAsString();
     if (child.name() == "include")
@@ -70,10 +67,10 @@ Calendar::Calendar(PfNode node) {
       atLessOneExclude = true;
     } else {
       Log::error() << "unsupported calendar rule '" << child.name() << "': "
-                   << node.toPf();
+                   << node.as_pf();
       continue;
     }
-    QStringList dates = child.contentAsStringList();
+    QStringList dates = child.content_as_utf16strings();
     if (dates.isEmpty()) {
       //qDebug() << "calendar date spec empty";
       d->append(QDate(), QDate(), include);
@@ -89,7 +86,7 @@ Calendar::Calendar(PfNode node) {
           d->append(begin, match.captured(5).isEmpty() ? begin : end, include);
         } else {
           Log::error() << "incorrect calendar date specification: "
-                       << node.toPf();
+                       << node.as_pf();
         }
       }
   }
@@ -98,7 +95,6 @@ Calendar::Calendar(PfNode node) {
     // if calendar only declares "include" rules, append a final "exclude" rule
     d->append(QDate(), QDate(), false);
   }
-  ConfigUtils::loadComments(node, &d->_commentsList);
   setData(d);
 }
 
@@ -127,14 +123,13 @@ PfNode Calendar::toPfNode(bool useNameOnlyIfSet) const {
   PfNode node("calendar", d->_name);
   if (!d->_name.isEmpty() && useNameOnlyIfSet)
     return node;
-  ConfigUtils::writeComments(&node, d->_commentsList);
   for (const CalendarData::Rule &r: d->_rules) {
     QString s;
     s.append(r._begin.isNull() ? "" : r._begin.toString("yyyy-MM-dd"));
     if (r._begin != r._end)
       s.append("..")
           .append(r._end.isNull() ? "" : r._end.toString("yyyy-MM-dd"));
-    node.appendChild(PfNode(r._include ? "include" : "exclude", s));
+    node.append_child(PfNode(r._include ? "include" : "exclude", s));
   }
   return node;
 }

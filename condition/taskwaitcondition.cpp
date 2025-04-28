@@ -1,4 +1,4 @@
-/* Copyright 2022-2024 Gregoire Barbier and others.
+/* Copyright 2022-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -221,7 +221,7 @@ TaskWaitCondition::TaskWaitCondition(PfNode node) {
   TaskWaitOperator op = operatorFromString(node.name());
   if (op == UnknownOperator)
     return;
-  d = new TaskWaitConditionData(op, node.contentAsUtf8());
+  d = new TaskWaitConditionData(op, node.content_as_text());
 }
 
 TaskWaitCondition::TaskWaitCondition(TaskWaitOperator op, QString expr)

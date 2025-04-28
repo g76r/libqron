@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -36,12 +36,14 @@ class LIBQRONSHARED_EXPORT EventSubscription {
 
 public:
   EventSubscription();
-  EventSubscription(QString subscriberName, QString eventName, Action action);
-  EventSubscription(QString subscriberName, QString eventName,
-                    QList<Action> actions);
+  EventSubscription(const QString &subscriberName, const QString &eventName,
+                    const Action &action);
+  EventSubscription(const QString &subscriberName, const QString &eventName,
+                    const QList<Action> &actions);
   /** Parse configuration fragment. */
-  EventSubscription(QString subscriberName, PfNode node, Scheduler *scheduler,
-                    QStringList ignoredChildren = QStringList());
+  EventSubscription(
+      const QString &subscriberName, const PfNode &node, Scheduler *scheduler,
+      const QStringList &ignoredChildren = {});
   EventSubscription(const EventSubscription &);
   EventSubscription &operator=(const EventSubscription &);
   ~EventSubscription();
@@ -52,7 +54,7 @@ public:
   /** Name identifiying the subscriber.
    * e.g. taskid for a task, groupid for a group, * for global subscriptions. */
   QString subscriberName() const;
-  void setSubscriberName(QString name);
+  void setSubscriberName(const QString &name);
   /** Filter expression, if any.
    * e.g. path and file pattern for onfilexxx events */
   QRegularExpression filter() const;
@@ -63,8 +65,8 @@ public:
    * @return true if stop action was encountered */
   [[nodiscard]] bool triggerActions(
       ParamsProviderMerger *context, TaskInstance instance = {},
-      std::function<bool(Action a)> filter = [](Action){ return true; }) const;
-  static Utf8StringList toStringList(QList<EventSubscription> list);
+      std::function<bool(Action a)> filter = {}) const;
+  static Utf8StringList toStringList(const QList<EventSubscription> &list);
   Utf8StringList toStringList() const;
   PfNode toPfNode() const;
 };

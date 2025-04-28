@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -36,7 +36,7 @@ TaskGroup::TaskGroup(const TaskGroup &other) : SharedUiItem(other) {
 
 TaskGroup::TaskGroup(PfNode node, SharedUiItem parent, Scheduler *scheduler) {
   TaskGroupData *d = new TaskGroupData;
-  d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
+  d->_id = ConfigUtils::sanitizeId(node.content_as_text(),
                                    ConfigUtils::FullyQualifiedId).toUtf8();
   if (d->loadConfig(node, parent, scheduler)) {
     setData(d);

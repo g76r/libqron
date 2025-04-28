@@ -32,7 +32,7 @@ class LIBQRONSHARED_EXPORT RequestFormField {
 public:
   RequestFormField();
   RequestFormField(const RequestFormField &);
-  RequestFormField(PfNode node);
+  RequestFormField(const PfNode &node);
   RequestFormField &operator=(const RequestFormField &);
   ~RequestFormField();
   QString toHtmlFormFragment(ReadOnlyResourcesCache *resourcesCache,

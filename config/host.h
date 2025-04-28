@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,7 +25,7 @@ class PfNode;
 class LIBQRONSHARED_EXPORT Host : public SharedUiItem {
 public:
   Host();
-  Host(PfNode node, ParamSet globalParams);
+  Host(const PfNode &node, const ParamSet &globalParams);
   Host(const Host &other);
   ~Host();
   Host &operator=(const Host &other) {

@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -16,6 +16,7 @@
 #include "config/configutils.h"
 #include "sysutil/parametrizednetworkrequest.h"
 #include "sysutil/parametrizedudpsender.h"
+#include <QNetworkReply>
 
 class RequestUrlGlobalNetworkActionHub {
 public:
@@ -68,15 +69,15 @@ public:
   }
   PfNode toPfNode() const override {
     PfNode node(actionType(), _message);
-    node.appendChild(PfNode(QStringLiteral("address"), _address));
+    node.append_child({"address"_u8, _address});
     ConfigUtils::writeParamSet(&node, _params, QStringLiteral("param"));
     return node;
   }
 };
 
-RequestUrlAction::RequestUrlAction(Scheduler *scheduler, PfNode node)
+RequestUrlAction::RequestUrlAction(Scheduler *scheduler, const PfNode &node)
   : Action(new RequestUrlActionData(
-      node.utf16attribute("address"), node.contentAsUtf16(),
+      node["address"], node.content_as_text(),
       ParamSet(node, ParametrizedNetworkRequest::supportedParamNames
                        +ParametrizedUdpSender::supportedParamNames))) {
   Q_UNUSED(scheduler)

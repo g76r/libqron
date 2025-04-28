@@ -1,4 +1,4 @@
-/* Copyright 2015-2024 Hallowyn and others.
+/* Copyright 2015-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -192,13 +192,13 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<PfNode>(
     const QMap<Utf8String, PfNode> &oldItems,
     const Utf8String &qualifier) {
   for (auto oldItem: oldItems) {
-    auto name = oldItem.utf8Name();
+    auto name = oldItem.name();
     if (!newItems.contains(name))
       emit itemChanged(
           _nullItem, GenericSharedUiItem(qualifier, name), qualifier);
   }
   for (auto newItem: newItems) {
-    auto name = newItem.utf8Name();
+    auto name = newItem.name();
     auto item = GenericSharedUiItem(qualifier, name);
     emit itemChanged(
           item, oldItems.contains(name) ? item : _nullItem, qualifier);

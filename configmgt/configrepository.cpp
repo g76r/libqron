@@ -1,4 +1,4 @@
-/* Copyright 2014-2024 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -12,8 +12,9 @@
  * along with qron. If not, see <http://www.gnu.org/licenses/>.
  */
 #include "configrepository.h"
+#include "pf/pfparser.h"
 #include <QThread>
-#include "pf/pfdomhandler.h"
+#include <QIODevice>
 
 ConfigRepository::ConfigRepository(QObject *parent, Scheduler *scheduler)
   : QObject(parent), _scheduler(scheduler) {
@@ -28,20 +29,13 @@ SchedulerConfig ConfigRepository::parseConfig(
       Log::error() << "cannot read configuration: " << errorString;
       return SchedulerConfig();
     }
-  PfDomHandler pdh;
-  PfParser pp(&pdh);
-  pp.parse(source, PfOptions().setShouldIgnoreComment(false));
-  if (pdh.errorOccured()) {
-    QString errorString = pdh.errorString()+" at line "
-        +QString::number(pdh.errorLine())
-        +" column "+QString::number(pdh.errorColumn());
-    Log::error() << "empty or invalid configuration: " << errorString;
+  PfParser pp;
+  auto err = pp.parse(source, PfOptions().with_comments());
+  if (!!err) {
+    Log::error() << "empty or invalid configuration: " << err;
     return SchedulerConfig();
   }
-  QList<PfNode> roots;
-  for (const PfNode &node: pdh.roots())
-    if (!node.isComment())
-      roots.append(node);
+  QList<PfNode> roots = pp.root().children_copy();
   if (roots.size() == 0) {
     Log::error() << "configuration lacking root node";
   } else if (roots.size() == 1) {

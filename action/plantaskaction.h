@@ -1,4 +1,4 @@
-/* Copyright 2022-2024 Gregoire Barbier and others.
+/* Copyright 2022-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,7 +30,7 @@ class DisjunctionCondition;
 class LIBQRONSHARED_EXPORT PlanTaskAction : public Action {
 public:
   PlanTaskAction();
-  explicit PlanTaskAction(Scheduler *scheduler = 0, PfNode node = PfNode());
+  explicit PlanTaskAction(Scheduler *scheduler = 0, const PfNode &node = {});
   PlanTaskAction(Scheduler *scheduler, QByteArray taskId);
   PlanTaskAction(const PlanTaskAction &);
   ~PlanTaskAction();

@@ -1,4 +1,4 @@
-/* Copyright 2013-2024 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -29,7 +29,7 @@ public:
    * @param buffered allow write buffering (both user space and system) */
   LogFile();
   LogFile(const LogFile &other);
-  LogFile(PfNode node);
+  LogFile(const PfNode &node);
   ~LogFile();
   LogFile &operator=(const LogFile &other)  {
     SharedUiItem::operator=(other); return *this; }

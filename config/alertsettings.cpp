@@ -1,4 +1,4 @@
-/* Copyright 2015-2023 Hallowyn and others.
+/* Copyright 2015-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -26,7 +26,6 @@ public:
   QString _pattern;
   QRegularExpression _patternRegexp;
   qint64 _riseDelay, _mayriseDelay, _dropDelay, _duplicateEmitDelay;
-  Utf8StringList _commentsList;
   CronTrigger _visibilityWindow, _acceptabilityWindow;
   // MAYDO add params
 
@@ -43,18 +42,17 @@ AlertSettings::AlertSettings() {
 AlertSettings::AlertSettings(const AlertSettings &other) : SharedUiItem(other) {
 }
 
-AlertSettings::AlertSettings(PfNode node) {
+AlertSettings::AlertSettings(const PfNode &node) {
   AlertSettingsData *d = new AlertSettingsData;
-  d->_pattern = node.utf16attribute("pattern", "**");
+  d->_pattern = node.attribute("pattern", "**");
   d->_patternRegexp = ConfigUtils::readDotHierarchicalFilter(d->_pattern);
   if (d->_pattern.isEmpty() || !d->_patternRegexp.isValid())
     Log::warning() << "unsupported alert settings match pattern '"
-                   << d->_pattern << "': " << node.toString();
+                   << d->_pattern << "': " << node.as_text();
   d->_riseDelay = node["risedelay"_u8].toDouble()*1e3;
   d->_mayriseDelay = node["mayrisedelay"_u8].toDouble()*1e3;
   d->_dropDelay = node["dropdelay"_u8].toDouble()*1e3;
   d->_duplicateEmitDelay = node["duplicateemitdelay"_u8].toDouble()*1e3;
-  ConfigUtils::loadComments(node, &d->_commentsList);
   d->_visibilityWindow = CronTrigger(node["visibilitywindow"_u8]);
   d->_acceptabilityWindow = CronTrigger(node["acceptabilitywindow"_u8]);
   setData(d);
@@ -65,21 +63,20 @@ PfNode AlertSettings::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode node("settings"_u8);
-  ConfigUtils::writeComments(&node, d->_commentsList);
-  node.setAttribute("pattern"_u8, d->_pattern);
+  node.set_attribute("pattern"_u8, d->_pattern);
   if (d->_riseDelay > 0)
-    node.setAttribute("risedelay"_u8, d->_riseDelay/1e3);
+    node.set_attribute("risedelay"_u8, d->_riseDelay/1e3);
   if (d->_mayriseDelay > 0)
-    node.setAttribute("mayrisedelay"_u8, d->_mayriseDelay/1e3);
+    node.set_attribute("mayrisedelay"_u8, d->_mayriseDelay/1e3);
   if (d->_dropDelay > 0)
-    node.setAttribute("dropdelay"_u8, d->_dropDelay/1e3);
+    node.set_attribute("dropdelay"_u8, d->_dropDelay/1e3);
   if (d->_duplicateEmitDelay > 0)
-    node.setAttribute("duplicateemitdelay"_u8, d->_duplicateEmitDelay/1e3);
+    node.set_attribute("duplicateemitdelay"_u8, d->_duplicateEmitDelay/1e3);
   if (d->_visibilityWindow.isValid())
-    node.setAttribute("visibilitywindow"_u8, d->_visibilityWindow.expression());
+    node.set_attribute("visibilitywindow"_u8, d->_visibilityWindow.expression());
   if (d->_acceptabilityWindow.isValid())
-    node.setAttribute("acceptabilitywindow"_u8,
-                      d->_acceptabilityWindow.expression());
+    node.set_attribute("acceptabilitywindow"_u8,
+                       d->_acceptabilityWindow.expression());
   return node;
 }
 

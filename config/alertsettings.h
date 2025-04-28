@@ -1,4 +1,4 @@
-/* Copyright 2015-2023 Hallowyn and others.
+/* Copyright 2015-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -33,7 +33,7 @@ public:
    *  (mayrisedelay 15)
    * )
    */
-  explicit AlertSettings(PfNode node);
+  explicit AlertSettings(const PfNode &node);
   AlertSettings &operator=(const AlertSettings &other) {
     SharedUiItem::operator=(other); return *this; }
   PfNode toPfNode() const;

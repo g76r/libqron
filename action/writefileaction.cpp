@@ -1,4 +1,4 @@
-/* Copyright 2017-2023 Hallowyn and others.
+/* Copyright 2017-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -43,15 +43,15 @@ public:
   }
   PfNode toPfNode() const override {
     PfNode node(actionType(), _message);
-    node.appendChild(PfNode(QStringLiteral("path"), _path));
+    node.append_child({"path"_u8, _path});
     ConfigUtils::writeParamSet(&node, _params, QStringLiteral("param"));
     return node;
   }
 };
 
-WriteFileAction::WriteFileAction(Scheduler *scheduler, PfNode node)
+WriteFileAction::WriteFileAction(Scheduler *scheduler, const PfNode &node)
   : Action(new WriteFileActionData(
-      node.utf16attribute("path"), node.contentAsUtf16(),
+      node["path"], node.content_as_text(),
       ParamSet(node, ParametrizedFileWriter::supportedParamNames))) {
   Q_UNUSED(scheduler)
 }

@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,8 @@ class NoticeTriggerData;
 class LIBQRONSHARED_EXPORT NoticeTrigger : public Trigger {
 public:
   NoticeTrigger();
-  NoticeTrigger(PfNode node, QMap<Utf8String,Calendar> namedCalendars);
+  NoticeTrigger(const PfNode &node,
+                const QMap<Utf8String, Calendar> &namedCalendars);
   NoticeTrigger(const NoticeTrigger &);
   NoticeTrigger &operator=(const NoticeTrigger &);
   ~NoticeTrigger();

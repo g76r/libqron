@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -27,13 +27,15 @@ void ConfigUtils::loadResourcesSet(
     const Utf8String &attrname) {
   if (!resources)
     return;
-  for (auto p: parentnode.utf8LongPairChildrenByName(attrname))
-    if (p.second < 0)
-      Log::warning() << "ignoring resource of kind " << p.first
-                     << "with incorrect quantity " << parentnode.toString();
+  for (auto [kind, value]: parentnode.children_as_text_pairs_range(attrname)) {
+    bool ok;
+    auto l = value.toLongLong(&ok);
+    if (!ok || l < 0)
+      Log::warning() << "ignoring resource of kind " << kind
+                     << "with incorrect quantity " << value;
     else
-      resources->insert(
-            ConfigUtils::sanitizeId(p.first, ConfigUtils::LocalId), p.second);
+      resources->insert(ConfigUtils::sanitizeId(kind, ConfigUtils::LocalId), l);
+  }
 }
 
 void ConfigUtils::writeParamSet(PfNode *parentnode, ParamSet params,
@@ -43,7 +45,7 @@ void ConfigUtils::writeParamSet(PfNode *parentnode, ParamSet params,
   if (!inherit)
     params.setParent({});
   for (auto key: params.paramKeys().toSortedList())
-    parentnode->appendChild({attrname, key+" "+params.paramRawUtf8(key)});
+    parentnode->append_child({attrname, key+" "+params.paramRawUtf8(key)});
 }
 
 void ConfigUtils::writeEventSubscriptions(PfNode *parentnode,
@@ -52,7 +54,7 @@ void ConfigUtils::writeEventSubscriptions(PfNode *parentnode,
   for (const EventSubscription &es: list)
     if (!exclusionList.contains(es.eventName())
         && !es.actions().isEmpty())
-      parentnode->appendChild(es.toPfNode());
+      parentnode->append_child(es.toPfNode());
 }
 
 static QRegularExpression unallowedInDimension("[^a-zA-Z0-9_]");
@@ -149,35 +151,12 @@ void ConfigUtils::loadEventSubscription(
     list->append(EventSubscription(subscriberId, listnode, scheduler));
 }
 
-void ConfigUtils::loadComments(
-    const PfNode &node, Utf8StringList *commentsList,
-    const Utf8StringSet &excludedDescendants, int maxDepth) {
-  if (!commentsList)
-    return;
-  int newMaxDepth = maxDepth < 0 ? maxDepth : (maxDepth-1);
-  for (const PfNode &child: node.children()) {
-    if (child.isComment())
-      commentsList->append(child.contentAsUtf8());
-    if (maxDepth && !excludedDescendants.contains(child.name()))
-      loadComments(child, commentsList, newMaxDepth);
-  }
-}
-
-void ConfigUtils::writeComments(
-    PfNode *node, const Utf8StringList &commentsList) {
-  if (!node)
-    return;
-  for (auto comment: commentsList) {
-    node->appendCommentChild(comment);
-  }
-}
-
 void ConfigUtils::writeConditions(
     PfNode *parentnode, const Utf8String &attrname,
     DisjunctionCondition conditions) {
   if (!parentnode || conditions.isEmpty())
     return;
   PfNode childnode(attrname);
-  childnode.appendChildren(conditions.toPfNodes());
-  parentnode->appendChild(childnode);
+  childnode.append_children(conditions.toPfNodes());
+  parentnode->append_child(childnode);
 }

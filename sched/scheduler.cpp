@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,7 +13,6 @@
  */
 #include "scheduler.h"
 #include "pf/pfparser.h"
-#include "pf/pfdomhandler.h"
 #include "config/host.h"
 #include "config/cluster.h"
 #include "config/configutils.h"
@@ -119,10 +118,10 @@ void Scheduler::activateConfig(SchedulerConfig newConfig) {
   }
   ParamSet::clearExternalParams();
   for (auto node: newConfig.externalParams()) {
-    auto name = node.contentAsUtf8();
+    auto name = node.content_as_text();
     auto file_name = node.attribute("file");
     // FIXME it's not the right way to split a command line, see executor
-    auto cmdline = node.first_child("command").contentAsStringList();
+    auto cmdline = node.first_child("command").content_as_utf16strings();
     ParamSet ext;
     if (!file_name.isEmpty())
       ext = ParamSet::fromFile(file_name); // TODO support options

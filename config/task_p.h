@@ -1,4 +1,4 @@
-/* Copyright 2014-2024 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,11 +23,6 @@
 #include "ui/qronuiutils.h"
 #include "modelview/templatedshareduiitemdata.h"
 
-static QSet<QString> excludedDescendantsForComments {
-  "trigger", "onsuccess", "onfailure", "onfinish", "onstart", "onplan",
-  "onstderr", "onstdout", "onnostderr"
-};
-
 static QStringList excludeOnfinishSubscriptions { "onfinish" };
 
 #define TASKSROOTID "*"
@@ -42,7 +37,6 @@ public:
   ParamSet _vars, _instanceparams;
   QList<EventSubscription> _onstart, _onsuccess, _onfailure, _onplan, _onstderr,
       _onstdout, _onnostderr;
-  Utf8StringList _commentsList;
   QList<PfNode> _originalPfNodes;
   bool _mergeStdoutIntoStderr = false;
 
@@ -106,8 +100,9 @@ public:
                  int role) override;
   Qt::ItemFlags uiFlags(int section) const override;
   void setId(const Utf8String &id) { _id = id; }
-  bool loadConfig(PfNode node, Scheduler *scheduler, SharedUiItem parent,
-                  QMap<Utf8String, Calendar> namedCalendars);
+  bool loadConfig(
+      const PfNode &node, Scheduler *scheduler, const SharedUiItem &parent,
+      const QMap<Utf8String, Calendar> &namedCalendars);
   void fillPfNode(PfNode &node) const;
   Utf8String qualifier() const override { return "taskortemplate"_u8; }
 };

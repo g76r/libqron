@@ -1,4 +1,4 @@
-/* Copyright 2023 Gregoire Barbier and others.
+/* Copyright 2023-2025 Gregoire Barbier and others.
  * This file is part of libpumpkin, see <http://libpumpkin.g76r.eu/>.
  * Libpumpkin is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -50,7 +50,7 @@
 #include "format/timeformats.h"
 #include "csv/csvfile.h"
 #include "pf/pfnode.h"
-#include "pf/pfdomhandler.h"
+#include "pf/pfparser.h"
 #include "log/log.h"
 #include "log/filelogger.h"
 #include "log/qterrorcodes.h"

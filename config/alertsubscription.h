@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -44,8 +44,8 @@ public:
    * per subscription node, in this case config reader will create several
    * AlertSubscription objects.
    */
-  AlertSubscription(PfNode subscriptionnode, PfNode channelnode,
-                    ParamSet parentParams);
+  AlertSubscription(const PfNode &subscriptionnode, const PfNode &channelnode,
+                    const ParamSet &parentParams);
   AlertSubscription &operator=(const AlertSubscription &other) {
     SharedUiItem::operator=(other); return *this; }
   QString pattern() const;

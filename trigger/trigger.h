@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -51,7 +51,8 @@ protected:
   Trigger(TriggerData *data);
   /** Load config element common to all trigger types
    * @return false on error */
-  bool loadConfig(PfNode node, QMap<Utf8String, Calendar> namedCalendars);
+  bool loadConfig(const PfNode &node,
+                  const QMap<Utf8String, Calendar> &namedCalendars);
 };
 
 Q_DECLARE_TYPEINFO(Trigger, Q_MOVABLE_TYPE);

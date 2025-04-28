@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -28,10 +28,6 @@
 
 static QAtomicInt _sequence;
 
-static QSet<QString> excludedDescendantsForComments {
-  "subscription", "settings", "gridboard"
-};
-
 class AlerterConfigData
     : public SharedUiItemDataWithImmutableParams<AlerterConfigData, true> {
 public:
@@ -44,7 +40,7 @@ public:
   QList<AlertSettings> _alertSettings;
   qint64 _riseDelay, _mayriseDelay, _dropDelay, _duplicateEmitDelay,
   _minDelayBetweenSend, _delayBeforeFirstSend, _remindPeriod;
-  Utf8StringList _channelNames, _commentsList;
+  Utf8StringList _channelNames;
   QList<Gridboard> _gridboards;
   AlerterConfigData()
     : _id(QByteArray::number(_sequence.fetchAndAddOrdered(1))),
@@ -84,21 +80,17 @@ AlerterConfigData::AlerterConfigData(PfNode root)
   for (const PfNode &subscriptionnode: root/"subscription") {
     //Log::debug() << "found alert subscription section " << pattern << " " << stop;
     for (const PfNode &channelnode: subscriptionnode.children()) {
-      if (channelnode.name() == "pattern"
-          || channelnode.name() == "param"
-          || channelnode.isComment()) {
-        // ignore
+      if (channelnode^"pattern" || channelnode^"param")
+        continue; // ignore
+      if (_channelNames.contains(channelnode.name())) {
+        AlertSubscription sub(subscriptionnode, channelnode, _params);
+        _alertSubscriptions.append(sub);
+        //Log::debug() << "configured alert subscription " << channelnode.name()
+        //             << " " << sub.pattern() << " "
+        //             << sub.patternRegexp().pattern();
       } else {
-        if (_channelNames.contains(channelnode.utf8Name())) {
-          AlertSubscription sub(subscriptionnode, channelnode, _params);
-          _alertSubscriptions.append(sub);
-          //Log::debug() << "configured alert subscription " << channelnode.name()
-          //             << " " << sub.pattern() << " "
-          //             << sub.patternRegexp().pattern();
-        } else {
-          Log::warning() << "alert channel '" << channelnode.name()
-                         << "' unknown in alert subscription";
-        }
+        Log::warning() << "alert channel '" << channelnode.name()
+                       << "' unknown in alert subscription";
       }
     }
   }
@@ -122,8 +114,6 @@ AlerterConfigData::AlerterConfigData(PfNode root)
   _delayBeforeFirstSend = root["delaybeforefirstsend"]
                           .toDouble(DEFAULT_DELAY_BEFORE_FIRST_SEND/1e3)*1e3;
   _remindPeriod = root["remindperiod"].toDouble(DEFAULT_REMIND_PERIOD/1e3)*1e3;
-  ConfigUtils::loadComments(root, &_commentsList,
-                            excludedDescendantsForComments);
   for (const PfNode &child: root/"gridboard") {
     Gridboard gridboard(child, Gridboard(), _params); // TODO load old gridboard state
     _gridboards.append(gridboard);
@@ -191,28 +181,27 @@ PfNode AlerterConfig::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode node("alerts");
-  ConfigUtils::writeComments(&node, d->_commentsList);
   ConfigUtils::writeParamSet(&node, d->_params, "param");
   if (d->_riseDelay != DEFAULT_RISE_DELAY)
-    node.setAttribute("risedelay", d->_riseDelay/1e3);
+    node.set_attribute("risedelay", d->_riseDelay/1e3);
   if (d->_mayriseDelay != DEFAULT_MAYRISE_DELAY)
-    node.setAttribute("mayrisedelay", d->_mayriseDelay/1e3);
+    node.set_attribute("mayrisedelay", d->_mayriseDelay/1e3);
   if (d->_dropDelay != DEFAULT_DROP_DELAY)
-    node.setAttribute("dropdelay", d->_dropDelay/1e3);
+    node.set_attribute("dropdelay", d->_dropDelay/1e3);
   if (d->_duplicateEmitDelay != DEFAULT_DUPLICATE_EMIT_DELAY)
-    node.setAttribute("duplicateemitdelay", d->_duplicateEmitDelay/1e3);
+    node.set_attribute("duplicateemitdelay", d->_duplicateEmitDelay/1e3);
   if (d->_minDelayBetweenSend != DEFAULT_MIN_DELAY_BETWEEN_SEND)
-    node.setAttribute("mindelaybetweensend", d->_minDelayBetweenSend/1e3);
+    node.set_attribute("mindelaybetweensend", d->_minDelayBetweenSend/1e3);
   if (d->_delayBeforeFirstSend != DEFAULT_DELAY_BEFORE_FIRST_SEND)
-    node.setAttribute("delaybeforefirstsend", d->_delayBeforeFirstSend/1e3);
+    node.set_attribute("delaybeforefirstsend", d->_delayBeforeFirstSend/1e3);
   if (d->_remindPeriod != DEFAULT_REMIND_PERIOD)
-    node.setAttribute("remindperiod", d->_remindPeriod/1e3);
+    node.set_attribute("remindperiod", d->_remindPeriod/1e3);
   for (const AlertSettings &settings: d->_alertSettings)
-    node.appendChild(settings.toPfNode());
+    node.append_child(settings.toPfNode());
   for (const AlertSubscription &sub: d->_alertSubscriptions)
-    node.appendChild(sub.toPfNode());
+    node.append_child(sub.toPfNode());
   for (const Gridboard &gridboard: d->_gridboards)
-    node.appendChild(gridboard.toPfNode());
+    node.append_child(gridboard.toPfNode());
   return node;
 }
 

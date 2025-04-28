@@ -1,4 +1,4 @@
-/* Copyright 2014-2024 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,13 +24,6 @@
 
 #define DEFAULT_MAXTOTALTASKINSTANCES 16
 #define DEFAULT_MAXQUEUEDREQUESTS 128
-
-static QSet<QString> excludedDescendantsForComments {
-  "task", "taskgroup", "host", "cluster", "calendar", "alerts",
-  "access-control", "onsuccess", "onfailure", "onfinish", "onstart",
-  "onstderr", "onstdout", "onschedulerstart", "onconfigload", "onnotice",
-  "onnostderr",
-};
 
 static QStringList excludeOnfinishSubscriptions { "onfinish" };
 
@@ -70,7 +63,6 @@ public:
   AccessControlConfig _accessControlConfig;
   QList<LogFile> _logfiles;
   QDateTime _lastLoadTime;
-  Utf8StringList _commentsList;
   mutable QMutex _mutex;
   mutable QByteArray _id;
   PfNode _originalPfNode;
@@ -140,9 +132,9 @@ SchedulerConfigData::SchedulerConfigData(
     LogFile logfile(node);
     if (logfile.isNull()) {
       Log::warning() << "invalid log file declaration in configuration: "
-                     << node.toPf();
+                     << node.as_pf();
     } else {
-      Log::debug() << "adding logger " << node.toPf();
+      Log::debug() << "adding logger " << node.as_pf();
       logfiles.append(logfile);
     }
   }
@@ -152,20 +144,21 @@ SchedulerConfigData::SchedulerConfigData(
   _tasksRoot = TasksRoot(root, scheduler);
   _namedCalendars.clear();
   for (const PfNode &node: root/"calendar") {
-    auto name = node.contentAsUtf8();
+    auto name = node.content_as_text();
     Calendar calendar(node);
     if (name.isEmpty())
-      Log::error() << "ignoring anonymous calendar: " << node.toPf();
+      Log::error() << "ignoring anonymous calendar: " << node.as_pf();
     else if (calendar.isNull())
-      Log::error() << "ignoring empty calendar: " << node.toPf();
+      Log::error() << "ignoring empty calendar: " << node.as_pf();
     else
       _namedCalendars.insert(name, calendar);
   }
   _externalParams.clear();
   for (auto node: root/"externalparams") {
-    auto name = node.contentAsUtf8();
-    if (name.isEmpty() || (!node.hasChild("file") && !node.hasChild("command")))
-      Log::error() << "ignoring invalid externalparams: " << node.toPf();
+    auto name = node.content_as_text();
+    if (name.isEmpty() || (!node.has_child("file")
+                           && !node.has_child("command")))
+      Log::error() << "ignoring invalid externalparams: " << node.as_pf();
     else
       _externalParams.insert(name, node);
   }
@@ -186,7 +179,7 @@ SchedulerConfigData::SchedulerConfigData(
   for (const PfNode &node: root/"cluster") {
     Cluster cluster(node);
     for (const PfNode &child: node/"hosts") {
-      for (auto hostId: child.contentAsUtf8List()) {
+      for (auto hostId: child.content_as_strings()) {
         Host host = _hosts.value(hostId);
         if (!host.isNull())
           cluster.appendHost(host);
@@ -207,12 +200,12 @@ SchedulerConfigData::SchedulerConfigData(
       _clusters.insert(cluster.id(), cluster);
   }
   _taskgroups.clear();
-  auto taskGroupNodes = root.children_as_list("taskgroup");
+  auto taskGroupNodes = root.children_copy("taskgroup");
   // C++23: auto taskGroupNodes = root/"taskgroup" | std::ranges::to<QList<PfNode>>();
   std::stable_sort(taskGroupNodes.begin(), taskGroupNodes.end());
   for (auto node: taskGroupNodes) {
     QByteArray id = ConfigUtils::sanitizeId(
-          node.contentAsUtf16(), ConfigUtils::FullyQualifiedId).toUtf8();
+          node.content_as_text(), ConfigUtils::FullyQualifiedId).toUtf8();
     if (_taskgroups.contains(id)) {
       Log::error() << "ignoring duplicate taskgroup: " << id;
       continue;
@@ -223,7 +216,7 @@ SchedulerConfigData::SchedulerConfigData(
       parent = _tasksRoot;
     TaskGroup taskGroup(node, parent, scheduler);
     if (taskGroup.isNull() || id.isEmpty()) {
-      Log::error() << "ignoring invalid taskgroup: " << node.toPf();
+      Log::error() << "ignoring invalid taskgroup: " << node.as_pf();
       continue;
     }
     recordTaskActionLinks(
@@ -236,7 +229,7 @@ SchedulerConfigData::SchedulerConfigData(
   for (auto node: root/"tasktemplate") {
     TaskTemplate tmpl(node, scheduler, _tasksRoot, _namedCalendars);
     if (tmpl.isNull()) { // cstr detected an error
-      Log::error() << "ignoring invalid tasktemplate: " << node.toString();
+      Log::error() << "ignoring invalid tasktemplate: " << node.as_text();
       goto ignore_tasktemplate;
     }
     if (_tasktemplates.contains(tmpl.id())) {
@@ -249,15 +242,15 @@ ignore_tasktemplate:;
   auto oldTasks = _tasks;
   _tasks.clear();
   for (const PfNode &node: root/"task") {
-    auto taskGroupId = node.utf16attribute("taskgroup");
+    auto taskGroupId = node["taskgroup"];
     TaskGroup taskGroup = _taskgroups.value(taskGroupId);
     Task task(node, scheduler, taskGroup, _namedCalendars, _tasktemplates);
     if (taskGroupId.isEmpty() || taskGroup.isNull()) {
-      Log::error() << "ignoring task with invalid taskgroup: " << node.toPf();
+      Log::error() << "ignoring task with invalid taskgroup: " << node.as_pf();
       goto ignore_task;
     }
     if (task.isNull()) { // Task cstr detected an error
-      Log::error() << "ignoring invalid task: " << node.toString();
+      Log::error() << "ignoring invalid task: " << node.as_text();
       goto ignore_task;
     }
     if (_tasks.contains(task.id())) {
@@ -284,7 +277,7 @@ ignore_task:;
   }
   int maxtotaltaskinstances = 0;
   for (const PfNode &node: root/"maxtotaltaskinstances") {
-    int n = node.contentAsUtf16().toInt(0, 0);
+    int n = node.content_as_number<int>();
     if (n > 0) {
       if (maxtotaltaskinstances > 0)
         Log::error() << "overriding maxtotaltaskinstances "
@@ -292,7 +285,7 @@ ignore_task:;
       maxtotaltaskinstances = n;
     } else
       Log::error() << "ignoring maxtotaltaskinstances with incorrect "
-                      "value: " << node.toPf();
+                      "value: " << node.as_pf();
   }
   if (maxtotaltaskinstances <= 0) {
     maxtotaltaskinstances = DEFAULT_MAXTOTALTASKINSTANCES;
@@ -302,7 +295,7 @@ ignore_task:;
   _maxtotaltaskinstances = maxtotaltaskinstances;
   int maxqueuedrequests = 0;
   for (const PfNode &node: root/"maxqueuedrequests") {
-    int n = node.contentAsUtf16().toInt(0, 0);
+    int n = node.content_as_number<int>();
     if (n > 0) {
       if (maxqueuedrequests > 0) {
         Log::warning() << "overriding maxqueuedrequests "
@@ -311,7 +304,7 @@ ignore_task:;
       maxqueuedrequests = n;
     } else {
       Log::warning() << "ignoring maxqueuedrequests with incorrect "
-                        "value: " << node.toPf();
+                        "value: " << node.as_pf();
     }
   }
   if (maxqueuedrequests <= 0)
@@ -366,8 +359,6 @@ ignore_task:;
   if (!!unwanted)
     Log::error() << "ignoring multiple 'access-control' in configuration";
   _lastLoadTime = QDateTime::currentDateTime();
-  ConfigUtils::loadComments(root, &_commentsList,
-                            excludedDescendantsForComments);
 }
 
 SchedulerConfig::~SchedulerConfig() {
@@ -546,9 +537,8 @@ QByteArray SchedulerConfig::recomputeId() const {
   QBuffer buf(&data);
   buf.open(QIODevice::ReadWrite);
   buf.write(toPfNode()
-            .toPf(PfOptions().setShouldIndent()
-                  .setShouldWriteContentBeforeSubnodes()
-                  .setShouldIgnoreComment(false)));
+            .as_pf(PfOptions().with_indent(2).with_payload_first()
+                   .with_comments()));
   buf.seek(0);
   hash.addData(&buf);
   d->_id = hash.result().toHex();
@@ -596,7 +586,6 @@ PfNode SchedulerConfig::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode node("config");
-  ConfigUtils::writeComments(&node, d->_commentsList);
   ConfigUtils::writeParamSet(&node, d->_tasksRoot.params(), QStringLiteral("param"));
   ConfigUtils::writeParamSet(&node, d->_tasksRoot.vars(), QStringLiteral("var"));
   ConfigUtils::writeParamSet(&node, d->_tasksRoot.instanceparams(),
@@ -612,25 +601,23 @@ PfNode SchedulerConfig::toPfNode() const {
   QList<TaskGroup> taskGroups = d->_taskgroups.values();
   std::sort(taskGroups.begin(), taskGroups.end());
   for (const TaskGroup &taskGroup: taskGroups)
-    node.appendChild(taskGroup.toPfNode());
+    node.append_child(taskGroup.toPfNode());
   QList<Task> tasks = d->_tasks.values();
   std::sort(tasks.begin(), tasks.end());
   for (const Task &task: tasks)
-    node.appendChild(task.toPfNode());
+    node.append_child(task.toPfNode());
   QList<Host> hosts = d->_hosts.values();
   std::sort(hosts.begin(), hosts.end());
   for (const Host &host: hosts)
-    node.appendChild(host.toPfNode());
+    node.append_child(host.toPfNode());
   QList<Cluster> clusters = d->_clusters.values();
   std::sort(clusters.begin(), clusters.end());
   for (const Cluster &cluster: clusters)
-    node.appendChild(cluster.toPfNode());
+    node.append_child(cluster.toPfNode());
   if (d->_maxtotaltaskinstances != DEFAULT_MAXTOTALTASKINSTANCES)
-    node.setAttribute(QStringLiteral("maxtotaltaskinstances"),
-                      QString::number(d->_maxtotaltaskinstances));
+    node.set_attribute("maxtotaltaskinstances"_u8, d->_maxtotaltaskinstances);
   if (d->_maxqueuedrequests != DEFAULT_MAXQUEUEDREQUESTS)
-    node.setAttribute(QStringLiteral("maxqueuedrequests"),
-                      QString::number(d->_maxqueuedrequests));
+    node.set_attribute("maxqueuedrequests"_u8, d->_maxqueuedrequests);
   // LATER use this when Calendar will be ported to SharedUiItem
   //QList<Calendar> namedCalendars = d->_namedCalendars.values();
   //qSort(namedCalendars);
@@ -639,14 +626,14 @@ PfNode SchedulerConfig::toPfNode() const {
   auto calendarNames = d->_namedCalendars.keys();
   std::sort(calendarNames.begin(), calendarNames.end());
   for (auto calendarName: calendarNames)
-    node.appendChild(d->_namedCalendars.value(calendarName).toPfNode());
+    node.append_child(d->_namedCalendars.value(calendarName).toPfNode());
   for (auto node: d->_externalParams)
-    node.appendChild(node);
-  node.appendChild(d->_alerterConfig.toPfNode());
+    node.append_child(node);
+  node.append_child(d->_alerterConfig.toPfNode());
   if (!d->_accessControlConfig.isEmpty())
-    node.appendChild(d->_accessControlConfig.toPfNode());
+    node.append_child(d->_accessControlConfig.toPfNode());
   for (const LogFile &logfile: d->_logfiles)
-    node.appendChild(logfile.toPfNode());
+    node.append_child(logfile.toPfNode());
   return node;
 }
 

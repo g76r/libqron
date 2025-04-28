@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -49,20 +49,20 @@ Task::Task() {
 Task::Task(const Task &other) : SharedUiItem(other) {
 }
 
-Task::Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-    QMap<Utf8String, Calendar> namedCalendars,
-    QMap<Utf8String, TaskTemplate> taskTemplates) {
+Task::Task(const PfNode &node, Scheduler *scheduler, const TaskGroup &taskGroup,
+           const QMap<Utf8String, Calendar> &namedCalendars,
+           const QMap<Utf8String, TaskTemplate> &taskTemplates) {
   TaskData *d = new TaskData;
-  d->_localId = ConfigUtils::sanitizeId(node.contentAsUtf16(),
+  d->_localId = ConfigUtils::sanitizeId(node.content_as_text(),
                                         ConfigUtils::LocalId).toUtf8();
   d->_id = taskGroup.id()+"."+d->_localId;
   d->_group = taskGroup;
   for (auto child: node/"apply") {
-    for (auto name: child.contentAsStringList()) {
-      auto tmpl = taskTemplates.value(name.toUtf8());
+    for (auto name: child.content_as_strings()) {
+      auto tmpl = taskTemplates.value(name);
       if (tmpl.isNull()) {
         Log::warning() << "tasktemplate" << name << "not found while requested "
-                          "in task definition: " << node.toString();
+                          "in task definition: " << node.as_text();
         continue;
       }
       auto tmpl_node = tmpl.data()->_originalPfNodes.value(0);
@@ -665,7 +665,7 @@ void TaskData::fillPfNode(PfNode &node) const {
 
   // applied templates
   if (!_appliedTemplates.isEmpty())
-    node.setAttribute("apply", _appliedTemplates.join(' '));
+    node.set_attribute("apply", _appliedTemplates.join(' '));
 }
 
 PfNode TaskData::toPfNode() const {

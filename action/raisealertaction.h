@@ -1,4 +1,4 @@
-/* Copyright 2013-2024 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,7 +22,7 @@ class Scheduler;
 /** Action raising an alert. */
 class LIBQRONSHARED_EXPORT RaiseAlertAction : public Action {
 public:
-  explicit RaiseAlertAction(Scheduler *scheduler = 0, PfNode node = PfNode());
+  explicit RaiseAlertAction(Scheduler *scheduler = 0, const PfNode &node = {});
   RaiseAlertAction(const RaiseAlertAction &);
   ~RaiseAlertAction();
 };

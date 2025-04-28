@@ -1,4 +1,4 @@
-/* Copyright 2014-2024 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -173,11 +173,10 @@ QByteArray LocalConfigRepository::addConfig(SchedulerConfig config) {
     }*/
     if (!_basePath.isEmpty()) {
       QSaveFile f(_basePath+"/configs/"+id.toUtf16());
+      auto opt = PfOptions().with_indent(2).with_payload_first()
+                 .with_comments();
       if (!f.open(QIODevice::WriteOnly|QIODevice::Truncate)
-          || f.write(config.originalPfNode()
-                     .toPf(PfOptions().setShouldIndent()
-                           .setShouldWriteContentBeforeSubnodes()
-                           .setShouldIgnoreComment(false))) < 0
+          || f.write(config.originalPfNode().as_pf(opt)) < 0
           || !f.commit()) {
         Log::error() << "error writing config in repository: " << f.fileName()
                      << ((f.error() == QFileDevice::NoError)

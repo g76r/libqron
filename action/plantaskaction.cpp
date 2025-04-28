@@ -1,4 +1,4 @@
-/* Copyright 2022-2024 Gregoire Barbier and others.
+/* Copyright 2022-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -101,9 +101,9 @@ public:
     PfNode node(actionType(), _id);
     ConfigUtils::writeParamSet(&node, _overridingParams, "param");
     if (_force)
-      node.appendChild(PfNode("force"));
+      node.append_child(PfNode("force"));
     if (_lone)
-      node.appendChild(PfNode("lone"));
+      node.append_child(PfNode("lone"));
     ConfigUtils::writeParamSet(&node, ParamSet(_paramappend), "paramappend");
     ConfigUtils::writeConditions(&node, "queuewhen", _queuewhen);
     ConfigUtils::writeConditions(&node, "cancelwhen", _cancelwhen);
@@ -111,14 +111,23 @@ public:
   }
 };
 
-PlanTaskAction::PlanTaskAction(Scheduler *scheduler, PfNode node)
+static inline QList<PfNode> grandchildren_list(
+    const PfNode &node, const Utf8String &child_name) {
+  QList<PfNode> list;
+  for (auto child: node/child_name)
+    for (auto grandchild: child.children())
+      list << grandchild;
+  return list;
+}
+
+PlanTaskAction::PlanTaskAction(Scheduler *scheduler, const PfNode &node)
     : Action(new PlanTaskActionData(
-          scheduler, node.contentAsUtf16(),
-          ParamSet(node, "param"), node.hasChild("force"),
-          node.hasChild("lone"),
+          scheduler, node.content_as_text(),
+          ParamSet(node, "param"), node.has_child("force"),
+          node.has_child("lone"),
           ParamSet(node, "paramappend").toUtf8Hash(),
-          DisjunctionCondition(node.grandchildren_list("queuewhen")),
-          DisjunctionCondition(node.grandchildren_list("cancelwhen"))
+          DisjunctionCondition(grandchildren_list(node, "queuewhen")),
+          DisjunctionCondition(grandchildren_list(node, "cancelwhen"))
           )) {
 }
 

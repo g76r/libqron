@@ -39,13 +39,13 @@ LogFile::LogFile() {
 LogFile::LogFile(const LogFile &other) : SharedUiItem(other) {
 }
 
-LogFile::LogFile(PfNode node) {
+LogFile::LogFile(const PfNode &node) {
   QString pathPattern = node.attribute("file"_u8);
   if (!pathPattern.isEmpty()) {
     LogFileData *d = new LogFileData;
     d->_pathPattern = pathPattern;
     d->_minimumSeverity = p6::log::severity_from_text(node["level"_u8]);
-    d->_buffered = !node.hasChild("unbuffered"_u8);
+    d->_buffered = !node.has_child("unbuffered"_u8);
     setData(d);
   }
 }
@@ -106,11 +106,11 @@ PfNode LogFile::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode node("log");
-  node.appendChild(PfNode("file", d->_pathPattern));
-  node.appendChild(
+  node.append_child(PfNode("file", d->_pathPattern));
+  node.append_child(
         PfNode("level", p6::log::severity_as_text(d->_minimumSeverity)));
   if (!d->_buffered)
-    node.appendChild(PfNode("unbuffered"));
+    node.append_child(PfNode("unbuffered"));
   return node;
 }
 

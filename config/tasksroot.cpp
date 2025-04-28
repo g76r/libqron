@@ -1,4 +1,4 @@
-/* Copyright 2022-2024 Gregoire Barbier and others.
+/* Copyright 2022-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,8 +57,6 @@ bool TasksRootData::loadConfig(
       node, "onstdout", TASKSROOTID, &_onstdout, scheduler);
   ConfigUtils::loadEventSubscription(
       node, "onnostderr", TASKSROOTID, &_onnostderr, scheduler);
-  ConfigUtils::loadComments(
-      node, &_commentsList, excludedDescendantsForComments);
   return true;
 }
 

@@ -35,14 +35,14 @@ public:
   }
   PfNode toPfNode() const override {
     PfNode node(actionType(), _message);
-    node.appendChild(PfNode("severity", p6::log::severity_as_text(_severity)));
+    node.append_child(PfNode("severity", p6::log::severity_as_text(_severity)));
     return node;
   }
 };
 
-LogAction::LogAction(Scheduler *scheduler, PfNode node)
+LogAction::LogAction(Scheduler *scheduler, const PfNode &node)
   : Action(new LogActionData(
-             node.contentAsUtf16(),
+             node.content_as_text(),
              p6::log::severity_from_text(
                node.attribute("severity", "info")))) {
   Q_UNUSED(scheduler)

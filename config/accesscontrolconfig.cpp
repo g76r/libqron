@@ -1,4 +1,4 @@
-/* Copyright 2014-2024 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,6 @@
 #include <QFileSystemWatcher>
 #include <QFile>
 
-static QSet<QString> excludedDescendantsForComments { "user-file", "user" };
 
 class AccessControlConfigData : public QSharedData {
 public:
@@ -26,7 +25,6 @@ public:
   public:
     QString _path;
     InMemoryAuthenticator::Encoding _cipher;
-    Utf8StringList _commentsList;
     explicit UserFile(QString path = QString(),
                       InMemoryAuthenticator::Encoding cipher
                       = InMemoryAuthenticator::Unknown)
@@ -38,7 +36,6 @@ public:
     QString _userId, _encodedPassword;
     InMemoryAuthenticator::Encoding _cipher;
     QSet<QString> _roles;
-    Utf8StringList _commentsList;
     explicit User(QString userId = QString(),
                   QString encodedPassword = QString(),
                   InMemoryAuthenticator::Encoding cipher
@@ -50,7 +47,6 @@ public:
 
   QList<UserFile> _userFiles;
   QList<User> _users;
-  Utf8StringList _commentsList;
   AccessControlConfigData() {}
   explicit AccessControlConfigData(PfNode node);
 };
@@ -78,70 +74,63 @@ AccessControlConfig::~AccessControlConfig() {
 
 AccessControlConfigData::AccessControlConfigData(PfNode node) {
   for (const PfNode &child: node/"user-file") {
-    QString path = child.contentAsUtf16().trimmed();
+    auto path = child.content_as_text().trimmed();
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
           child.attribute("cipher", "plain"));
     if (path.isEmpty())
       Log::error() << "access control user file with empty path: "
-                   << child.toString();
+                   << child.as_text();
     else if (cipher == InMemoryAuthenticator::Unknown)
       Log::error() << "access control user file '" << path
                    << "' with unsupported cipher type: '"
                    << InMemoryAuthenticator::encodingToString(cipher) << "'";
     else {
       UserFile userFile(path, cipher);
-      ConfigUtils::loadComments(child, &userFile._commentsList);
       _userFiles.append(userFile);
     }
   }
   for (const PfNode &child: node/"user") {
-    QString userId = child.contentAsUtf16().trimmed();
-    QString encodedPassword = child.attribute("password");
+    auto userId = child.content_as_text().trimmed();
+    auto encodedPassword = child["password"];
     InMemoryAuthenticator::Encoding cipher
         = InMemoryAuthenticator::encodingFromString(
           child.attribute("cipher", "plain"));
-    auto rolelist = child.stringListAttribute("roles");
+    auto rolelist = child["roles"].split(Utf8String::AsciiWhitespace);
     auto roles = QSet<QString>(rolelist.begin(), rolelist.end());
     if (userId.isEmpty())
-      Log::error() << "access control user with no id: " << child.toString();
+      Log::error() << "access control user with no id: " << child.as_text();
     else if (encodedPassword.isEmpty())
       Log::error() << "access control user '" << userId
                    << "' with empty or no password";
     else {
       User user(userId, encodedPassword, cipher, roles);
-      ConfigUtils::loadComments(child, &user._commentsList);
       _users.append(user);
     }
   }
-  ConfigUtils::loadComments(node, &_commentsList,
-                            excludedDescendantsForComments);
 }
-
 
 PfNode AccessControlConfig::toPfNode() const {
   PfNode node(QStringLiteral("access-control"));
   if (!d)
     return node;
-  ConfigUtils::writeComments(&node, d->_commentsList);
   for (const AccessControlConfigData::UserFile &userFile: d->_userFiles) {
-    PfNode child(QStringLiteral("user-file"), userFile._path);
-    ConfigUtils::writeComments(&child, userFile._commentsList);
-    child.appendChild(PfNode(QStringLiteral("cipher"), InMemoryAuthenticator
-                             ::encodingToString(userFile._cipher)));
-    node.appendChild(child);
+    auto cipher = InMemoryAuthenticator::encodingToString(userFile._cipher);
+    node.append_child({ "user-file", userFile._path, {
+                          { "cipher", cipher },
+                        }
+                      });
   }
   for (const AccessControlConfigData::User &user: d->_users) {
-    PfNode child(QStringLiteral("user"), user._userId);
-    ConfigUtils::writeComments(&child, user._commentsList);
-    child.appendChild(PfNode(QStringLiteral("password"),
-                             user._encodedPassword));
-    child.appendChild(PfNode(QStringLiteral("cipher"), InMemoryAuthenticator
-                             ::encodingToString(user._cipher)));
-    QStringList roles = user._roles.values();
+    auto roles = user._roles.values();
     std::sort(roles.begin(), roles.end());
-    child.appendChild(PfNode(QStringLiteral("roles"), roles.join(' ')));
-    node.appendChild(child);
+    auto cipher = InMemoryAuthenticator::encodingToString(user._cipher);
+    node.append_child({ "user", user._userId, {
+                          { "password", user._encodedPassword },
+                          { "cipher", cipher },
+                          { "roles", roles.join(' ') },
+                        }
+                      });
   }
   return node;
 }

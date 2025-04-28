@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -45,9 +45,9 @@ public:
 
   Task();
   Task(const Task &other);
-  Task(PfNode node, Scheduler *scheduler, TaskGroup taskGroup,
-       QMap<Utf8String, Calendar> namedCalendars,
-       QMap<Utf8String, TaskTemplate> taskTemplates);
+  Task(const PfNode &node, Scheduler *scheduler, const TaskGroup &taskGroup,
+       const QMap<Utf8String, Calendar> &namedCalendars,
+       const QMap<Utf8String, TaskTemplate> &taskTemplates);
   /** Should only be used by SharedUiItemsModels to get size and headers from
    * a non-null item. */
   static Task dummyTask();

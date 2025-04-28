@@ -1,4 +1,4 @@
-/* Copyright 2013-2024 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -30,19 +30,18 @@ RequestFormField::RequestFormField() : d(new RequestFormFieldData) {
 RequestFormField::RequestFormField(const RequestFormField &rhs) : d(rhs.d) {
 }
 
-RequestFormField::RequestFormField(PfNode node) {
+RequestFormField::RequestFormField(const PfNode &node) {
   RequestFormFieldData *d = new RequestFormFieldData;
-  QString id = node.contentAsUtf16();
+  QString id = node.content_as_text();
   if (id.isEmpty()) {
-    Log::error() << "request form field without id "
-                 << node.toString();
+    Log::error() << "request form field without id " << node.as_text();
     return;
   }
   d->_id = ConfigUtils::sanitizeId(id, ConfigUtils::LocalId);
-  d->_label = node.utf16attribute("label", d->_id);
-  d->_placeholder = node.utf16attribute("placeholder", d->_label);
-  d->_suggestion = node.utf16attribute("suggestion");
-  auto format = node.utf16attribute("format");
+  d->_label = node.attribute("label", d->_id);
+  d->_placeholder = node.attribute("placeholder", d->_label);
+  d->_suggestion = node.attribute("suggestion");
+  auto format = node.attribute("format");
   if (!format.isEmpty()) {
     if (!format.startsWith('^'))
       format.prepend('^');
@@ -51,12 +50,12 @@ RequestFormField::RequestFormField(PfNode node) {
     d->_format = QRegularExpression(format);
     if (!d->_format.isValid()) {
       Log::error() << "request form field with invalid format specification: "
-                   << d->_format.errorString() << " : " << node.toString();
+                   << d->_format.errorString() << " : " << node.as_text();
       return;
     }
     d->_cause =
         QRegularExpression(node.first_child("format")
-                           .utf16attribute("cause","^api|notice"));
+                           .attribute("cause","^api|notice"));
   }
   this->d = d;
 }
@@ -145,15 +144,15 @@ PfNode RequestFormField::toPfNode() const {
     return PfNode();
   PfNode node("field", d->_id);
   if (d->_label != d->_id)
-    node.appendChild(PfNode("label", d->_label));
+    node.append_child({"label", d->_label});
   if (d->_placeholder != d->_label)
-    node.appendChild(PfNode("placeholder", d->_placeholder));
+    node.append_child({"placeholder", d->_placeholder});
   if (!d->_suggestion.isEmpty())
-    node.appendChild(PfNode("suggestion", d->_suggestion));
-  if (!d->_format.pattern().isEmpty() && !d->_format.pattern().isEmpty()) {
-    auto child = PfNode("format", d->_format.pattern());
-    child.setAttribute("cause",d->_cause.pattern());
-    node.appendChild(child);
-  }
+    node.append_child({"suggestion", d->_suggestion});
+  if (!d->_format.pattern().isEmpty() && !d->_format.pattern().isEmpty())
+    node.append_child({"format", d->_format.pattern(), {
+                         {"cause",d->_cause.pattern()},
+                       }
+                      });
   return node;
 }

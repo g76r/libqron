@@ -1,4 +1,4 @@
-/* Copyright 2015-2024 Hallowyn and others.
+/* Copyright 2015-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -90,19 +90,18 @@ private:
 
 class Dimension : public SharedUiItem {
 public:
-  Dimension(PfNode node) {
+  Dimension(const PfNode &node) {
     DimensionData *d = new DimensionData;
-    QStringList idAndValue = node.contentAsTwoStringsList();
-    d->_id = ConfigUtils::sanitizeId(
-          idAndValue.value(0), ConfigUtils::AlphanumId).toUtf8();
+    auto [id, value] = node.content_as_text_pair();
+    d->_id = ConfigUtils::sanitizeId(id, ConfigUtils::AlphanumId).toUtf8();
     if (d->_id.isEmpty()) {
       delete d;
       return;
     }
-    d->_rawValue = idAndValue.value(1);
+    d->_rawValue = value;
     if (d->_rawValue.isEmpty())
       d->_rawValue = "%"+d->_id;
-    d->_label = node.utf16attribute("label"_u8);
+    d->_label = node["label"_u8];
     setData(d);
   }
   PfNode toPfNode() const {
@@ -113,7 +112,7 @@ public:
     idAndValue = d->_id+" "+d->_rawValue;
     PfNode node("dimension"_u8, idAndValue);
     if (!d->_label.isEmpty())
-      node.setAttribute("label"_u8, d->_label);
+      node.set_attribute("label"_u8, d->_label);
     return node;
   }
   const DimensionData *data() const { return specializedData<DimensionData>(); }
@@ -188,7 +187,6 @@ public:
   QList<QSharedPointer<TreeItem>> _dataComponents;
   /** Indexes from dimension × dimension value to component root. */
   QList<QHash<Utf8String,TreeItem*>> _dataIndexesByDimension;
-  Utf8StringList _commentsList;
   qint64 _updatesCounter, _currentComponentsCount, _currentItemsCount;
   mutable QAtomicInteger<int> _rendersCounter;
   GridboardData() : _warningDelay(DEFAULT_WARNING_DELAY),
@@ -197,32 +195,32 @@ public:
   QVariant uiData(int section, int role) const override;
 };
 
-Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
-                     ParamSet parentParams) {
+Gridboard::Gridboard(const PfNode &node, const Gridboard &oldGridboard,
+                     const ParamSet &parentParams) {
   Q_UNUSED(oldGridboard)
   GridboardData *d = new GridboardData;
-  d->_id = node.contentAsUtf8();
+  d->_id = node.content_as_text();
   if (d->_id.isEmpty()) {
-    Log::warning() << "gridboard with empty id: " << node.toString();
+    Log::warning() << "gridboard with empty id: " << node.as_text();
     delete d;
     return;
   }
-  d->_label = node.utf16attribute("label"_u8);
-  d->_info = node.utf16attribute("info"_u8);
-  d->_pattern = node.utf16attribute("pattern"_u8);
+  d->_label = node["label"_u8];
+  d->_info = node["info"_u8];
+  d->_pattern = node["pattern"_u8];
   d->_patternRegexp = QRegularExpression(d->_pattern);
   if (!d->_patternRegexp.isValid())
-    Log::warning() << "gridboard with invalid pattern: " << node.toString();
+    Log::warning() << "gridboard with invalid pattern: " << node.as_text();
   for (const PfNode &child: node/"dimension") {
     Dimension dimension(child);
     if (dimension.isNull()) {
       Log::warning() << "gridboard " << d->_id << " with invalid dimension: "
-                     << child.toString();
+                     << child.as_text();
       continue;
     } else {
       if (d->_dimensions.contains(dimension)) {
         Log::warning() << "gridboard " << d->_id
-                       << " with duplicate dimension: " << child.toString();
+                       << " with duplicate dimension: " << child.as_text();
         continue;
       }
       d->_dimensions.append(dimension);
@@ -238,7 +236,7 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
     break; // nothing to do
   default:
     Log::warning() << "gridboard with unsupported number of dimensions ("
-                   << d->_dimensions.size() << "): " << node.toString();
+                   << d->_dimensions.size() << "): " << node.as_text();
     delete d;
     return;
   }
@@ -248,7 +246,6 @@ Gridboard::Gridboard(PfNode node, Gridboard oldGridboard,
                      .toDouble(DEFAULT_WARNING_DELAY/1e3)*1e3;
   d->_params.setParent(parentParams);
   d->_params = ParamSet(node, "param"_u8);
-  ConfigUtils::loadComments(node, &d->_commentsList);
   // LATER load old state
   // LATER load initvalues
   setData(d);
@@ -282,18 +279,17 @@ PfNode Gridboard::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode node("gridboard"_u8, d->_id);
-  ConfigUtils::writeComments(&node, d->_commentsList);
   if (!d->_label.isEmpty() && d->_label != d->_id)
-    node.setAttribute("label"_u8, d->_label);
+    node.set_attribute("label"_u8, d->_label);
   if (!d->_info.isEmpty())
-    node.setAttribute("info"_u8, d->_info);
-  node.setAttribute("pattern"_u8, d->_pattern);
+    node.set_attribute("info"_u8, d->_info);
+  node.set_attribute("pattern"_u8, d->_pattern);
   for (const Dimension &dimension: d->_dimensions)
-    node.appendChild(dimension.toPfNode());
+    node.append_child(dimension.toPfNode());
   // LATER initvalues
   ConfigUtils::writeParamSet(&node, d->_params, u"param"_s);
   if (d->_warningDelay != DEFAULT_WARNING_DELAY)
-    node.setAttribute("warningdelay"_u8, d->_warningDelay/1e3);
+    node.set_attribute("warningdelay"_u8, d->_warningDelay/1e3);
   return node;
 }
 

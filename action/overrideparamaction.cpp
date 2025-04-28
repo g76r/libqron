@@ -1,4 +1,4 @@
-/* Copyright 2022-2023 Gregoire Barbier and others.
+/* Copyright 2022-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,9 +22,8 @@ public:
     : _key(key), _rawvalue(rawvalue) { }
   OverrideParamActionData()
     : OverrideParamActionData(QString(), QString()) { }
-  OverrideParamActionData(QStringList twoStringsList)
-    : OverrideParamActionData(twoStringsList.value(0),
-                            twoStringsList.value(1)) { }
+  OverrideParamActionData(const std::pair<Utf8String,Utf8String> &pair)
+    : OverrideParamActionData(pair.first, pair.second) { }
   Utf8String toString() const override {
     return "overrideparam{ "+_key+" += "+_rawvalue+" }";
   }
@@ -44,8 +43,8 @@ public:
   }
 };
 
-OverrideParamAction::OverrideParamAction(Scheduler*, PfNode node)
-  : Action(new OverrideParamActionData(node.contentAsTwoStringsList())) {
+OverrideParamAction::OverrideParamAction(Scheduler*, const PfNode &node)
+  : Action(new OverrideParamActionData(node.content_as_text_pair())) {
 }
 
 OverrideParamAction::OverrideParamAction(const OverrideParamAction &rhs)

@@ -1,4 +1,4 @@
-/* Copyright 2022-2024 Gregoire Barbier and others.
+/* Copyright 2022-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@ class Scheduler;
 class LIBQRONSHARED_EXPORT ExecAction: public Action {
 public:
   ExecAction();
-  explicit ExecAction(Scheduler *scheduler = 0, PfNode node = PfNode());
+  explicit ExecAction(Scheduler *scheduler = 0, const PfNode &node = {});
   ExecAction(const ExecAction &);
   ~ExecAction();
 };

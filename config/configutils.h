@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -57,28 +57,17 @@ public:
   static void writeEventSubscriptions(
       PfNode *parentnode, QList<EventSubscription> list,
       QStringList exclusionList = QStringList());
-  /** Recursively load comments children of node into commentsList.
-   * @param excludedDescendants descendant nodes names ignored during recursion
-   * @param maxDepth -1 means infinite recursion */
-  static void loadComments(const PfNode &node, Utf8StringList *commentsList,
-                           const Utf8StringSet &excludedDescendants = {},
-                           int maxDepth = -1);
-  /** Convenience method. */
-  static void loadComments(const PfNode &node, Utf8StringList *commentsList,
-                           int maxDepth) {
-    loadComments(node, commentsList, {}, maxDepth); }
-  static void writeComments(PfNode *node, const Utf8StringList &commentsList);
   /** @return true if valid or absent, false if present and invalid */
   template<typename T>
   static bool loadAttribute(
-      PfNode node, QString attributeName, T *field,
+      const PfNode &node, const Utf8String &attributeName, T *field,
       std::function<T(QString value)> convert
       = [](QString value) -> T { return value; },
       std::function<bool(T value)> isValid
       = [](T) { return true; }) {
-    if (!node.hasChild(attributeName))
+    if (!node.has_child(attributeName))
       return true;
-    auto v = node.utf16attribute(attributeName);
+    auto v = node.attribute(attributeName);
     T t = convert(v);
     if (!isValid(t))
       return false;
@@ -87,16 +76,17 @@ public:
   }
   template<typename T>
   static bool loadAttribute(
-      PfNode node, QString attributeName, T *field,
+      const PfNode &node, const Utf8String &attributeName, T *field,
       std::function<bool(T value)> isValid) {
     return loadAttribute(
           node, attributeName, field,
           [](QString value) -> T { return value; }, isValid );
   }
-  static bool loadBoolean(PfNode node, QString attributeName, bool *field) {
-    if (!node.hasChild(attributeName))
+  static bool loadBoolean(const PfNode &node, const Utf8String &attributeName,
+                          bool *field) {
+    if (!node.has_child(attributeName))
       return true;
-    auto v = node.utf16attribute(attributeName).trimmed().toLower();
+    auto v = node.attribute(attributeName).trimmed().toLower();
     bool ok;
     auto i = v.toLongLong(&ok);
     if (!ok) {

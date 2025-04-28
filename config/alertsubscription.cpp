@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -32,7 +32,6 @@ public:
   QRegularExpression _patternRegexp;
   Utf8String _address, _emitMessage, _cancelMessage, _reminderMessage;
   bool _notifyEmit, _notifyCancel, _notifyReminder;
-  Utf8StringList _commentsList;
   AlertSubscriptionData()
     : _id(Utf8String::number(_sequence.fetchAndAddOrdered(1))),
       _notifyEmit(false), _notifyCancel(false), _notifyReminder(false) {
@@ -49,27 +48,25 @@ AlertSubscription::AlertSubscription(const AlertSubscription &other)
 }
 
 AlertSubscription::AlertSubscription(
-    PfNode subscriptionnode, PfNode channelnode, ParamSet parentParams) {
+    const PfNode &subscriptionnode, const PfNode &channelnode,
+    const ParamSet &parentParams) {
   AlertSubscriptionData *d = new AlertSubscriptionData;
-  d->_channelName = channelnode.utf8Name();
-  d->_pattern = subscriptionnode.utf16attribute(QStringLiteral("pattern"),
-                                           QStringLiteral("**"));
+  d->_channelName = channelnode.name();
+  d->_pattern = subscriptionnode.attribute("pattern"_u8, "**"_u8);
   d->_patternRegexp = ConfigUtils::readDotHierarchicalFilter(d->_pattern);
   if (d->_pattern.isEmpty() || !d->_patternRegexp.isValid())
     Log::warning() << "unsupported alert subscription match pattern '"
-                   << d->_pattern << "': " << subscriptionnode.toString();
-  d->_address = channelnode.utf16attribute("address"); // LATER check uniqueness
-  d->_emitMessage = channelnode.utf16attribute("emitmessage"); // LATER check uniqueness
-  d->_cancelMessage = channelnode.utf16attribute("cancelmessage"); // LATER check uniqueness
-  d->_reminderMessage = channelnode.utf16attribute("remindermessage"); // LATER check uniqueness
-  d->_notifyEmit = !channelnode.hasChild("noemitnotify");
-  d->_notifyCancel = !channelnode.hasChild("nocancelnotify");
-  d->_notifyReminder = d->_notifyEmit && !channelnode.hasChild("noremindernotify");
+                   << d->_pattern << "': " << subscriptionnode.as_text();
+  d->_address = channelnode.attribute("address"); // LATER check uniqueness
+  d->_emitMessage = channelnode.attribute("emitmessage"); // LATER check uniqueness
+  d->_cancelMessage = channelnode.attribute("cancelmessage"); // LATER check uniqueness
+  d->_reminderMessage = channelnode.attribute("remindermessage"); // LATER check uniqueness
+  d->_notifyEmit = !channelnode.has_child("noemitnotify");
+  d->_notifyCancel = !channelnode.has_child("nocancelnotify");
+  d->_notifyReminder = d->_notifyEmit && !channelnode.has_child("noremindernotify");
   d->_params = ParamSet(subscriptionnode, "param");
   d->_params += ParamSet(channelnode, "param");
   d->_params.setParent(parentParams);
-  ConfigUtils::loadComments(subscriptionnode, &d->_commentsList, 0);
-  ConfigUtils::loadComments(channelnode, &d->_commentsList);
   setData(d);
 }
 
@@ -78,27 +75,24 @@ PfNode AlertSubscription::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode subscriptionNode("subscription");
-  subscriptionNode.appendChild(PfNode("pattern"_u8, d->_pattern));
+  subscriptionNode.append_child({"pattern"_u8, d->_pattern});
   PfNode node(d->_channelName);
-  ConfigUtils::writeComments(&node, d->_commentsList);
   if (!d->_address.isEmpty())
-  node.appendChild(PfNode("address"_u8, d->_address));
+  node.append_child({"address"_u8, d->_address});
   if (!d->_emitMessage.isEmpty())
-    node.appendChild(PfNode("emitmessage"_u8, d->_emitMessage));
+    node.append_child({"emitmessage"_u8, d->_emitMessage});
   if (!d->_cancelMessage.isEmpty())
-    node.appendChild(PfNode("cancelmessage"_u8,
-                            d->_cancelMessage));
+    node.append_child({"cancelmessage"_u8, d->_cancelMessage});
   if (!d->_reminderMessage.isEmpty())
-    node.appendChild(PfNode("remindermessage"_u8,
-                            d->_reminderMessage));
+    node.append_child({"remindermessage"_u8, d->_reminderMessage});
   if (!d->_notifyEmit)
-    node.appendChild(PfNode("noemitnotify"_u8));
+    node.append_child({"noemitnotify"_u8});
   if (!d->_notifyCancel)
-    node.appendChild(PfNode("nocancelnotify"_u8));
+    node.append_child({"nocancelnotify"_u8});
   if (!d->_notifyReminder)
-    node.appendChild(PfNode("noremindernotify"_u8));
+    node.append_child({"noremindernotify"_u8});
   ConfigUtils::writeParamSet(&node, d->_params, "param");
-  subscriptionNode.appendChild(node);
+  subscriptionNode.append_child(node);
   return subscriptionNode;
 }
 

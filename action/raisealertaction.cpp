@@ -1,4 +1,4 @@
-/* Copyright 2013-2022 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -41,8 +41,8 @@ public:
   }
 };
 
-RaiseAlertAction::RaiseAlertAction(Scheduler *scheduler, PfNode node)
-  : Action(new RaiseAlertActionData(scheduler, node.contentAsUtf16())) {
+RaiseAlertAction::RaiseAlertAction(Scheduler *scheduler, const PfNode &node)
+  : Action(new RaiseAlertActionData(scheduler, node.content_as_text())) {
 }
 
 RaiseAlertAction::RaiseAlertAction(const RaiseAlertAction &rhs) : Action(rhs) {

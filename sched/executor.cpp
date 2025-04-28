@@ -19,7 +19,7 @@
 #include "scheduler.h"
 #include "condition/disjunctioncondition.h"
 #include <QTimer>
-#include "pf/pfdomhandler.h"
+#include "pf/pfparser.h"
 #include "log/qterrorcodes.h"
 #include "thread/blockingtimer.h"
 #include "util/regexpparamsprovider.h"
@@ -513,19 +513,16 @@ void Executor::processProcessOutput(bool isStderr) {
       if (parsecommands && line.startsWith(u"!qron:"_s)) {
         auto ppm = ParamsProviderMerger(&_instance);
         ppm.overrideParamValue("line"_u8, line);
-        PfDomHandler pdh;
-        PfParser pp(&pdh);
-        pp.parse(line.sliced(6).toUtf8());
-        if (pdh.errorOccured()) {
-          QString errorString = pdh.errorString()+" at line "
-                                +QString::number(pdh.errorLine())
-                                +" column "+QString::number(pdh.errorColumn());
+        PfParser pfparser;
+        auto err = pfparser.parse(line.sliced(6).toUtf8());
+        if (!!err) {
+          QString errorString = err;
           Log::error(_instance.taskId(), _instance.idAsLong())
             << "cannot parse !qron: command in task output: " << errorString;
           continue;
         }
         PfNode root("!qron:");
-        root.appendChildren(pdh.roots());
+        root.append_children(pfparser.root().children());
         EventSubscription sub("!qron:", root, _scheduler, {});
         (void)sub.triggerActions(&ppm, _instance);
         continue;

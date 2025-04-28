@@ -1,4 +1,4 @@
-/* Copyright 2013-2024 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,10 +24,9 @@ public:
   QRegularExpression _filter;
   QList<Action> _actions;
   ParamSet _globalParams;
-  Utf8StringList _commentsList;
-  EventSubscriptionData(QString subscriberName = {},
-                        QString eventName = {},
-                        ParamSet globalParams = ParamSet())
+  EventSubscriptionData(const QString &subscriberName = {},
+                        const QString &eventName = {},
+                        const ParamSet &globalParams = {})
     : _subscriberName(subscriberName), _eventName(eventName),
       _globalParams(globalParams) { }
 };
@@ -36,31 +35,32 @@ EventSubscription::EventSubscription() {
 }
 
 EventSubscription::EventSubscription(
-    QString subscriberName, PfNode node, Scheduler *scheduler,
-    QStringList ignoredChildren)
+    const QString &subscriberName, const PfNode &node, Scheduler *scheduler,
+    const QStringList &ignoredChildren)
   : d(new EventSubscriptionData(subscriberName)) {
   d->_eventName = node.name();
-  d->_filter = QRegularExpression(node.contentAsUtf16());
+  d->_filter = QRegularExpression(node.content_as_text());
   if (scheduler)
     d->_globalParams = scheduler->globalParams();
   for (const PfNode &child: node.children()) {
-    if (ignoredChildren.contains(child.name()) || child.isComment())
+    if (child^ignoredChildren)
       continue;
     Action a = Action::createAction(child, scheduler);
     if (!a.isNull())
       d->_actions.append(a);
   }
-  ConfigUtils::loadComments(node, &d->_commentsList, 0);
 }
 
 EventSubscription::EventSubscription(
-    QString subscriberName, QString eventName, Action action)
+    const QString &subscriberName, const QString &eventName,
+    const Action &action)
   : d(new EventSubscriptionData(subscriberName, eventName)) {
   d->_actions.append(action);
 }
 
 EventSubscription::EventSubscription(
-    QString subscriberName, QString eventName, QList<Action> actions)
+    const QString &subscriberName, const QString &eventName,
+    const QList<Action> &actions)
   : d(new EventSubscriptionData(subscriberName, eventName)) {
   d->_actions = actions;
 }
@@ -90,7 +90,7 @@ bool EventSubscription::triggerActions(
       stopped = true;
       break;
     }
-    if (filter(a))
+    if (filter && filter(a))
       a.trigger(*this, context, instance);
   }
   if (!!instance)
@@ -98,7 +98,8 @@ bool EventSubscription::triggerActions(
   return stopped;
 }
 
-Utf8StringList EventSubscription::toStringList(QList<EventSubscription> list) {
+Utf8StringList EventSubscription::toStringList(
+    const QList<EventSubscription> &list) {
   Utf8StringList l;
   for (auto sub: list)
     l.append(sub.toStringList());
@@ -121,7 +122,7 @@ QString EventSubscription::subscriberName() const {
   return d ? d->_subscriberName : QString();
 }
 
-void EventSubscription::setSubscriberName(QString name) {
+void EventSubscription::setSubscriberName(const QString &name) {
   if (d)
     d->_subscriberName = name;
 }
@@ -134,8 +135,7 @@ PfNode EventSubscription::toPfNode() const {
   if (!d)
     return PfNode();
   PfNode node(d->_eventName, d->_filter.pattern());
-  ConfigUtils::writeComments(&node, d->_commentsList);
   for (const Action &action: d->_actions)
-    node.appendChild(action.toPfNode());
+    node.append_child(action.toPfNode());
   return node;
 }

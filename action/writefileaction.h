@@ -1,4 +1,4 @@
-/* Copyright 2017-2024 Hallowyn and others.
+/* Copyright 2017-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,7 +21,7 @@
  * @see ParametrizedFileWriter */
 class WriteFileAction : public Action {
 public:
-  explicit WriteFileAction(Scheduler *scheduler = 0, PfNode node = PfNode());
+  explicit WriteFileAction(Scheduler *scheduler = 0, const PfNode &node = {});
   WriteFileAction(const WriteFileAction&);
 };
 

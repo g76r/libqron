@@ -1,4 +1,4 @@
-/* Copyright 2021-2024 Gregoire Barbier and others.
+/* Copyright 2021-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -22,10 +22,10 @@ TaskTemplate::TaskTemplate(const TaskTemplate&other) : SharedUiItem(other) {
 }
 
 TaskTemplate::TaskTemplate(
-    PfNode node, Scheduler *scheduler, SharedUiItem parent,
-    QMap<Utf8String, Calendar> namedCalendars) {
+    const PfNode &node, Scheduler *scheduler, const SharedUiItem &parent,
+    const QMap<Utf8String, Calendar> &namedCalendars) {
   TaskTemplateData *d = new TaskTemplateData;
-  d->_id = ConfigUtils::sanitizeId(node.contentAsUtf16(),
+  d->_id = ConfigUtils::sanitizeId(node.content_as_text(),
                                    ConfigUtils::LocalId).toUtf8();
   if (!d->TaskOrTemplateData::loadConfig(node, scheduler, parent,
                                          namedCalendars)) {
@@ -36,8 +36,8 @@ TaskTemplate::TaskTemplate(
 }
 
 bool TaskOrTemplateData::loadConfig(
-    PfNode node, Scheduler *scheduler, SharedUiItem parent,
-    QMap<Utf8String,Calendar> namedCalendars) {
+    const PfNode &node, Scheduler *scheduler, const SharedUiItem &parent,
+    const QMap<Utf8String,Calendar> &namedCalendars) {
   if (parent.qualifier() != "tasksroot"
       && parent.qualifier() != "taskgroup") [[unlikely]] {
     Log::error() << "internal error in TaskOrGroupData::loadConfig";
@@ -52,7 +52,7 @@ bool TaskOrTemplateData::loadConfig(
         [](QString value) { return Task::meanFromString(value.trimmed()); },
         [](Task::Mean mean) { return mean != Task::UnknownMean; })) {
     Log::error() << qualifier()+" with invalid execution mean: "
-                 << node.toString();
+                 << node.as_text();
     return false;
   }
   ConfigUtils::loadAttribute(node, "command", &_command);
@@ -71,14 +71,14 @@ bool TaskOrTemplateData::loadConfig(
         node, "maxinstances", &_maxInstances,
         [](QString value) { return value.toInt(0,0); },
         [](int value) { return value > 0; })) {
-    Log::error() << "invalid "+qualifier()+" maxinstances: " << node.toPf();
+    Log::error() << "invalid "+qualifier()+" maxinstances: " << node.as_pf();
     return false;
   }
   if (!ConfigUtils::loadAttribute<int>(
         node, "maxtries", &_maxTries,
         [](QString value) { return value.toInt(0,0); },
         [](int value) { return value > 0; })) {
-    Log::error() << "invalid "+qualifier()+" maxtries: " << node.toPf();
+    Log::error() << "invalid "+qualifier()+" maxtries: " << node.as_pf();
     return false;
   }
   ConfigUtils::loadAttribute<long long>(
@@ -105,30 +105,22 @@ bool TaskOrTemplateData::loadConfig(
       bool ok; double f = value.toDouble(&ok);
       return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
     });
-  for (const PfNode &child: node/"trigger") {
-    for (PfNode grandchild: child.children()) {
-      QList<PfNode> inheritedComments;
-      for (const PfNode &commentNode: child.children())
-        if (commentNode.isComment())
-          inheritedComments.append(commentNode);
-      std::reverse(inheritedComments.begin(), inheritedComments.end());
-      for (const PfNode &commentNode: inheritedComments)
-        grandchild.prependChild(commentNode);
-      QString content = grandchild.contentAsUtf16();
-      QString triggerType = grandchild.name();
-      if (triggerType == "notice") {
-        NoticeTrigger trigger(grandchild, namedCalendars);
+  for (const PfNode &intermediate_node: node/"trigger") {
+    for (const PfNode &trigger_node: intermediate_node.children()) {
+      if (trigger_node^"notice") {
+        NoticeTrigger trigger(trigger_node, namedCalendars);
         if (trigger.isValid()) {
           _noticeTriggers.append(trigger);
-          Log::debug() << "configured notice trigger '" << content
+          Log::debug() << "configured notice trigger '"
+                       << trigger_node.content_as_text()
                        << "' on "+qualifier()+" '" << _id << "'";
         } else {
           Log::error() << qualifier()+" with invalid notice trigger: "
-                       << node.toString();
+                       << trigger_node.as_text();
           return false;
         }
-      } else if (triggerType == "cron") {
-        CronTrigger trigger(grandchild, namedCalendars);
+      } else if (trigger_node^"cron") {
+        CronTrigger trigger(trigger_node, namedCalendars);
         if (trigger.isValid()) {
           _cronTriggers.append(trigger);
           Log::debug() << "configured cron trigger "
@@ -136,13 +128,13 @@ bool TaskOrTemplateData::loadConfig(
                        << " on "+qualifier()+" " << _id;
         } else {
           Log::error() << qualifier()+" with invalid cron trigger: "
-                       << grandchild.toString();
+                       << trigger_node.as_text();
           return false;
         }
         // LATER read misfire config
       } else {
-        Log::warning() << "ignoring unknown trigger type '" << triggerType
-                       << "' on "+qualifier()+" " << _id;
+        Log::warning() << "ignoring unknown trigger type '"
+                       << trigger_node.name() << "' on "+qualifier()+" " << _id;
       }
     }
   }
@@ -151,7 +143,7 @@ bool TaskOrTemplateData::loadConfig(
         node, "maxperhost", &_maxPerHost,
         [](QString value) { return value.toInt(0,0); },
         [](int value) { return value > 0; })) {
-    Log::error() << "invalid "+qualifier()+" maxperhost: " << node.toPf();
+    Log::error() << "invalid "+qualifier()+" maxperhost: " << node.as_pf();
     return false;
   }
   if (_maxPerHost > 0)
@@ -168,7 +160,7 @@ bool TaskOrTemplateData::loadConfig(
         [](QString value) { return Task::herdingPolicyFromString(value); },
         [](Task::HerdingPolicy p) { return p != Task::HerdingPolicyUnknown;})) {
     Log::error() << "invalid herdingpolicy on "+qualifier()+": "
-                 << node.toPf();
+                 << node.as_pf();
     return false;
   }
   auto [child,unwanted] = node.first_two_children("requestform");
@@ -180,8 +172,7 @@ bool TaskOrTemplateData::loadConfig(
     }
   }
   if (!!unwanted) {
-    Log::error() << qualifier()+" with several requestform: "
-                 << node.toString();
+    Log::error() << qualifier()+" with several requestform: " << node.as_text();
     return false;
   }
   return true;
@@ -221,7 +212,7 @@ PfNode TaskTemplateData::toPfNode() const {
 
   // description and execution attributes
   if (!_label.isEmpty() && _label != _id)
-    node.setAttribute("label", _label);
+    node.set_attribute("label", _label);
 
   return node;
 }
@@ -381,8 +372,8 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
 
   // description and execution attributes
   if (!_info.isEmpty())
-    node.setAttribute("info", _info);
-  node.setAttribute("mean", Task::meanAsString(_mean));
+    node.set_attribute("info", _info);
+  node.set_attribute("mean", Task::meanAsString(_mean));
   // do not set target attribute if it is empty,
   // or in case it is implicit ("localhost" for targetless means)
   if (!_target.isEmpty()) {
@@ -397,7 +388,7 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
     case Task::Ssh:
     case Task::Http:
       if (_target != "localhost")
-        node.setAttribute("target", _target);
+        node.set_attribute("target", _target);
     }
   }
   // do not set command attribute if it is empty
@@ -408,58 +399,58 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
     // moreover this is not consistent between means (luckily there are no backslashes nor spaces in http uris)
     QString escaped = _command;
     escaped.replace('\\', "\\\\");
-    node.setAttribute("command", escaped);
+    node.set_attribute("command", escaped);
   }
   if (!_statuscommand.isEmpty())
-    node.setAttribute("statuscommand", _statuscommand);
+    node.set_attribute("statuscommand", _statuscommand);
   if (!_abortcommand.isEmpty())
-    node.setAttribute("statuscommand", _abortcommand);
+    node.set_attribute("statuscommand", _abortcommand);
 
   // triggering and constraints attributes
   PfNode triggers("trigger");
   for (const Trigger &ct: _cronTriggers)
-    triggers.appendChild(ct.toPfNode());
+    triggers.append_child(ct.toPfNode());
   for (const Trigger &nt: _noticeTriggers)
-    triggers.appendChild(nt.toPfNode());
-  node.appendChild(triggers);
+    triggers.append_child(nt.toPfNode());
+  node.append_child(triggers);
   if (_maxQueuedInstances != "%!maxinstances")
-    node.setAttribute("maxqueuedinstances", _maxQueuedInstances);
+    node.set_attribute("maxqueuedinstances", _maxQueuedInstances);
   if (!_deduplicateCriterion.isEmpty())
-    node.setAttribute("deduplicatecriterion", _deduplicateCriterion);
+    node.set_attribute("deduplicatecriterion", _deduplicateCriterion);
   if (!_deduplicateStrategy.isEmpty())
-    node.setAttribute("deduplicatestrategy", _deduplicateStrategy);
+    node.set_attribute("deduplicatestrategy", _deduplicateStrategy);
   if (_herdingPolicy != Task::AllSuccess)
-    node.appendChild(
+    node.append_child(
           PfNode("herdingpolicy",
                  Task::herdingPolicyAsString(_herdingPolicy)));
   if (_maxInstances != 1)
-    node.appendChild(PfNode("maxinstances",
+    node.append_child(PfNode("maxinstances",
                             QString::number(_maxInstances)));
   if (_maxPerHost > 0)
-    node.appendChild(PfNode("maxperhost",
+    node.append_child(PfNode("maxperhost",
                             QString::number(_maxPerHost)));
   if (_maxTries != 1)
-    node.appendChild(PfNode("maxtries",
+    node.append_child(PfNode("maxtries",
                             QString::number(_maxTries)));
   if (_millisBetweenTries != 0)
-    node.appendChild(PfNode("pausebetweentries",
+    node.append_child(PfNode("pausebetweentries",
                             QString::number(_millisBetweenTries*.001)));
   for (auto [k,v]: _resources.asKeyValueRange())
     if (!k.startsWith("<maxperhost>"))
-      node.appendChild(PfNode("resource", k+" "+QString::number(v)));
+      node.append_child(PfNode("resource", k+" "+QString::number(v)));
 
   // params vars and event subscriptions
   TaskOrGroupData::fillPfNode(node);
 
   // monitoring and alerting attributes
   if (_maxExpectedDuration < LLONG_MAX)
-    node.appendChild(PfNode("maxexpectedduration",
+    node.append_child(PfNode("maxexpectedduration",
                             QString::number((double)_maxExpectedDuration/1e3)));
   if (_minExpectedDuration > 0)
-    node.appendChild(PfNode("minexpectedduration",
+    node.append_child(PfNode("minexpectedduration",
                             QString::number((double)_minExpectedDuration/1e3)));
   if (_maxDurationBeforeAbort < LLONG_MAX)
-    node.appendChild(PfNode("maxdurationbeforeabort",
+    node.append_child(PfNode("maxdurationbeforeabort",
                             QString::number((double)_maxDurationBeforeAbort
                                             /1e3)));
 
@@ -467,7 +458,7 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   if (!_requestFormFields.isEmpty()) {
     PfNode requestForm("requestform");
     for (const RequestFormField &field: _requestFormFields)
-      requestForm.appendChild(field.toPfNode());
-    node.appendChild(requestForm);
+      requestForm.append_child(field.toPfNode());
+    node.append_child(requestForm);
   }
 }

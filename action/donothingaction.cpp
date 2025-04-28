@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -39,7 +39,7 @@ public:
   }
 };
 
-DoNothingAction::DoNothingAction(QString actionType)
+DoNothingAction::DoNothingAction(const QString &actionType)
     : Action(new DoNothingActionData(actionType)) {
 }
 

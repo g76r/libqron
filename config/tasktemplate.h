@@ -1,4 +1,4 @@
-/* Copyright 2021-2023 Gregoire Barbier and others.
+/* Copyright 2021-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -24,8 +24,9 @@ class LIBQRONSHARED_EXPORT TaskTemplate : public SharedUiItem {
 public:
   TaskTemplate();
   TaskTemplate(const TaskTemplate &other);
-  TaskTemplate(PfNode node, Scheduler *scheduler, SharedUiItem parent,
-               QMap<Utf8String, Calendar> namedCalendars);
+  TaskTemplate(
+      const PfNode &node, Scheduler *scheduler, const SharedUiItem &parent,
+      const QMap<Utf8String, Calendar> &namedCalendars);
   TaskTemplate &operator=(const TaskTemplate &other) {
     SharedUiItem::operator=(other); return *this; }
   bool setUiData(int section, const QVariant &value, QString *errorString,

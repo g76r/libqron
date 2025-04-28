@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -113,11 +113,8 @@ ParamSet ActionData::params() const {
 
 PfNode Action::toPfNode() const {
   PfNode node;
-  if (d) {
+  if (d)
     node = d->toPfNode();
-    // MAYDO write comments before content
-    ConfigUtils::writeComments(&node, d->_commentsList);
-  }
   return node;
 }
 
@@ -162,8 +159,6 @@ Action Action::createAction(const PfNode &node, Scheduler *scheduler) {
     action = builder(node, scheduler);
   if (action.isNull()) {
     Log::error() << "unknown action type: " << node.name();
-  } else {
-    ConfigUtils::loadComments(node, &action.d->_commentsList);
   }
   return action;
 }

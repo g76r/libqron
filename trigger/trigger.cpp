@@ -1,4 +1,4 @@
-/* Copyright 2013-2023 Hallowyn and others.
+/* Copyright 2013-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,8 +13,6 @@
  */
 #include "trigger_p.h"
 #include "config/configutils.h"
-
-static QSet<QString> excludedDescendantsForComments { "calendar" };
 
 Trigger::Trigger() {
 }
@@ -49,8 +47,8 @@ Utf8String Trigger::humanReadableExpression() const {
 Utf8String Trigger::humanReadableExpressionWithCalendar() const {
   if (calendar().isNull())
     return humanReadableExpression();
-  Utf8String cal = calendar().toPfNode(true).toPf(
-                     PfOptions().setShouldWriteContentBeforeSubnodes());
+  Utf8String cal = calendar().toPfNode(true)
+                   .as_pf(PfOptions().with_payload_first());
   return "["+cal+"]"+humanReadableExpression();
 }
 
@@ -91,33 +89,25 @@ ParamSet Trigger::overridingParams() const {
 }
 
 bool Trigger::loadConfig(
-    PfNode node, QMap<Utf8String,Calendar> namedCalendars) {
-  ConfigUtils::loadComments(node, &d->_commentsList,
-                            excludedDescendantsForComments);
+    const PfNode &node, const QMap<Utf8String,Calendar> &namedCalendars) {
   auto [child,unwanted] = node.first_two_children("calendar");
   if (!!unwanted) {
-    Log::error() << "ignoring multiple calendar definition: "
-                 << node.toPf();
+    Log::error() << "multiple calendar definition, ignoring all of them: "
+                 << node.as_pf();
   } else if (!!child) {
-    auto content = child.contentAsUtf16();
+    auto content = child.content_as_text();
     if (!content.isEmpty()) {
-      Calendar calendar = namedCalendars.value(content.toUtf8());
+      Calendar calendar = namedCalendars.value(content);
       if (calendar.isNull())
         Log::error() << "ignoring undefined calendar '" << content
-                     << "': " << child.toPf();
-      else {
+                     << "': " << child.as_pf();
+      else
         d->_calendar = calendar;
-        // load comments only for named calendars, since their global definition
-        // will be taken instead of child node content
-        // in the other hand, non-named calendars are loaded as actual calendars
-        // and therefore will load their comments by their own
-        ConfigUtils::loadComments(child, &d->_commentsList);
-      }
     } else {
       Calendar calendar = Calendar(child);
       if (calendar.isNull())
         Log::error() << "ignoring empty calendar: "
-                       << child.toPf();
+                       << child.as_pf();
       else
         d->_calendar = calendar;
     }
@@ -132,10 +122,9 @@ Utf8String TriggerData::triggerType() const {
 
 PfNode TriggerData::toPfNode() const {
   PfNode node(triggerType(), expression());
-  ConfigUtils::writeComments(&node, _commentsList);
   ConfigUtils::writeParamSet(&node, _overridingParams, "param");
   if (!_calendar.isNull())
-    node.appendChild(_calendar.toPfNode(true));
+    node.append_child(_calendar.toPfNode(true));
   return node;
 }
 
