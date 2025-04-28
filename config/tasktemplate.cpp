@@ -49,8 +49,8 @@ bool TaskOrTemplateData::loadConfig(
     return false;
   if (!ConfigUtils::loadAttribute<Task::Mean>(
         node, "mean", &_mean,
-        [](QString value) { return Task::meanFromString(value.trimmed()); },
-        [](Task::Mean mean) { return mean != Task::UnknownMean; })) {
+        [](QString value) STATIC_LAMBDA { return Task::meanFromString(value.trimmed()); },
+        [](Task::Mean mean) STATIC_LAMBDA { return mean != Task::UnknownMean; })) {
     Log::error() << qualifier()+" with invalid execution mean: "
                  << node.as_text();
     return false;
@@ -59,7 +59,7 @@ bool TaskOrTemplateData::loadConfig(
   ConfigUtils::loadAttribute(node, "abortcommand", &_abortcommand);
   ConfigUtils::loadAttribute(node, "statuscommand", &_statuscommand);
   ConfigUtils::loadAttribute<QString>(
-        node, "target", &_target, [](QString value) {
+        node, "target", &_target, [](QString value) STATIC_LAMBDA {
     return ConfigUtils::sanitizeId(value, ConfigUtils::FullyQualifiedId);
   });
   ConfigUtils::loadAttribute<QString>(
@@ -69,39 +69,39 @@ bool TaskOrTemplateData::loadConfig(
   });
   if (!ConfigUtils::loadAttribute<int>(
         node, "maxinstances", &_maxInstances,
-        [](QString value) { return value.toInt(0,0); },
-        [](int value) { return value > 0; })) {
+        [](QString value) STATIC_LAMBDA { return value.toInt(0,0); },
+        [](int value) STATIC_LAMBDA { return value > 0; })) {
     Log::error() << "invalid "+qualifier()+" maxinstances: " << node.as_pf();
     return false;
   }
   if (!ConfigUtils::loadAttribute<int>(
         node, "maxtries", &_maxTries,
-        [](QString value) { return value.toInt(0,0); },
-        [](int value) { return value > 0; })) {
+        [](QString value) STATIC_LAMBDA { return value.toInt(0,0); },
+        [](int value) STATIC_LAMBDA { return value > 0; })) {
     Log::error() << "invalid "+qualifier()+" maxtries: " << node.as_pf();
     return false;
   }
   ConfigUtils::loadAttribute<long long>(
     node, "pausebetweentries", &_millisBetweenTries,
-    [](QString value) {
+    [](QString value) STATIC_LAMBDA {
       bool ok; double f = value.toDouble(&ok);
       return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
     });
   ConfigUtils::loadAttribute<long long>(
         node, "maxexpectedduration", &_maxExpectedDuration,
-        [](QString value) {
+        [](QString value) STATIC_LAMBDA {
       bool ok; double f = value.toDouble(&ok);
       return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
     });
   ConfigUtils::loadAttribute<long long>(
         node, "minexpectedduration", &_minExpectedDuration,
-        [](QString value) {
+        [](QString value) STATIC_LAMBDA {
       bool ok; double f = value.toDouble(&ok);
       return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
     });
   ConfigUtils::loadAttribute<long long>(
         node, "maxdurationbeforeabort", &_maxDurationBeforeAbort,
-        [](QString value) {
+        [](QString value) STATIC_LAMBDA {
       bool ok; double f = value.toDouble(&ok);
       return ok ? (long long)(std::max(f,0.0)*1000) : 0.0;
     });
@@ -141,8 +141,8 @@ bool TaskOrTemplateData::loadConfig(
   ConfigUtils::loadResourcesSet(node, &_resources, "resource");
   if (!ConfigUtils::loadAttribute<int>(
         node, "maxperhost", &_maxPerHost,
-        [](QString value) { return value.toInt(0,0); },
-        [](int value) { return value > 0; })) {
+        [](QString value) STATIC_LAMBDA { return value.toInt(0,0); },
+        [](int value) STATIC_LAMBDA { return value > 0; })) {
     Log::error() << "invalid "+qualifier()+" maxperhost: " << node.as_pf();
     return false;
   }
@@ -157,8 +157,8 @@ bool TaskOrTemplateData::loadConfig(
   _deduplicateStrategy.remove("!deduplicatestrategy"); // prevent recursivity
   if (!ConfigUtils::loadAttribute<Task::HerdingPolicy>(
         node, "herdingpolicy", &_herdingPolicy,
-        [](QString value) { return Task::herdingPolicyFromString(value); },
-        [](Task::HerdingPolicy p) { return p != Task::HerdingPolicyUnknown;})) {
+        [](QString value) STATIC_LAMBDA { return Task::herdingPolicyFromString(value); },
+        [](Task::HerdingPolicy p) STATIC_LAMBDA { return p != Task::HerdingPolicyUnknown;})) {
     Log::error() << "invalid herdingpolicy on "+qualifier()+": "
                  << node.as_pf();
     return false;

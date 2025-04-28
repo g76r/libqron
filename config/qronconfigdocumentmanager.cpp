@@ -26,7 +26,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
         "taskgroup", AfterUpdate,
         [](SharedUiItemDocumentTransaction *transaction,
         SharedUiItem *newItem, SharedUiItem oldItem,
-        QByteArray qualifier, QString *errorString) {
+        QByteArray qualifier, QString *errorString) STATIC_LAMBDA {
     Q_UNUSED(oldItem)
     Q_UNUSED(qualifier)
     TaskGroup *newGroup = static_cast<TaskGroup*>(newItem);
@@ -44,7 +44,7 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   registerItemType(
         "task", &Task::setUiData,
         [](SharedUiItemDocumentTransaction *transaction, QByteArray id,
-        QString *errorString) -> SharedUiItem {
+        QString *errorString) STATIC_LAMBDA -> SharedUiItem {
     Q_UNUSED(transaction)
     Q_UNUSED(id)
     *errorString = "Cannot create task outside GUI";
@@ -59,7 +59,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "host", BeforeUpdate|BeforeCreate,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray qualifier,
+        QString *errorString) STATIC_LAMBDA {
     Q_UNUSED(oldItem)
     Q_UNUSED(qualifier)
     if (!transaction->itemById("cluster", newItem->id()).isNull()) {
@@ -71,7 +72,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "host", AfterUpdate|AfterDelete,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray qualifier,
+        QString *errorString) STATIC_LAMBDA {
     Q_UNUSED(qualifier)
     // cannot be a fk because target can reference either a host or a cluster
     for (const SharedUiItem &oldTaskItem:
@@ -105,13 +107,14 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
     return true;
   });
   registerItemType(
-        "cluster", &Cluster::setUiData, [](QByteArray id) -> SharedUiItem {
+        "cluster", &Cluster::setUiData, [](QByteArray id) STATIC_LAMBDA -> SharedUiItem {
     return Cluster(PfNode("cluster", id));
   });
   addChangeItemTrigger(
         "cluster", BeforeUpdate|BeforeCreate,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray qualifier,
+        QString *errorString) STATIC_LAMBDA {
     Q_UNUSED(oldItem)
     Q_UNUSED(qualifier)
     if (!transaction->itemById("host", newItem->id()).isNull()) {
@@ -123,7 +126,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
   addChangeItemTrigger(
         "cluster", AfterUpdate|AfterDelete,
         [](SharedUiItemDocumentTransaction *transaction, SharedUiItem *newItem,
-        SharedUiItem oldItem, QByteArray qualifier, QString *errorString) {
+        SharedUiItem oldItem, QByteArray qualifier,
+        QString *errorString) STATIC_LAMBDA {
     Q_UNUSED(oldItem)
     Q_UNUSED(qualifier)
     // cannot be a fk because target can reference either a host or a cluster

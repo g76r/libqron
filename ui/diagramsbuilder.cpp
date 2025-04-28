@@ -547,7 +547,7 @@ static RelatedTasks findRelatedTasks(
           if (!!instance)
             instances.insert(child, instance);
         }
-  instances.removeIf([](const std::pair<quint64,TaskInstance> &p){
+  instances.removeIf([](const std::pair<quint64,TaskInstance> &p) STATIC_LAMBDA {
     return !p.second; // should never happen
   });
   return {herdid, instances, prerequisites};
@@ -658,7 +658,7 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
   }
   int i = 0;
   auto status_icon = [](TaskInstance::TaskInstanceStatus status)
-      -> std::tuple<Utf8String,Utf8String,Utf8String> {
+      STATIC_LAMBDA -> std::tuple<Utf8String,Utf8String,Utf8String> {
     switch (status) {
       case TaskInstance::Planned:
         return {"board22", SVG_PLANNED_COLOR, SVG_PLANNED_COLOR}; // or moon

@@ -122,33 +122,33 @@ PfNode ActionData::toPfNode() const {
   return PfNode(); // should never happen
 }
 
-static RadixTree<std::function<Action(PfNode,Scheduler*)>> _actionBuilders {
-{ "postnotice", [](PfNode node, Scheduler *scheduler) -> Action {
+static RadixTree<std::function<Action(const PfNode&,Scheduler*)>> _actionBuilders {
+{ "postnotice", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
   return PostNoticeAction(scheduler, node); } },
-{ "raisealert", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "raisealert", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return RaiseAlertAction(scheduler, node); } },
-{ "cancelalert", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "cancelalert", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return CancelAlertAction(scheduler, node); } },
-{ "emitalert", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "emitalert", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return EmitAlertAction(scheduler, node); } },
-{ "requesttask", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "requesttask", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    Log::warning() << "requesttask action is deprecated, use plantask instead";
    return PlanTaskAction(scheduler, node); } },
-{ "plantask", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "plantask", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return PlanTaskAction(scheduler, node); } },
-{ "requesturl", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "requesturl", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return RequestUrlAction(scheduler, node); } },
-{ "writefile", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "writefile", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return WriteFileAction(scheduler, node); } },
-{ "log", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "log", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return LogAction(scheduler, node); } },
-{ { "donothing", "stop" }, [](PfNode node, Scheduler *) -> Action {
+{ { "donothing", "stop" }, [](const PfNode &node, Scheduler *) STATIC_LAMBDA -> Action {
    return DoNothingAction(node.name()); } },
-{ "paramappend", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "paramappend", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return ParamAppendAction(scheduler, node); } },
-{ "overrideparam", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "overrideparam", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return OverrideParamAction(scheduler, node); } },
-{ "exec", [](PfNode node, Scheduler *scheduler) -> Action {
+{ "exec", [](const PfNode &node, Scheduler *scheduler) STATIC_LAMBDA -> Action {
    return ExecAction(scheduler, node); } },
 };
 

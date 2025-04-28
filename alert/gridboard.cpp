@@ -405,7 +405,7 @@ QString Gridboard::toHtml() const {
   // sort components in the order of their first child
   std::sort(componentRoots.begin(), componentRoots.end(),
       [](const QSharedPointer<TreeItem> &a, const QSharedPointer<TreeItem> &b)
-            -> bool {
+            STATIC_LAMBDA -> bool {
     bool result =
         !b->_children.isEmpty() // b cannot be greater if empty
         && (a->_children.isEmpty() // a is lower if empty

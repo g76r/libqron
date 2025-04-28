@@ -366,49 +366,49 @@ QString Task::requestFormFieldsAsHtmlDescription() const {
 
 const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
   { "!tasklocalid", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_localId;
     } },
   { "!taskid", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TasksRootData*>(data);
       if (!td)
         return {};
       return td->_id;
     } },
   { "!taskgroupid", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_group.id();
     } },
   { "!target", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_target;
     } },
   { "!minexpectedms", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_minExpectedDuration;
     } },
   { "!minexpecteds", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_minExpectedDuration/1e3;
     } },
   { "!maxexpectedms", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
@@ -416,7 +416,7 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       return (ms == LLONG_MAX) ? QVariant{} : QVariant(ms);
     } },
   { "!maxexpecteds", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
@@ -424,7 +424,7 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       return (ms == LLONG_MAX) ? QVariant{} : QVariant(ms/1e3);
     } },
   { "!maxbeforeabortms", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
@@ -432,7 +432,7 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       return (ms == LLONG_MAX) ? QVariant{} : QVariant(ms);
     } },
   { "!maxbeforeaborts", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
@@ -440,7 +440,7 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       return (ms == LLONG_MAX) ? QVariant{} : QVariant(ms/1e3);
     } },
   { "!maxexpectedms0", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
@@ -448,7 +448,7 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       return (ms == LLONG_MAX) ? QVariant(0) : QVariant(ms);
     } },
   { "!maxexpecteds0", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
@@ -456,7 +456,7 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       return (ms == LLONG_MAX) ? QVariant(0.0) : QVariant(ms/1e3);
     } },
   { "!maxbeforeabortms0", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
@@ -464,7 +464,7 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       return (ms == LLONG_MAX) ? QVariant(0) : QVariant(ms);
     } },
   { "!maxbeforeaborts0", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
@@ -472,63 +472,63 @@ const SharedUiItemDataFunctions TasksRootData::_paramFunctions = {
       return (ms == LLONG_MAX) ? QVariant(0.0) : QVariant(ms/1e3);
     } },
   { "!maxinstances", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_maxInstances;
     } },
   { "!maxqueuedinstances", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_maxQueuedInstances;
     } },
   { "!maxtries", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_maxTries;
     } },
   { "!rawdeduplicatecriterion", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_deduplicateCriterion;
     } },
   { "!deduplicatestrategy", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_deduplicateStrategy;
     } },
   { "!info", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_info;
     } },
   { "!mean", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return Task::meanAsString(td->_mean);
     } },
   { "!command", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
         return {};
       return td->_command;
     } },
   { "!resources", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
       auto td = dynamic_cast<const TaskData*>(data);
       if (!td)
       return {};

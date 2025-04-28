@@ -62,9 +62,9 @@ public:
   static bool loadAttribute(
       const PfNode &node, const Utf8String &attributeName, T *field,
       std::function<T(QString value)> convert
-      = [](QString value) -> T { return value; },
+      = [](QString value) STATIC_LAMBDA -> T { return value; },
       std::function<bool(T value)> isValid
-      = [](T) { return true; }) {
+      = [](T) STATIC_LAMBDA { return true; }) {
     if (!node.has_child(attributeName))
       return true;
     auto v = node.attribute(attributeName);
@@ -80,7 +80,7 @@ public:
       std::function<bool(T value)> isValid) {
     return loadAttribute(
           node, attributeName, field,
-          [](QString value) -> T { return value; }, isValid );
+          [](QString value) STATIC_LAMBDA -> T { return value; }, isValid );
   }
   static bool loadBoolean(const PfNode &node, const Utf8String &attributeName,
                           bool *field) {

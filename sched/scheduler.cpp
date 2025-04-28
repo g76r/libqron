@@ -1008,7 +1008,7 @@ void Scheduler::taskInstanceStoppedOrCanceled(
   if (instance.status() != TaskInstance::Canceled) {
     // must trigger actions that may create new herded tasks now, to be
     // able to wait for them
-    triggerFinishActions(instance, [](Action a) {
+    triggerFinishActions(instance, [](Action a) STATIC_LAMBDA {
       // note instance.idAsLong() == instance.herdid() is implied by if+return
       // just above so this filter and the one in the other triggerFinishActions
       // truly form a partition
