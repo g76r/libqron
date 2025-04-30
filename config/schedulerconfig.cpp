@@ -666,7 +666,7 @@ void SchedulerConfigData::applyLogConfig() const {
                      logfile.buffered()));
   }
   // LATER make console severity log level a parameter
-  p6::log::replaceLoggersPlusConsole(Log::Fatal, loggers);
+  p6::log::replace_loggers(loggers, true, Log::Fatal);
 }
 
 void SchedulerConfig::applyLogConfig() const {
