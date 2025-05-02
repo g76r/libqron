@@ -34,7 +34,8 @@ RequestFormField::RequestFormField(const PfNode &node) {
   RequestFormFieldData *d = new RequestFormFieldData;
   QString id = node.content_as_text();
   if (id.isEmpty()) {
-    Log::error() << "request form field without id " << node.as_text();
+    Log::error() << "request form field without id at " << node.position()
+                 << " : " << node.as_text();
     return;
   }
   d->_id = ConfigUtils::sanitizeId(id, ConfigUtils::LocalId);
@@ -50,7 +51,8 @@ RequestFormField::RequestFormField(const PfNode &node) {
     d->_format = QRegularExpression(format);
     if (!d->_format.isValid()) {
       Log::error() << "request form field with invalid format specification: "
-                   << d->_format.errorString() << " : " << node.as_text();
+                   << d->_format.errorString() << " at " << node.position()
+                   << " : " << node.as_text();
       return;
     }
     d->_cause =
@@ -150,9 +152,8 @@ PfNode RequestFormField::toPfNode() const {
   if (!d->_suggestion.isEmpty())
     node.append_child({"suggestion", d->_suggestion});
   if (!d->_format.pattern().isEmpty() && !d->_format.pattern().isEmpty())
-    node.append_child({"format", d->_format.pattern(), {
-                         {"cause",d->_cause.pattern()},
-                       }
+    node.append_child({ "format", d->_format.pattern(),
+                        PfNode{ "cause", d->_cause.pattern() },
                       });
   return node;
 }

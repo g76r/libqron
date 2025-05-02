@@ -114,8 +114,8 @@ public:
 static inline QList<PfNode> grandchildren_list(
     const PfNode &node, const Utf8String &child_name) {
   QList<PfNode> list;
-  for (auto child: node/child_name)
-    for (auto grandchild: child.children())
+  for (const auto &child: node/child_name)
+    for (const auto &grandchild: child.children())
       list << grandchild;
   return list;
 }

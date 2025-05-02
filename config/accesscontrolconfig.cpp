@@ -116,20 +116,18 @@ PfNode AccessControlConfig::toPfNode() const {
     return node;
   for (const AccessControlConfigData::UserFile &userFile: d->_userFiles) {
     auto cipher = InMemoryAuthenticator::encodingToString(userFile._cipher);
-    node.append_child({ "user-file", userFile._path, {
-                          { "cipher", cipher },
-                        }
+    node.append_child({ "user-file", userFile._path,
+                        PfNode{ "cipher", cipher },
                       });
   }
   for (const AccessControlConfigData::User &user: d->_users) {
     auto roles = user._roles.values();
     std::sort(roles.begin(), roles.end());
     auto cipher = InMemoryAuthenticator::encodingToString(user._cipher);
-    node.append_child({ "user", user._userId, {
-                          { "password", user._encodedPassword },
-                          { "cipher", cipher },
-                          { "roles", roles.join(' ') },
-                        }
+    node.append_child({ "user", user._userId,
+                        PfNode{ "password", user._encodedPassword },
+                        PfNode{ "cipher", cipher },
+                        PfNode{ "roles", roles.join(' ') },
                       });
   }
   return node;

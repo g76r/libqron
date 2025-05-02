@@ -57,8 +57,8 @@ Task::Task(const PfNode &node, Scheduler *scheduler, const TaskGroup &taskGroup,
                                         ConfigUtils::LocalId).toUtf8();
   d->_id = taskGroup.id()+"."+d->_localId;
   d->_group = taskGroup;
-  for (auto child: node/"apply") {
-    for (auto name: child.content_as_strings()) {
+  for (const auto &child: node/"apply") {
+    for (const auto &name: child.content_as_strings()) {
       auto tmpl = taskTemplates.value(name);
       if (tmpl.isNull()) {
         Log::warning() << "tasktemplate" << name << "not found while requested "

@@ -165,7 +165,7 @@ bool TaskOrTemplateData::loadConfig(
   }
   auto [child,unwanted] = node.first_two_children("requestform");
   if (!!child) {
-    for (auto child: child/"field") {
+    for (const auto &child: child/"field") {
       RequestFormField field(child);
       if (!!field)
         _requestFormFields.insert(field.id(), field);

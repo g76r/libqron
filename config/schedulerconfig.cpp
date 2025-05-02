@@ -103,24 +103,23 @@ SchedulerConfig::SchedulerConfig(PfNode root, Scheduler *scheduler,
 }
 
 static inline void recordTaskActionLinks(
-    PfNode parentNode, QStringList childNames,
+    const PfNode &parentNode, const QStringList &childNames,
     QList<RequestTaskActionLink> *requestTaskActionLinks,
-    QString contextLabel, Task contextTask = Task()) {
+    const QString &contextLabel, const Task &contextTask = Task()) {
   // TODO clarify "contextLabel" and "contextTask" names
-  QStringList ignoredChildren;
-  ignoredChildren << "cron" << "notice";
-  for (auto childName: childNames)
-    for (auto listnode: parentNode/childName) {
-      EventSubscription sub("", listnode, 0, ignoredChildren);
-      for (const Action &a: sub.actions()) {
-        if (a.actionType() == "requesttask"
-            || a.actionType() == "plantask") {
-          requestTaskActionLinks
-              ->append(RequestTaskActionLink(a, childName, contextLabel,
-                                             contextTask));
-        }
+  static QStringList _ignored_children {"cron", "notice"};
+  for (const auto &listnode: parentNode/childNames) {
+    auto event_type = listnode.name();
+    EventSubscription sub("", listnode, 0, _ignored_children);
+    for (const Action &a: sub.actions()) {
+      if (a.actionType() == "requesttask"
+          || a.actionType() == "plantask") {
+        requestTaskActionLinks
+            ->append(RequestTaskActionLink(a, event_type, contextLabel,
+                                           contextTask));
       }
     }
+  }
 }
 
 SchedulerConfigData::SchedulerConfigData(
@@ -147,14 +146,16 @@ SchedulerConfigData::SchedulerConfigData(
     auto name = node.content_as_text();
     Calendar calendar(node);
     if (name.isEmpty())
-      Log::error() << "ignoring anonymous calendar: " << node.as_pf();
+      Log::error() << "ignoring anonymous calendar at " << node.position()
+                      << " : " << node.as_pf();
     else if (calendar.isNull())
-      Log::error() << "ignoring empty calendar: " << node.as_pf();
+      Log::error() << "ignoring empty calendar at : " << node.position()
+                   << " : " << node.as_pf();
     else
       _namedCalendars.insert(name, calendar);
   }
   _externalParams.clear();
-  for (auto node: root/"externalparams") {
+  for (const auto &node: root/"externalparams") {
     auto name = node.content_as_text();
     if (name.isEmpty() || (!node.has_child("file")
                            && !node.has_child("command")))
@@ -186,7 +187,7 @@ SchedulerConfigData::SchedulerConfigData(
         else
           Log::error() << "host '" << hostId
                        << "' not found, won't add it to cluster '"
-                       << cluster.id() << "'";
+                       << cluster.id() << "' at " << node.position();
       }
     }
     if (cluster.hosts().isEmpty())
@@ -226,7 +227,7 @@ SchedulerConfigData::SchedulerConfigData(
     _taskgroups.insert(taskGroup.id(), taskGroup);
   }
   _tasktemplates.clear();
-  for (auto node: root/"tasktemplate") {
+  for (const auto &node: root/"tasktemplate") {
     TaskTemplate tmpl(node, scheduler, _tasksRoot, _namedCalendars);
     if (tmpl.isNull()) { // cstr detected an error
       Log::error() << "ignoring invalid tasktemplate: " << node.as_text();

@@ -27,7 +27,8 @@ void ConfigUtils::loadResourcesSet(
     const Utf8String &attrname) {
   if (!resources)
     return;
-  for (auto [kind, value]: parentnode.children_as_text_pairs_range(attrname)) {
+  for (const auto [kind, value]:
+       parentnode.children_as_text_pairs_range(attrname)) {
     bool ok;
     auto l = value.toLongLong(&ok);
     if (!ok || l < 0)

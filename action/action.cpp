@@ -158,7 +158,8 @@ Action Action::createAction(const PfNode &node, Scheduler *scheduler) {
   if (builder)
     action = builder(node, scheduler);
   if (action.isNull()) {
-    Log::error() << "unknown action type: " << node.name();
+    Log::error() << "unknown action type: " << node.name() << " at "
+                 << node.position();
   }
   return action;
 }
