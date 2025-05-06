@@ -1,4 +1,4 @@
-/* Copyright 2022 Gregoire Barbier and others.
+/* Copyright 2022-2025 Gregoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -25,7 +25,7 @@ public:
   ~DisjunctionCondition();
   void append(QList<PfNode> nodes);
   QList<Condition> conditions() const;
-  operator QList<Condition>() const { return conditions(); }
+  explicit operator QList<Condition>() const { return conditions(); }
   QList<PfNode> toPfNodes() const;
   bool isEmpty() const { return conditions().isEmpty(); }
   int size() const { return conditions().size(); }

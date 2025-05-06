@@ -100,7 +100,6 @@ notstar:
     s = s.mid(1); // remove initial comma
     return s.isEmpty() ? "ERROR" : s;
   }
-  operator QString() const { return toString(); }
   [[nodiscard]] bool isNull() const {
     for (int i = 0; i <= _max-_min; ++i)
       if (_setValues[i])
@@ -127,8 +126,12 @@ public:
     parseCronExpression(cronExpression);
   }
   Utf8String canonicalExpression() const override {
-    return u"%1 %2 %3 %4 %5 %6"_s
-        .arg(_seconds, _minutes, _hours, _days, _months,_daysofweek);
+    return _seconds.toString()+' '
+        +_minutes.toString()+' '
+        +_hours.toString()+' '
+        +_days.toString()+' '
+        +_months.toString()+' '
+        +_daysofweek.toString();
   }
   Utf8String expression() const override { return _cronExpression; }
   Utf8String humanReadableExpression() const override {
