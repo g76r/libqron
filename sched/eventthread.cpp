@@ -1,4 +1,4 @@
-/* Copyright 2022-2024 Hallowyn, Gregoire Barbier and others.
+/* Copyright 2022-2025 Hallowyn, Gregoire Barbier and others.
  * This file is part of libpumpkin, see <http://libpumpkin.g76r.eu/>.
  * Libpumpkin is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -29,7 +29,7 @@ void EventThread::run() {
     if (_buffer.tryGet(&e, 500ms)) {
       if (e.isNull())
         break;
-      for (auto sub: e._subs) {
+      for (const auto &sub: e._subs) {
         auto match = sub.filter().match(e._payload);
         if (!match.hasMatch())
           continue;

@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,7 +23,7 @@ void HostsResourcesAvailabilityModel::hostsResourcesAvailabilityChanged(
   if (_mode != Configured) {
     auto hostConfigured = _configured.value(host);
     auto hostLwm = _lwm.value(host);
-    for (auto kind: resources.keys()) {
+    for (const auto &kind: resources.keys()) {
       qint64 configured = hostConfigured.value(kind);
       qint64 free = resources.value(kind);
       switch (_mode) {
@@ -76,7 +76,7 @@ void HostsResourcesAvailabilityModel::changeItem(
       auto &newHost = static_cast<const Host&>(newItem);
       auto hostResources = newHost.resources();
       _configured.insert(newId, hostResources);
-      for (auto [kind,v]: hostResources.asKeyValueRange()) {
+      for (const auto &[kind,v]: hostResources.asKeyValueRange()) {
         QString configured = QString::number(v);
         switch (_mode) {
         case Free:

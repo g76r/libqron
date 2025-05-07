@@ -435,7 +435,7 @@ void TaskOrTemplateData::fillPfNode(PfNode &node) const {
   if (_millisBetweenTries != 0)
     node.append_child(PfNode("pausebetweentries",
                             QString::number(_millisBetweenTries*.001)));
-  for (auto [k,v]: _resources.asKeyValueRange())
+  for (const auto &[k,v]: _resources.asKeyValueRange())
     if (!k.startsWith("<maxperhost>"))
       node.append_child(PfNode("resource", k+" "+QString::number(v)));
 

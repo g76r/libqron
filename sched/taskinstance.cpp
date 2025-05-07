@@ -350,7 +350,7 @@ void TaskInstance::setTarget(Host target) const {
 QMap<QString,QString> TaskInstance::varsAsEnv() const {
   QMap<QString,QString> env;
   auto vars = task().vars();
-  for (auto key: vars.paramKeys()) {
+  for (const auto &key: vars.paramKeys()) {
     if (key.isEmpty()) [[unlikely]]
       continue;
     auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), this);
@@ -362,7 +362,7 @@ QMap<QString,QString> TaskInstance::varsAsEnv() const {
 QMap<QString,QString> TaskInstance::varsAsHeaders() const {
   QMap<QString,QString> env;
   auto vars = task().vars();
-  for (auto key: vars.paramKeys()) {
+  for (const auto &key: vars.paramKeys()) {
     if (key.isEmpty()) [[unlikely]]
       continue;
     auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), this);
@@ -586,7 +586,7 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       auto children = reinterpret_cast<const TaskInstanceData*>(data)
                       ->_children.lockedData();
       Utf8StringList list;
-      for (auto tii: *children)
+      for (const auto &tii: *children)
         list.append(Utf8String::number(tii));
       children.unlock();
       return list.join(' ');
@@ -725,7 +725,7 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       auto map = TaskInstance(tid).varsAsEnv();
       qDebug() << "**** !varsasenv" << map;
       Utf8StringList s;
-      for (auto key: map.keys())
+      for (const auto &key: map.keys())
         s += key+"="+map.value(key);
       return s.join(' ');
     } },
@@ -735,7 +735,7 @@ const SharedUiItemDataFunctions TaskInstanceData::_paramFunctions {
       auto map = TaskInstance(tid).varsAsHeaders();
       qDebug() << "**** !varsasheaders" << map;
       Utf8StringList s;
-      for (auto key: map.keys())
+      for (const auto &key: map.keys())
         s += key+"="+map.value(key);
       return s.join(' ');
     } },

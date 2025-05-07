@@ -112,9 +112,9 @@ void Task::copyLiveAttributesFromOldTask(const Task &oldTask) {
   d->_enabled = oldTask.enabled();
   // keep last triggered timestamp from previously defined trigger
   QMap<QByteArray,CronTrigger> oldCronTriggers;
-  for (auto trigger: oldTask.data()->_cronTriggers)
+  for (const auto &trigger: oldTask.data()->_cronTriggers)
     oldCronTriggers.insert(trigger.canonicalExpression(), trigger);
-  for (auto trigger: d->_cronTriggers) {
+  for (const auto &trigger: d->_cronTriggers) {
     CronTrigger oldTrigger =
         oldCronTriggers.value(trigger.canonicalExpression());
     if (oldTrigger.isValid())

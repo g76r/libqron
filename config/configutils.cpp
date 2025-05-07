@@ -45,7 +45,7 @@ void ConfigUtils::writeParamSet(PfNode *parentnode, ParamSet params,
     return;
   if (!inherit)
     params.setParent({});
-  for (auto key: params.paramKeys().toSortedList())
+  for (const auto &key: params.paramKeys().toSortedList())
     parentnode->append_child({attrname, key+" "+params.paramRawUtf8(key)});
 }
 

@@ -33,7 +33,7 @@ public:
     if (!_scheduler)
       return;
     ParamSet noticeParams;
-    for (auto key: _noticeParams.paramKeys())
+    for (const auto &key: _noticeParams.paramKeys())
       noticeParams.insert(
             key, PercentEvaluator::escape(
               PercentEvaluator::eval(

@@ -101,7 +101,7 @@ bool EventSubscription::triggerActions(
 Utf8StringList EventSubscription::toStringList(
     const QList<EventSubscription> &list) {
   Utf8StringList l;
-  for (auto sub: list)
+  for (const auto &sub: list)
     l.append(sub.toStringList());
   return l;
 }

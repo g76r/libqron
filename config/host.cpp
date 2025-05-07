@@ -217,7 +217,7 @@ PfNode Host::toPfNode() const {
     node.append_child({"hostname", d->_hostname});
   if (!d->_sshhealthcheck.isEmpty())
     node.append_child({"sshhealthcheck", d->_sshhealthcheck});
-  for (auto [k,v]: d->_resources.asKeyValueRange())
+  for (const auto &[k,v]: d->_resources.asKeyValueRange())
     if (!k.startsWith("<maxperhost>"))
       node.append_child({"resource", k+" "+QString::number(v)});
   return node;

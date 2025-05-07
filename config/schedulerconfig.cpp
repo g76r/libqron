@@ -180,7 +180,7 @@ SchedulerConfigData::SchedulerConfigData(
   for (const PfNode &node: root/"cluster") {
     Cluster cluster(node);
     for (const PfNode &child: node/"hosts") {
-      for (auto hostId: child.content_as_strings()) {
+      for (const auto &hostId: child.content_as_strings()) {
         Host host = _hosts.value(hostId);
         if (!host.isNull())
           cluster.appendHost(host);
@@ -204,7 +204,7 @@ SchedulerConfigData::SchedulerConfigData(
   auto taskGroupNodes = root.children_copy("taskgroup");
   // C++23: auto taskGroupNodes = root/"taskgroup" | std::ranges::to<QList<PfNode>>();
   std::stable_sort(taskGroupNodes.begin(), taskGroupNodes.end());
-  for (auto node: taskGroupNodes) {
+  for (const auto &node: taskGroupNodes) {
     QByteArray id = ConfigUtils::sanitizeId(
           node.content_as_text(), ConfigUtils::FullyQualifiedId).toUtf8();
     if (_taskgroups.contains(id)) {
@@ -263,7 +263,7 @@ ignore_tasktemplate:;
           node, { "onplan", "onstart", "onsuccess", "onfailure", "onfinish",
                "onstderr", "onstdout", "onnostderr" },
           &requestTaskActionLinks, task.id(), task);
-    for (auto tmpl:
+    for (const auto &tmpl:
          task.appliedTemplates().filtered<TaskTemplate>("tasktemplate")) {
       recordTaskActionLinks(
             tmpl.originalPfNodes().value(0),
@@ -551,7 +551,7 @@ void SchedulerConfig::copyLiveAttributesFromOldTasks(
   SchedulerConfigData *d = data();
   if (!d)
     return;
-  for (auto oldTask: oldTasks) {
+  for (const auto &oldTask: oldTasks) {
     Task task = d->_tasks.value(oldTask.id());
     if (task.isNull())
       continue;
@@ -565,7 +565,7 @@ void SchedulerConfig::copyLiveAttributesFromOldHosts(
   SchedulerConfigData *d = data();
   if (!d)
     return;
-  for (auto old_host: old_hosts) {
+  for (const auto &old_host: old_hosts) {
     auto host = d->_hosts.value(old_host.id());
     if (host.isNull())
       continue;
@@ -626,10 +626,10 @@ PfNode SchedulerConfig::toPfNode() const {
   //  node.appendChild(calendar.toPfNode());
   auto calendarNames = d->_namedCalendars.keys();
   std::sort(calendarNames.begin(), calendarNames.end());
-  for (auto calendarName: calendarNames)
+  for (const auto &calendarName: calendarNames)
     node.append_child(d->_namedCalendars.value(calendarName).toPfNode());
-  for (auto node: d->_externalParams)
-    node.append_child(node);
+  for (const auto &ep_node: d->_externalParams)
+    node.append_child(ep_node);
   node.append_child(d->_alerterConfig.toPfNode());
   if (!d->_accessControlConfig.isEmpty())
     node.append_child(d->_accessControlConfig.toPfNode());
@@ -661,7 +661,7 @@ QVariant SchedulerConfigData::uiData(int section, int role) const {
 
 void SchedulerConfigData::applyLogConfig() const {
   QList<p6::log::Logger*> loggers;
-  for (auto logfile: _logfiles) {
+  for (const auto &logfile: _logfiles) {
     loggers.append(new p6::log::FileLogger(
                      logfile.pathPattern(), logfile.minimumSeverity(), 60,
                      logfile.buffered()));

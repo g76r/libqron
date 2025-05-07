@@ -87,8 +87,6 @@ TaskWaitOperator TaskWaitCondition::cancelOperatorFromQueueOperator(
 namespace {
 
 class Counters {
-  friend QDebug operator<<(QDebug dbg, const Counters &c);
-
   quint32 unstarted = 0;
   quint32 unfinished = 0;
   quint32 canceled = 0;
@@ -97,7 +95,7 @@ class Counters {
 
 public:
   Counters(QSet<quint64> ids, QSet<TaskInstance> tasks) {
-    for (auto task: tasks) {
+    for (const auto &task: tasks) {
       quint64 id = task.idAsLong();
       if (!ids.contains(id))
         continue;

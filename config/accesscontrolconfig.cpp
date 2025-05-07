@@ -149,7 +149,7 @@ void AccessControlConfig::applyConfiguration(
   }
   if (!d)
     return;
-  for (auto userFile: d->_userFiles) {
+  for (const auto &userFile: d->_userFiles) {
     auto path = PercentEvaluator::eval_utf16(userFile._path, context);
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -175,7 +175,7 @@ void AccessControlConfig::applyConfiguration(
       QString id = fields[0].trimmed();
       QString password = fields[1].trimmed();
       QSet<QString> roles;
-      for (auto role: fields[2].trimmed().split(',', Qt::SkipEmptyParts))
+      for (const auto &role: fields[2].trimmed().split(',', Qt::SkipEmptyParts))
         roles.insert(role.trimmed());
       if (id.isEmpty() || password.isEmpty() || roles.isEmpty()) {
         Log::error() << "access control user file '" << path
@@ -192,7 +192,7 @@ void AccessControlConfig::applyConfiguration(
       Log::error() << "error reading access control user file '" << path
                    << "': " << file.errorString();
   }
-  for (auto user: d->_users) {
+  for (const auto &user: d->_users) {
     auto userid = PercentEvaluator::eval_utf16(user._userId, context);
     auto passwd = PercentEvaluator::eval_utf16(user._encodedPassword, context);
     // LATER % evaluate roles even maybe cipher

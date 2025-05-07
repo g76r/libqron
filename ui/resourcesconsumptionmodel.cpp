@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -41,7 +41,7 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
     for (const Host &host: hosts) {
       if (targets.contains(host.id()) && !task.resources().isEmpty()) {
         QString s;
-        for (auto [kind,v]: task.resources().asKeyValueRange()) {
+        for (const auto &[kind,v]: task.resources().asKeyValueRange()) {
           qint64 consumed = v*task.maxInstances();
           qint64 available = configured.value(host.id()).value(kind);
           s.append(kind).append(": ").append(QString::number(consumed))
@@ -68,7 +68,7 @@ void ResourcesConsumptionModel::configActivated(SchedulerConfig config) {
   }
   for (const Host &host: hosts) {
     QString s;
-    for (auto [kind,_]: host.resources().asKeyValueRange()) {
+    for (const auto &[kind,_]: host.resources().asKeyValueRange()) {
       qint64 lowest = min.value(host.id()).value(kind);
       qint64 available = configured.value(host.id()).value(kind);
       s.append(kind).append(": ").append(QString::number(lowest))

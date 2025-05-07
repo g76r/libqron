@@ -1,4 +1,4 @@
-/* Copyright 2014-2023 Hallowyn and others.
+/* Copyright 2014-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,7 @@ Utf8String QronUiUtils::resourcesAsString(
     const QMap<Utf8String, qint64> &resources) {
   Utf8String s;
   bool first = true;
-  for(auto key: resources.keys()) {
+  for(const auto &key: resources.keys()) {
     if (first)
       first = false;
     else

@@ -31,7 +31,8 @@ QronConfigDocumentManager::QronConfigDocumentManager(QObject *parent)
     Q_UNUSED(qualifier)
     TaskGroup *newGroup = static_cast<TaskGroup*>(newItem);
     if (newItem->id() != oldItem.id()) {
-      for (auto sui: transaction->foreignKeySources("task", 1, oldItem.id())) {
+      for (const auto &sui:
+           transaction->foreignKeySources("task", 1, oldItem.id())) {
         auto oldTask = sui.casted<const Task>();
         Task newTask = oldTask;
         newTask.setTaskGroup(*newGroup);
@@ -195,13 +196,13 @@ void inline QronConfigDocumentManager::emitSignalForItemTypeChanges<PfNode>(
     const QMap<Utf8String, PfNode> &newItems,
     const QMap<Utf8String, PfNode> &oldItems,
     const Utf8String &qualifier) {
-  for (auto oldItem: oldItems) {
+  for (const auto &oldItem: oldItems) {
     auto name = oldItem.name();
     if (!newItems.contains(name))
       emit itemChanged(
           _nullItem, GenericSharedUiItem(qualifier, name), qualifier);
   }
-  for (auto newItem: newItems) {
+  for (const auto &newItem: newItems) {
     auto name = newItem.name();
     auto item = GenericSharedUiItem(qualifier, name);
     emit itemChanged(

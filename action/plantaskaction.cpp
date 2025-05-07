@@ -47,7 +47,7 @@ public:
     }
     quint64 herdid = _lone ? 0 : parentInstance.herdid();
     ParamSet overridingParams;
-    for (auto key: _overridingParams.paramKeys())
+    for (const auto &key: _overridingParams.paramKeys())
       overridingParams.insert(
             key, PercentEvaluator::escape(
               PercentEvaluator::eval(
@@ -75,7 +75,7 @@ public:
     if (_paramappend.isEmpty() || !herdid)
       return;
     context->prepend(&instance);
-    for (auto [key,rawvalue]: _paramappend.asKeyValueRange()) {
+    for (const auto &[key,rawvalue]: _paramappend.asKeyValueRange()) {
       auto value = PercentEvaluator::eval_utf8(rawvalue, context);
       _scheduler->taskInstanceParamAppend(
             herdid, key, PercentEvaluator::escape(value));

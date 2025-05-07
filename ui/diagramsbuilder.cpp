@@ -118,7 +118,7 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
   auto hosts = config.hosts();
   QList<EventSubscription> schedulerEventsSubscriptions,
       rootEventsSubscriptions;
-  for (auto sub: config.allEventsSubscriptions()) {
+  for (const auto &sub: config.allEventsSubscriptions()) {
     if (sub.eventName() == "onschedulerstart"
         || sub.eventName() == "onconfigload"
         || sub.eventName() == "onnotice")
@@ -162,8 +162,8 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
   for (const Task &task: tasks.values()) {
     for (const NoticeTrigger &trigger: task.noticeTriggers())
       notices.insert(trigger.expression());
-    for (auto sub: rootEventsSubscriptions + task.allEventsSubscriptions()
-                        + task.taskGroup().allEventSubscriptions())
+    for (const auto &sub: rootEventsSubscriptions + task.allEventsSubscriptions()
+         + task.taskGroup().allEventSubscriptions())
       for (const Action &action: sub.actions()) {
         if (action.actionType() == "postnotice")
           notices.insert(action.targetName());
@@ -178,11 +178,11 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
         displayedGlobalEventsName.insert(sub.eventName());
     }
   }
-  for (auto task: tasks)
-    for (auto key: task.resources().keys())
+  for (const auto &task: tasks)
+    for (const auto &key: task.resources().keys())
       resourcesSet.insert(key);
-  for (auto host: hosts) {
-    for (auto key: host.resources().keys())
+  for (const auto &host: hosts) {
+    for (const auto &key: host.resources().keys())
       resourcesSet.insert(key);
   }
   sortedResources = resourcesSet.values();
@@ -210,17 +210,17 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
             .append("\"[" CLUSTER_HOST_EDGE "]\n");
     }
   gv.append("subgraph{graph[rank=min]\n");
-  for (auto id: displayedGroups) {
+  for (const auto &id: displayedGroups) {
     if (!id.contains('.')) // root groups
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
   gv.append("}\n");
-  for (auto id: displayedGroups) {
+  for (const auto &id: displayedGroups) {
     if (id.contains('.')) // non root groups
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
-  for (auto parent: displayedGroups) {
-    for (auto child: displayedGroups) {
+  for (const auto &parent: displayedGroups) {
+    for (const auto &child: displayedGroups) {
       if (child == parent+child.mid(child.lastIndexOf('.')))
         gv.append("\"").append(parent).append("\" -- \"")
             .append(child).append("\" [" TASKGROUP_EDGE "]\n");
@@ -259,21 +259,21 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
   gv.append("}\n");
   // root groups
   gv.append("subgraph{graph[rank=min]\n");
-  for (auto id: displayedGroups) {
+  for (const auto &id: displayedGroups) {
     if (!id.contains('.')) // root groups
       gv.append("\"").append(id).append("\" [group=\"").append(id)
           .append("\"" TASKGROUP_NODE "]\n");
   }
   gv.append("}\n");
   // other groups
-  for (auto id: displayedGroups) {
+  for (const auto &id: displayedGroups) {
     if (id.contains('.')) // non root groups
       gv.append("\"").append(id).append("\" [group=\"").append(id)
           .append("\"" TASKGROUP_NODE "]\n");
   }
   // groups edges
-  for (auto parent: displayedGroups) {
-    for (auto child: displayedGroups) {
+  for (const auto &parent: displayedGroups) {
+    for (const auto &child: displayedGroups) {
       if (child == parent+child.mid(child.lastIndexOf('.')))
         gv.append("\"").append(parent).append("\" -- \"")
             .append(child).append("\" [" TASKGROUP_EDGE "]\n");
@@ -314,8 +314,9 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
     }
     // events defined at task level
     QSet<QString> edges;
-    for (auto sub: rootEventsSubscriptions + task.allEventsSubscriptions()
-                        + task.taskGroup().allEventSubscriptions()) {
+    for (const auto &sub: rootEventsSubscriptions
+         + task.allEventsSubscriptions()
+         + task.taskGroup().allEventSubscriptions()) {
       for (const Action &action: sub.actions()) {
         QString actionType = action.actionType();
         if (actionType == "postnotice") {
@@ -336,7 +337,7 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
         }
       }
     }
-    for (auto edge: edges)
+    for (const auto &edge: edges)
       gv.append(edge);
   }
   // events defined globally
@@ -370,18 +371,18 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
   gv.clear();
   gv.append("graph \"tasks-resources diagram\" {\n"
             "graph[" GLOBAL_GRAPH "]\n");
-  for (auto resource: sortedResources)
+  for (const auto &resource: sortedResources)
     gv.append("\"resource__").append(resource).append("\"").append("[label=\"")
         .append(resource).append("\"," RESOURCE_NODE "]\n");
   gv.append("subgraph{graph[rank=max]\n");
-  for (auto host: hosts.values())
+  for (const auto &host: hosts.values())
     if (!host.resources().isEmpty()) // display hosts with resources
       gv.append("\"").append(host.id()).append("\"").append("[label=\"")
           .append(host.id()).append(" (")
           .append(host.hostname()).append(")\"," HOST_NODE "]\n");
   gv.append("}\n");
-  for (auto host: hosts.values()) // draw host--resources edges
-      for (auto resource: host.resources().keys()) {
+  for (const auto &host: hosts.values()) // draw host--resources edges
+      for (const auto &resource: host.resources().keys()) {
         gv.append("\"resource__").append(resource).append("\" -- \"")
             .append(host.id()).append("\" [headlabel=\"")
             .append(QString::number(host.resources().value(resource)))
@@ -389,7 +390,7 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
       }
   gv.append("subgraph{graph[rank=min]\n");
   displayedGroups.clear();// recompute displayedGroups w/ only tasks w/ resources
-  for (auto task: tasks.values()) {
+  for (const auto &task: tasks.values()) {
     if (task.resources().isEmpty())
       continue;
     QString s = task.taskGroup().id();
@@ -397,17 +398,17 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
     for (int i = 0; (i = s.indexOf('.', i+1)) > 0; )
       displayedGroups.insert(s.mid(0, i));
   }
-  for (auto id: displayedGroups) {
+  for (const auto &id: displayedGroups) {
     if (!id.contains('.')) // root groups
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
   gv.append("}\n");
-  for (auto id: displayedGroups) {
+  for (const auto &id: displayedGroups) {
     if (id.contains('.')) // non root groups
       gv.append("\"").append(id).append("\" [" TASKGROUP_NODE "]\n");
   }
-  for (auto parent: displayedGroups) {
-    for (auto child: displayedGroups) {
+  for (const auto &parent: displayedGroups) {
+    for (const auto &child: displayedGroups) {
       if (child == parent+child.mid(child.lastIndexOf('.')))
         gv.append("\"").append(parent).append("\" -- \"")
             .append(child).append("\" [" TASKGROUP_EDGE "]\n");
@@ -423,7 +424,7 @@ QHash<QString,QString> DiagramsBuilder::configDiagrams(
         .append("\"").append(task.id())
         .append("\" [" TASKGROUP_TASK_EDGE "]\n");
     // draw task--resources edges
-    for (auto resource: task.resources().keys()) {
+    for (const auto &resource: task.resources().keys()) {
       gv.append("\"").append(task.id()).append("\" -- \"resource__")
           .append(resource).append("\" [taillabel=\"")
           .append(QString::number(task.resources().value(resource)))
@@ -444,19 +445,6 @@ public:
   QList<QString> _instances;
 };
 
-QList<QString> predecessors(Condition cond) {
-  QList<QString> p;
-  if (cond.conditionType() == "disjunction") {
-    auto dc = static_cast<const DisjunctionCondition&>(cond);
-    for (auto inner: dc.conditions())
-      p += predecessors(inner);
-  } else if (cond.conditionType() == "taskwait") {
-    auto twc = static_cast<const TaskWaitCondition&>(cond);
-    // FIXME
-  }
-  return p;
-}
-
 struct WaitConditionInstance {
   Utf8String op;
   QSet<quint64> tiis;
@@ -473,7 +461,7 @@ struct VerticalLine {
 };
 
 static RelatedTasks findRelatedTasks(
-    Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
+    Scheduler *scheduler, quint64 tii, const ParamsProvider &options) {
   quint64 herdid = scheduler->taskInstanceById(tii).herdid();
   if (!herdid)
     return {};
@@ -491,9 +479,9 @@ static RelatedTasks findRelatedTasks(
       instances.insert(herderparentid, parent);
   }
   // instances belonging to the herd and their parent
-  auto include_parents = options->paramBool("include_parents", true);
-  if (options->paramBool("include_herd", true))
-    for (auto [taskid, tii]: herder.herdedTasksIdsPairs()) {
+  auto include_parents = options.paramBool("include_parents", true);
+  if (options.paramBool("include_herd", true))
+    for (const auto &[taskid, tii]: herder.herdedTasksIdsPairs()) {
       auto instance = instances.value(tii);
       if (!instance)
         instance = scheduler->taskInstanceById(tii);
@@ -511,7 +499,7 @@ static RelatedTasks findRelatedTasks(
     }
   // their prerequisites
   QMap<quint64,WaitConditionInstance> prerequisites; // tii -> awaited instances
-  for (auto instance: instances) {
+  for (const auto &instance: instances) {
     auto twc = taskWaitConditionExpression(instance.queuewhen());
     if (twc.expr.isEmpty())
       continue;
@@ -519,7 +507,7 @@ static RelatedTasks findRelatedTasks(
     if (!herder)
       continue;
     auto tiis = Utf8String{twc.expr % herder}.split(' ', Qt::SkipEmptyParts);
-    for (auto tii: tiis) {
+    for (const auto &tii: tiis) {
       auto dep = tii.toNumber<quint64>();
       if (!dep)
         continue;
@@ -528,9 +516,9 @@ static RelatedTasks findRelatedTasks(
       twci.tiis.insert(dep);
     }
   }
-  if (options->paramBool("include_prerequisites", true))
-    for (auto [tii,twci]: prerequisites.asKeyValueRange())
-      for (auto dep: twci.tiis) {
+  if (options.paramBool("include_prerequisites", true))
+    for (const auto &[tii,twci]: prerequisites.asKeyValueRange())
+      for (const auto &dep: twci.tiis) {
         auto instance = instances.value(dep);
         if (!instance)
           instance = scheduler->taskInstanceById(tii);
@@ -539,9 +527,9 @@ static RelatedTasks findRelatedTasks(
         instances.insert(dep, instance);
       }
   // their children even outside the herd
-  if (options->paramBool("include_children", true))
-    for (auto tii: instances.keys())
-      for (auto child: instances.value(tii).children())
+  if (options.paramBool("include_children", true))
+    for (const auto &tii: instances.keys())
+      for (const auto &child: instances.value(tii).children())
         if (!instances.contains(child)) {
           auto instance = scheduler->taskInstanceById(child);
           if (!!instance)
@@ -556,7 +544,7 @@ static RelatedTasks findRelatedTasks(
 } // unnamed namespace
 
 Utf8String DiagramsBuilder::herdInstanceDiagram(
-    Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
+    Scheduler *scheduler, quint64 tii, const ParamsProvider &options) {
   auto [herdid, instances, prerequisites]
       = findRelatedTasks(scheduler, tii, options);
   if (!herdid) // means tii is invalid
@@ -567,7 +555,7 @@ Utf8String DiagramsBuilder::herdInstanceDiagram(
             ",bgcolor=grey95,"
             "label=\"herd diagram for "_u8+herder.idSlashId()+"\"]\n"_u8);
   // drawing instance nodes
-  for (auto instance: instances) {
+  for (const auto &instance: instances) {
     gv.append("  \""+instance.id()+"\" [label=\""+instance.task().localId()+"\n"
               +instance.id()+"\" tooltip=\""+instance.id()+"\" "
               +instanceNodeStyle(instance, herdid)+"]\n");
@@ -575,7 +563,7 @@ Utf8String DiagramsBuilder::herdInstanceDiagram(
   // drawing cause edges (and non parent cause nodes)
   gv.append("  node[shape=plain]\n"); // FIXME non instance parent nodes
   gv.append("  edge[dir=forward,arrowhead=vee]\n"); // FIXME use styles TASK_TRIGGER_EDGE
-  for (auto instance: instances) {
+  for (const auto &instance: instances) {
     auto parent = instances.value(instance.parentid());
     if (!!parent) { // parent edges
       gv.append("  \""+parent.id()+"\" -- \""+instance.id()+"\" [label=\""
@@ -594,13 +582,13 @@ Utf8String DiagramsBuilder::herdInstanceDiagram(
   gv.append("  edge[" PREREQUISITE_EDGE "]\n");
   gv.append("  # instances "+Utf8String::number(instances.size())+
             " prerequisites "+Utf8String::number(prerequisites.size())+"\n");
-  for (auto instance: instances) {
+  for (const auto &instance: instances) {
     auto twci = prerequisites[instance.idAsLong()];
     auto tiis = twci.tiis.values();
     std::sort(tiis.begin(), tiis.end());
     gv.append("  # prereq "+instance.id()+" "+Utf8String::number(tiis.size())+
               " first "+Utf8String::number(tiis.value(0))+"\n");
-    for (auto dep: tiis)
+    for (const auto &dep: tiis)
       gv.append("  \""+Utf8String::number(dep)+"\" -- \""+instance.id()
                 +"\"[label=\""+twci.op+"\""+actionEdgeStyle(twci.op)+"]\n");
   }
@@ -618,14 +606,14 @@ Utf8String DiagramsBuilder::herdConfigDiagram(
 }
 
 Utf8String DiagramsBuilder::taskInstanceChronogram(
-    Scheduler *scheduler, quint64 tii, const ParamsProvider *options) {
+    Scheduler *scheduler, quint64 tii, const ParamsProvider &options) {
   auto [herdid, instances, prerequisites]
       = findRelatedTasks(scheduler, tii, options);
   if (!herdid || instances.isEmpty()) // means tii is invalid
     return {};
   QDateTime min = instances.first().creationDatetime(),
       max, now = QDateTime::currentDateTime();
-  for (auto [tii, instance]: instances.asKeyValueRange()) {
+  for (const auto &[tii, instance]: instances.asKeyValueRange()) {
     min = std::min(instance.creationDatetime(), min);
     auto last = instance.finishDatetime();
     if (!last.isValid())
@@ -634,10 +622,10 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
   }
   if (!max.isValid())
     max = min;
-  auto label = options->paramRawUtf8("label");
-  auto fontname = options->paramUtf8("fontname", "Sans");
-  auto width = options->paramNumber<int>("width", 1920);
-  auto label_width = options->paramNumber<int>("label_width", 400);
+  auto label = options.paramRawUtf8("label");
+  auto fontname = options.paramUtf8("fontname", "Sans");
+  auto width = options.paramNumber<int>("width", 1920);
+  auto label_width = options.paramNumber<int>("label_width", 400);
   int hmargin = 4, vmargin = 4;
   int iconsize = 8, lineh = 12, fontsize = 8;
   auto secspan = std::max(min.secsTo(max), 1LL);
@@ -693,7 +681,7 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
     }
   };
   QMap<quint64,int> tiy; // tii -> ym
-  for (auto [tii, instance]: instances.asKeyValueRange()) {
+  for (const auto &[tii, instance]: instances.asKeyValueRange()) {
     QDateTime creation = instance.creationDatetime(),
         queue = instance.queueDatetime(), start = instance.startDatetime(),
         stop = instance.stopDatetime(), finish = instance.finishDatetime();
@@ -742,8 +730,8 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
     ++i;
   }
   QList<VerticalLine> vertical_lines;
-  for (auto [tii,twci]: prerequisites.asKeyValueRange())
-    for (auto dep: twci.tiis) {
+  for (const auto &[tii,twci]: prerequisites.asKeyValueRange())
+    for (const auto &dep: twci.tiis) {
       if (tiy[tii] && tiy[dep]) {
         auto instance = instances.value(tii);
         auto ts = instance.queueDatetime();
@@ -761,7 +749,7 @@ Utf8String DiagramsBuilder::taskInstanceChronogram(
       }
     }
   }
-  for (auto line: vertical_lines) {
+  for (const auto &line: vertical_lines) {
     sw.drawLine(line.x, line.y1, line.x, line.y2, SVG_NEUTRAL_COLOR, 1);
     if (line.y1 < line.y2) {
       sw.drawLine(line.x-2, line.y2-2, line.x, line.y2, SVG_NEUTRAL_COLOR, 1);

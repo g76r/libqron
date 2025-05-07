@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -120,7 +120,7 @@ QStringList MailAlertChannel::splittedAddresses(
     QString commaSeparatedAddresses) {
   QStringList addresses;
   static const QRegularExpression _whitespace{ "\\s+" };
-  for (auto s: commaSeparatedAddresses.split(_whitespace)) {
+  for (const auto &s: commaSeparatedAddresses.split(_whitespace)) {
     MailAddress addr(s);
     if (!!addr)
       addresses.append(s);

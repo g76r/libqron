@@ -90,7 +90,7 @@ bool Action::mayCreateTaskInstances() const {
 
 Utf8StringList Action::toStringList(QList<Action> list) {
   Utf8StringList sl;
-  for (auto a: list)
+  for (const auto &a: list)
     sl.append(a.toString());
   return sl;
 }

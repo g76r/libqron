@@ -1,4 +1,4 @@
-/* Copyright 2012-2023 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -13,6 +13,7 @@
  */
 #include "clustersmodel.h"
 #include <QMimeData>
+#include "modelview/shareduiitemdocumentmanager.h"
 
 /** Host reference item, to be inserted as cluster child in cluster tree,
  * without the need of having real host items which data are inconsistent with
@@ -109,7 +110,7 @@ bool ClustersModel::canDropMimeData(
   Utf8StringList ids = data->data(_suiQualifiedIdsListMimeType).split(' ');
   if (ids.isEmpty())
     return false; // nothing to drop
-  for (auto qualified_id: ids) {
+  for (const auto &qualified_id: ids) {
     auto qualifier = qualified_id.left(qualified_id.indexOf(':'));
     if (qualifier != "host"_u8 && qualifier != "hostreference"_u8)
       return false; // can only drop hosts
@@ -144,7 +145,7 @@ bool ClustersModel::dropMimeData(
   Utf8StringList oldHostsIds, droppedHostsIds, newHostsIds;
   for (const Host &host: oldCluster.hosts())
     oldHostsIds << host.id();
-  for (auto qualified_id: ids) {
+  for (const auto &qualified_id: ids) {
     Utf8String hostId;
     if (qualified_id.contains('~'))
       hostId = qualified_id.mid(qualified_id.indexOf('~')+1);
@@ -170,7 +171,7 @@ bool ClustersModel::dropMimeData(
   //qDebug() << "  old one:" << oldHostsIds << "dropped one:" << droppedHostsIds;
   // update actual data item
   QList<Host> newHosts;
-  for (auto id: newHostsIds) {
+  for (const auto &id: newHostsIds) {
     SharedUiItem hostSui = documentManager()->itemById("host"_u8, id);
     Host &host = static_cast<Host&>(hostSui);
     newHosts << host;

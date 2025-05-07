@@ -1,4 +1,4 @@
-/* Copyright 2012-2024 Hallowyn and others.
+/* Copyright 2012-2025 Hallowyn and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -120,11 +120,11 @@ void Alerter::doSetConfig(AlerterConfig config) {
   auto newboards = config.gridboards();
   auto gridboards = _gridboards.lockedData();
   QSet<QByteArray> ids;
-  for (auto id: (*gridboards).keys()) {
+  for (const auto &id: (*gridboards).keys()) {
     auto &g = (*gridboards)[id];
     bool found = false;
     ids << id;
-    for (auto newg: newboards)
+    for (const auto &newg: newboards)
       if (newg.id() == id) {
         g.applyNewConfig(newg);
         found = true;
@@ -132,7 +132,7 @@ void Alerter::doSetConfig(AlerterConfig config) {
     if (!found)
       gridboards->remove(id);
   }
-  for (auto newg: newboards) {
+  for (const auto &newg: newboards) {
     auto id = newg.id();
     if (!(*gridboards).contains(id))
       gridboards->insert(id, newg);

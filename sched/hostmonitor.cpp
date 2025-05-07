@@ -1,4 +1,4 @@
-/* Copyright 2024 Grégoire Barbier and others.
+/* Copyright 2024-2025 Grégoire Barbier and others.
  * This file is part of qron, see <http://qron.eu/>.
  * Qron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -50,7 +50,7 @@ void HostMonitor::doSetConfig(const SchedulerConfig &config) {
 
 void HostMonitor::asyncProcessing() {
   auto now = QDateTime::currentMSecsSinceEpoch();
-  for (auto host: _config.hosts()) {
+  for (const auto &host: _config.hosts()) {
     auto hostid = host.id();
     auto elapsed = now - _last_check[hostid];
     if (elapsed < host.healthcheckinterval())

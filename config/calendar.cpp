@@ -75,7 +75,7 @@ Calendar::Calendar(const PfNode &node) {
       //qDebug() << "calendar date spec empty";
       d->append(QDate(), QDate(), include);
     } else
-      for (auto string: dates) {
+      for (const auto &string: dates) {
         auto match = _dateRE.match(string);
         if (match.hasMatch()) {
           QDate begin(match.captured(2).toInt(), match.captured(3).toInt(),

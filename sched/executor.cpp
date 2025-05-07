@@ -231,14 +231,14 @@ void Executor::sshMean() {
     sshCmdline << "-oPort="+QString::number(port);
   if (!identity.isEmpty())
     sshCmdline << "-oIdentityFile=" + identity;
-  for (auto option: options)
+  for (const auto &option: options)
     sshCmdline << "-o" + option;
   if (!username.isEmpty())
     sshCmdline << "-oUser=" + username;
   sshCmdline << "--";
   sshCmdline << _instance.target().hostname();
   const auto vars = _instance.varsAsEnv();
-  for (auto key: vars.keys())
+  for (const auto &key: vars.keys())
     cmdline << key+"='"+vars.value(key).remove('\'')+"'";
   if (!shell.isEmpty()) {
     cmdline << shell << "-c";
@@ -272,7 +272,7 @@ void Executor::dockerArrayParam(
     const ParamSet &params, const QString &def) const {
   auto values = params.paramUtf16("docker."+key, def, context)
                 .split(_whitespace, Qt::SkipEmptyParts);
-  for (auto value: values)
+  for (auto &value: values)
     *cmdline += "--"+key+" '"+value.remove('\'')+"' ";
 }
 
@@ -301,7 +301,7 @@ void Executor::dockerMean() {
   if (shouldRm)
     cmdline += "--rm ";
   const auto vars = _instance.varsAsEnv();
-  for (auto key: vars.keys())
+  for (const auto &key: vars.keys())
     cmdline += "-e " + key + "='" + vars.value(key).remove('\'') + "' ";
   dockerParam(&cmdline, "name", &_instance, params,
               dockerNameCleanedUp(_instance.taskId())+"_"+_instance.id()+"_"
@@ -343,7 +343,7 @@ void Executor::execProcess(QStringList cmdline, bool useVarsAsEnv) {
   QProcessEnvironment sysenv;
   if (useVarsAsEnv) {
     auto env = _instance.varsAsEnv();
-    for (auto key: env.keys())
+    for (const auto &key: env.keys())
       sysenv.insert(key, env.value(key));
   } else {
     sysenv = _baseenv;
@@ -528,7 +528,7 @@ void Executor::processProcessOutput(bool isStderr) {
         continue;
       }
       QList<EventSubscription> filtered_subs;
-      for (auto sub: subs) {
+      for (const auto &sub: subs) {
         if (!sub.filter().match(line).hasMatch())
           continue;
         if (sub.actions().value(0).actionType() == "stop"_u8)
@@ -581,7 +581,7 @@ void Executor::httpMean() {
   ParametrizedNetworkRequest networkRequest(
         url, params, &_instance, _instance.taskId(), _instance.idAsLong());
   const auto vars = _instance.varsAsHeaders();
-  for (auto key: vars.keys())
+  for (const auto &key: vars.keys())
     networkRequest.setRawHeader(key.toLatin1(), vars.value(key).toUtf8());
   // LATER read request output, at less to avoid server being blocked and request never finish
   if (networkRequest.url().isValid()) {
@@ -743,7 +743,7 @@ void Executor::scatterMean() {
   SharedUiItemList instances;
   emit taskInstanceStarted(_instance);
   int rank = -1;
-  for (auto input: inputs) {
+  for (const auto &input: inputs) {
     ++rank;
     const auto match = regexp.match(input);
     const auto rpp = RegexpParamsProvider(match);
@@ -757,7 +757,7 @@ void Executor::scatterMean() {
     if (_scheduler->taskExists(idIfLocalToGroup))
       taskid = idIfLocalToGroup;
     ParamSet overridingParams;
-    for (auto key: vars.paramKeys())
+    for (const auto &key: vars.paramKeys())
       overridingParams.insert(
             key, PercentEvaluator::escape(
               PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm)));
@@ -783,7 +783,7 @@ void Executor::scatterMean() {
       if (_scheduler->taskExists(idIfLocalToGroup))
         taskid = idIfLocalToGroup;
       ParamSet overridingParams;
-      for (auto key: vars.paramKeys()) {
+      for (const auto &key: vars.paramKeys()) {
         auto value = PercentEvaluator::eval_utf8(vars.paramRawUtf8(key), &ppm);
         overridingParams.insert(key, PercentEvaluator::escape(value));
       }

@@ -23,7 +23,7 @@ public:
     : _conditions(conditions) { }
   Utf8String toString() const override {
     Utf8String s = "anyof {";
-    for (auto c: _conditions)
+    for (const auto &c: _conditions)
       s += ' ' + c.toString();
     s += " }";
     return s;
@@ -33,7 +33,7 @@ public:
                 QSet<TaskInstance> herdedTasks) const override {
     if (_conditions.isEmpty())
       return true;
-    for (auto condition: _conditions) {
+    for (const auto &condition: _conditions) {
       if (condition.evaluate(instance, herder, herdedTasks))
         return true;
     }
@@ -70,7 +70,7 @@ void DisjunctionCondition::append(QList<PfNode> nodes) {
   auto data = static_cast<DisjunctionConditionData*>(d.data());
   if (!data)
     return;
-  for (auto node: nodes) {
+  for (const auto &node: nodes) {
     Condition c = Condition::createCondition(node);
     if (c.isNull())
       continue;
@@ -85,7 +85,7 @@ QList<Condition> DisjunctionCondition::conditions() const {
 
 QList<PfNode> DisjunctionCondition::toPfNodes() const {
   QList<PfNode> nodes;
-  for (auto c: conditions())
+  for (const auto &c: conditions())
     nodes.append(c.toPfNode());
   return nodes;
 }

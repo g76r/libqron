@@ -63,7 +63,7 @@ public:
   }
   ~TreeItem() { qDeleteAll(_children); }
   void merge(const TreeItem *source) {
-    for (auto dimensionValue: source->_children.keys()) {
+    for (const auto &dimensionValue: source->_children.keys()) {
       if (!_children.contains(dimensionValue)) {
         _children.insert(dimensionValue, new TreeItem(dimensionValue));
       }
@@ -139,7 +139,7 @@ static void mergeComponents(
   // replace references in indexes
   for (int i = 0; i < indexes->size(); ++i) {
     QHash<Utf8String,TreeItem*> &index = (*indexes)[i];
-    for (auto dimensionValue: index.keys())
+    for (const auto &dimensionValue: index.keys())
       if (index.value(dimensionValue) == source)
         index.insert(dimensionValue, target);
   }
@@ -438,13 +438,13 @@ QString Gridboard::toHtml() const {
     }
     s = s+"<div class=\""+componentClass+"\"><table class=\""+tableClass
         +"\" id=\"gridboard."+d->_id+"\"><tr><th>&nbsp;</th>";
-    for (auto column: columns)
+    for (const auto &column: columns)
       s = s+"<th>"
           +formatted(column, "gridboard.columnformat", d->_params)+"</th>";
-    for (auto row: rows) {
+    for (const auto &row: rows) {
       s = s+"</tr><tr><th>"
           +formatted(row, "gridboard.rowformat", d->_params)+"</th>";
-      for (auto column: columns) {
+      for (const auto &column: columns) {
         const TreeItem *item = matrix[row][column];
         GridStatus status = item ? item->_status : Unknown;
         if (status == Ok && item && d->_warningDelay &&
@@ -493,7 +493,7 @@ QVariant GridboardData::uiData(int section, int role) const {
       return _pattern;
     case 3: {
       Utf8StringList list;
-      for (auto dimension: _dimensions) {
+      for (const auto &dimension: _dimensions) {
         list << dimension.id() + "=" + dimension.rawValue();
       }
       return list.join(' ');

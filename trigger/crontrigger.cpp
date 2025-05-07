@@ -258,10 +258,10 @@ void CronTriggerData::parseCronExpression(QString cronExpression) {
   cronExpression += " "; // regexp are simpler if every field ends with a space
   if (_cronExpressionRE.match(cronExpression).hasMatch()) {
     int fieldIndex = 0;
-    for (auto match: _cronFieldRE.globalMatch(cronExpression)) {
+    for (const auto &match: _cronFieldRE.globalMatch(cronExpression)) {
       //qDebug() << "  found cron field" << match.lastCapturedIndex() << match.capturedTexts();
       QString step = match.captured(1) + ","; // regexp are simpler if every step ends with a comma
-      for (auto match: _cronStepRE.globalMatch(step)) {
+      for (const auto &match: _cronStepRE.globalMatch(step)) {
         QString start = match.captured(1), stop = match.captured(2),
             modulo = match.captured(3);
         bool star = false;//(stop == "*" && !modulo.isEmpty());
