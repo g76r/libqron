@@ -225,7 +225,7 @@ PfNode Host::toPfNode() const {
 
 const SharedUiItemDataFunctions HostData::_paramFunctions = {
   { "!hostid", [](const SharedUiItemData *data, const Utf8String &,
-    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> QVariant {
+    const PercentEvaluator::EvalContext, int) STATIC_LAMBDA -> TypedValue {
       auto hd = dynamic_cast<const HostData*>(data);
       if (!hd)
         return {};
