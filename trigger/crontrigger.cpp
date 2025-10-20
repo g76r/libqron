@@ -204,24 +204,24 @@ QDateTime CronTriggerData::nextTriggering(QDateTime max) const {
       ::fromMSecsSinceEpoch((effectiveLast/1000+1)*1000);
   while (next <= max) {
     if (!_months.isSet(next.date().month())) {
-      next = next.addMonths(1);
-      next.setDate(QDate(next.date().year(), next.date().month(), 1));
-      next.setTime(QTime(0, 0, 0));
+      next.setDate(QDate(next.date().year(), next.date().month(), 1)
+                   .addMonths(1),
+                   QDateTime::TransitionResolution::PreferAfter);
+      next.setTime(QTime(0, 0, 0),
+                   QDateTime::TransitionResolution::PreferAfter);
     } else if (!_days.isSet(next.date().day())
                ||!_daysofweek.isSet(next.date().dayOfWeek()%7)
                ||!_calendar.isIncluded(next.date())) {
       next = next.addDays(1);
-      next.setTime(QTime(0, 0, 0));
+      next.setTime(QTime(0, 0, 0),
+                   QDateTime::TransitionResolution::PreferAfter);
     } else if (!_hours.isSet(next.time().hour())) {
-      next = next.addSecs(3600);
-      next.setTime(QTime(next.time().hour(), 0, 0));
+      next.setSecsSinceEpoch((next.toSecsSinceEpoch()/3600+1)*3600);
     } else if (!_minutes.isSet(next.time().minute())) {
-      next = next.addSecs(60);
-      next.setTime(QTime(next.time().hour(), next.time().minute(), 0));
+      next.setSecsSinceEpoch((next.toSecsSinceEpoch()/60+1)*60);
     } else if (!_seconds.isSet(next.time().second())) {
       next = next.addSecs(1);
     } else {
-      //qDebug() << "        found next trigger:" << lastTrigger << next;
       _nextTriggering = next.toMSecsSinceEpoch();
       return next;
     }
