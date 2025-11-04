@@ -85,12 +85,12 @@ bool EventSubscription::triggerActions(
   bool stopped = false;
   if (!!instance)
     context->append(&instance);
-  for (Action a: d->_actions) {
+  for (const Action &a: d->_actions) {
     if (a.actionType() == "stop"_u8) {
       stopped = true;
       break;
     }
-    if (filter && filter(a))
+    if (!filter || filter(a))
       a.trigger(*this, context, instance);
   }
   if (!!instance)
